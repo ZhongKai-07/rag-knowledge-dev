@@ -208,6 +208,8 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam) {
         LambdaQueryWrapper<KnowledgeBaseDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                 .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
+                .in(requestParam.getAccessibleKbIds() != null && !requestParam.getAccessibleKbIds().isEmpty(),
+                        KnowledgeBaseDO::getId, requestParam.getAccessibleKbIds())
                 .eq(KnowledgeBaseDO::getDeleted, 0)
                 .orderByDesc(KnowledgeBaseDO::getUpdateTime);
 

@@ -27,7 +27,9 @@ import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentChunkLog
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -45,6 +47,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * 知识库文档管理控制器
@@ -56,6 +59,7 @@ import java.util.List;
 public class KnowledgeDocumentController {
 
     private final KnowledgeDocumentService documentService;
+    private final KbAccessService kbAccessService;
 
     /**
      * 上传文档：入库记录 + 文件落盘，返回文档ID
@@ -64,6 +68,7 @@ public class KnowledgeDocumentController {
     public Result<KnowledgeDocumentVO> upload(@PathVariable("kb-id") String kbId,
                                               @RequestPart(value = "file", required = false) MultipartFile file,
                                               @ModelAttribute KnowledgeDocumentUploadRequest requestParam) {
+        kbAccessService.checkAccess(kbId);
         return Results.success(documentService.upload(kbId, requestParam, file));
     }
 
@@ -90,7 +95,11 @@ public class KnowledgeDocumentController {
      */
     @GetMapping("/knowledge-base/docs/{docId}")
     public Result<KnowledgeDocumentVO> get(@PathVariable String docId) {
-        return Results.success(documentService.get(docId));
+        KnowledgeDocumentVO doc = documentService.get(docId);
+        if (doc != null) {
+            kbAccessService.checkAccess(doc.getKbId());
+        }
+        return Results.success(doc);
     }
 
     /**
@@ -109,6 +118,7 @@ public class KnowledgeDocumentController {
     @GetMapping("/knowledge-base/{kb-id}/docs")
     public Result<IPage<KnowledgeDocumentVO>> page(@PathVariable(value = "kb-id") String kbId,
                                                    KnowledgeDocumentPageRequest requestParam) {
+        kbAccessService.checkAccess(kbId);
         return Results.success(documentService.page(kbId, requestParam));
     }
 
@@ -118,7 +128,11 @@ public class KnowledgeDocumentController {
     @GetMapping("/knowledge-base/docs/search")
     public Result<List<KnowledgeDocumentSearchVO>> search(@RequestParam(value = "keyword", required = false) String keyword,
                                                           @RequestParam(value = "limit", defaultValue = "8") int limit) {
-        return Results.success(documentService.search(keyword, limit));
+        Set<String> accessibleKbIds = null;
+        if (UserContext.hasUser() && !"admin".equals(UserContext.getRole())) {
+            accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
+        }
+        return Results.success(documentService.search(keyword, limit, accessibleKbIds));
     }
 
     /**

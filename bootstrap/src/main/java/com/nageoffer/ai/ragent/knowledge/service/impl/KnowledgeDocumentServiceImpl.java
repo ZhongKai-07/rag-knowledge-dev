@@ -543,7 +543,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     @Override
-    public List<KnowledgeDocumentSearchVO> search(String keyword, int limit) {
+    public List<KnowledgeDocumentSearchVO> search(String keyword, int limit, Set<String> accessibleKbIds) {
         if (!StringUtils.hasText(keyword)) {
             return Collections.emptyList();
         }
@@ -553,6 +553,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         LambdaQueryWrapper<KnowledgeDocumentDO> qw = new LambdaQueryWrapper<KnowledgeDocumentDO>()
                 .eq(KnowledgeDocumentDO::getDeleted, 0)
                 .like(KnowledgeDocumentDO::getDocName, keyword)
+                .in(accessibleKbIds != null && !accessibleKbIds.isEmpty(),
+                        KnowledgeDocumentDO::getKbId, accessibleKbIds)
                 .orderByDesc(KnowledgeDocumentDO::getUpdateTime);
 
         IPage<KnowledgeDocumentDO> result = documentMapper.selectPage(mpPage, qw);
