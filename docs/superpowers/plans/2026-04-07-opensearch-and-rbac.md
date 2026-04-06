@@ -181,7 +181,7 @@ public class OpenSearchProperties {
     private String uris = "http://localhost:9200";
     private String username;
     private String password;
-    private String authType = "basic"; // basic | aws-sigv4
+    private String authType = "basic"; // 当前仅实现 basic；aws-sigv4 预留，生产部署时再实现
 
     private AnalyzerConfig analyzer = new AnalyzerConfig();
     private HybridConfig hybrid = new HybridConfig();
@@ -1829,11 +1829,10 @@ private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int
 SearchContext context = buildSearchContext(subIntents, topK, accessibleKbIds);
 ```
 
-5d. 如果 `knowledgeBaseId` 非空，跳过多通道检索，直接对指定知识库执行单 collection 检索：
+5d. 如果 `knowledgeBaseId` 非空，构造单通道结果后**仍复用后处理链**（去重 + rerank），确保与自动模式排序语义一致：
 
 ```java
 if (knowledgeBaseId != null) {
-    // 查出 collectionName
     KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(knowledgeBaseId);
     if (kb == null || kb.getCollectionName() == null) {
         return List.of();
@@ -1843,10 +1842,22 @@ if (knowledgeBaseId != null) {
             .topK(topK)
             .collectionName(kb.getCollectionName())
             .build();
-    return retrieverService.retrieve(req);
+    List<RetrievedChunk> chunks = retrieverService.retrieve(req);
+
+    // 包装为 SearchChannelResult，复用后处理链（去重 + rerank）
+    SearchChannelResult singleResult = SearchChannelResult.builder()
+            .channelType(SearchChannelType.INTENT_DIRECTED)
+            .channelName("single-kb-" + kb.getCollectionName())
+            .chunks(chunks)
+            .confidence(1.0)
+            .latencyMs(0)
+            .build();
+    return executePostProcessors(List.of(singleResult), context);
 }
 // else: 走原有多通道逻辑
 ```
+
+注意：`executePostProcessors` 是 `MultiChannelRetrievalEngine` 的 private 方法（约 line 167），直接可在类内调用。后处理链包含 `DeduplicationPostProcessor`（order=1）和 `RerankPostProcessor`（order=10），指定知识库模式虽然只有单通道不需要去重，但 rerank 仍然有意义。
 
 - [ ] **Step 6: 验证编译通过**
 
@@ -1870,7 +1881,11 @@ git commit -m "feat: integrate knowledgeBaseId and RBAC into full chat retrieval
 
 **Files:**
 - Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/controller/KnowledgeBaseController.java`
+- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/controller/request/KnowledgeBasePageRequest.java`（新增 `accessibleKbIds` 字段）
+- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/service/impl/KnowledgeBaseServiceImpl.java`（pageQuery 加 IN 条件）
 - Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/controller/KnowledgeDocumentController.java`
+- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/service/KnowledgeDocumentService.java`（search 签名扩展）
+- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImpl.java`（search 实现加 RBAC 过滤）
 
 - [ ] **Step 1: KnowledgeBaseController.pageQuery() 加权限过滤**
 
@@ -1896,7 +1911,34 @@ public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest request
 }
 ```
 
-注意：`KnowledgeBasePageRequest` 需要新增 `accessibleKbIds`（`Set<String>`）字段，`KnowledgeBaseServiceImpl.pageQuery` 中用 `.in(KnowledgeBaseDO::getId, accessibleKbIds)` 条件过滤（accessibleKbIds 非空时）。
+- [ ] **Step 1b: KnowledgeBasePageRequest 新增 accessibleKbIds 字段**
+
+在 `KnowledgeBasePageRequest.java` 中添加（和 `name` 字段同级）：
+
+```java
+/**
+ * RBAC: 当前用户可访问的知识库 ID 集合（null 表示不限）
+ */
+@TableField(exist = false)
+private Set<String> accessibleKbIds;
+```
+
+import `java.util.Set;`。注意加 `@TableField(exist = false)` 避免 MyBatis Plus 尝试映射此字段。
+
+- [ ] **Step 1c: KnowledgeBaseServiceImpl.pageQuery 加 IN 条件**
+
+在 `KnowledgeBaseServiceImpl.java` 的 `pageQuery` 方法（约 line 208）中，`LambdaQueryWrapper` 构建处追加条件：
+
+```java
+LambdaQueryWrapper<KnowledgeBaseDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+        .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
+        .in(requestParam.getAccessibleKbIds() != null && !requestParam.getAccessibleKbIds().isEmpty(),
+                KnowledgeBaseDO::getId, requestParam.getAccessibleKbIds())
+        .eq(KnowledgeBaseDO::getDeleted, 0)
+        .orderByDesc(KnowledgeBaseDO::getUpdateTime);
+```
+
+新增的 `.in(...)` 行仅在 `accessibleKbIds` 非空时生效，admin 用户不设此字段所以不过滤。
 
 - [ ] **Step 2: KnowledgeBaseController 详情接口加权限校验**
 
@@ -1935,7 +1977,40 @@ public Result<KnowledgeDocumentVO> get(@PathVariable String docId) {
 
 注意：`KnowledgeDocumentVO` 需确认包含 `kbId` 字段。如果没有，在 `get()` 返回前需要从 `KnowledgeDocumentDO` 获取。
 
-对于 `GET /knowledge-base/docs/search` 全局搜索，修改 `KnowledgeDocumentServiceImpl.search()` 方法，接受可选的 `accessibleKbIds` 参数，非 admin 时用 `IN` 条件过滤只返回有权知识库下的文档。
+- [ ] **Step 3b: KnowledgeDocumentService.search 签名扩展**
+
+修改 `KnowledgeDocumentService.java` 的 `search` 签名（约 line 109），新增 `accessibleKbIds`：
+
+```java
+List<KnowledgeDocumentSearchVO> search(String keyword, int limit, Set<String> accessibleKbIds);
+```
+
+- [ ] **Step 3c: KnowledgeDocumentServiceImpl.search 加 RBAC 过滤**
+
+修改 `KnowledgeDocumentServiceImpl.java` 的 `search` 实现（约 line 545），在 `LambdaQueryWrapper` 构建中追加条件：
+
+```java
+LambdaQueryWrapper<KnowledgeDocumentDO> qw = new LambdaQueryWrapper<KnowledgeDocumentDO>()
+        .eq(KnowledgeDocumentDO::getDeleted, 0)
+        .like(KnowledgeDocumentDO::getDocName, keyword)
+        .in(accessibleKbIds != null && !accessibleKbIds.isEmpty(),
+                KnowledgeDocumentDO::getKbId, accessibleKbIds)
+        .orderByDesc(KnowledgeDocumentDO::getUpdateTime);
+```
+
+在 `KnowledgeDocumentController.search()` 调用处传入 accessibleKbIds：
+
+```java
+@GetMapping("/knowledge-base/docs/search")
+public Result<List<KnowledgeDocumentSearchVO>> search(@RequestParam String keyword,
+                                                       @RequestParam(defaultValue = "10") int limit) {
+    Set<String> accessibleKbIds = null;
+    if (UserContext.hasUser() && !"admin".equals(UserContext.getRole())) {
+        accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
+    }
+    return Results.success(documentService.search(keyword, limit, accessibleKbIds));
+}
+```
 
 - [ ] **Step 4: 验证编译通过**
 
@@ -1996,19 +2071,20 @@ setSelectedKnowledgeBase: (kbId: string | null) => set({ selectedKnowledgeBaseId
 
 - [ ] **Step 2: 复用 knowledgeService.ts 获取知识库列表**
 
-`frontend/src/services/knowledgeService.ts` 已有 `getKnowledgeBases(current, size, name)` 方法，返回分页结果。直接复用此方法获取当前用户可访问的知识库列表，无需新建 API 文件。
+`frontend/src/services/knowledgeService.ts` 已有两个方法：
+- `getKnowledgeBases(current, size, name)` → 返回 `Promise<KnowledgeBase[]>`（已解包 records，默认 size=200）
+- `getKnowledgeBasesPage(current, size, name)` → 返回 `Promise<PageResult<KnowledgeBase>>`（分页对象）
 
-如果需要一个不分页的快捷方法，在 `knowledgeService.ts` 末尾追加：
+聊天页面的知识库选择器直接复用 `getKnowledgeBases()` 即可，它已经返回数组，无需额外 helper：
 
 ```typescript
-/** 获取当前用户可访问的所有知识库（不分页，用于选择器） */
-export async function getAllAccessibleKnowledgeBases(): Promise<KnowledgeBase[]> {
-  const result = await getKnowledgeBases(1, 999);
-  return result.records;
-}
+import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeService";
+
+// 在组件 mount 时获取列表
+const knowledgeBases = await getKnowledgeBases();
 ```
 
-其中 `KnowledgeBase` 类型复用 `knowledgeService.ts` 已有的接口定义。
+不新建 API 文件，不新增 helper 方法。
 
 - [ ] **Step 3: 聊天页面新增知识库选择器**
 
