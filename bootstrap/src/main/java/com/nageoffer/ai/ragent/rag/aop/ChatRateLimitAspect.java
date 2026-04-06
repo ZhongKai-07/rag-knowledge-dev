@@ -99,6 +99,7 @@ public class ChatRateLimitAspect {
                 .status(STATUS_RUNNING)
                 .startTime(new Date())
                 .extraData(StrUtil.format("{\"questionLength\":{}}", StrUtil.length(question)))
+
                 .build());
 
         RagTraceContext.setTraceId(traceId);

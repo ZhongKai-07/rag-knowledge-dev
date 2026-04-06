@@ -31,6 +31,7 @@ public final class RagTraceContext {
     private static final TransmittableThreadLocal<String> TRACE_ID = new TransmittableThreadLocal<>();
     private static final TransmittableThreadLocal<String> TASK_ID = new TransmittableThreadLocal<>();
     private static final TransmittableThreadLocal<Deque<String>> NODE_STACK = new TransmittableThreadLocal<>();
+    private static final TransmittableThreadLocal<Object> EVAL_COLLECTOR = new TransmittableThreadLocal<>();
 
     private RagTraceContext() {
     }
@@ -81,9 +82,25 @@ public final class RagTraceContext {
         }
     }
 
+    /**
+     * 设置评测数据采集器（类型为 Object 以避免 framework 模块依赖 bootstrap）
+     */
+    public static void setEvalCollector(Object collector) {
+        EVAL_COLLECTOR.set(collector);
+    }
+
+    /**
+     * 获取评测数据采集器
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T getEvalCollector() {
+        return (T) EVAL_COLLECTOR.get();
+    }
+
     public static void clear() {
         TRACE_ID.remove();
         TASK_ID.remove();
         NODE_STACK.remove();
+        EVAL_COLLECTOR.remove();
     }
 }

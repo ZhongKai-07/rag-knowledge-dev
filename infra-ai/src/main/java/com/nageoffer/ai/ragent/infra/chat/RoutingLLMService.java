@@ -242,6 +242,11 @@ public class RoutingLLMService implements LLMService {
         }
 
         @Override
+        public void onTokenUsage(TokenUsage usage) {
+            bufferOrDispatch(BufferedEvent.tokenUsage(usage));
+        }
+
+        @Override
         public void onComplete() {
             awaiter.markComplete();
             bufferOrDispatch(BufferedEvent.complete());
@@ -293,6 +298,11 @@ public class RoutingLLMService implements LLMService {
             switch (event.type()) {
                 case CONTENT -> downstream.onContent(event.content());
                 case THINKING -> downstream.onThinking(event.content());
+                case TOKEN_USAGE -> {
+                    if (event.usage() != null) {
+                        downstream.onTokenUsage(event.usage());
+                    }
+                }
                 case COMPLETE -> downstream.onComplete();
                 case ERROR -> downstream.onError(event.error() != null
                         ? event.error()
@@ -300,28 +310,33 @@ public class RoutingLLMService implements LLMService {
             }
         }
 
-        private record BufferedEvent(EventType type, String content, Throwable error) {
+        private record BufferedEvent(EventType type, String content, Throwable error, TokenUsage usage) {
 
             private static BufferedEvent content(String content) {
-                return new BufferedEvent(EventType.CONTENT, content, null);
+                return new BufferedEvent(EventType.CONTENT, content, null, null);
             }
 
             private static BufferedEvent thinking(String content) {
-                return new BufferedEvent(EventType.THINKING, content, null);
+                return new BufferedEvent(EventType.THINKING, content, null, null);
+            }
+
+            private static BufferedEvent tokenUsage(TokenUsage usage) {
+                return new BufferedEvent(EventType.TOKEN_USAGE, null, null, usage);
             }
 
             private static BufferedEvent complete() {
-                return new BufferedEvent(EventType.COMPLETE, null, null);
+                return new BufferedEvent(EventType.COMPLETE, null, null, null);
             }
 
             private static BufferedEvent error(Throwable error) {
-                return new BufferedEvent(EventType.ERROR, null, error);
+                return new BufferedEvent(EventType.ERROR, null, error, null);
             }
         }
 
         private enum EventType {
             CONTENT,
             THINKING,
+            TOKEN_USAGE,
             COMPLETE,
             ERROR
         }

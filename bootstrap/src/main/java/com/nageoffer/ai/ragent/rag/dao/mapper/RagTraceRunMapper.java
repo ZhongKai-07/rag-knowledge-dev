@@ -19,6 +19,16 @@ package com.nageoffer.ai.ragent.rag.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import java.util.Date;
 
 public interface RagTraceRunMapper extends BaseMapper<RagTraceRunDO> {
+
+    @Select("SELECT COALESCE(SUM(CAST(extra_data::json->>'totalTokens' AS INTEGER)), 0) " +
+            "FROM t_rag_trace_run " +
+            "WHERE deleted = 0 AND extra_data IS NOT NULL AND extra_data LIKE '%totalTokens%' " +
+            "AND start_time >= #{startTime} AND start_time < #{endTime}")
+    long sumTokensInWindow(@Param("startTime") Date startTime, @Param("endTime") Date endTime);
 }

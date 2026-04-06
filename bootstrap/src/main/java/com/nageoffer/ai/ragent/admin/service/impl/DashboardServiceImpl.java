@@ -88,6 +88,9 @@ public class DashboardServiceImpl implements DashboardService {
         long activeUsers = countActiveUsers(range.start, range.end);
         long activeUsersPrev = countActiveUsers(range.prevStart, range.prevEnd);
 
+        long tokensInWindow = traceRunMapper.sumTokensInWindow(range.start, range.end);
+        long tokensPrevWindow = traceRunMapper.sumTokensInWindow(range.prevStart, range.prevEnd);
+
         DashboardOverviewGroupVO group = DashboardOverviewGroupVO.builder()
                 .totalUsers(buildKpi(totalUsers, usersInWindow, null))
                 .activeUsers(buildKpi(activeUsers, activeUsers - activeUsersPrev, calcPct(activeUsers, activeUsersPrev)))
@@ -95,6 +98,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .sessions24h(buildKpi(sessionsInWindow, sessionsInWindow - sessionsPrevWindow, calcPct(sessionsInWindow, sessionsPrevWindow)))
                 .totalMessages(buildKpi(totalMessages, messagesInWindow, null))
                 .messages24h(buildKpi(messagesInWindow, messagesInWindow - messagesPrevWindow, calcPct(messagesInWindow, messagesPrevWindow)))
+                .totalTokens(buildKpi(tokensInWindow, tokensInWindow - tokensPrevWindow, calcPct(tokensInWindow, tokensPrevWindow)))
                 .build();
 
         return DashboardOverviewVO.builder()

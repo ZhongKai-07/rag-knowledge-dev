@@ -15,27 +15,37 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service;
+package com.nageoffer.ai.ragent.rag.controller.vo;
 
-import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
-import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.Date;
 
 /**
- * RAG Trace 记录服务
+ * RAG 评测记录 VO
  */
-public interface RagTraceRecordService {
+@Data
+@Builder
+public class RagEvaluationRecordVO {
 
-    void startRun(RagTraceRunDO run);
+    private String id;
+    private String traceId;
+    private String conversationId;
+    private String messageId;
+    private String userId;
 
-    void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs);
+    private String originalQuery;
+    private String rewrittenQuery;
+    private String subQuestions;
+    private String retrievedChunks;
+    private Integer retrievalTopK;
+    private String answer;
+    private String modelName;
+    private String intentResults;
 
-    void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs, String extraData);
+    private String evalStatus;
+    private String evalMetrics;
 
-    void startNode(RagTraceNodeDO node);
-
-    void finishNode(String traceId, String nodeId, String status, String errorMessage, Date endTime, long durationMs);
-
-    void updateRunExtraData(String traceId, String extraData);
+    private Date createTime;
 }

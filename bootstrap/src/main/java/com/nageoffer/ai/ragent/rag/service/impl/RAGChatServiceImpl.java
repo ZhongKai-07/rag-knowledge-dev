@@ -38,6 +38,7 @@ import com.nageoffer.ai.ragent.rag.core.prompt.RAGPromptService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
+import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
 import com.nageoffer.ai.ragent.rag.dto.IntentGroup;
 import com.nageoffer.ai.ragent.rag.dto.RetrievalContext;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
@@ -48,6 +49,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -89,11 +92,27 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         StreamCallback callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
 
+        // 初始化评测数据采集器
+        EvaluationCollector evalCollector = new EvaluationCollector();
+        evalCollector.setOriginalQuery(question);
+        RagTraceContext.setEvalCollector(evalCollector);
+
         String userId = UserContext.getUserId();
         List<ChatMessage> history = memoryService.loadAndAppend(actualConversationId, userId, ChatMessage.user(question));
 
         RewriteResult rewriteResult = queryRewriteService.rewriteWithSplit(question, history);
         List<SubQuestionIntent> subIntents = intentResolver.resolve(rewriteResult);
+
+        // 采集改写和意图数据
+        evalCollector.setRewrittenQuery(rewriteResult.rewrittenQuestion());
+        evalCollector.setSubQuestions(rewriteResult.subQuestions());
+        evalCollector.setIntents(subIntents.stream()
+                .flatMap(si -> si.nodeScores().stream())
+                .filter(ns -> ns.getNode() != null)
+                .map(ns -> new EvaluationCollector.IntentSnapshot(
+                        ns.getNode().getId(), ns.getNode().getName(),
+                        ns.getScore(), ns.getNode().getKind() != null ? ns.getNode().getKind().name() : null))
+                .toList());
 
         GuidanceDecision guidanceDecision = guidanceService.detectAmbiguity(rewriteResult.rewrittenQuestion(), subIntents);
         if (guidanceDecision.isPrompt()) {
@@ -118,11 +137,19 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K);
         if (ctx.isEmpty()) {
-            String emptyReply = "未检索到与问题相关的文档内容。";
+            String emptyReply = "未检索到���问题相关的文档��容。";
             callback.onContent(emptyReply);
             callback.onComplete();
             return;
         }
+
+        // 采集检索数据
+        evalCollector.setTopK(DEFAULT_TOP_K);
+        evalCollector.setChunks(ctx.getIntentChunks().values().stream()
+                .flatMap(List::stream)
+                .distinct()
+                .map(EvaluationCollector.RetrievedChunkSnapshot::from)
+                .toList());
 
         // 聚合所有意图用于 prompt 规划
         IntentGroup mergedGroup = intentResolver.mergeIntentGroup(subIntents);

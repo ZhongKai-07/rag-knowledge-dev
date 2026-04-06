@@ -12,7 +12,8 @@ import {
   Zap,
   User,
   Calendar,
-  Hash
+  Hash,
+  Coins
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -467,6 +468,26 @@ export function RagTraceDetailPage() {
               label="平均耗时"
               value={formatDuration(stats.avgDuration)}
           />
+          {selectedRun.totalTokens != null && selectedRun.totalTokens > 0 && (
+              <>
+                <MetricItem
+                    icon={Coins}
+                    label="总 Token"
+                    value={selectedRun.totalTokens.toLocaleString()}
+                    variant="primary"
+                />
+                <MetricItem
+                    icon={Coins}
+                    label="输入"
+                    value={selectedRun.promptTokens?.toLocaleString() ?? "-"}
+                />
+                <MetricItem
+                    icon={Coins}
+                    label="输出"
+                    value={selectedRun.completionTokens?.toLocaleString() ?? "-"}
+                />
+              </>
+          )}
         </div>
 
         {/* 瀑布图 */}

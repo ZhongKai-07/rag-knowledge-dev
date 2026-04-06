@@ -63,6 +63,16 @@ public interface StreamCallback {
     }
 
     /**
+     * 接收 Token 用量统计（如果模型 API 返回了 usage 信息）
+     * <p>
+     * 默认空实现，不关心 Token 统计的场景可以忽略
+     *
+     * @param usage Token 用量（输入/输出/总计）
+     */
+    default void onTokenUsage(TokenUsage usage) {
+    }
+
+    /**
      * 整个推理流程结束（全部内容推送完毕）
      * <p>
      * 用途：

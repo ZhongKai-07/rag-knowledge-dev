@@ -15,27 +15,18 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service;
-
-import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
-import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
-
-import java.util.Date;
+package com.nageoffer.ai.ragent.infra.chat;
 
 /**
- * RAG Trace 记录服务
+ * LLM Token 用量统计
+ *
+ * @param promptTokens     输入 Token 数
+ * @param completionTokens 输出 Token 数
+ * @param totalTokens      总 Token 数
  */
-public interface RagTraceRecordService {
+public record TokenUsage(int promptTokens, int completionTokens, int totalTokens) {
 
-    void startRun(RagTraceRunDO run);
-
-    void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs);
-
-    void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs, String extraData);
-
-    void startNode(RagTraceNodeDO node);
-
-    void finishNode(String traceId, String nodeId, String status, String errorMessage, Date endTime, long durationMs);
-
-    void updateRunExtraData(String traceId, String extraData);
+    public static TokenUsage of(int promptTokens, int completionTokens) {
+        return new TokenUsage(promptTokens, completionTokens, promptTokens + completionTokens);
+    }
 }

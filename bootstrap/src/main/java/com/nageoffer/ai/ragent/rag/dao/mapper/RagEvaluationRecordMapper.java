@@ -15,27 +15,10 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service;
+package com.nageoffer.ai.ragent.rag.dao.mapper;
 
-import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
-import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nageoffer.ai.ragent.rag.dao.entity.RagEvaluationRecordDO;
 
-import java.util.Date;
-
-/**
- * RAG Trace 记录服务
- */
-public interface RagTraceRecordService {
-
-    void startRun(RagTraceRunDO run);
-
-    void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs);
-
-    void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs, String extraData);
-
-    void startNode(RagTraceNodeDO node);
-
-    void finishNode(String traceId, String nodeId, String status, String errorMessage, Date endTime, long durationMs);
-
-    void updateRunExtraData(String traceId, String extraData);
+public interface RagEvaluationRecordMapper extends BaseMapper<RagEvaluationRecordDO> {
 }

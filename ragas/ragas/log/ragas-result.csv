@@ -1,0 +1,7 @@
+﻿question,context_count,answer,faithfulness,answer_relevancy,error
+该协议的minimum transfer amount是多少,10,"根据提供的协议内容，华泰金融控股（香港）有限公司（Party B）与中国银行（香港）有限公司（Party A）签署的GMRA协议中，关于 **Minimum Transfer Amount**（最低转移金额）的规定如下：
+
+- **对 Party A**（中国银行香港）：250,000 单位基准货币  
+- **对 Party B**（华泰金融控股）：250,000 单位基准货币  
+
+> 注：上述金额适用于正常履约情形。若某一方发生**违约事件**（Event of Default）或**潜在违约事件**（Potential Event of Default）且持续存在，则该方对应的 Minimum Transfer Amount **降至零**，即对方可要求任意金额的保证金转移，不受最低限额限制。",0.7692307692307693,0.7919928977136688,

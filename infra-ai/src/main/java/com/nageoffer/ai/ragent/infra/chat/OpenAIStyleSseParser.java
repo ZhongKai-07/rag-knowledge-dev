@@ -48,17 +48,25 @@ final class OpenAIStyleSseParser {
         }
 
         JsonObject obj = gson.fromJson(payload, JsonObject.class);
+
+        // 提取 usage（部分 API 在最后一帧或独立帧中返回）
+        TokenUsage usage = extractUsage(obj);
+
         JsonArray choices = obj.getAsJsonArray("choices");
         if (choices == null || choices.isEmpty()) {
+            // 可能是只包含 usage 的帧（无 choices）
+            if (usage != null) {
+                return new ParsedEvent(null, null, false, false, usage);
+            }
             return ParsedEvent.empty();
         }
 
         JsonObject choice0 = choices.get(0).getAsJsonObject();
         String content = extractText(choice0, "content");
         String reasoning = reasoningEnabled ? extractText(choice0, "reasoning_content") : null;
-        boolean completed = hasFinishReason(choice0);
+        boolean finished = hasFinishReason(choice0);
 
-        return new ParsedEvent(content, reasoning, completed);
+        return new ParsedEvent(content, reasoning, finished, false, usage);
     }
 
     private static boolean hasFinishReason(JsonObject choice) {
@@ -94,14 +102,36 @@ final class OpenAIStyleSseParser {
         return null;
     }
 
-    record ParsedEvent(String content, String reasoning, boolean completed) {
+    private static TokenUsage extractUsage(JsonObject obj) {
+        if (obj == null || !obj.has("usage") || obj.get("usage").isJsonNull()) {
+            return null;
+        }
+        JsonObject usage = obj.getAsJsonObject("usage");
+        if (usage == null) {
+            return null;
+        }
+        int prompt = usage.has("prompt_tokens") && !usage.get("prompt_tokens").isJsonNull()
+                ? usage.get("prompt_tokens").getAsInt() : 0;
+        int completion = usage.has("completion_tokens") && !usage.get("completion_tokens").isJsonNull()
+                ? usage.get("completion_tokens").getAsInt() : 0;
+        return TokenUsage.of(prompt, completion);
+    }
+
+    /**
+     * @param content      增量文本
+     * @param reasoning    思考内容
+     * @param finished     finish_reason 已出现（但流可能还有 usage 帧未读完）
+     * @param streamEnded  [DONE] 标记，流真正结束
+     * @param usage        token 用量
+     */
+    record ParsedEvent(String content, String reasoning, boolean finished, boolean streamEnded, TokenUsage usage) {
 
         static ParsedEvent empty() {
-            return new ParsedEvent(null, null, false);
+            return new ParsedEvent(null, null, false, false, null);
         }
 
         static ParsedEvent done() {
-            return new ParsedEvent(null, null, true);
+            return new ParsedEvent(null, null, false, true, null);
         }
 
         boolean hasContent() {
@@ -110,6 +140,17 @@ final class OpenAIStyleSseParser {
 
         boolean hasReasoning() {
             return reasoning != null && !reasoning.isEmpty();
+        }
+
+        boolean hasUsage() {
+            return usage != null;
+        }
+
+        /**
+         * 流是否完全结束（[DONE] 或 finish_reason）
+         */
+        boolean completed() {
+            return finished || streamEnded;
         }
     }
 }

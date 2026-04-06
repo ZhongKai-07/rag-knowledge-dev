@@ -33,6 +33,8 @@ import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceRunMapper;
 import com.nageoffer.ai.ragent.rag.service.RagTraceQueryService;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -53,6 +55,7 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
     private final RagTraceRunMapper runMapper;
     private final RagTraceNodeMapper nodeMapper;
     private final UserMapper userMapper;
+    private final Gson gson = new Gson();
 
     @Override
     public IPage<RagTraceRunVO> pageRuns(RagTraceRunPageRequest request) {
@@ -104,7 +107,7 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
 
     private RagTraceRunVO toRunVO(RagTraceRunDO run, Map<String, String> usernameMap) {
         String username = resolveUsername(run.getUserId(), usernameMap);
-        return RagTraceRunVO.builder()
+        RagTraceRunVO.RagTraceRunVOBuilder builder = RagTraceRunVO.builder()
                 .traceId(run.getTraceId())
                 .traceName(run.getTraceName())
                 .entryMethod(run.getEntryMethod())
@@ -116,8 +119,30 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
                 .errorMessage(run.getErrorMessage())
                 .durationMs(run.getDurationMs())
                 .startTime(run.getStartTime())
-                .endTime(run.getEndTime())
-                .build();
+                .endTime(run.getEndTime());
+
+        parseTokenUsage(run.getExtraData(), builder);
+        return builder.build();
+    }
+
+    private void parseTokenUsage(String extraData, RagTraceRunVO.RagTraceRunVOBuilder builder) {
+        if (StrUtil.isBlank(extraData)) {
+            return;
+        }
+        try {
+            JsonObject json = gson.fromJson(extraData, JsonObject.class);
+            if (json.has("promptTokens") && !json.get("promptTokens").isJsonNull()) {
+                builder.promptTokens(json.get("promptTokens").getAsInt());
+            }
+            if (json.has("completionTokens") && !json.get("completionTokens").isJsonNull()) {
+                builder.completionTokens(json.get("completionTokens").getAsInt());
+            }
+            if (json.has("totalTokens") && !json.get("totalTokens").isJsonNull()) {
+                builder.totalTokens(json.get("totalTokens").getAsInt());
+            }
+        } catch (Exception e) {
+            // extraData 解析失败不影响主流程
+        }
     }
 
     private Map<String, String> loadUsernameMap(List<RagTraceRunDO> runs) {

@@ -160,6 +160,13 @@ public class OllamaChatClient implements ChatClient {
                 JsonObject obj = gson.fromJson(line, JsonObject.class);
 
                 if (obj.has("done") && obj.get("done").getAsBoolean()) {
+                    int promptTokens = obj.has("prompt_eval_count") && !obj.get("prompt_eval_count").isJsonNull()
+                            ? obj.get("prompt_eval_count").getAsInt() : 0;
+                    int completionTokens = obj.has("eval_count") && !obj.get("eval_count").isJsonNull()
+                            ? obj.get("eval_count").getAsInt() : 0;
+                    if (promptTokens > 0 || completionTokens > 0) {
+                        callback.onTokenUsage(TokenUsage.of(promptTokens, completionTokens));
+                    }
                     callback.onComplete();
                     completed = true;
                     break;

@@ -12,6 +12,7 @@ import {
   AlertCircle,
   BarChart3,
   Clock,
+  Coins,
   Info,
   Lightbulb,
   MessageSquare,
@@ -507,13 +508,21 @@ const KPISection = ({ overview }: { overview: DashboardOverview | null }) => {
       icon: <BarChart3 className="h-5 w-5" />,
       iconBg: "#E0F2FE",
       iconColor: "#0284C7"
+    },
+    {
+      value: formatNumber(kpis?.totalTokens?.value),
+      label: "Token 消耗",
+      change: toChange(kpis?.totalTokens?.deltaPct),
+      icon: <Coins className="h-5 w-5" />,
+      iconBg: "#FEE2E2",
+      iconColor: "#DC2626"
     }
   ];
 
   return (
       <DashCard>
         <CardTitle>核心指标</CardTitle>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           {items.map((item) => (
               <KPICardItem key={item.label} {...item} />
           ))}
