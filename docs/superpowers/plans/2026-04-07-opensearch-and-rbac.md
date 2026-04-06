@@ -2021,7 +2021,11 @@ Expected: BUILD SUCCESS
 
 ```bash
 git add bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/controller/KnowledgeBaseController.java
+git add bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/controller/request/KnowledgeBasePageRequest.java
+git add bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/service/impl/KnowledgeBaseServiceImpl.java
 git add bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/controller/KnowledgeDocumentController.java
+git add bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/service/KnowledgeDocumentService.java
+git add bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImpl.java
 git commit -m "feat: add RBAC permission checks to knowledge base and document controllers"
 ```
 
