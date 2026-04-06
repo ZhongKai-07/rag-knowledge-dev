@@ -108,7 +108,7 @@ public class VectorGlobalSearchChannel implements SearchChannel {
             log.info("执行向量全局检索，问题：{}", context.getMainQuestion());
 
             // 获取所有 KB 类型的 collection
-            List<String> collections = getAllKBCollections();
+            List<String> collections = getAllKBCollections(context);
 
             if (collections.isEmpty()) {
                 log.warn("未找到任何 KB collection，跳过全局检索");
@@ -154,18 +154,23 @@ public class VectorGlobalSearchChannel implements SearchChannel {
     }
 
     /**
-     * 获取所有 KB 类型的 collection
+     * 获取所有 KB 类型的 collection（受 RBAC 约束）
      */
-    private List<String> getAllKBCollections() {
+    private List<String> getAllKBCollections(SearchContext context) {
         Set<String> collections = new HashSet<>();
 
         // 从知识库表获取全量 collection（全局检索兜底）
         List<KnowledgeBaseDO> kbList = knowledgeBaseMapper.selectList(
                 Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                        .select(KnowledgeBaseDO::getCollectionName)
+                        .select(KnowledgeBaseDO::getId, KnowledgeBaseDO::getCollectionName)
                         .eq(KnowledgeBaseDO::getDeleted, 0)
         );
         for (KnowledgeBaseDO kb : kbList) {
+            // RBAC filter: if accessibleKbIds is set, only include accessible KBs
+            if (context.getAccessibleKbIds() != null
+                    && !context.getAccessibleKbIds().contains(kb.getId())) {
+                continue;
+            }
             String collectionName = kb.getCollectionName();
             if (collectionName != null && !collectionName.isBlank()) {
                 collections.add(collectionName);
