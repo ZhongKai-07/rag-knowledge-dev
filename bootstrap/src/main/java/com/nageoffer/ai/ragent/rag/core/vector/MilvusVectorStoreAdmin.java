@@ -18,7 +18,6 @@
 package com.nageoffer.ai.ragent.rag.core.vector;
 
 import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
-import com.nageoffer.ai.ragent.framework.exception.kb.VectorCollectionAlreadyExistsException;
 import io.milvus.v2.client.MilvusClientV2;
 import io.milvus.v2.common.ConsistencyLevel;
 import io.milvus.v2.common.DataType;
@@ -50,7 +49,8 @@ public class MilvusVectorStoreAdmin implements VectorStoreAdmin {
                 HasCollectionReq.builder().collectionName(logicalName).build()
         ));
         if (exists) {
-            throw new VectorCollectionAlreadyExistsException(logicalName);
+            log.debug("Milvus collection already exists: {}", logicalName);
+            return;
         }
 
         List<CreateCollectionReq.FieldSchema> fieldSchemaList = new ArrayList<>();
