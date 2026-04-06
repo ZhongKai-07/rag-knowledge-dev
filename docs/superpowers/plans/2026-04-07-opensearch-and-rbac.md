@@ -681,7 +681,7 @@ import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
 import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
 import com.nageoffer.ai.ragent.rag.core.vector.OpenSearchVectorStoreAdmin;
-import com.nageoffer.ai.ragent.rag.service.EmbeddingService;
+import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -1528,6 +1528,7 @@ package com.nageoffer.ai.ragent.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import lombok.Data;
@@ -1546,27 +1547,27 @@ public class RoleController {
     @PostMapping("/role")
     public Result<String> createRole(@RequestBody RoleCreateRequest request) {
         String id = roleService.createRole(request.getName(), request.getDescription());
-        return Result.success(id);
+        return Results.success(id);
     }
 
     @SaCheckRole("admin")
     @PutMapping("/role/{roleId}")
     public Result<Void> updateRole(@PathVariable String roleId, @RequestBody RoleCreateRequest request) {
         roleService.updateRole(roleId, request.getName(), request.getDescription());
-        return Result.success(null);
+        return Results.success();
     }
 
     @SaCheckRole("admin")
     @DeleteMapping("/role/{roleId}")
     public Result<Void> deleteRole(@PathVariable String roleId) {
         roleService.deleteRole(roleId);
-        return Result.success(null);
+        return Results.success();
     }
 
     @SaCheckRole("admin")
     @GetMapping("/role")
     public Result<List<RoleDO>> listRoles() {
-        return Result.success(roleService.listRoles());
+        return Results.success(roleService.listRoles());
     }
 
     @SaCheckRole("admin")
@@ -1574,26 +1575,26 @@ public class RoleController {
     public Result<Void> setRoleKnowledgeBases(@PathVariable String roleId,
                                                @RequestBody List<String> kbIds) {
         roleService.setRoleKnowledgeBases(roleId, kbIds);
-        return Result.success(null);
+        return Results.success();
     }
 
     @SaCheckRole("admin")
     @GetMapping("/role/{roleId}/knowledge-bases")
     public Result<List<String>> getRoleKnowledgeBases(@PathVariable String roleId) {
-        return Result.success(roleService.getRoleKnowledgeBaseIds(roleId));
+        return Results.success(roleService.getRoleKnowledgeBaseIds(roleId));
     }
 
     @SaCheckRole("admin")
     @PutMapping("/user/{userId}/roles")
     public Result<Void> setUserRoles(@PathVariable String userId, @RequestBody List<String> roleIds) {
         roleService.setUserRoles(userId, roleIds);
-        return Result.success(null);
+        return Results.success();
     }
 
     @SaCheckRole("admin")
     @GetMapping("/user/{userId}/roles")
     public Result<List<RoleDO>> getUserRoles(@PathVariable String userId) {
-        return Result.success(roleService.getUserRoles(userId));
+        return Results.success(roleService.getUserRoles(userId));
     }
 
     @Data
@@ -1713,50 +1714,20 @@ git commit -m "feat: add RBAC filtering to SearchContext and retrieval channels"
 
 ---
 
-### Task 12: Chat 链路集成（Controller → Service → 检索）
+### Task 12: Chat 链路集成（Controller → Service → 检索引擎 → SearchContext）
+
+自上而下修改链路：Controller → RAGChatService → RAGChatServiceImpl → MultiChannelRetrievalEngine.buildSearchContext
 
 **Files:**
+- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/controller/RAGChatController.java`
 - Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/RAGChatService.java`
 - Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/impl/RAGChatServiceImpl.java`
-- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/controller/RAGChatController.java`
+- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/RetrievalEngine.java`
+- Modify: `bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/MultiChannelRetrievalEngine.java`
 
-- [ ] **Step 1: RAGChatService 接口签名新增 knowledgeBaseId**
+- [ ] **Step 1: RAGChatController 新增 knowledgeBaseId 参数**
 
-修改 `RAGChatService.java` 的 `streamChat` 方法签名：
-
-```java
-void streamChat(String question, String conversationId, String knowledgeBaseId,
-                Boolean deepThinking, SseEmitter emitter);
-```
-
-- [ ] **Step 2: RAGChatServiceImpl 实现新增 knowledgeBaseId 处理**
-
-修改 `RAGChatServiceImpl.java` 的 `streamChat` 签名匹配接口，并在意图解析和检索之前注入权限信息。
-
-在方法签名中新增 `String knowledgeBaseId` 参数。
-
-在 `RewriteResult rewriteResult = ...` 之前注入权限信息：
-
-```java
-// Resolve accessible KB IDs for RBAC
-Set<String> accessibleKbIds = null;
-if (UserContext.hasUser() && UserContext.getUserId() != null
-        && !"admin".equals(UserContext.getRole())) {
-    accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
-}
-```
-
-新增字段注入 `private final KbAccessService kbAccessService;`
-
-在构建 SearchContext 或调用 retrievalEngine 前，将 `accessibleKbIds` 传入。具体位置取决于 retrievalEngine 如何构建 SearchContext——需要在 `retrievalEngine.retrieve()` 调用链中确保 SearchContext 携带 `accessibleKbIds`。
-
-如果传了 `knowledgeBaseId`：
-- 执行 `kbAccessService.checkAccess(knowledgeBaseId)`
-- 跳过意图分类，直接用该知识库检索
-
-- [ ] **Step 3: RAGChatController 新增 knowledgeBaseId 参数**
-
-修改 `RAGChatController.java` 的 chat 方法：
+在 `RAGChatController.java` 的 chat 方法中新增 `@RequestParam(required = false) String knowledgeBaseId`：
 
 ```java
 @GetMapping(value = "/rag/v3/chat", produces = "text/event-stream;charset=UTF-8")
@@ -1764,24 +1735,133 @@ public SseEmitter chat(@RequestParam String question,
                        @RequestParam(required = false) String conversationId,
                        @RequestParam(required = false) String knowledgeBaseId,
                        @RequestParam(required = false, defaultValue = "false") Boolean deepThinking) {
-    // ... existing SseEmitter setup ...
+    // ... existing SseEmitter setup code stays unchanged ...
     ragChatService.streamChat(question, conversationId, knowledgeBaseId, deepThinking, emitter);
     return emitter;
 }
 ```
 
-- [ ] **Step 4: 验证编译通过**
+- [ ] **Step 2: RAGChatService 接口签名新增 knowledgeBaseId**
+
+修改 `RAGChatService.java`（约 line 36）的 `streamChat` 签名，在 `conversationId` 后新增 `String knowledgeBaseId`：
+
+```java
+void streamChat(String question, String conversationId, String knowledgeBaseId,
+                Boolean deepThinking, SseEmitter emitter);
+```
+
+- [ ] **Step 3: RAGChatServiceImpl 注入 KbAccessService 并处理 knowledgeBaseId**
+
+3a. 新增字段（和其他 final 字段同级）：
+
+```java
+private final KbAccessService kbAccessService;
+```
+
+import：`import com.nageoffer.ai.ragent.user.service.KbAccessService;` 和 `import java.util.Set;`
+
+3b. 修改 `streamChat` 签名匹配接口。
+
+3c. 在 `String userId = UserContext.getUserId();`（约 line 103）之后、`List<ChatMessage> history = ...` 之前，添加权限解析：
+
+```java
+// RBAC: resolve accessible KB IDs
+Set<String> accessibleKbIds = null;
+if (UserContext.hasUser() && userId != null && !"admin".equals(UserContext.getRole())) {
+    accessibleKbIds = kbAccessService.getAccessibleKbIds(userId);
+}
+
+// If knowledgeBaseId specified, verify access
+if (knowledgeBaseId != null) {
+    kbAccessService.checkAccess(knowledgeBaseId);
+}
+```
+
+3d. 在调用 `retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K)`（约 line 138）时，改为传入 accessibleKbIds 和可选 knowledgeBaseId：
+
+```java
+RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K, accessibleKbIds, knowledgeBaseId);
+```
+
+- [ ] **Step 4: RetrievalEngine.retrieve() 签名扩展**
+
+修改 `RetrievalEngine.java`（约 line 81）的 `retrieve` 方法签名，新增两个参数：
+
+```java
+@RagTraceNode(name = "retrieval-engine", type = "RETRIEVE")
+public RetrievalContext retrieve(List<SubQuestionIntent> subIntents, int topK,
+                                  Set<String> accessibleKbIds, String knowledgeBaseId)
+```
+
+import `java.util.Set;`
+
+在方法内部调用 `multiChannelRetrievalEngine.retrieveKnowledgeChannels()` 时传递这两个参数。
+
+- [ ] **Step 5: MultiChannelRetrievalEngine 链路贯通**
+
+5a. 修改 `retrieveKnowledgeChannels`（约 line 65）签名新增参数：
+
+```java
+public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents, int topK,
+                                                       Set<String> accessibleKbIds, String knowledgeBaseId)
+```
+
+5b. 修改 `buildSearchContext`（约 line 217，private 方法）注入 accessibleKbIds：
+
+```java
+private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int topK,
+                                         Set<String> accessibleKbIds) {
+    String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
+
+    return SearchContext.builder()
+            .originalQuestion(question)
+            .rewrittenQuestion(question)
+            .intents(subIntents)
+            .topK(topK)
+            .accessibleKbIds(accessibleKbIds)
+            .build();
+}
+```
+
+5c. 在 `retrieveKnowledgeChannels` 中更新 `buildSearchContext` 调用：
+
+```java
+SearchContext context = buildSearchContext(subIntents, topK, accessibleKbIds);
+```
+
+5d. 如果 `knowledgeBaseId` 非空，跳过多通道检索，直接对指定知识库执行单 collection 检索：
+
+```java
+if (knowledgeBaseId != null) {
+    // 查出 collectionName
+    KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(knowledgeBaseId);
+    if (kb == null || kb.getCollectionName() == null) {
+        return List.of();
+    }
+    RetrieveRequest req = RetrieveRequest.builder()
+            .query(context.getMainQuestion())
+            .topK(topK)
+            .collectionName(kb.getCollectionName())
+            .build();
+    return retrieverService.retrieve(req);
+}
+// else: 走原有多通道逻辑
+```
+
+- [ ] **Step 6: 验证编译通过**
 
 Run: `mvn clean compile -DskipTests -pl bootstrap`
 Expected: BUILD SUCCESS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
+git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/controller/RAGChatController.java
 git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/RAGChatService.java
 git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/impl/RAGChatServiceImpl.java
-git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/controller/RAGChatController.java
-git commit -m "feat: integrate knowledgeBaseId and RBAC into chat pipeline"
+git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/RetrievalEngine.java
+git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/MultiChannelRetrievalEngine.java
+git commit -m "feat: integrate knowledgeBaseId and RBAC into full chat retrieval pipeline"
 ```
 
 ---
@@ -1794,7 +1874,15 @@ git commit -m "feat: integrate knowledgeBaseId and RBAC into chat pipeline"
 
 - [ ] **Step 1: KnowledgeBaseController.pageQuery() 加权限过滤**
 
-在 `KnowledgeBaseController.java` 中注入 `KbAccessService`，修改 `pageQuery` 方法：
+在 `KnowledgeBaseController.java` 中注入 `KbAccessService`：
+
+```java
+private final KbAccessService kbAccessService;
+```
+
+import：`import com.nageoffer.ai.ragent.user.service.KbAccessService;` 和 `import java.util.Set;`
+
+修改 `pageQuery` 方法（约 line 90）：
 
 ```java
 @GetMapping("/knowledge-base")
@@ -1804,42 +1892,50 @@ public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest request
         Set<String> accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
         requestParam.setAccessibleKbIds(accessibleKbIds);
     }
-    return Result.success(knowledgeBaseService.pageQuery(requestParam));
+    return Results.success(knowledgeBaseService.pageQuery(requestParam));
 }
 ```
 
-注意：`KnowledgeBasePageRequest` 需要新增 `accessibleKbIds` 字段，Service 层查询时用 `IN` 条件过滤。
+注意：`KnowledgeBasePageRequest` 需要新增 `accessibleKbIds`（`Set<String>`）字段，`KnowledgeBaseServiceImpl.pageQuery` 中用 `.in(KnowledgeBaseDO::getId, accessibleKbIds)` 条件过滤（accessibleKbIds 非空时）。
 
 - [ ] **Step 2: KnowledgeBaseController 详情接口加权限校验**
 
-在 `queryKnowledgeBase` 方法中添加：
+修改 `queryKnowledgeBase` 方法（约 line 82）：
 
 ```java
 @GetMapping("/knowledge-base/{kb-id}")
 public Result<KnowledgeBaseVO> queryKnowledgeBase(@PathVariable("kb-id") String kbId) {
     kbAccessService.checkAccess(kbId);
-    return Result.success(knowledgeBaseService.query(kbId));
+    return Results.success(knowledgeBaseService.queryById(kbId));
 }
 ```
 
 - [ ] **Step 3: KnowledgeDocumentController 加权限校验**
 
-在需要权限校验的接口中注入 `KbAccessService`，在涉及 kbId 的方法开头加 `kbAccessService.checkAccess(kbId)`。
+在 `KnowledgeDocumentController.java` 中注入 `KbAccessService`，并添加 import。
 
-对于 `GET /knowledge-base/docs/{docId}` 等不直接传 kbId 的接口，需要先查出文档所属的 kbId 再校验：
+对直接传 `kbId` 的接口（如 `GET /knowledge-base/{kb-id}/docs`），在方法开头加：
+
+```java
+kbAccessService.checkAccess(kbId);
+```
+
+对不直接传 kbId 的接口（如 `GET /knowledge-base/docs/{docId}`），利用现有 `documentService.get(docId)` 查出文档的 kbId 再校验：
 
 ```java
 @GetMapping("/knowledge-base/docs/{docId}")
 public Result<KnowledgeDocumentVO> get(@PathVariable String docId) {
-    KnowledgeDocumentDO doc = documentService.getById(docId);
+    KnowledgeDocumentVO doc = documentService.get(docId);
     if (doc != null) {
         kbAccessService.checkAccess(doc.getKbId());
     }
-    return Result.success(documentService.getDetail(docId));
+    return Results.success(doc);
 }
 ```
 
-对于 `GET /knowledge-base/docs/search` 全局搜索，在 Service 层过滤只返回用户有权知识库下的文档。
+注意：`KnowledgeDocumentVO` 需确认包含 `kbId` 字段。如果没有，在 `get()` 返回前需要从 `KnowledgeDocumentDO` 获取。
+
+对于 `GET /knowledge-base/docs/search` 全局搜索，修改 `KnowledgeDocumentServiceImpl.search()` 方法，接受可选的 `accessibleKbIds` 参数，非 admin 时用 `IN` 条件过滤只返回有权知识库下的文档。
 
 - [ ] **Step 4: 验证编译通过**
 
@@ -1862,20 +1958,26 @@ git commit -m "feat: add RBAC permission checks to knowledge base and document c
 
 **Files:**
 - Modify: `frontend/src/stores/chatStore.ts`
+- Modify: `frontend/src/services/knowledgeService.ts`（复用现有，不新建 API 文件）
 - 新增/修改: 聊天页面组件（知识库选择器）
-- 新增: 前端 API 调用（知识库列表）
 
 - [ ] **Step 1: chatStore.ts 新增 knowledgeBaseId 状态和参数**
 
 在 `chatStore.ts` 中：
 
-1. Store state 新增字段：
+1. Store state 新增字段（和 `currentSessionId` 等同级）：
 
 ```typescript
 selectedKnowledgeBaseId: string | null;  // null = "自动"模式
 ```
 
-2. 修改 `buildQuery` 调用（约 line 259-264），新增 `knowledgeBaseId`：
+2. Store initial state 新增默认值：
+
+```typescript
+selectedKnowledgeBaseId: null,
+```
+
+3. 修改 `buildQuery` 调用（约 line 259-264），新增 `knowledgeBaseId`：
 
 ```typescript
 const query = buildQuery({
@@ -1886,30 +1988,35 @@ const query = buildQuery({
 });
 ```
 
-3. 新增 action：
+4. 新增 action（和 `setCurrentSessionId` 等同级）：
 
 ```typescript
 setSelectedKnowledgeBase: (kbId: string | null) => set({ selectedKnowledgeBaseId: kbId }),
 ```
 
-- [ ] **Step 2: 新增知识库列表 API 调用**
+- [ ] **Step 2: 复用 knowledgeService.ts 获取知识库列表**
 
-在前端 API 层新增获取当前用户可访问的知识库列表接口：
+`frontend/src/services/knowledgeService.ts` 已有 `getKnowledgeBases(current, size, name)` 方法，返回分页结果。直接复用此方法获取当前用户可访问的知识库列表，无需新建 API 文件。
+
+如果需要一个不分页的快捷方法，在 `knowledgeService.ts` 末尾追加：
 
 ```typescript
-// api/knowledgeBase.ts
-export async function fetchAccessibleKnowledgeBases(): Promise<KnowledgeBase[]> {
-  const response = await request.get('/knowledge-base');
-  return response.data.records;
+/** 获取当前用户可访问的所有知识库（不分页，用于选择器） */
+export async function getAllAccessibleKnowledgeBases(): Promise<KnowledgeBase[]> {
+  const result = await getKnowledgeBases(1, 999);
+  return result.records;
 }
 ```
+
+其中 `KnowledgeBase` 类型复用 `knowledgeService.ts` 已有的接口定义。
 
 - [ ] **Step 3: 聊天页面新增知识库选择器**
 
 在聊天输入框上方或旁边添加一个下拉选择器组件：
-- 选项：`自动`（默认）+ 用户有权的知识库列表
+- 选项：`自动`（默认，value=null）+ 用户有权的知识库列表
 - 选中值绑定到 `chatStore.selectedKnowledgeBaseId`
-- 页面加载时调用 `fetchAccessibleKnowledgeBases()` 获取列表
+- 页面加载时调用 `getAllAccessibleKnowledgeBases()` 获取列表
+- import 来自 `@/services/knowledgeService`
 
 - [ ] **Step 4: 验证前端编译通过**
 
