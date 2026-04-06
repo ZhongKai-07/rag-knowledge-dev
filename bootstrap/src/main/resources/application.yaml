@@ -43,7 +43,7 @@ milvus:
 
 rag:
   vector:
-    type: pg  # 可选 milvus / pg
+    type: pg  # 可选 milvus / pg / opensearch
 
   default:
     collection-name: rag_default_store
@@ -195,3 +195,15 @@ sa-token:
 
 app:
   demo-mode: false
+
+opensearch:
+  uris: http://localhost:9200
+  # username: admin
+  # password: admin
+  # auth-type: basic
+  analyzer:
+    default-analyzer: ik_max_word
+    search-analyzer: ik_smart
+  hybrid:
+    vector-weight: 0.5
+    text-weight: 0.5
