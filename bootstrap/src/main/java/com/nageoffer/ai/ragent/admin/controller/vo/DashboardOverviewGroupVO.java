@@ -35,4 +35,6 @@ public class DashboardOverviewGroupVO {
     private DashboardOverviewKpiVO totalMessages;
 
     private DashboardOverviewKpiVO messages24h;
+
+    private DashboardOverviewKpiVO totalTokens;
 }

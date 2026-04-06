@@ -17,6 +17,7 @@ export type DashboardOverview = {
     sessions24h: DashboardKpi;
     totalMessages: DashboardKpi;
     messages24h: DashboardKpi;
+    totalTokens: DashboardKpi;
   };
 };
 
