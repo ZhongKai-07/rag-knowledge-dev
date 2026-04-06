@@ -335,6 +335,35 @@ CREATE TABLE t_rag_trace_node (
 COMMENT ON TABLE t_rag_trace_node IS 'Trace 节点记录表';
 
 -- ============================================
+-- RAG Evaluation Tables
+-- ============================================
+
+CREATE TABLE t_rag_evaluation_record (
+    id               VARCHAR(20)  NOT NULL PRIMARY KEY,
+    trace_id         VARCHAR(64),
+    conversation_id  VARCHAR(20),
+    message_id       VARCHAR(20),
+    user_id          VARCHAR(20),
+    original_query   TEXT,
+    rewritten_query  TEXT,
+    sub_questions    TEXT,
+    retrieved_chunks TEXT,
+    retrieval_top_k  INTEGER,
+    answer           TEXT,
+    model_name       VARCHAR(64),
+    intent_results   TEXT,
+    eval_status      VARCHAR(16)  DEFAULT 'PENDING',
+    eval_metrics     TEXT,
+    create_time      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    update_time      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    deleted          SMALLINT     DEFAULT 0
+);
+CREATE INDEX idx_eval_trace ON t_rag_evaluation_record(trace_id);
+CREATE INDEX idx_eval_conv ON t_rag_evaluation_record(conversation_id);
+CREATE INDEX idx_eval_status ON t_rag_evaluation_record(eval_status);
+COMMENT ON TABLE t_rag_evaluation_record IS 'RAG 评测记录表（Query-Chunk-Answer 留存）';
+
+-- ============================================
 -- Ingestion Pipeline Tables
 -- ============================================
 

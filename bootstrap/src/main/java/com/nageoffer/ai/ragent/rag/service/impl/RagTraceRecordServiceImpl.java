@@ -45,11 +45,26 @@ public class RagTraceRecordServiceImpl implements RagTraceRecordService {
 
     @Override
     public void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs) {
+        finishRun(traceId, status, errorMessage, endTime, durationMs, null);
+    }
+
+    @Override
+    public void finishRun(String traceId, String status, String errorMessage, Date endTime, long durationMs, String extraData) {
         RagTraceRunDO update = RagTraceRunDO.builder()
                 .status(status)
                 .errorMessage(errorMessage)
                 .endTime(endTime)
                 .durationMs(durationMs)
+                .extraData(extraData)
+                .build();
+        runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
+                .eq(RagTraceRunDO::getTraceId, traceId));
+    }
+
+    @Override
+    public void updateRunExtraData(String traceId, String extraData) {
+        RagTraceRunDO update = RagTraceRunDO.builder()
+                .extraData(extraData)
                 .build();
         runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
                 .eq(RagTraceRunDO::getTraceId, traceId));

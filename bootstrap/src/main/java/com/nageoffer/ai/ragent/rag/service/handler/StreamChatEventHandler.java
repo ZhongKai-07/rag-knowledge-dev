@@ -27,13 +27,20 @@ import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.web.SseEmitterSender;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
+import com.nageoffer.ai.ragent.infra.chat.TokenUsage;
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
+import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
+import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
+import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Optional;
 
+@Slf4j
 public class StreamChatEventHandler implements StreamCallback {
 
     private static final String TYPE_THINK = "think";
@@ -47,8 +54,12 @@ public class StreamChatEventHandler implements StreamCallback {
     private final String taskId;
     private final String userId;
     private final StreamTaskManager taskManager;
+    private final RagEvaluationService evaluationService;
+    private final RagTraceRecordService traceRecordService;
+    private final String traceId;
     private final boolean sendTitleOnComplete;
     private final StringBuilder answer = new StringBuilder();
+    private volatile TokenUsage tokenUsage;
 
     /**
      * 使用参数对象构造（推荐）
@@ -62,6 +73,9 @@ public class StreamChatEventHandler implements StreamCallback {
         this.memoryService = params.getMemoryService();
         this.conversationGroupService = params.getConversationGroupService();
         this.taskManager = params.getTaskManager();
+        this.evaluationService = params.getEvaluationService();
+        this.traceRecordService = params.getTraceRecordService();
+        this.traceId = RagTraceContext.getTraceId();
         this.userId = UserContext.getUserId();
 
         // 计算配置
@@ -114,6 +128,13 @@ public class StreamChatEventHandler implements StreamCallback {
     }
 
     @Override
+    public void onTokenUsage(TokenUsage usage) {
+        if (usage != null) {
+            this.tokenUsage = usage;
+        }
+    }
+
+    @Override
     public void onContent(String chunk) {
         if (taskManager.isCancelled(taskId)) {
             return;
@@ -143,12 +164,52 @@ public class StreamChatEventHandler implements StreamCallback {
         }
         String messageId = memoryService.append(conversationId, UserContext.getUserId(),
                 ChatMessage.assistant(answer.toString()));
+
+        // 更新 Trace token 用量
+        updateTraceTokenUsage();
+
+        // 保存评测记录（异步）
+        saveEvaluationRecord(messageId);
+
         String title = resolveTitleForEvent();
         String messageIdText = StrUtil.isBlank(messageId)? null : messageId;
         sender.sendEvent(SSEEventType.FINISH.value(), new CompletionPayload(messageIdText, title));
         sender.sendEvent(SSEEventType.DONE.value(), "[DONE]");
         taskManager.unregister(taskId);
         sender.complete();
+    }
+
+    private void updateTraceTokenUsage() {
+        if (traceRecordService == null || StrUtil.isBlank(traceId) || tokenUsage == null) {
+            return;
+        }
+        try {
+            String extraData = StrUtil.format(
+                    "{\"promptTokens\":{},\"completionTokens\":{},\"totalTokens\":{}}",
+                    tokenUsage.promptTokens(), tokenUsage.completionTokens(), tokenUsage.totalTokens()
+            );
+            traceRecordService.updateRunExtraData(traceId, extraData);
+        } catch (Exception e) {
+            log.warn("更新 Trace token 用量失败", e);
+        }
+    }
+
+    private void saveEvaluationRecord(String messageId) {
+        if (evaluationService == null) {
+            return;
+        }
+        try {
+            EvaluationCollector collector = RagTraceContext.getEvalCollector();
+            if (collector != null) {
+                collector.setAnswer(answer.toString());
+                evaluationService.saveRecord(
+                        collector, conversationId, messageId,
+                        traceId, userId
+                );
+            }
+        } catch (Exception e) {
+            // 评测记录保存失败不影响主流程
+        }
     }
 
     @Override

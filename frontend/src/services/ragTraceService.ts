@@ -14,6 +14,9 @@ export interface RagTraceRun {
   durationMs?: number | null;
   startTime?: string | null;
   endTime?: string | null;
+  promptTokens?: number | null;
+  completionTokens?: number | null;
+  totalTokens?: number | null;
 }
 
 export interface RagTraceNode {

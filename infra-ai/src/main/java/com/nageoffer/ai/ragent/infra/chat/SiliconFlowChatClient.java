@@ -143,7 +143,11 @@ public class SiliconFlowChatClient implements ChatClient {
                     if (event.hasContent()) {
                         callback.onContent(event.content());
                     }
-                    if (event.completed()) {
+                    if (event.hasUsage()) {
+                        callback.onTokenUsage(event.usage());
+                    }
+                    if (event.streamEnded()) {
+                        // [DONE] 标记：流真正结束
                         callback.onComplete();
                         completed = true;
                         break;
@@ -165,6 +169,9 @@ public class SiliconFlowChatClient implements ChatClient {
         reqBody.addProperty("model", requireModel(target));
         if (stream) {
             reqBody.addProperty("stream", true);
+            JsonObject streamOptions = new JsonObject();
+            streamOptions.addProperty("include_usage", true);
+            reqBody.add("stream_options", streamOptions);
         }
 
         JsonArray messages = buildMessages(request);

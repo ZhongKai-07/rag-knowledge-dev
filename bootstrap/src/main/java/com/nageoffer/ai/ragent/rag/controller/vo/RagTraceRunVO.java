@@ -52,4 +52,10 @@ public class RagTraceRunVO {
     private Date startTime;
 
     private Date endTime;
+
+    private Integer promptTokens;
+
+    private Integer completionTokens;
+
+    private Integer totalTokens;
 }
