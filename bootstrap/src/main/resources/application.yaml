@@ -43,7 +43,7 @@ milvus:
 
 rag:
   vector:
-    type: pg  # 可选 milvus / pg / opensearch
+    type: opensearch  # 可选 milvus / pg / opensearch
 
   default:
     collection-name: rag_default_store
@@ -197,7 +197,7 @@ app:
   demo-mode: false
 
 opensearch:
-  uris: http://localhost:9200
+  uris: http://localhost:9201
   # username: admin
   # password: admin
   # auth-type: basic

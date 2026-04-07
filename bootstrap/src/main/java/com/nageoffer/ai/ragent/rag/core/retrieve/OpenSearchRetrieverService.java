@@ -189,7 +189,8 @@ public class OpenSearchRetrieverService implements RetrieverService {
 
         return metadataFilters.entrySet().stream()
                 .map(entry -> """
-                        { "term": { "metadata.%s": "%s" } }""".formatted(entry.getKey(), entry.getValue()))
+                        { "term": { "metadata.%s": "%s" } }""".formatted(
+                        escapeJson(entry.getKey()), escapeJson(String.valueOf(entry.getValue()))))
                 .collect(Collectors.joining(", "));
     }
 

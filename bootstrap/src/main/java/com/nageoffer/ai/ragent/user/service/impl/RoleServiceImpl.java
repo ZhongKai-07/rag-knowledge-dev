@@ -60,10 +60,14 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Transactional
     public void deleteRole(String roleId) {
-        roleMapper.deleteById(roleId);
-        // Evict cache for all users with this role
         evictCacheForRole(roleId);
+        roleKbRelationMapper.delete(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
+        userRoleMapper.delete(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getRoleId, roleId));
+        roleMapper.deleteById(roleId);
     }
 
     @Override

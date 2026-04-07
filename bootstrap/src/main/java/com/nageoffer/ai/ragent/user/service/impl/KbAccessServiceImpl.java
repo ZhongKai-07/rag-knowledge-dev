@@ -19,6 +19,7 @@ package com.nageoffer.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
@@ -63,8 +64,7 @@ public class KbAccessServiceImpl implements KbAccessService {
         // Query: user -> roles
         List<UserRoleDO> userRoles = userRoleMapper.selectList(
                 Wrappers.lambdaQuery(UserRoleDO.class)
-                        .eq(UserRoleDO::getUserId, userId)
-                        .eq(UserRoleDO::getDeleted, 0));
+                        .eq(UserRoleDO::getUserId, userId));
 
         if (userRoles.isEmpty()) {
             bucket.set(Set.of(), CACHE_TTL);
@@ -78,8 +78,7 @@ public class KbAccessServiceImpl implements KbAccessService {
         // Query: roles -> kb_ids
         List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class)
-                        .in(RoleKbRelationDO::getRoleId, roleIds)
-                        .eq(RoleKbRelationDO::getDeleted, 0));
+                        .in(RoleKbRelationDO::getRoleId, roleIds));
 
         Set<String> kbIds = relations.stream()
                 .map(RoleKbRelationDO::getKbId)
@@ -90,7 +89,6 @@ public class KbAccessServiceImpl implements KbAccessService {
             List<KnowledgeBaseDO> validKbs = knowledgeBaseMapper.selectList(
                     Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                             .in(KnowledgeBaseDO::getId, kbIds)
-                            .eq(KnowledgeBaseDO::getDeleted, 0)
                             .select(KnowledgeBaseDO::getId));
 
             kbIds = validKbs.stream()
@@ -115,7 +113,7 @@ public class KbAccessServiceImpl implements KbAccessService {
         // User authorization check
         Set<String> accessible = getAccessibleKbIds(UserContext.getUserId());
         if (!accessible.contains(kbId)) {
-            throw new RuntimeException("无权访问该知识库: " + kbId);
+            throw new ClientException("无权访问该知识库: " + kbId);
         }
     }
 

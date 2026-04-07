@@ -19,14 +19,13 @@ package com.nageoffer.ai.ragent.rag.core.vector;
 
 import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
 import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-
-import java.io.StringReader;
 
 @Slf4j
 @Component
@@ -41,6 +40,24 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
     private final OpenSearchProperties openSearchProperties;
 
     private volatile boolean pipelineReady = false;
+
+    @PostConstruct
+    public void init() {
+        try {
+            try (var response = client.generic().execute(
+                    Requests.builder()
+                            .method("GET")
+                            .endpoint("_search/pipeline/" + PIPELINE_NAME)
+                            .build())) {
+                if (response.getStatus() == 200) {
+                    pipelineReady = true;
+                    log.info("Hybrid search pipeline detected on startup: {}", PIPELINE_NAME);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Could not check pipeline on startup, hybrid search disabled until first ingestion");
+        }
+    }
 
     @Override
     public void ensureVectorSpace(VectorSpaceSpec spec) {

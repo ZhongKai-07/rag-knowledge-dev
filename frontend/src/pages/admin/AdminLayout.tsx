@@ -20,6 +20,7 @@ import {
   Settings,
   Upload,
   Users,
+  ShieldCheck,
   FolderKanban,
   Workflow
 } from "lucide-react";
@@ -144,6 +145,11 @@ const menuGroups: MenuGroup[] = [
         icon: Users
       },
       {
+        path: "/admin/roles",
+        label: "角色管理",
+        icon: ShieldCheck
+      },
+      {
         path: "/admin/sample-questions",
         label: "示例问题",
         icon: Lightbulb
@@ -168,7 +174,8 @@ const breadcrumbMap: Record<string, string> = {
   "sample-questions": "示例问题",
   mappings: "关键词映射",
   settings: "系统设置",
-  users: "用户管理"
+  users: "用户管理",
+  roles: "角色管理"
 };
 
 export function AdminLayout() {

@@ -57,7 +57,7 @@ public class ChatRateLimitAspect {
     @Around("@annotation(com.nageoffer.ai.ragent.rag.aop.ChatRateLimit)")
     public Object limitStreamChat(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] args = joinPoint.getArgs();
-        if (args == null || args.length < 4 || !(args[3] instanceof SseEmitter emitter)) {
+        if (args == null || args.length < 5 || !(args[4] instanceof SseEmitter emitter)) {
             return joinPoint.proceed();
         }
 

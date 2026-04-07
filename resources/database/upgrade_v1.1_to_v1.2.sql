@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS t_role_kb_relation (
 
 CREATE INDEX IF NOT EXISTS idx_role_kb_role_id ON t_role_kb_relation (role_id);
 CREATE INDEX IF NOT EXISTS idx_role_kb_kb_id ON t_role_kb_relation (kb_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_role_kb ON t_role_kb_relation (role_id, kb_id) WHERE deleted = 0;
 
 CREATE TABLE IF NOT EXISTS t_user_role (
     id          VARCHAR(20) NOT NULL PRIMARY KEY,
@@ -38,3 +39,4 @@ CREATE TABLE IF NOT EXISTS t_user_role (
 
 CREATE INDEX IF NOT EXISTS idx_user_role_user_id ON t_user_role (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_role_role_id ON t_user_role (role_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_user_role ON t_user_role (user_id, role_id) WHERE deleted = 0;

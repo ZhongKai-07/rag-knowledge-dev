@@ -25,15 +25,17 @@ import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Slf4j
 @Configuration
 @ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch")
+@EnableConfigurationProperties(OpenSearchProperties.class)
 public class OpenSearchConfig {
 
-    @Bean(destroyMethod = "close")
+    @Bean
     public OpenSearchClient openSearchClient(OpenSearchProperties properties) throws java.net.URISyntaxException {
         HttpHost host = HttpHost.create(properties.getUris());
 
@@ -42,11 +44,12 @@ public class OpenSearchConfig {
         if (properties.getUsername() != null && !properties.getUsername().isEmpty()) {
             builder.setHttpClientConfigCallback(httpClientBuilder -> {
                 BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+                String password = properties.getPassword() != null ? properties.getPassword() : "";
                 credentialsProvider.setCredentials(
                         new AuthScope(host),
                         new UsernamePasswordCredentials(
                                 properties.getUsername(),
-                                properties.getPassword().toCharArray()));
+                                password.toCharArray()));
                 return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
             });
         }
