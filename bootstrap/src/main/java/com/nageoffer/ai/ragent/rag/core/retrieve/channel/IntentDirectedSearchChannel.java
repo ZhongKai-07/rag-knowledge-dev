@@ -146,15 +146,25 @@ public class IntentDirectedSearchChannel implements SearchChannel {
     }
 
     /**
-     * 提取 KB 意图
+     * 提取 KB 意图（受 RBAC 约束）
      */
     private List<NodeScore> extractKbIntents(SearchContext context) {
         double minScore = properties.getChannels().getIntentDirected().getMinIntentScore();
-        return context.getIntents().stream()
+        List<NodeScore> kbIntents = context.getIntents().stream()
                 .flatMap(si -> si.nodeScores().stream())
                 .filter(ns -> ns.getNode() != null && ns.getNode().isKB())
                 .filter(ns -> ns.getScore() >= minScore)
                 .toList();
+        // RBAC filter: skip intents for KBs the user cannot access
+        if (context.getAccessibleKbIds() != null) {
+            kbIntents = kbIntents.stream()
+                    .filter(ns -> {
+                        String kbId = ns.getNode().getKbId();
+                        return kbId == null || context.getAccessibleKbIds().contains(kbId);
+                    })
+                    .toList();
+        }
+        return kbIntents;
     }
 
     /**

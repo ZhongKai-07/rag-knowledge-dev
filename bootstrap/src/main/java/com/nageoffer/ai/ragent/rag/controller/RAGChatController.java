@@ -48,9 +48,10 @@ public class RAGChatController {
     @GetMapping(value = "/rag/v3/chat", produces = "text/event-stream;charset=UTF-8")
     public SseEmitter chat(@RequestParam String question,
                            @RequestParam(required = false) String conversationId,
+                           @RequestParam(required = false) String knowledgeBaseId,
                            @RequestParam(required = false, defaultValue = "false") Boolean deepThinking) {
         SseEmitter emitter = new SseEmitter(0L);
-        ragChatService.streamChat(question, conversationId, deepThinking, emitter);
+        ragChatService.streamChat(question, conversationId, knowledgeBaseId, deepThinking, emitter);
         return emitter;
     }
 

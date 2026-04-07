@@ -15,28 +15,25 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.knowledge.controller.request;
-
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.Data;
+package com.nageoffer.ai.ragent.user.service;
 
 import java.util.Set;
 
-/**
- * 知识库分页查询请求
- */
-@Data
-public class KnowledgeBasePageRequest extends Page {
+public interface KbAccessService {
 
     /**
-     * 知识库名称（支持模糊匹配）
+     * 获取用户可访问的所有知识库 ID。admin 返回全量。
      */
-    private String name;
+    Set<String> getAccessibleKbIds(String userId);
 
     /**
-     * RBAC: 当前用户可访问的知识库 ID 集合（null 表示不限）
+     * 校验当前用户是否有权访问指定知识库，无权则抛异常。
+     * 完全依赖 UserContext：系统态（无登录态）直接放行，admin 放行，user 鉴权。
      */
-    @TableField(exist = false)
-    private Set<String> accessibleKbIds;
+    void checkAccess(String kbId);
+
+    /**
+     * 清除指定用户的权限缓存
+     */
+    void evictCache(String userId);
 }

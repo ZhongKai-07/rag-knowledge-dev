@@ -4,10 +4,12 @@ import { Brain, Lightbulb, Send, Square } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
+import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeService";
 
 export function ChatInput() {
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
+  const [knowledgeBases, setKnowledgeBases] = React.useState<KnowledgeBase[]>([]);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const {
@@ -16,8 +18,14 @@ export function ChatInput() {
     cancelGeneration,
     deepThinkingEnabled,
     setDeepThinkingEnabled,
+    selectedKnowledgeBaseId,
+    setSelectedKnowledgeBase,
     inputFocusKey
   } = useChatStore();
+
+  React.useEffect(() => {
+    getKnowledgeBases().then(setKnowledgeBases).catch(console.error);
+  }, []);
 
   const focusInput = React.useCallback(() => {
     const el = textareaRef.current;
@@ -98,14 +106,14 @@ export function ChatInput() {
           />
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-[10px] bg-gradient-to-b from-white/0 via-white/40 to-white/90" />
         </div>
-        <div className="relative mt-2 flex items-center">
+        <div className="relative mt-2 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setDeepThinkingEnabled(!deepThinkingEnabled)}
             disabled={isStreaming}
             aria-pressed={deepThinkingEnabled}
             className={cn(
-              "absolute left-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+              "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
               deepThinkingEnabled
                 ? "border-[#BFDBFE] bg-[#DBEAFE] text-[#2563EB]"
                 : "border-transparent bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]",
@@ -120,6 +128,27 @@ export function ChatInput() {
               ) : null}
             </span>
           </button>
+          {knowledgeBases.length > 0 ? (
+            <select
+              value={selectedKnowledgeBaseId || ""}
+              onChange={(e) => setSelectedKnowledgeBase(e.target.value || null)}
+              disabled={isStreaming}
+              className={cn(
+                "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all outline-none",
+                selectedKnowledgeBaseId
+                  ? "border-[#BFDBFE] bg-[#DBEAFE] text-[#2563EB]"
+                  : "border-transparent bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]",
+                isStreaming && "cursor-not-allowed opacity-60"
+              )}
+            >
+              <option value="">自动</option>
+              {knowledgeBases.map((kb) => (
+                <option key={kb.id} value={kb.id}>
+                  {kb.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
           <button
             type="button"
             onClick={handleSubmit}

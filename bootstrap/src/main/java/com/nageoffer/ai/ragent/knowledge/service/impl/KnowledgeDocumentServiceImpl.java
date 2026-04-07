@@ -240,8 +240,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                     extractDuration, chunkDuration, embedDuration, persistDuration, totalDuration, null);
         } catch (Exception e) {
             log.error("文档分块任务执行失败：docId={}", docId, e);
-            markChunkFailed(documentDO.getId());
             long totalDuration = System.currentTimeMillis() - totalStartTime;
+            try {
+                markChunkFailed(documentDO.getId());
+            } catch (Exception markEx) {
+                log.error("标记文档失败状态时出错：docId={}", docId, markEx);
+            }
             updateChunkLog(chunkLog.getId(), DocumentStatus.FAILED.getCode(), 0,
                     extractDuration, chunkDuration, embedDuration, persistDuration, totalDuration, e.getMessage());
         }
@@ -543,7 +547,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     @Override
-    public List<KnowledgeDocumentSearchVO> search(String keyword, int limit) {
+    public List<KnowledgeDocumentSearchVO> search(String keyword, int limit, Set<String> accessibleKbIds) {
         if (!StringUtils.hasText(keyword)) {
             return Collections.emptyList();
         }
@@ -553,6 +557,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         LambdaQueryWrapper<KnowledgeDocumentDO> qw = new LambdaQueryWrapper<KnowledgeDocumentDO>()
                 .eq(KnowledgeDocumentDO::getDeleted, 0)
                 .like(KnowledgeDocumentDO::getDocName, keyword)
+                .in(accessibleKbIds != null && !accessibleKbIds.isEmpty(),
+                        KnowledgeDocumentDO::getKbId, accessibleKbIds)
                 .orderByDesc(KnowledgeDocumentDO::getUpdateTime);
 
         IPage<KnowledgeDocumentDO> result = documentMapper.selectPage(mpPage, qw);
@@ -697,7 +703,11 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     private String resolveCollectionName(String kbId) {
-        return knowledgeBaseMapper.selectById(kbId).getCollectionName();
+        var kb = knowledgeBaseMapper.selectById(kbId);
+        if (kb == null || kb.getCollectionName() == null) {
+            throw new ClientException("知识库不存在或未配置集合: " + kbId);
+        }
+        return kb.getCollectionName();
     }
 
     private boolean isScheduleEnabled(SourceType sourceType, KnowledgeDocumentUploadRequest request) {

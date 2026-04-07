@@ -24,6 +24,7 @@ import lombok.Data;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 检索上下文
@@ -58,6 +59,12 @@ public class SearchContext {
      * 期望返回的结果数量
      */
     private int topK;
+
+    /**
+     * 当前用户可访问的知识库 ID 集合（RBAC 安全约束）。
+     * null 表示不限（admin 或系统态），非 null 时检索通道必须过滤。
+     */
+    private Set<String> accessibleKbIds;
 
     /**
      * 扩展元数据

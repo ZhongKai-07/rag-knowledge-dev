@@ -15,28 +15,30 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.knowledge.controller.request;
+package com.nageoffer.ai.ragent.user.service;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.Data;
+import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
+import java.util.List;
 
-import java.util.Set;
+public interface RoleService {
 
-/**
- * 知识库分页查询请求
- */
-@Data
-public class KnowledgeBasePageRequest extends Page {
+    String createRole(String name, String description);
 
-    /**
-     * 知识库名称（支持模糊匹配）
-     */
-    private String name;
+    void updateRole(String roleId, String name, String description);
 
-    /**
-     * RBAC: 当前用户可访问的知识库 ID 集合（null 表示不限）
-     */
-    @TableField(exist = false)
-    private Set<String> accessibleKbIds;
+    void deleteRole(String roleId);
+
+    List<RoleDO> listRoles();
+
+    /** 设置角色关联的知识库列表（全量替换） */
+    void setRoleKnowledgeBases(String roleId, List<String> kbIds);
+
+    /** 获取角色关联的知识库 ID 列表 */
+    List<String> getRoleKnowledgeBaseIds(String roleId);
+
+    /** 为用户分配角色列表（全量替换） */
+    void setUserRoles(String userId, List<String> roleIds);
+
+    /** 获取用户的角色列表 */
+    List<RoleDO> getUserRoles(String userId);
 }

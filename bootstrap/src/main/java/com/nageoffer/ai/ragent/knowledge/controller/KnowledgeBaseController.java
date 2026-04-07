@@ -27,6 +27,8 @@ import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeBaseVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 知识库控制器
@@ -48,6 +51,7 @@ import java.util.List;
 public class KnowledgeBaseController {
 
     private final KnowledgeBaseService knowledgeBaseService;
+    private final KbAccessService kbAccessService;
 
     /**
      * 创建知识库
@@ -81,6 +85,7 @@ public class KnowledgeBaseController {
      */
     @GetMapping("/knowledge-base/{kb-id}")
     public Result<KnowledgeBaseVO> queryKnowledgeBase(@PathVariable("kb-id") String kbId) {
+        kbAccessService.checkAccess(kbId);
         return Results.success(knowledgeBaseService.queryById(kbId));
     }
 
@@ -89,6 +94,11 @@ public class KnowledgeBaseController {
      */
     @GetMapping("/knowledge-base")
     public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest requestParam) {
+        // RBAC: non-admin users only see accessible KBs
+        if (UserContext.hasUser() && !"admin".equals(UserContext.getRole())) {
+            Set<String> accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
+            requestParam.setAccessibleKbIds(accessibleKbIds);
+        }
         return Results.success(knowledgeBaseService.pageQuery(requestParam));
     }
 

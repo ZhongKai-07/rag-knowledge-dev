@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -79,7 +80,8 @@ public class RetrievalEngine {
      * @return RetrievalContext 检索上下文，包含知识库上下文、MCP上下文和分组的检索块
      */
     @RagTraceNode(name = "retrieval-engine", type = "RETRIEVE")
-    public RetrievalContext retrieve(List<SubQuestionIntent> subIntents, int topK) {
+    public RetrievalContext retrieve(List<SubQuestionIntent> subIntents, int topK,
+                                     Set<String> accessibleKbIds, String knowledgeBaseId) {
         if (CollUtil.isEmpty(subIntents)) {
             return RetrievalContext.builder()
                     .mcpContext("")
@@ -93,7 +95,9 @@ public class RetrievalEngine {
                 .map(si -> CompletableFuture.supplyAsync(
                         () -> buildSubQuestionContext(
                                 si,
-                                resolveSubQuestionTopK(si, finalTopK)
+                                resolveSubQuestionTopK(si, finalTopK),
+                                accessibleKbIds,
+                                knowledgeBaseId
                         ),
                         ragContextExecutor
                 ))
@@ -125,11 +129,12 @@ public class RetrievalEngine {
                 .build();
     }
 
-    private SubQuestionContext buildSubQuestionContext(SubQuestionIntent intent, int topK) {
+    private SubQuestionContext buildSubQuestionContext(SubQuestionIntent intent, int topK,
+                                                       Set<String> accessibleKbIds, String knowledgeBaseId) {
         List<NodeScore> kbIntents = filterKbIntents(intent.nodeScores());
         List<NodeScore> mcpIntents = filterMCPIntents(intent.nodeScores());
 
-        KbResult kbResult = retrieveAndRerank(intent, kbIntents, topK);
+        KbResult kbResult = retrieveAndRerank(intent, kbIntents, topK, accessibleKbIds, knowledgeBaseId);
 
         String mcpContext = CollUtil.isNotEmpty(mcpIntents)
                 ? executeMcpAndMerge(intent.subQuestion(), mcpIntents)
@@ -195,10 +200,12 @@ public class RetrievalEngine {
         return contextFormatter.formatMcpContext(responses, mcpIntents);
     }
 
-    private KbResult retrieveAndRerank(SubQuestionIntent intent, List<NodeScore> kbIntents, int topK) {
+    private KbResult retrieveAndRerank(SubQuestionIntent intent, List<NodeScore> kbIntents, int topK,
+                                        Set<String> accessibleKbIds, String knowledgeBaseId) {
         // 使用多通道检索引擎（是否启用全局检索由置信度阈值决定）
         List<SubQuestionIntent> subIntents = List.of(intent);
-        List<RetrievedChunk> chunks = multiChannelRetrievalEngine.retrieveKnowledgeChannels(subIntents, topK);
+        List<RetrievedChunk> chunks = multiChannelRetrievalEngine.retrieveKnowledgeChannels(subIntents, topK,
+                accessibleKbIds, knowledgeBaseId);
 
         if (CollUtil.isEmpty(chunks)) {
             return KbResult.empty();

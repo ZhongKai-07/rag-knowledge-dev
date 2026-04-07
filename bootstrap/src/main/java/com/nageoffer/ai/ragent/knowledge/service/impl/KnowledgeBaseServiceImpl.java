@@ -77,6 +77,16 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             throw new ServiceException("知识库名称已存在：" + requestParam.getName());
         }
 
+        // 集合名称重复校验
+        Long collectionCount = knowledgeBaseMapper.selectCount(
+                new LambdaQueryWrapper<KnowledgeBaseDO>()
+                        .eq(KnowledgeBaseDO::getCollectionName, requestParam.getCollectionName())
+                        .eq(KnowledgeBaseDO::getDeleted, 0)
+        );
+        if (collectionCount > 0) {
+            throw new ServiceException("集合名称已存在：" + requestParam.getCollectionName());
+        }
+
         KnowledgeBaseDO kbDO = KnowledgeBaseDO.builder()
                 .name(requestParam.getName())
                 .embeddingModel(requestParam.getEmbeddingModel())
@@ -208,6 +218,8 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam) {
         LambdaQueryWrapper<KnowledgeBaseDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                 .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
+                .in(requestParam.getAccessibleKbIds() != null && !requestParam.getAccessibleKbIds().isEmpty(),
+                        KnowledgeBaseDO::getId, requestParam.getAccessibleKbIds())
                 .eq(KnowledgeBaseDO::getDeleted, 0)
                 .orderByDesc(KnowledgeBaseDO::getUpdateTime);
 

@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.18.0
+    container_name: ragent-opensearch
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9201:9200"
+      - "9601:9600"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.18.0
+    container_name: ragent-opensearch-dashboards
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    ports:
+      - "5602:5601"
+    depends_on:
+      - opensearch
+
+volumes:
+  opensearch-data:

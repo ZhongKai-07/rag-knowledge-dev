@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Pencil, Plus, RefreshCw, Trash2, UserPlus } from "lucide-react";
+import { Pencil, Plus, RefreshCw, ShieldCheck, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar } from "@/components/common/Avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PageResult, UserItem, UserCreatePayload, UserUpdatePayload } from "@/services/userService";
 import { createUser, deleteUser, getUsersPage, updateUser } from "@/services/userService";
+import type { RoleItem } from "@/services/roleService";
+import { getRoles, getUserRoles, setUserRoles } from "@/services/roleService";
 import { getErrorMessage } from "@/utils/error";
 
 const PAGE_SIZE = 10;
@@ -26,7 +29,8 @@ const buildEmptyForm = () => ({
   username: "",
   password: "",
   role: "user",
-  avatar: ""
+  avatar: "",
+  roleIds: [] as string[]
 });
 
 export function UserListPage() {
@@ -43,6 +47,17 @@ export function UserListPage() {
   });
   const [form, setForm] = useState(buildEmptyForm());
 
+  // 角色分配 Dialog
+  const [roleDialogState, setRoleDialogState] = useState<{ open: boolean; user: UserItem | null }>({
+    open: false,
+    user: null
+  });
+  const [allRoles, setAllRoles] = useState<RoleItem[]>([]);
+  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set());
+  const [roleLoading, setRoleLoading] = useState(false);
+  // 用户当前角色名缓存
+  const [userRoleNames, setUserRoleNames] = useState<Record<string, string>>({});
+
   const users = pageData?.records || [];
 
   const loadUsers = async (current = pageNo, name = keyword) => {
@@ -58,9 +73,68 @@ export function UserListPage() {
     }
   };
 
+  // 加载用户的 RBAC 角色名称
+  const loadUserRoleNames = async (userList: UserItem[]) => {
+    const names: Record<string, string> = {};
+    await Promise.all(
+      userList
+        .filter((u) => u.role !== "admin")
+        .map(async (u) => {
+          try {
+            const roles = await getUserRoles(u.id);
+            names[u.id] = roles.map((r) => r.name).join(", ");
+          } catch {
+            names[u.id] = "";
+          }
+        })
+    );
+    setUserRoleNames(names);
+  };
+
   useEffect(() => {
     loadUsers();
   }, [pageNo, keyword]);
+
+  useEffect(() => {
+    if (users.length > 0) {
+      loadUserRoleNames(users);
+    }
+  }, [pageData]);
+
+  const openRoleDialog = async (user: UserItem) => {
+    setRoleDialogState({ open: true, user });
+    setRoleLoading(true);
+    try {
+      const [roles, assigned] = await Promise.all([getRoles(), getUserRoles(user.id)]);
+      setAllRoles(roles);
+      setSelectedRoleIds(new Set(assigned.map((r) => r.id)));
+    } catch (error) {
+      toast.error(getErrorMessage(error, "加载角色列表失败"));
+    } finally {
+      setRoleLoading(false);
+    }
+  };
+
+  const toggleRole = (roleId: string) => {
+    setSelectedRoleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(roleId)) next.delete(roleId);
+      else next.add(roleId);
+      return next;
+    });
+  };
+
+  const handleSaveRoles = async () => {
+    if (!roleDialogState.user) return;
+    try {
+      await setUserRoles(roleDialogState.user.id, Array.from(selectedRoleIds));
+      toast.success("角色分配已更新");
+      setRoleDialogState({ open: false, user: null });
+      await loadUserRoleNames(users);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "保存失败"));
+    }
+  };
 
   const handleSearch = () => {
     setPageNo(1);
@@ -88,19 +162,45 @@ export function UserListPage() {
     }
   };
 
-  const openCreateDialog = () => {
+  const openCreateDialog = async () => {
     setForm(buildEmptyForm());
     setDialogState({ open: true, mode: "create", user: null });
+    try {
+      const roles = await getRoles();
+      setAllRoles(roles);
+    } catch { /* ignore */ }
   };
 
-  const openEditDialog = (user: UserItem) => {
-    setForm({
-      username: user.username || "",
-      password: "",
-      role: user.role || "user",
-      avatar: user.avatar || ""
-    });
+  const openEditDialog = async (user: UserItem) => {
     setDialogState({ open: true, mode: "edit", user });
+    try {
+      const [roles, assigned] = await Promise.all([getRoles(), getUserRoles(user.id)]);
+      setAllRoles(roles);
+      setForm({
+        username: user.username || "",
+        password: "",
+        role: user.role || "user",
+        avatar: user.avatar || "",
+        roleIds: assigned.map((r) => r.id)
+      });
+    } catch {
+      setForm({
+        username: user.username || "",
+        password: "",
+        role: user.role || "user",
+        avatar: user.avatar || "",
+        roleIds: []
+      });
+    }
+  };
+
+  const toggleFormRole = (roleId: string) => {
+    setForm((prev) => {
+      const ids = new Set(prev.roleIds);
+      if (ids.has(roleId)) ids.delete(roleId);
+      else ids.add(roleId);
+      return { ...prev, roleIds: Array.from(ids) };
+    });
   };
 
   const handleSave = async () => {
@@ -123,7 +223,11 @@ export function UserListPage() {
           role: form.role || "user",
           avatar: form.avatar?.trim() || undefined
         };
-        await createUser(payload);
+        const newUserId = await createUser(payload);
+        // 创建后分配 RBAC 角色
+        if (form.roleIds.length > 0 && form.role !== "admin") {
+          await setUserRoles(newUserId, form.roleIds);
+        }
         toast.success("创建成功");
         setPageNo(1);
         await loadUsers(1, keyword);
@@ -135,6 +239,10 @@ export function UserListPage() {
           password: trimmedPassword || undefined
         };
         await updateUser(dialogState.user.id, payload);
+        // 更新 RBAC 角色
+        if (form.role !== "admin") {
+          await setUserRoles(dialogState.user.id, form.roleIds);
+        }
         toast.success("更新成功");
         await loadUsers(pageNo, keyword);
       }
@@ -190,11 +298,11 @@ export function UserListPage() {
             <Table className="min-w-[860px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[240px]">用户</TableHead>
-                  <TableHead className="w-[140px]">角色</TableHead>
-                  <TableHead className="w-[180px]">创建时间</TableHead>
-                  <TableHead className="w-[180px]">更新时间</TableHead>
-                  <TableHead className="w-[160px] text-left">操作</TableHead>
+                  <TableHead className="w-[200px]">用户</TableHead>
+                  <TableHead className="w-[100px]">系统角色</TableHead>
+                  <TableHead className="w-[160px]">RBAC 角色</TableHead>
+                  <TableHead className="w-[160px]">创建时间</TableHead>
+                  <TableHead className="w-[200px] text-left">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -221,10 +329,24 @@ export function UserListPage() {
                       <TableCell>
                         <Badge variant={user.role === "admin" ? "default" : "secondary"}>{roleLabel}</Badge>
                       </TableCell>
+                      <TableCell>
+                        {user.role === "admin" ? (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        ) : (
+                          <span className="text-sm text-slate-700">
+                            {userRoleNames[user.id] || <span className="text-muted-foreground">未分配</span>}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(user.createTime)}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(user.updateTime)}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex justify-center gap-2">
+                          {!isProtected && (
+                            <Button variant="outline" size="sm" onClick={() => openRoleDialog(user)}>
+                              <ShieldCheck className="w-4 h-4 mr-0.5" />
+                              角色
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -321,6 +443,31 @@ export function UserListPage() {
                 placeholder="可选，填写头像 URL"
               />
             </div>
+            {form.role !== "admin" && allRoles.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">RBAC 角色</label>
+                <div className="max-h-[160px] overflow-y-auto border rounded-md">
+                  {allRoles.map((role) => (
+                    <label
+                      key={role.id}
+                      className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 cursor-pointer transition-colors"
+                    >
+                      <Checkbox
+                        checked={form.roleIds.includes(role.id)}
+                        onCheckedChange={() => toggleFormRole(role.id)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-slate-900">{role.name}</span>
+                        {role.description && (
+                          <span className="text-xs text-muted-foreground ml-2">{role.description}</span>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">选择该用户可访问的知识库角色</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogState({ open: false, mode: "create", user: null })}>
@@ -339,6 +486,51 @@ export function UserListPage() {
                 </>
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* 角色分配 Dialog */}
+      <Dialog open={roleDialogState.open} onOpenChange={(open) => setRoleDialogState((prev) => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>分配角色</DialogTitle>
+            <DialogDescription>
+              为用户"{roleDialogState.user?.username}"选择 RBAC 角色
+            </DialogDescription>
+          </DialogHeader>
+          {roleLoading ? (
+            <div className="text-center py-6 text-muted-foreground">加载中...</div>
+          ) : allRoles.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              暂无角色，请先在<a href="/admin/roles" className="text-indigo-600 underline mx-1">角色管理</a>中创建
+            </div>
+          ) : (
+            <div className="max-h-[320px] overflow-y-auto space-y-1">
+              {allRoles.map((role) => (
+                <label
+                  key={role.id}
+                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  <Checkbox
+                    checked={selectedRoleIds.has(role.id)}
+                    onCheckedChange={() => toggleRole(role.id)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-sm text-slate-900">{role.name}</div>
+                    {role.description && (
+                      <div className="text-xs text-muted-foreground truncate">{role.description}</div>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRoleDialogState({ open: false, user: null })}>
+              取消
+            </Button>
+            <Button onClick={handleSaveRoles}>保存</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

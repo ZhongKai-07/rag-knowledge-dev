@@ -18,6 +18,7 @@ import { SystemSettingsPage } from "@/pages/admin/settings/SystemSettingsPage";
 import { SampleQuestionPage } from "@/pages/admin/sample-questions/SampleQuestionPage";
 import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTermMappingPage";
 import { UserListPage } from "@/pages/admin/users/UserListPage";
+import { RoleListPage } from "@/pages/admin/roles/RoleListPage";
 import { RagEvaluationPage } from "@/pages/admin/evaluations/RagEvaluationPage";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -153,6 +154,10 @@ export const router = createBrowserRouter([
       {
         path: "users",
         element: <UserListPage />
+      },
+      {
+        path: "roles",
+        element: <RoleListPage />
       },
       {
         path: "evaluations",

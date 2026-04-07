@@ -27,6 +27,7 @@
         <rocketmq-spring-boot-starter.version>2.3.5</rocketmq-spring-boot-starter.version>
         <okhttp.version>4.12.0</okhttp.version>
         <spotless-maven-plugin.version>2.22.1</spotless-maven-plugin.version>
+        <opensearch-java.version>2.18.0</opensearch-java.version>
     </properties>
 
     <modules>
@@ -125,6 +126,12 @@
                 <groupId>com.squareup.okhttp3</groupId>
                 <artifactId>okhttp</artifactId>
                 <version>${okhttp.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.opensearch.client</groupId>
+                <artifactId>opensearch-java</artifactId>
+                <version>${opensearch-java.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

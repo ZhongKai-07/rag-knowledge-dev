@@ -21,7 +21,10 @@ import cn.hutool.core.collection.CollUtil;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceNode;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannel;
+import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
+import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
@@ -33,6 +36,7 @@ import org.springframework.stereotype.Service;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -52,6 +56,8 @@ public class MultiChannelRetrievalEngine {
 
     private final List<SearchChannel> searchChannels;
     private final List<SearchResultPostProcessor> postProcessors;
+    private final RetrieverService retrieverService;
+    private final KnowledgeBaseMapper knowledgeBaseMapper;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
 
@@ -63,9 +69,33 @@ public class MultiChannelRetrievalEngine {
      * @return 检索到的 Chunk 列表
      */
     @RagTraceNode(name = "multi-channel-retrieval", type = "RETRIEVE_CHANNEL")
-    public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents, int topK) {
+    public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents, int topK,
+                                                           Set<String> accessibleKbIds, String knowledgeBaseId) {
         // 构建检索上下文
-        SearchContext context = buildSearchContext(subIntents, topK);
+        SearchContext context = buildSearchContext(subIntents, topK, accessibleKbIds);
+
+        // 单知识库定向检索路径
+        if (knowledgeBaseId != null) {
+            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(knowledgeBaseId);
+            if (kb == null || kb.getCollectionName() == null) {
+                return List.of();
+            }
+            RetrieveRequest req = RetrieveRequest.builder()
+                    .query(context.getMainQuestion())
+                    .topK(topK)
+                    .collectionName(kb.getCollectionName())
+                    .build();
+            List<RetrievedChunk> chunks = retrieverService.retrieve(req);
+
+            SearchChannelResult singleResult = SearchChannelResult.builder()
+                    .channelType(SearchChannelType.INTENT_DIRECTED)
+                    .channelName("single-kb-" + kb.getCollectionName())
+                    .chunks(chunks)
+                    .confidence(1.0)
+                    .latencyMs(0)
+                    .build();
+            return executePostProcessors(List.of(singleResult), context);
+        }
 
         // 【阶段1：多通道并行检索】
         List<SearchChannelResult> channelResults = executeSearchChannels(context);
@@ -214,7 +244,8 @@ public class MultiChannelRetrievalEngine {
     /**
      * 构建检索上下文
      */
-    private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int topK) {
+    private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int topK,
+                                              Set<String> accessibleKbIds) {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
 
         return SearchContext.builder()
@@ -222,6 +253,7 @@ public class MultiChannelRetrievalEngine {
                 .rewrittenQuestion(question)
                 .intents(subIntents)
                 .topK(topK)
+                .accessibleKbIds(accessibleKbIds)
                 .build();
     }
 }

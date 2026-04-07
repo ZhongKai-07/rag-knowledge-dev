@@ -14,8 +14,8 @@ mvn clean install -DskipTests spotless:check
 # Auto-fix formatting
 mvn spotless:apply
 
-# Run the application (from project root)
-mvn -pl bootstrap spring-boot:run
+# Run the application (from project root, auto-bypass localhost proxy for RustFS/S3)
+$env:NO_PROXY='localhost,127.0.0.1'; $env:no_proxy='localhost,127.0.0.1'; mvn -pl bootstrap spring-boot:run
 
 # Run all tests
 mvn test
@@ -88,3 +88,23 @@ Docker Compose files in `resources/docker/` for Milvus and RocketMQ. Database in
 ## Language
 
 Project documentation and comments are in Chinese. Code identifiers are in English.
+
+## Key Gotchas
+
+- **SSE streaming is async**: `ChatClient.streamChat()` returns immediately via `StreamAsyncExecutor`; `StreamCallback` methods run on `modelStreamExecutor` thread pool. Do NOT read ThreadLocal values set by streaming callbacks from the calling thread — they won't be there yet.
+- **OpenAI SSE usage frame order**: `finish_reason` frame → usage frame (empty choices) → `[DONE]`. Loop must break on `[DONE]` (`streamEnded`), not on `finish_reason` (`finished`), otherwise usage data is missed.
+- **RagTraceContext ThreadLocal cleared early**: `ChatRateLimitAspect.finally` clears context before streaming completes. Capture `traceId` etc. in handler constructor, not at callback time.
+- **`extra_data TEXT` JSON pattern**: Used in `t_rag_trace_run` and `t_rag_trace_node` for extensible metrics (token usage, question length) without schema migration. Parse with Gson in query service.
+
+## RAG Evaluation (RAGAS)
+
+- `t_rag_evaluation_record` stores query-chunk-answer triples for evaluation
+- `EvaluationCollector` gathers data via `RagTraceContext` ThreadLocal across the RAG pipeline
+- Export endpoint: `GET /rag/evaluations/export` produces RAGAS-compatible JSON
+- RAGAS evaluation script: `ragas/ragas/run_eval.py` (uses 百炼 API as evaluator LLM)
+
+## Frontend Patterns
+
+- Admin pages: create component in `frontend/src/pages/admin/{feature}/`, register route in `router.tsx`, add sidebar item + breadcrumb in `AdminLayout.tsx`
+- UI components: shadcn/ui in `frontend/src/components/ui/`; icons from `lucide-react`
+- API services: `frontend/src/services/` using axios instance from `api.ts`; response wrapper `{ code, data, message }`

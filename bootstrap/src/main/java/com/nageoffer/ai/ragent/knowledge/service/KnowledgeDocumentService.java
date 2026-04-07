@@ -28,6 +28,7 @@ import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * 知识库文档服务接口
@@ -102,11 +103,12 @@ public interface KnowledgeDocumentService {
     /**
      * 搜索文档（用于全局检索建议）
      *
-     * @param keyword 关键词
-     * @param limit   最大返回数量
+     * @param keyword          关键词
+     * @param limit            最大返回数量
+     * @param accessibleKbIds  RBAC: 可访问的知识库 ID 集合（null 表示不限）
      * @return 文档列表
      */
-    List<KnowledgeDocumentSearchVO> search(String keyword, int limit);
+    List<KnowledgeDocumentSearchVO> search(String keyword, int limit, Set<String> accessibleKbIds);
 
     /**
      * 查询文档分块日志

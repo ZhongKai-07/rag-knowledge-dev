@@ -51,9 +51,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.CHAT_SYSTEM_PROMPT_PATH;
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.DEFAULT_TOP_K;
@@ -79,10 +81,12 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final QueryRewriteService queryRewriteService;
     private final IntentResolver intentResolver;
     private final RetrievalEngine retrievalEngine;
+    private final KbAccessService kbAccessService;
 
     @Override
     @ChatRateLimit
-    public void streamChat(String question, String conversationId, Boolean deepThinking, SseEmitter emitter) {
+    public void streamChat(String question, String conversationId, String knowledgeBaseId,
+                           Boolean deepThinking, SseEmitter emitter) {
         String actualConversationId = StrUtil.isBlank(conversationId) ? IdUtil.getSnowflakeNextIdStr() : conversationId;
         String taskId = StrUtil.isBlank(RagTraceContext.getTaskId())
                 ? IdUtil.getSnowflakeNextIdStr()
@@ -98,6 +102,18 @@ public class RAGChatServiceImpl implements RAGChatService {
         RagTraceContext.setEvalCollector(evalCollector);
 
         String userId = UserContext.getUserId();
+
+        // RBAC: resolve accessible KB IDs
+        Set<String> accessibleKbIds = null;
+        if (UserContext.hasUser() && userId != null && !"admin".equals(UserContext.getRole())) {
+            accessibleKbIds = kbAccessService.getAccessibleKbIds(userId);
+        }
+
+        // If knowledgeBaseId specified, verify access
+        if (knowledgeBaseId != null) {
+            kbAccessService.checkAccess(knowledgeBaseId);
+        }
+
         List<ChatMessage> history = memoryService.loadAndAppend(actualConversationId, userId, ChatMessage.user(question));
 
         RewriteResult rewriteResult = queryRewriteService.rewriteWithSplit(question, history);
@@ -135,7 +151,7 @@ public class RAGChatServiceImpl implements RAGChatService {
             return;
         }
 
-        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K);
+        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K, accessibleKbIds, knowledgeBaseId);
         if (ctx.isEmpty()) {
             String emptyReply = "未检索到���问题相关的文档��容。";
             callback.onContent(emptyReply);

@@ -15,28 +15,12 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.knowledge.controller.request;
+package com.nageoffer.ai.ragent.user.dao.mapper;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.Data;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
+import org.apache.ibatis.annotations.Mapper;
 
-import java.util.Set;
-
-/**
- * 知识库分页查询请求
- */
-@Data
-public class KnowledgeBasePageRequest extends Page {
-
-    /**
-     * 知识库名称（支持模糊匹配）
-     */
-    private String name;
-
-    /**
-     * RBAC: 当前用户可访问的知识库 ID 集合（null 表示不限）
-     */
-    @TableField(exist = false)
-    private Set<String> accessibleKbIds;
+@Mapper
+public interface UserRoleMapper extends BaseMapper<UserRoleDO> {
 }
