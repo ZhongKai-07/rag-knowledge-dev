@@ -47,7 +47,7 @@ The bootstrap module organizes code by **domain** (not by technical layer):
 - **knowledge/** — Knowledge base/collection CRUD, document management, chunk management, status tracking. Uses RocketMQ for async event-driven updates.
 - **core/** — Document parsing (Apache Tika) and chunking strategies.
 - **admin/** — Dashboard KPIs, overview statistics.
-- **user/** — Authentication (Sa-Token), user management.
+- **user/** — Authentication (Sa-Token), user management, RBAC role-based knowledge base access control.
 
 Within each domain, code follows a standard layered pattern: `controller/` → `service/` → `dao/` (MyBatis Plus mappers) → `domain/` (entities, DTOs, enums).
 
@@ -65,7 +65,7 @@ Within each domain, code follows a standard layered pattern: `controller/` → `
 | JDK | Java 17 |
 | Framework | Spring Boot 3.5.7 |
 | Database | PostgreSQL |
-| Vector DB | Milvus 2.6 (also supports pgvector) |
+| Vector DB | OpenSearch 2.18 / Milvus 2.6 / pgvector（三选一，`rag.vector.type` 切换） |
 | ORM | MyBatis Plus 3.5.14 |
 | Cache | Redis + Redisson |
 | Message Queue | RocketMQ 5.x |
@@ -108,3 +108,177 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - Admin pages: create component in `frontend/src/pages/admin/{feature}/`, register route in `router.tsx`, add sidebar item + breadcrumb in `AdminLayout.tsx`
 - UI components: shadcn/ui in `frontend/src/components/ui/`; icons from `lucide-react`
 - API services: `frontend/src/services/` using axios instance from `api.ts`; response wrapper `{ code, data, message }`
+
+## Project Code Map
+
+Bootstrap module (`bootstrap/src/main/java/com/nageoffer/ai/ragent/`) organized by domain:
+
+```
+rag/                              ← RAG 核心域（最大，194 文件）
+├── controller/
+│   ├── RAGChatController         ← SSE 流式聊天入口 GET /rag/v3/chat
+│   ├── ConversationController    ← 会话管理
+│   ├── IntentTreeController      ← 意图树 CRUD
+│   ├── RagTraceController        ← 链路追踪查询
+│   └── RagEvaluationController   ← RAGAS 评测导出
+├── service/impl/
+│   └── RAGChatServiceImpl        ← 问答主编排（记忆→改写→意图→检索→生成）
+├── core/
+│   ├── intent/                   ← 意图分类（DefaultIntentClassifier, IntentResolver）
+│   ├── retrieve/                 ← 检索引擎（RetrievalEngine, MultiChannelRetrievalEngine）
+│   │   ├── channel/              ← 搜索通道（IntentDirected, VectorGlobal）
+│   │   ├── postprocessor/        ← 去重 + 重排
+│   │   ├── OpenSearchRetrieverService
+│   │   ├── MilvusRetrieverService
+│   │   └── PgRetrieverService
+│   ├── vector/                   ← 向量存储抽象（VectorStoreService/Admin 接口 + 3 种实现）
+│   ├── memory/                   ← 会话记忆（JDBC 存储 + 摘要）
+│   ├── prompt/                   ← Prompt 构建（RAGPromptService, ContextFormatter）
+│   ├── rewrite/                  ← 查询改写（QueryRewriteService）
+│   ├── guidance/                 ← 歧义引导（IntentGuidanceService）
+│   └── mcp/                      ← MCP 工具注册与执行
+├── aop/                          ← 限流（ChatRateLimitAspect）、链路追踪
+├── config/                       ← OpenSearchConfig, MilvusConfig, PgVectorStoreConfig 等
+└── dto/                          ← RetrievalContext, EvaluationCollector 等
+
+ingestion/                        ← 文档入库域（64 文件）
+├── controller/
+│   ├── IngestionPipelineController ← Pipeline CRUD
+│   └── IngestionTaskController     ← Task 触发与监控
+├── engine/
+│   └── IngestionEngine           ← 节点链编排器（核心）
+├── node/                         ← 6 类节点
+│   ├── FetcherNode               ← 文档获取（LocalFile/HttpUrl/S3/Feishu）
+│   ├── ParserNode                ← Tika 解析
+│   ├── EnhancerNode              ← LLM 文档级增强
+│   ├── ChunkerNode               ← 分块 + Embedding
+│   ├── EnricherNode              ← LLM 分块级增强
+│   └── IndexerNode               ← 向量入库
+├── strategy/fetcher/             ← 文档源策略实现
+└── domain/                       ← PipelineDefinition, IngestionContext, NodeConfig
+
+knowledge/                        ← 知识库管理域（61 文件）
+├── controller/
+│   ├── KnowledgeBaseController   ← KB CRUD
+│   ├── KnowledgeDocumentController ← 文档上传/分块触发
+│   └── KnowledgeChunkController  ← 分块操作
+├── service/impl/
+│   └── KnowledgeDocumentServiceImpl ← 文档处理核心（CHUNK/PIPELINE 两种模式）
+├── mq/
+│   ├── KnowledgeDocumentChunkConsumer ← RocketMQ 异步分块消费者
+│   └── KnowledgeDocumentChunkTransactionChecker
+└── schedule/                     ← URL 源定时重分块、分布式锁
+
+core/                             ← 基础能力域（17 文件）
+├── chunk/                        ← ChunkEmbeddingService, ChunkingStrategy, VectorChunk
+│   └── strategy/                 ← FixedSizeTextChunker, StructureAwareTextChunker
+└── parser/                       ← DocumentParserSelector, TikaDocumentParser
+
+user/                             ← 用户与权限域（31 文件）
+├── controller/
+│   ├── AuthController            ← 登录/登出
+│   ├── UserController            ← 用户 CRUD
+│   └── RoleController            ← 角色管理
+├── service/
+│   ├── KbAccessService           ← RBAC 知识库权限校验（核心）
+│   └── RoleService               ← 角色-知识库关联管理
+└── dao/entity/                   ← UserDO, RoleDO, UserRoleDO, RoleKbRelationDO
+
+admin/                            ← 管理后台域（10 文件）
+├── controller/
+│   └── DashboardController       ← 仪表盘 KPI/趋势/性能
+└── service/
+    └── DashboardServiceImpl      ← 跨域聚合统计（只读）
+```
+
+## Core Business Flows
+
+### 1. RAG 问答链路
+
+```
+GET /rag/v3/chat → RAGChatController → RAGChatServiceImpl.streamChat()
+
+AOP: 限流入队 + traceId 生成 + 链路追踪开始
+ → RBAC 权限校验（KbAccessService.getAccessibleKbIds）
+ → 加载会话记忆 + 追加当前问题（ConversationMemoryService.loadAndAppend）
+ → 查询改写 + 子问题拆分（QueryRewriteService.rewriteWithSplit）
+ → 意图识别（IntentResolver.resolve → DefaultIntentClassifier，LLM 调用，并行）
+ → 歧义引导检测（IntentGuidanceService.detectAmbiguity）→ 触发则短路返回引导提示
+ → System-Only 检测 → 全是 SYSTEM 意图则跳过检索直接调 LLM
+ → 多通道检索（RetrievalEngine.retrieve，并行）
+   ├── KB 意图 → MultiChannelRetrievalEngine → 向量检索（过滤可访问 KB）→ 去重 → 重排
+   └── MCP 意图 → MCPToolExecutor → 参数提取（LLM）→ 工具执行
+ → 检索结果为空则短路返回"未检索到"
+ → 上下文组装（RAGPromptService.buildStructuredMessages）
+ → LLM 流式生成（SSE 推送，temperature 根据 MCP 动态调整）
+ → onComplete: 回答写入记忆 + token 用量记录 + 评估数据采集
+AOP: 链路追踪结束 + 限流出队
+```
+
+### 2. 知识库管理链路
+
+```
+POST /knowledge-base           → 创建知识库（DB 记录 + VectorStoreAdmin.ensureVectorSpace 创建向量索引）
+GET  /knowledge-base           → 列表查询（RBAC 过滤可访问的 KB）
+PUT  /knowledge-base/{id}      → 更新知识库元信息
+DELETE /knowledge-base/{id}    → 删除知识库 + 关联文档 + 向量数据
+```
+
+### 3. 文档入库链路
+
+```
+POST /knowledge-base/{kbId}/docs/upload → KnowledgeDocumentController.upload()
+ → FileStorageService 存文件到 S3
+ → 创建 KnowledgeDocumentDO（status=PENDING）
+ → 返回 200
+
+POST /knowledge-base/docs/{docId}/chunk → KnowledgeDocumentController.startChunk()
+ → RBAC 权限校验
+ → RocketMQ 事务消息发送（事务回调中更新 status=RUNNING）
+ → 返回 200（异步处理）
+
+KnowledgeDocumentChunkConsumer 异步消费：
+ → KnowledgeDocumentServiceImpl.executeChunk()
+   ├── CHUNK 模式: Extract(Tika) → Chunk(策略分块) → Embed(向量化) → Persist
+   └── PIPELINE 模式: IngestionEngine.execute()（Fetcher→Parser→[Enhancer]→Chunker→[Enricher]→Indexer）
+ → 原子事务: 删旧分块/向量 → 写新分块/向量 → 更新 status=SUCCESS
+ → 记录 ChunkLog（各阶段耗时）
+```
+
+### 4. 后台管理链路
+
+```
+GET /admin/dashboard/overview     → 概览 KPI（文档总数、知识库数、对话数等）
+GET /admin/dashboard/performance  → 性能指标（处理成功率、平均耗时）
+GET /admin/dashboard/trends       → 趋势分析（时间窗口内的对话/文档趋势）
+
+DashboardServiceImpl 跨域只读查询 rag + knowledge + user 的 Mapper 做聚合统计。
+管理后台所有页面在 frontend/src/pages/admin/ 下，路由注册在 router.tsx。
+```
+
+### 5. RBAC 用户权限管理链路
+
+```
+认证:
+  POST /auth/login  → Sa-Token 签发 Token
+  POST /auth/logout → 注销
+
+用户管理:
+  GET/POST/PUT/DELETE /users → UserController（admin only）
+
+角色管理:
+  POST /roles                    → 创建角色
+  PUT  /roles/{id}/knowledge-bases → 设置角色可访问的知识库列表
+  POST /roles/{id}/users          → 给角色分配用户
+
+权限校验（贯穿所有业务链路）:
+  KbAccessService.getAccessibleKbIds(userId)
+    → 查 t_user_role → 查 t_role_kb_relation → 返回可访问的 kbId 集合（Redis 缓存）
+  KbAccessService.checkAccess(kbId)
+    → 校验当前用户是否有权访问指定知识库（admin 跳过）
+
+生效点:
+  - RAG 检索时: RetrievalEngine 过滤 accessibleKbIds
+  - 知识库列表: KnowledgeBaseController 过滤可见 KB
+  - 文档操作: KnowledgeDocumentController 校验文档所属 KB 的访问权限
+```
