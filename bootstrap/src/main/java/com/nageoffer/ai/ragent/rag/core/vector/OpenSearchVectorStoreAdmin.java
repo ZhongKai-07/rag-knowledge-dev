@@ -40,9 +40,12 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
     private final OpenSearchProperties openSearchProperties;
 
     private volatile boolean pipelineReady = false;
+    private volatile String cachedAnalyzer;
+    private volatile String cachedSearchAnalyzer;
 
     @PostConstruct
     public void init() {
+        // 检查 pipeline 状态
         try {
             try (var response = client.generic().execute(
                     Requests.builder()
@@ -57,6 +60,10 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
         } catch (Exception e) {
             log.warn("Could not check pipeline on startup, hybrid search disabled until first ingestion");
         }
+        // 缓存分析器检测结果（避免每次建索引都发网络请求）
+        cachedAnalyzer = detectAnalyzer();
+        cachedSearchAnalyzer = detectSearchAnalyzer();
+        log.info("OpenSearch analyzer: {}, search analyzer: {}", cachedAnalyzer, cachedSearchAnalyzer);
     }
 
     @Override
@@ -72,8 +79,8 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
 
             ensurePipelineExists();
 
-            String analyzer = detectAnalyzer();
-            String searchAnalyzer = detectSearchAnalyzer();
+            String analyzer = cachedAnalyzer;
+            String searchAnalyzer = cachedSearchAnalyzer;
             int dimension = ragDefaultProperties.getDimension();
 
             String requestBody = buildCreateIndexJson(analyzer, searchAnalyzer, dimension);

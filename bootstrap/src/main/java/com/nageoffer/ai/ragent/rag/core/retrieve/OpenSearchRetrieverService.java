@@ -20,9 +20,9 @@ package com.nageoffer.ai.ragent.rag.core.retrieve;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
 import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
-import com.nageoffer.ai.ragent.rag.core.vector.OpenSearchVectorStoreAdmin;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -41,11 +41,32 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch")
 public class OpenSearchRetrieverService implements RetrieverService {
 
+    private static final String PIPELINE_NAME = "ragent-hybrid-search-pipeline";
+
     private final OpenSearchClient client;
     private final EmbeddingService embeddingService;
     private final RAGDefaultProperties ragDefaultProperties;
-    private final OpenSearchVectorStoreAdmin vectorStoreAdmin;
     private final ObjectMapper objectMapper;
+
+    private volatile boolean pipelineReady = false;
+
+    @PostConstruct
+    public void init() {
+        try {
+            try (var response = client.generic().execute(
+                    Requests.builder()
+                            .method("GET")
+                            .endpoint("_search/pipeline/" + PIPELINE_NAME)
+                            .build())) {
+                if (response.getStatus() == 200) {
+                    pipelineReady = true;
+                    log.info("Hybrid search pipeline available for retrieval");
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Pipeline not detected, using knn-only retrieval until pipeline is created");
+        }
+    }
 
     @Override
     public List<RetrievedChunk> retrieve(RetrieveRequest retrieveParam) {
@@ -79,7 +100,7 @@ public class OpenSearchRetrieverService implements RetrieverService {
         try {
             String queryJson;
 
-            if (vectorStoreAdmin.isPipelineReady()) {
+            if (pipelineReady) {
                 queryJson = buildHybridQuery(query, vector, topK, metadataFilters);
             } else {
                 queryJson = buildKnnOnlyQuery(vector, topK, metadataFilters);
@@ -214,7 +235,8 @@ public class OpenSearchRetrieverService implements RetrieverService {
     }
 
     private String floatArrayToJson(float[] vector) {
-        StringBuilder sb = new StringBuilder("[");
+        StringBuilder sb = new StringBuilder(vector.length * 12 + 2);
+        sb.append('[');
         for (int i = 0; i < vector.length; i++) {
             if (i > 0) sb.append(",");
             sb.append(vector[i]);

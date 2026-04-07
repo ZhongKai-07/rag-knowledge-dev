@@ -136,6 +136,7 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
 
     private Map<String, Object> buildDocument(String collectionName, String docId, VectorChunk chunk) {
         Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("collection_name", collectionName);
         metadata.put("doc_id", docId);
         metadata.put("chunk_index", chunk.getIndex());
 
