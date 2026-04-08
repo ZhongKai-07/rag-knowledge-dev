@@ -70,8 +70,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const kbId = activeKbId;
 
   React.useEffect(() => {
-    if (sessions.length === 0) {
-      fetchSessions(kbId || undefined).catch(() => null);
+    if (sessions.length === 0 && kbId) {
+      fetchSessions(kbId).catch(() => null);
     }
   }, [fetchSessions, sessions.length, kbId]);
 
