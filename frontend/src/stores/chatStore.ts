@@ -199,7 +199,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       thinkingStartAt: null
     });
     try {
-      const data = await listMessages(sessionId);
+      const data = await listMessages(sessionId, get().activeKbId || undefined);
       if (get().currentSessionId !== sessionId) {
         return;
       }

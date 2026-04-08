@@ -34,6 +34,8 @@ export async function renameSession(conversationId: string, title: string, kbId?
   });
 }
 
-export async function listMessages(conversationId: string) {
-  return api.get<ConversationMessageVO[]>(`/conversations/${conversationId}/messages`);
+export async function listMessages(conversationId: string, kbId?: string) {
+  return api.get<ConversationMessageVO[]>(`/conversations/${conversationId}/messages`, {
+    params: kbId ? { kbId } : undefined
+  });
 }
