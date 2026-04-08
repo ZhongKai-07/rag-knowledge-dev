@@ -24,12 +24,16 @@ interface ChatState {
   isCreatingNew: boolean;
   deepThinkingEnabled: boolean;
   selectedKnowledgeBaseId: string | null;
+  activeKbId: string | null;
+  activeKbName: string | null;
   thinkingStartAt: number | null;
   streamTaskId: string | null;
   streamAbort: (() => void) | null;
   streamingMessageId: string | null;
   cancelRequested: boolean;
-  fetchSessions: () => Promise<void>;
+  setActiveKb: (kbId: string | null, kbName: string | null) => void;
+  resetForNewSpace: () => void;
+  fetchSessions: (kbId?: string) => Promise<void>;
   createSession: () => Promise<string>;
   deleteSession: (sessionId: string) => Promise<void>;
   renameSession: (sessionId: string, title: string) => Promise<void>;
@@ -84,20 +88,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isCreatingNew: false,
   deepThinkingEnabled: false,
   selectedKnowledgeBaseId: null,
+  activeKbId: null,
+  activeKbName: null,
   thinkingStartAt: null,
   streamTaskId: null,
   streamAbort: null,
   streamingMessageId: null,
   cancelRequested: false,
-  fetchSessions: async () => {
+  setActiveKb: (kbId, kbName) => {
+    set({ activeKbId: kbId, activeKbName: kbName });
+  },
+  resetForNewSpace: () => {
+    set({
+      currentSessionId: null,
+      messages: [],
+      sessions: [],
+      sessionsLoaded: false
+    });
+  },
+  fetchSessions: async (kbId?) => {
     set({ isLoading: true });
     try {
-      const data = await listSessions();
+      const data = await listSessions(kbId);
       const sessions = data
         .map((item) => ({
         id: item.conversationId,
         title: item.title || "新对话",
-        lastTime: item.lastTime
+        lastTime: item.lastTime,
+        kbId: item.kbId
         }))
         .sort((a, b) => {
           const timeA = a.lastTime ? new Date(a.lastTime).getTime() : 0;
@@ -142,7 +160,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
   deleteSession: async (sessionId) => {
     try {
-      await deleteSessionRequest(sessionId);
+      await deleteSessionRequest(sessionId, get().activeKbId || undefined);
       set((state) => ({
         sessions: state.sessions.filter((session) => session.id !== sessionId),
         messages: state.currentSessionId === sessionId ? [] : state.messages,
@@ -157,7 +175,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const nextTitle = title.trim();
     if (!nextTitle) return;
     try {
-      await renameSessionRequest(sessionId, nextTitle);
+      await renameSessionRequest(sessionId, nextTitle, get().activeKbId || undefined);
       set((state) => ({
         sessions: state.sessions.map((session) =>
           session.id === sessionId ? { ...session, title: nextTitle } : session
@@ -265,7 +283,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const query = buildQuery({
       question: trimmed,
       conversationId: conversationId || undefined,
-      knowledgeBaseId: get().selectedKnowledgeBaseId || undefined,
+      knowledgeBaseId: get().activeKbId || get().selectedKnowledgeBaseId || undefined,
       deepThinking: deepThinkingEnabled ? true : undefined
     });
     const url = `${API_BASE_URL}/rag/v3/chat${query}`;

@@ -18,6 +18,7 @@ export interface Session {
   id: string;
   title: string;
   lastTime?: string;
+  kbId?: string;
 }
 
 export interface Message {

@@ -42,8 +42,15 @@ export function WelcomeScreen() {
   const [promptPresets, setPromptPresets] = React.useState<PromptPreset[]>(DEFAULT_PRESETS);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
-  const { sendMessage, isStreaming, cancelGeneration, deepThinkingEnabled, setDeepThinkingEnabled } =
-    useChatStore();
+  const {
+    sendMessage,
+    isStreaming,
+    cancelGeneration,
+    deepThinkingEnabled,
+    setDeepThinkingEnabled,
+    activeKbId,
+    activeKbName
+  } = useChatStore();
 
   const focusInput = React.useCallback(() => {
     const el = textareaRef.current;
@@ -151,7 +158,7 @@ export function WelcomeScreen() {
         >
           <span className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/70 px-3 py-1 text-xs font-medium text-[#2563EB] shadow-sm">
             <Bot className="h-3.5 w-3.5" />
-            RAG 智能问答
+            {activeKbName || "RAG 智能问答"}
           </span>
           <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight text-[#111827] sm:text-5xl md:text-6xl">
             把问题变成

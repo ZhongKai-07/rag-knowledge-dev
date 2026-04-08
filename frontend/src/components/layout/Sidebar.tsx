@@ -1,6 +1,7 @@
 import * as React from "react";
 import { differenceInCalendarDays, isValid } from "date-fns";
 import {
+  ArrowLeft,
   BookOpen,
   Bot,
   LogOut,
@@ -46,6 +47,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     currentSessionId,
     isLoading,
     sessionsLoaded,
+    activeKbId,
+    activeKbName,
     createSession,
     deleteSession,
     renameSession,
@@ -64,11 +67,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const [avatarFailed, setAvatarFailed] = React.useState(false);
   const renameInputRef = React.useRef<HTMLInputElement | null>(null);
 
+  const kbId = activeKbId;
+
   React.useEffect(() => {
     if (sessions.length === 0) {
-      fetchSessions().catch(() => null);
+      fetchSessions(kbId || undefined).catch(() => null);
     }
-  }, [fetchSessions, sessions.length]);
+  }, [fetchSessions, sessions.length, kbId]);
 
   const filteredSessions = React.useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -126,6 +131,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const sessionTitleFont =
     "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", \"Helvetica Neue\", Arial, sans-serif";
 
+  const chatPath = kbId ? `/chat?kbId=${kbId}` : "/chat";
+  const sessionPath = (sid: string) => kbId ? `/chat/${sid}?kbId=${kbId}` : `/chat/${sid}`;
+
   const startRename = (id: string, title: string) => {
     setRenamingId(id);
     setRenameValue(title || "新对话");
@@ -173,10 +181,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Bot className="h-5 w-5 text-white" />
             </div>
             <div style={{ fontFamily: sessionTitleFont }}>
-              <p className="text-base font-semibold text-[#1A1A1A]">Ragent AI 智能体</p>
+              <p className="text-base font-semibold text-[#1A1A1A]">HT KnowledgeBase</p>
               <p className="text-xs text-[#999999]">Powered by AI</p>
             </div>
           </div>
+          <button
+            type="button"
+            className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-[#6B7280] transition-colors hover:bg-[#F0F0F0] hover:text-[#1F2937]"
+            onClick={() => {
+              navigate("/spaces");
+              onClose();
+            }}
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            返回空间列表
+          </button>
         </div>
         <div className="py-3 space-y-4">
           <div className="relative overflow-hidden rounded-2xl border border-[#E6EEF6] bg-gradient-to-br from-[#F0F9FF] via-white to-[#FEF3C7] p-3 shadow-[0_14px_30px_rgba(15,23,42,0.08)]">
@@ -191,16 +210,23 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="relative">
               <div className="flex items-center justify-between px-1">
                 <span className="text-[11px] font-semibold text-[#94A3B8]">快速开始</span>
-                <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-[#2563EB]">
-                  新内容
-                </span>
+                {activeKbName ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-[#2563EB]">
+                    <BookOpen className="h-2.5 w-2.5" />
+                    {activeKbName}
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-[#2563EB]">
+                    新内容
+                  </span>
+                )}
               </div>
               <button
                 type="button"
                 className="mt-2 flex w-full items-center gap-3 rounded-2xl bg-white/90 px-4 py-3 text-left shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-[1px] hover:shadow-[0_16px_30px_rgba(15,23,42,0.12)]"
                 onClick={() => {
                   createSession().catch(() => null);
-                  navigate("/chat");
+                  navigate(chatPath);
                   onClose();
                 }}
               >
@@ -286,13 +312,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             cancelRename();
                           }
                           selectSession(session.id).catch(() => null);
-                          navigate(`/chat/${session.id}`);
+                          navigate(sessionPath(session.id));
                           onClose();
                         }}
                         onKeyDown={(event) => {
                           if (event.key === "Enter") {
                             selectSession(session.id).catch(() => null);
-                            navigate(`/chat/${session.id}`);
+                            navigate(sessionPath(session.id));
                             onClose();
                           }
                         }}
@@ -452,7 +478,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 deleteSession(target.id)
                   .then(() => {
                     if (isCurrent) {
-                      navigate("/chat");
+                      navigate(chatPath);
                     }
                   })
                   .catch(() => null);
