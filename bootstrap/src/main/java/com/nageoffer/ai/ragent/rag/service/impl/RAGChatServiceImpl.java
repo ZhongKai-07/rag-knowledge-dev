@@ -114,7 +114,7 @@ public class RAGChatServiceImpl implements RAGChatService {
             kbAccessService.checkAccess(knowledgeBaseId);
         }
 
-        List<ChatMessage> history = memoryService.loadAndAppend(actualConversationId, userId, ChatMessage.user(question));
+        List<ChatMessage> history = memoryService.loadAndAppend(actualConversationId, userId, ChatMessage.user(question), knowledgeBaseId);
 
         RewriteResult rewriteResult = queryRewriteService.rewriteWithSplit(question, history);
         List<SubQuestionIntent> subIntents = intentResolver.resolve(rewriteResult);

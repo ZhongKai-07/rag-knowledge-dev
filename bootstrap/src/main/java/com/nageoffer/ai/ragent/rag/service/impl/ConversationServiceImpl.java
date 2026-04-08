@@ -110,6 +110,7 @@ public class ConversationServiceImpl implements ConversationService {
             ConversationDO record = ConversationDO.builder()
                     .conversationId(conversationId)
                     .userId(userId)
+                    .kbId(request.getKbId())
                     .title(title)
                     .lastTime(request.getLastTime())
                     .build();

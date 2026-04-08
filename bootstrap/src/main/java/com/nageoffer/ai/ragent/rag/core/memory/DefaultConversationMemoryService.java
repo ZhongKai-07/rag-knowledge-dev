@@ -99,11 +99,11 @@ public class DefaultConversationMemoryService implements ConversationMemoryServi
     }
 
     @Override
-    public String append(String conversationId, String userId, ChatMessage message) {
+    public String append(String conversationId, String userId, ChatMessage message, String kbId) {
         if (StrUtil.isBlank(conversationId) || StrUtil.isBlank(userId)) {
             return null;
         }
-        String messageId = memoryStore.append(conversationId, userId, message);
+        String messageId = memoryStore.append(conversationId, userId, message, kbId);
         summaryService.compressIfNeeded(conversationId, userId, message);
         return messageId;
     }

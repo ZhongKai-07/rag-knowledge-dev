@@ -42,9 +42,10 @@ public interface ConversationMemoryStore {
      * @param conversationId 对话ID
      * @param userId         用户ID
      * @param message        要追加的消息
+     * @param kbId           关联知识库ID（新建会话时写入，可为空）
      * @return 消息ID（可能为空）
      */
-    String append(String conversationId, String userId, ChatMessage message);
+    String append(String conversationId, String userId, ChatMessage message, String kbId);
 
     /**
      * 刷新对话缓存

@@ -72,7 +72,7 @@ public class JdbcConversationMemoryStore implements ConversationMemoryStore {
     }
 
     @Override
-    public String append(String conversationId, String userId, ChatMessage message) {
+    public String append(String conversationId, String userId, ChatMessage message, String kbId) {
         ConversationMessageBO conversationMessage = ConversationMessageBO.builder()
                 .conversationId(conversationId)
                 .userId(userId)
@@ -85,6 +85,7 @@ public class JdbcConversationMemoryStore implements ConversationMemoryStore {
             ConversationCreateRequest conversation = ConversationCreateRequest.builder()
                     .conversationId(conversationId)
                     .userId(userId)
+                    .kbId(kbId)
                     .question(message.getContent())
                     .lastTime(new Date())
                     .build();

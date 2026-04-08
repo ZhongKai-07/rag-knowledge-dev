@@ -121,7 +121,7 @@ public class StreamChatEventHandler implements StreamCallback {
         String content = answer.toString();
         String messageId = null;
         if (StrUtil.isNotBlank(content)) {
-            messageId = memoryService.append(conversationId, userId, ChatMessage.assistant(content));
+            messageId = memoryService.append(conversationId, userId, ChatMessage.assistant(content), null);
         }
         String title = resolveTitleForEvent();
         return new CompletionPayload(String.valueOf(messageId), title);
@@ -163,7 +163,7 @@ public class StreamChatEventHandler implements StreamCallback {
             return;
         }
         String messageId = memoryService.append(conversationId, UserContext.getUserId(),
-                ChatMessage.assistant(answer.toString()));
+                ChatMessage.assistant(answer.toString()), null);
 
         // 更新 Trace token 用量
         updateTraceTokenUsage();
