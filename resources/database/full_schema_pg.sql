@@ -138,6 +138,7 @@ CREATE TABLE public.t_conversation (
     id character varying(20) NOT NULL,
     conversation_id character varying(20) NOT NULL,
     user_id character varying(20) NOT NULL,
+    kb_id character varying(20) DEFAULT NULL,
     title character varying(128) NOT NULL,
     last_time timestamp without time zone,
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
@@ -172,6 +173,13 @@ COMMENT ON COLUMN public.t_conversation.conversation_id IS '会话ID';
 --
 
 COMMENT ON COLUMN public.t_conversation.user_id IS '用户ID';
+
+
+--
+-- Name: COLUMN t_conversation.kb_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_conversation.kb_id IS '关联知识库ID';
 
 
 --
@@ -1650,6 +1658,13 @@ CREATE INDEX idx_user_role_user_id ON public.t_user_role USING btree (user_id);
 --
 
 CREATE INDEX idx_user_time ON public.t_conversation USING btree (user_id, last_time);
+
+
+--
+-- Name: idx_conversation_kb_user; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_conversation_kb_user ON public.t_conversation USING btree (user_id, kb_id, last_time);
 
 
 --

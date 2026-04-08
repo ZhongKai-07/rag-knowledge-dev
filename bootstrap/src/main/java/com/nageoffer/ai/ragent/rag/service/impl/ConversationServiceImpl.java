@@ -82,6 +82,7 @@ public class ConversationServiceImpl implements ConversationService {
         return records.stream()
                 .map(item -> ConversationVO.builder()
                         .conversationId(item.getConversationId())
+                        .kbId(item.getKbId())
                         .title(item.getTitle())
                         .lastTime(item.getLastTime())
                         .build())

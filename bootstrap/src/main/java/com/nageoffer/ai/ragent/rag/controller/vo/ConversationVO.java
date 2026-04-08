@@ -39,6 +39,11 @@ public class ConversationVO {
     private String conversationId;
 
     /**
+     * 关联知识库ID
+     */
+    private String kbId;
+
+    /**
      * 会话标题
      */
     private String title;

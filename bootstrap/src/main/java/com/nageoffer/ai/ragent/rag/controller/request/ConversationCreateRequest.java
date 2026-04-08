@@ -44,6 +44,11 @@ public class ConversationCreateRequest {
     private String userId;
 
     /**
+     * 关联知识库ID
+     */
+    private String kbId;
+
+    /**
      * 用户问题
      */
     private String question;
