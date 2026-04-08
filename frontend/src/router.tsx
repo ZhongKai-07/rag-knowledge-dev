@@ -1,6 +1,7 @@
 import { Navigate, createBrowserRouter } from "react-router-dom";
 
 import { LoginPage } from "@/pages/LoginPage";
+import { SpacesPage } from "@/pages/SpacesPage";
 import { ChatPage } from "@/pages/ChatPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
@@ -39,7 +40,7 @@ function RequireAdmin({ children }: { children: JSX.Element }) {
   }
 
   if (user?.role !== "admin") {
-    return <Navigate to="/chat" replace />;
+    return <Navigate to="/spaces" replace />;
   }
 
   return children;
@@ -48,14 +49,14 @@ function RequireAdmin({ children }: { children: JSX.Element }) {
 function RedirectIfAuth({ children }: { children: JSX.Element }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   if (isAuthenticated) {
-    return <Navigate to="/chat" replace />;
+    return <Navigate to="/spaces" replace />;
   }
   return children;
 }
 
 function HomeRedirect() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return <Navigate to={isAuthenticated ? "/chat" : "/login"} replace />;
+  return <Navigate to={isAuthenticated ? "/spaces" : "/login"} replace />;
 }
 
 export const router = createBrowserRouter([
@@ -69,6 +70,14 @@ export const router = createBrowserRouter([
       <RedirectIfAuth>
         <LoginPage />
       </RedirectIfAuth>
+    )
+  },
+  {
+    path: "/spaces",
+    element: (
+      <RequireAuth>
+        <SpacesPage />
+      </RequireAuth>
     )
   },
   {
