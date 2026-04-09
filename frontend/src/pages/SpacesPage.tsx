@@ -124,10 +124,16 @@ export function SpacesPage() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
+      {/* Decorative background layers */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#F8FAFC] via-white to-[#EFF6FF]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-40 [background-size:40px_40px]" />
+      <div aria-hidden="true" className="pointer-events-none absolute -top-32 right-[-40px] h-72 w-72 rounded-full bg-gradient-radial from-[#BFDBFE]/60 via-transparent to-transparent blur-3xl animate-float" />
+      <div aria-hidden="true" className="pointer-events-none absolute -bottom-36 left-[-80px] h-80 w-80 rounded-full bg-gradient-radial from-[#FDE68A]/40 via-transparent to-transparent blur-3xl animate-float" />
+
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/60 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <header className="relative sticky top-0 z-30 border-b border-slate-200/60 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-sm">
               HT
@@ -179,17 +185,17 @@ export function SpacesPage() {
       </header>
 
       {/* Main content */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+      <main className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
         {/* Stats row */}
-        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 animate-fade-up" style={{ animationFillMode: "both" }}>
           {statCards.map((card) => {
             const Icon = card.icon;
             return (
               <div
                 key={card.label}
-                className="flex items-center gap-4 rounded-2xl border border-slate-200/60 bg-white p-5 shadow-sm"
+                className="flex items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-md"
               >
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${card.bg}`}>
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ${card.bg}`}>
                   <Icon className={`h-5 w-5 ${card.color}`} />
                 </div>
                 <div>
@@ -204,11 +210,13 @@ export function SpacesPage() {
         </div>
 
         {/* Section header */}
-        <div className="mt-10 mb-5 flex items-center gap-2">
+        <div className="mt-10 mb-5 flex items-center gap-3 animate-fade-up" style={{ animationDelay: "80ms", animationFillMode: "both" }}>
           <h2 className="text-lg font-semibold text-slate-800">我的知识库</h2>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70 px-2.5 py-0.5 text-xs font-medium text-[#2563EB] shadow-sm">
+            <Database className="h-3 w-3" />
             {loading ? "..." : knowledgeBases.length}
           </span>
+          <span className="h-px flex-1 bg-[#E5E7EB]" />
         </div>
 
         {/* Card grid */}
@@ -217,13 +225,13 @@ export function SpacesPage() {
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="h-[140px] animate-pulse rounded-2xl border border-slate-200/60 bg-white"
+                className="h-[140px] animate-pulse rounded-2xl border border-white/70 bg-white/70 backdrop-blur-xl"
               />
             ))}
           </div>
         ) : knowledgeBases.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/70 bg-white/70 shadow-sm backdrop-blur-xl">
               <Database className="h-8 w-8 text-slate-400" />
             </div>
             <p className="mt-4 text-base font-medium text-slate-600">暂无可访问的知识库</p>
@@ -232,7 +240,7 @@ export function SpacesPage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-up" style={{ animationDelay: "160ms", animationFillMode: "both" }}>
             {knowledgeBases.map((kb) => {
               const color = nameToColor(kb.name);
               const initial = kb.name ? kb.name.charAt(0).toUpperCase() : "?";
@@ -241,11 +249,11 @@ export function SpacesPage() {
                   key={kb.id}
                   type="button"
                   onClick={() => navigate(`/chat?kbId=${kb.id}`)}
-                  className="group flex flex-col rounded-2xl border border-slate-200/60 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                  className="group flex flex-col rounded-2xl border border-white/70 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-md"
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-base font-bold ${color.bg} ${color.text}`}
+                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-base font-bold shadow-sm ${color.bg} ${color.text}`}
                     >
                       {initial}
                     </div>
@@ -258,7 +266,7 @@ export function SpacesPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-400">
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100/60 pt-3 text-xs text-slate-400">
                     <span>创建于 {formatDate(kb.createTime)}</span>
                   </div>
                 </button>
