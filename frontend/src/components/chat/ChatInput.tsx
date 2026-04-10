@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Brain, Lightbulb, Send, Square } from "lucide-react";
+import { BookOpen, Brain, Lightbulb, Send, Square } from "lucide-react";
 
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,8 @@ export function ChatInput() {
     setDeepThinkingEnabled,
     selectedKnowledgeBaseId,
     setSelectedKnowledgeBase,
+    activeKbId,
+    activeKbName,
     inputFocusKey
   } = useChatStore();
 
@@ -128,7 +130,12 @@ export function ChatInput() {
               ) : null}
             </span>
           </button>
-          {knowledgeBases.length > 0 ? (
+          {activeKbId ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-[#BFDBFE] bg-[#DBEAFE] px-3 py-1.5 text-xs font-medium text-[#2563EB]">
+              <BookOpen className="h-3.5 w-3.5" />
+              {activeKbName || "知识库"}
+            </span>
+          ) : knowledgeBases.length > 0 ? (
             <select
               value={selectedKnowledgeBaseId || ""}
               onChange={(e) => setSelectedKnowledgeBase(e.target.value || null)}

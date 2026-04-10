@@ -33,6 +33,7 @@ CREATE TABLE t_conversation (
     id              VARCHAR(20) NOT NULL PRIMARY KEY,
     conversation_id VARCHAR(20) NOT NULL,
     user_id         VARCHAR(20) NOT NULL,
+    kb_id           VARCHAR(20) DEFAULT NULL,
     title           VARCHAR(128) NOT NULL,
     last_time       TIMESTAMP,
     create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -41,10 +42,12 @@ CREATE TABLE t_conversation (
     CONSTRAINT uk_conversation_user UNIQUE (conversation_id, user_id)
 );
 CREATE INDEX idx_user_time ON t_conversation (user_id, last_time);
+CREATE INDEX idx_conversation_kb_user ON t_conversation (user_id, kb_id, last_time);
 COMMENT ON TABLE t_conversation IS '会话列表';
 COMMENT ON COLUMN t_conversation.id IS '主键ID';
 COMMENT ON COLUMN t_conversation.conversation_id IS '会话ID';
 COMMENT ON COLUMN t_conversation.user_id IS '用户ID';
+COMMENT ON COLUMN t_conversation.kb_id IS '关联知识库ID';
 COMMENT ON COLUMN t_conversation.title IS '会话名称';
 COMMENT ON COLUMN t_conversation.last_time IS '最近消息时间';
 COMMENT ON COLUMN t_conversation.create_time IS '创建时间';

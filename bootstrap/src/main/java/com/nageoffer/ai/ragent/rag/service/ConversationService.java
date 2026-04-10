@@ -30,12 +30,25 @@ import java.util.List;
 public interface ConversationService {
 
     /**
-     * 根据用户ID获取会话列表
+     * 根据用户ID获取会话列表，可选按知识库ID过滤
      *
      * @param userId 用户ID
+     * @param kbId   知识库ID（可为空，为空时返回所有会话）
      * @return 会话视图对象列表
      */
-    List<ConversationVO> listByUserId(String userId);
+    List<ConversationVO> listByUserId(String userId, String kbId);
+
+    /**
+     * 校验会话是否属于指定知识库
+     * <p>
+     * 旧会话 kb_id 为 NULL 视为不属于任何空间（fail-closed）
+     * </p>
+     *
+     * @param conversationId 会话ID
+     * @param userId         用户ID
+     * @param kbId           知识库ID
+     */
+    void validateKbOwnership(String conversationId, String userId, String kbId);
 
     /**
      * 创建或更新会话

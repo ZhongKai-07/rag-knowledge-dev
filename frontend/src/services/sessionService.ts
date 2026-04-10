@@ -4,6 +4,7 @@ export interface ConversationVO {
   conversationId: string;
   title: string;
   lastTime?: string;
+  kbId?: string;
 }
 
 export interface ConversationMessageVO {
@@ -15,18 +16,26 @@ export interface ConversationMessageVO {
   createTime?: string;
 }
 
-export async function listSessions() {
-  return api.get<ConversationVO[]>("/conversations");
+export async function listSessions(kbId?: string) {
+  return api.get<ConversationVO[]>("/conversations", {
+    params: kbId ? { kbId } : undefined
+  });
 }
 
-export async function deleteSession(conversationId: string) {
-  return api.delete<void>(`/conversations/${conversationId}`);
+export async function deleteSession(conversationId: string, kbId?: string) {
+  return api.delete<void>(`/conversations/${conversationId}`, {
+    params: kbId ? { kbId } : undefined
+  });
 }
 
-export async function renameSession(conversationId: string, title: string) {
-  return api.put<void>(`/conversations/${conversationId}`, { title });
+export async function renameSession(conversationId: string, title: string, kbId?: string) {
+  return api.put<void>(`/conversations/${conversationId}`, { title }, {
+    params: kbId ? { kbId } : undefined
+  });
 }
 
-export async function listMessages(conversationId: string) {
-  return api.get<ConversationMessageVO[]>(`/conversations/${conversationId}/messages`);
+export async function listMessages(conversationId: string, kbId?: string) {
+  return api.get<ConversationMessageVO[]>(`/conversations/${conversationId}/messages`, {
+    params: kbId ? { kbId } : undefined
+  });
 }

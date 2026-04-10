@@ -327,8 +327,8 @@ public class ChatQueueLimiter {
                 : conversationId;
         boolean isNewConversation = conversationGroupService.findConversation(actualConversationId, userId) == null;
 
-        memoryService.append(actualConversationId, userId, ChatMessage.user(question));
-        String messageId = memoryService.append(actualConversationId, userId, ChatMessage.assistant(REJECT_MESSAGE));
+        memoryService.append(actualConversationId, userId, ChatMessage.user(question), null);
+        String messageId = memoryService.append(actualConversationId, userId, ChatMessage.assistant(REJECT_MESSAGE), null);
 
         String title = isNewConversation ? resolveTitle(actualConversationId, userId) : "";
         if (isNewConversation && StrUtil.isBlank(title)) {

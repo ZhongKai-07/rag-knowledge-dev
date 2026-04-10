@@ -46,7 +46,29 @@
       "Bash(mvn dependency:build-classpath:*)",
       "Bash(jar xf:*)",
       "Bash(mvn test:*)",
-      "Bash(mvn test-compile:*)"
+      "Bash(mvn test-compile:*)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_pages",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_snapshot",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__click",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__fill",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__press_key",
+      "Bash(pg_dump -h 127.0.0.1 -p 5432 -U postgres -d ragent --schema-only --no-owner --no-privileges --no-comments)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(mvn clean:*)",
+      "Bash(mvn spotless:check)",
+      "Bash(PGPASSWORD=ragent psql -h localhost -U ragent -d ragent -f resources/database/upgrade_v1.2_to_v1.3.sql)",
+      "Bash(where psql:*)",
+      "Read(//c/Program Files/**)",
+      "Bash(docker exec postgres:*)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__wait_for",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_network_requests",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__get_network_request",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)",
+      "Bash(git pull:*)"
     ]
   }
 }

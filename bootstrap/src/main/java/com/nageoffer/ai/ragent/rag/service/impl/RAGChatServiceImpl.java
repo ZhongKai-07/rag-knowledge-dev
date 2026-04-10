@@ -20,11 +20,15 @@ package com.nageoffer.ai.ragent.rag.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.infra.chat.LLMService;
+import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
+import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.infra.chat.StreamCancellationHandle;
 import com.nageoffer.ai.ragent.rag.aop.ChatRateLimit;
@@ -55,6 +59,7 @@ import com.nageoffer.ai.ragent.user.service.KbAccessService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.CHAT_SYSTEM_PROMPT_PATH;
@@ -82,6 +87,7 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final IntentResolver intentResolver;
     private final RetrievalEngine retrievalEngine;
     private final KbAccessService kbAccessService;
+    private final ConversationMapper conversationMapper;
 
     @Override
     @ChatRateLimit
@@ -114,7 +120,20 @@ public class RAGChatServiceImpl implements RAGChatService {
             kbAccessService.checkAccess(knowledgeBaseId);
         }
 
-        List<ChatMessage> history = memoryService.loadAndAppend(actualConversationId, userId, ChatMessage.user(question));
+        // Validate conversation-KB ownership for existing conversations
+        if (knowledgeBaseId != null && StrUtil.isNotBlank(conversationId)) {
+            ConversationDO existing = conversationMapper.selectOne(
+                    Wrappers.lambdaQuery(ConversationDO.class)
+                            .eq(ConversationDO::getConversationId, actualConversationId)
+                            .eq(ConversationDO::getUserId, userId)
+                            .eq(ConversationDO::getDeleted, 0)
+            );
+            if (existing != null && !Objects.equals(existing.getKbId(), knowledgeBaseId)) {
+                throw new ClientException("会话不属于当前知识库");
+            }
+        }
+
+        List<ChatMessage> history = memoryService.loadAndAppend(actualConversationId, userId, ChatMessage.user(question), knowledgeBaseId);
 
         RewriteResult rewriteResult = queryRewriteService.rewriteWithSplit(question, history);
         List<SubQuestionIntent> subIntents = intentResolver.resolve(rewriteResult);

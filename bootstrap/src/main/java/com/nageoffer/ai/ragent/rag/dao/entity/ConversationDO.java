@@ -44,6 +44,8 @@ public class ConversationDO {
 
     private String userId;
 
+    private String kbId;
+
     private String title;
 
     private Date lastTime;

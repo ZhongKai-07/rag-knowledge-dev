@@ -15,47 +15,27 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.controller.request;
+package com.nageoffer.ai.ragent.knowledge.controller.vo;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 /**
- * 会话创建请求
+ * Spaces 统计信息返回对象
  */
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class ConversationCreateRequest {
+@NoArgsConstructor
+public class SpacesStatsVO {
 
     /**
-     * 会话ID
+     * 知识库数量
      */
-    private String conversationId;
+    private Long kbCount;
 
     /**
-     * 用户ID
+     * 文档总数
      */
-    private String userId;
-
-    /**
-     * 关联知识库ID
-     */
-    private String kbId;
-
-    /**
-     * 用户问题
-     */
-    private String question;
-
-    /**
-     * 最后更新时间
-     */
-    private Date lastTime;
-
+    private Long totalDocumentCount;
 }

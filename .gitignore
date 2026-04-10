@@ -50,5 +50,6 @@ __pycache__/
 ### Misc ###
 /log/
 infra-ai/.claude/
+.claude.local.md
 hs_err_pid*.log
 replay_pid*.log

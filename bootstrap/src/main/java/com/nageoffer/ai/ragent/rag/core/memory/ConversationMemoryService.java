@@ -42,9 +42,10 @@ public interface ConversationMemoryService {
      * @param conversationId 对话ID
      * @param userId         用户ID
      * @param message        要追加的消息
+     * @param kbId           关联知识库ID（新建会话时写入，可为空）
      * @return 消息ID
      */
-    String append(String conversationId, String userId, ChatMessage message);
+    String append(String conversationId, String userId, ChatMessage message, String kbId);
 
     /**
      * 加载历史并追加新消息（便捷方法）
@@ -55,11 +56,12 @@ public interface ConversationMemoryService {
      * @param conversationId 对话ID
      * @param userId         用户ID
      * @param message        要追加的消息
+     * @param kbId           关联知识库ID（新建会话时写入，可为空）
      * @return 包含追加前的历史记录
      */
-    default List<ChatMessage> loadAndAppend(String conversationId, String userId, ChatMessage message) {
+    default List<ChatMessage> loadAndAppend(String conversationId, String userId, ChatMessage message, String kbId) {
         List<ChatMessage> history = load(conversationId, userId);
-        append(conversationId, userId, message);
+        append(conversationId, userId, message, kbId);
         return history;
     }
 }

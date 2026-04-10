@@ -43,6 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.CONVERSATION_TITLE_PROMPT_PATH;
@@ -64,7 +65,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final LLMService llmService;
 
     @Override
-    public List<ConversationVO> listByUserId(String userId) {
+    public List<ConversationVO> listByUserId(String userId, String kbId) {
         if (StrUtil.isBlank(userId)) {
             return List.of();
         }
@@ -72,6 +73,7 @@ public class ConversationServiceImpl implements ConversationService {
         List<ConversationDO> records = conversationMapper.selectList(
                 Wrappers.lambdaQuery(ConversationDO.class)
                         .eq(ConversationDO::getUserId, userId)
+                        .eq(kbId != null, ConversationDO::getKbId, kbId)
                         .eq(ConversationDO::getDeleted, 0)
                         .orderByDesc(ConversationDO::getLastTime)
         );
@@ -82,10 +84,28 @@ public class ConversationServiceImpl implements ConversationService {
         return records.stream()
                 .map(item -> ConversationVO.builder()
                         .conversationId(item.getConversationId())
+                        .kbId(item.getKbId())
                         .title(item.getTitle())
                         .lastTime(item.getLastTime())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public void validateKbOwnership(String conversationId, String userId, String kbId) {
+        ConversationDO record = conversationMapper.selectOne(
+                Wrappers.lambdaQuery(ConversationDO.class)
+                        .eq(ConversationDO::getConversationId, conversationId)
+                        .eq(ConversationDO::getUserId, userId)
+                        .eq(ConversationDO::getDeleted, 0)
+        );
+        if (record == null) {
+            throw new ClientException("会话不存在");
+        }
+        // Old conversations with kb_id=NULL are treated as "not belonging to any space" (fail-closed)
+        if (!Objects.equals(record.getKbId(), kbId)) {
+            throw new ClientException("会话不属于当前知识库");
+        }
     }
 
     @Override
@@ -109,6 +129,7 @@ public class ConversationServiceImpl implements ConversationService {
             ConversationDO record = ConversationDO.builder()
                     .conversationId(conversationId)
                     .userId(userId)
+                    .kbId(request.getKbId())
                     .title(title)
                     .lastTime(request.getLastTime())
                     .build();

@@ -85,6 +85,9 @@ Key config sections: database, Redis, RocketMQ, Milvus, AI model providers (Olla
 
 Docker Compose files in `resources/docker/` for Milvus and RocketMQ. Database init scripts in `resources/database/`.
 
+Upgrade scripts in `resources/database/`:
+- `upgrade_v1.2_to_v1.3.sql` — adds `kb_id` to `t_conversation` for knowledge space isolation
+
 ## Language
 
 Project documentation and comments are in Chinese. Code identifiers are in English.
@@ -95,6 +98,13 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - **OpenAI SSE usage frame order**: `finish_reason` frame → usage frame (empty choices) → `[DONE]`. Loop must break on `[DONE]` (`streamEnded`), not on `finish_reason` (`finished`), otherwise usage data is missed.
 - **RagTraceContext ThreadLocal cleared early**: `ChatRateLimitAspect.finally` clears context before streaming completes. Capture `traceId` etc. in handler constructor, not at callback time.
 - **`extra_data TEXT` JSON pattern**: Used in `t_rag_trace_run` and `t_rag_trace_node` for extensible metrics (token usage, question length) without schema migration. Parse with Gson in query service.
+- **Database access via Docker**: `docker exec postgres psql -U postgres -d ragent -c "SQL"`. User is `postgres`, not `ragent`.
+- **Two schema files maintained independently**: `schema_pg.sql` (clean DDL) and `full_schema_pg.sql` (pg_dump style) must BOTH be updated when changing table schemas. Forgetting one causes init/upgrade divergence.
+- **Admin RBAC special case**: `kbAccessService.getAccessibleKbIds()` walks `user→roles→kb_relations` chain — it does NOT return all KBs for admin. "Admin sees everything" is enforced at controller layer with `"admin".equals(UserContext.getRole())` checks. New endpoints that need admin-sees-all must handle this independently.
+- **@TableLogic auto-filter**: MyBatis Plus entities with `@TableLogic` on `deleted` field automatically append `WHERE deleted=0`. Do NOT add redundant `.eq(::getDeleted, 0)` conditions in queries.
+- **PostgreSQL folds unquoted identifiers to lowercase**: `selectMaps` with `.select("kb_id AS kbId")` produces map key `kbid`, not `kbId`. Always use snake_case aliases (`AS kb_id`, `AS doc_count`) and `row.get("kb_id")` — never camelCase.
+- **Frontend HMR vs Backend restart**: Vite dev server hot-reloads frontend changes instantly. Spring Boot requires manual restart (`mvn -pl bootstrap spring-boot:run`) after any Java code change. Always confirm backend is restarted before verifying backend changes.
+- **API signature changes require full-text search**: When backend adds/changes required parameters (e.g., adding `@RequestParam String kbId`), grep ALL frontend callers — not just the ones listed in the plan. Missing callers cause runtime 400 errors.
 
 ## RAG Evaluation (RAGAS)
 
@@ -102,6 +112,16 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - `EvaluationCollector` gathers data via `RagTraceContext` ThreadLocal across the RAG pipeline
 - Export endpoint: `GET /rag/evaluations/export` produces RAGAS-compatible JSON
 - RAGAS evaluation script: `ragas/ragas/run_eval.py` (uses 百炼 API as evaluator LLM)
+
+## Knowledge Spaces Architecture
+
+- Login redirects to `/spaces` (knowledge base hub), not `/chat`
+- `t_conversation.kb_id` associates conversations with knowledge bases (added in v1.3 migration)
+- Frontend URL `?kbId=xxx` is the single source of truth for KB locking; `chatStore.activeKbId` is a derived cache
+- Entering a new space calls `resetForNewSpace()` to clear old sessions/messages
+- All conversation endpoints (`messages`, `rename`, `delete`) require `kbId` as a mandatory parameter for ownership validation
+- `validateKbOwnership()` uses `Objects.equals()` for null-safe comparison; old conversations with `kb_id=NULL` are fail-closed (don't belong to any space)
+- Brand name: "HT KnowledgeBase" (changed from "Ragent AI 智能体" — affected files: index.html, .env, Sidebar.tsx, AdminLayout.tsx)
 
 ## Frontend Patterns
 
