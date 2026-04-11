@@ -134,6 +134,11 @@ public class KnowledgeDocumentDO {
     private String status;
 
     /**
+     * 文档安全等级：0=PUBLIC, 1=INTERNAL, 2=CONFIDENTIAL, 3=RESTRICTED
+     */
+    private Integer securityLevel;
+
+    /**
      * 创建人
      */
     private String createdBy;

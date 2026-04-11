@@ -44,6 +44,11 @@ public class RoleKbRelationDO {
 
     private String kbId;
 
+    /**
+     * 权限级别：READ / WRITE / MANAGE
+     */
+    private String permission;
+
     @TableField(fill = FieldFill.INSERT)
     private String createdBy;
 

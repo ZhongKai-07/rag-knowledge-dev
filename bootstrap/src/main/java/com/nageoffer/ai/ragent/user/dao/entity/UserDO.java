@@ -54,6 +54,11 @@ public class UserDO {
      */
     private String role;
 
+    /**
+     * 所属部门 ID
+     */
+    private String deptId;
+
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 
