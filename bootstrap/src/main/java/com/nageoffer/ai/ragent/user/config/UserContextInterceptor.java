@@ -19,10 +19,13 @@ package com.nageoffer.ai.ragent.user.config;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
+import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
+import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
+import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -31,24 +34,17 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 /**
- * 用户上下文拦截器
+ * 用户上下文拦截器。
  *
- * <p>该拦截器用于在请求处理前从 SaToken 中获取登录用户信息，并设置到 UserContext 中，
- * 方便后续业务逻辑使用。在请求完成后清理 UserContext，避免内存泄漏。
- *
- * <p>主要功能：
- * <ul>
- *   <li>在请求前置处理时，从 SaToken 获取登录用户 ID</li>
- *   <li>根据用户 ID 查询数据库获取完整用户信息</li>
- *   <li>将用户信息封装成 LoginUser 对象并设置到 UserContext 线程上下文中</li>
- *   <li>在请求完成后清理 UserContext，防止线程复用时的数据污染</li>
- *   <li>跳过异步调度请求（如 SSE 完成回调），避免 SaToken 上下文丢失问题</li>
- * </ul>
- *
- * @author nageoffer
- * @see UserContext
- * @see LoginUser
+ * <p>在请求进入时一次性从数据库 join 查出 {@code user + roles}，封装成 {@link LoginUser}
+ * 塞进 {@link UserContext} ThreadLocal。后续业务代码无需再走 DB。
  */
 @Component
 @RequiredArgsConstructor
@@ -57,6 +53,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
     private static final String DEFAULT_AVATAR_URL = "https://avatars.githubusercontent.com/u/583231?v=4";
 
     private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
@@ -72,12 +69,34 @@ public class UserContextInterceptor implements HandlerInterceptor {
         String loginId = StpUtil.getLoginIdAsString();
         UserDO user = userMapper.selectById(loginId);
 
+        // 一次性 join 查所有关联角色
+        List<RoleDO> roles = roleMapper.selectRolesByUserId(loginId);
+        Set<RoleType> roleTypes = roles.stream()
+                .map(RoleDO::getRoleType)
+                .filter(StrUtil::isNotBlank)
+                .map(rt -> {
+                    try {
+                        return RoleType.valueOf(rt);
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(RoleType.class)));
+        int maxSecurityLevel = roles.stream()
+                .mapToInt(r -> r.getMaxSecurityLevel() == null ? 0 : r.getMaxSecurityLevel())
+                .max()
+                .orElse(0);
+
         UserContext.set(
                 LoginUser.builder()
-                        .userId(user.getId().toString())
+                        .userId(user.getId())
                         .username(user.getUsername())
                         .role(user.getRole())
                         .avatar(StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar())
+                        .deptId(user.getDeptId())
+                        .roleTypes(roleTypes)
+                        .maxSecurityLevel(maxSecurityLevel)
                         .build()
         );
         return true;
