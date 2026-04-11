@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.core.retrieve;
 
 import cn.hutool.core.collection.CollUtil;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceNode;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannel;
@@ -33,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -84,6 +86,7 @@ public class MultiChannelRetrievalEngine {
                     .query(context.getMainQuestion())
                     .topK(topK)
                     .collectionName(kb.getCollectionName())
+                    .metadataFilters(buildMetadataFilters(context))
                     .build();
             List<RetrievedChunk> chunks = retrieverService.retrieve(req);
 
@@ -254,6 +257,34 @@ public class MultiChannelRetrievalEngine {
                 .intents(subIntents)
                 .topK(topK)
                 .accessibleKbIds(accessibleKbIds)
+                .maxSecurityLevel(resolveMaxSecurityLevel())
                 .build();
+    }
+
+    /**
+     * 从当前线程用户上下文中获取最大安全等级。
+     * 系统态（MQ 消费者、定时任务）无登录态时返回 null，表示不加 security_level 过滤。
+     */
+    private Integer resolveMaxSecurityLevel() {
+        if (UserContext.hasUser()) {
+            return UserContext.get().getMaxSecurityLevel();
+        }
+        return null;
+    }
+
+    /**
+     * 根据检索上下文构建 MetadataFilter 列表。
+     * 当 maxSecurityLevel 不为 null 时追加 security_level &lt;= maxSecurityLevel 过滤条件。
+     */
+    public static List<MetadataFilter> buildMetadataFilters(SearchContext ctx) {
+        List<MetadataFilter> filters = new ArrayList<>();
+        if (ctx.getMaxSecurityLevel() != null) {
+            filters.add(new MetadataFilter(
+                    "security_level",
+                    MetadataFilter.FilterOp.LTE,
+                    ctx.getMaxSecurityLevel()
+            ));
+        }
+        return filters;
     }
 }

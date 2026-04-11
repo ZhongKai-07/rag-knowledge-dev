@@ -67,6 +67,13 @@ public class SearchContext {
     private Set<String> accessibleKbIds;
 
     /**
+     * 当前用户跨所有挂载角色的最大安全等级。
+     * null 表示"不加 security_level 过滤"（系统态或 admin 调用路径）。
+     * 非 null 时检索层追加 metadata.security_level &lt;= maxSecurityLevel 过滤。
+     */
+    private Integer maxSecurityLevel;
+
+    /**
      * 扩展元数据
      */
     @Builder.Default

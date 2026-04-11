@@ -31,8 +31,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -96,7 +96,7 @@ public class OpenSearchRetrieverService implements RetrieverService {
 
     @SuppressWarnings("unchecked")
     private List<RetrievedChunk> doSearch(String collectionName, String query, float[] vector,
-                                          int topK, Map<String, Object> metadataFilters) {
+                                          int topK, List<MetadataFilter> metadataFilters) {
         try {
             String queryJson;
 
@@ -138,7 +138,7 @@ public class OpenSearchRetrieverService implements RetrieverService {
     }
 
     private String buildHybridQuery(String query, float[] vector, int topK,
-                                    Map<String, Object> metadataFilters) {
+                                    List<MetadataFilter> metadataFilters) {
         String vectorStr = floatArrayToJson(vector);
         String filterClause = buildFilterClause(metadataFilters);
 
@@ -181,7 +181,7 @@ public class OpenSearchRetrieverService implements RetrieverService {
                 """.formatted(vectorStr, topK, filterClause, escapeJson(query), filterClause);
     }
 
-    private String buildKnnOnlyQuery(float[] vector, int topK, Map<String, Object> metadataFilters) {
+    private String buildKnnOnlyQuery(float[] vector, int topK, List<MetadataFilter> metadataFilters) {
         String vectorStr = floatArrayToJson(vector);
         String filterClause = buildFilterClause(metadataFilters);
 
@@ -203,16 +203,46 @@ public class OpenSearchRetrieverService implements RetrieverService {
                 """.formatted(vectorStr, topK, filterClause);
     }
 
-    private String buildFilterClause(Map<String, Object> metadataFilters) {
+    private String buildFilterClause(List<MetadataFilter> metadataFilters) {
         if (metadataFilters == null || metadataFilters.isEmpty()) {
             return "";
         }
-
-        return metadataFilters.entrySet().stream()
-                .map(entry -> """
-                        { "term": { "metadata.%s": "%s" } }""".formatted(
-                        escapeJson(entry.getKey()), escapeJson(String.valueOf(entry.getValue()))))
+        return metadataFilters.stream()
+                .map(this::renderFilter)
                 .collect(Collectors.joining(", "));
+    }
+
+    private String renderFilter(MetadataFilter f) {
+        String path = "metadata." + escapeJson(f.field());
+        return switch (f.op()) {
+            case EQ -> """
+                    { "term": { "%s": %s } }""".formatted(path, jsonValue(f.value()));
+            case LTE -> """
+                    { "range": { "%s": { "lte": %s } } }""".formatted(path, jsonValue(f.value()));
+            case GTE -> """
+                    { "range": { "%s": { "gte": %s } } }""".formatted(path, jsonValue(f.value()));
+            case LT -> """
+                    { "range": { "%s": { "lt": %s } } }""".formatted(path, jsonValue(f.value()));
+            case GT -> """
+                    { "range": { "%s": { "gt": %s } } }""".formatted(path, jsonValue(f.value()));
+            case IN -> """
+                    { "terms": { "%s": %s } }""".formatted(path, jsonArray(f.value()));
+        };
+    }
+
+    private String jsonValue(Object v) {
+        if (v == null) return "null";
+        if (v instanceof Number || v instanceof Boolean) return v.toString();
+        return "\"" + escapeJson(v.toString()) + "\"";
+    }
+
+    private String jsonArray(Object v) {
+        if (!(v instanceof Collection<?> c)) {
+            throw new IllegalArgumentException("IN filter expects Collection, got " + v);
+        }
+        return c.stream()
+                .map(this::jsonValue)
+                .collect(Collectors.joining(", ", "[", "]"));
     }
 
     @SuppressWarnings("unchecked")

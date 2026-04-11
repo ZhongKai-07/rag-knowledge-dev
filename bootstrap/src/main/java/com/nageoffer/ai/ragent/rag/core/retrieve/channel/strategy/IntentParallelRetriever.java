@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.core.intent.IntentNode;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
+import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieveRequest;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.AbstractParallelRetriever;
@@ -37,7 +38,7 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
 
     private final RetrieverService retrieverService;
 
-    public record IntentTask(NodeScore nodeScore, int intentTopK) {
+    public record IntentTask(NodeScore nodeScore, int intentTopK, List<MetadataFilter> metadataFilters) {
     }
 
     public IntentParallelRetriever(RetrieverService retrieverService,
@@ -47,16 +48,18 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
     }
 
     /**
-     * 执行并行检索（重载方法，支持动态 TopK 计算）
+     * 执行并行检索（重载方法，支持动态 TopK 计算和 metadata 过滤）
      */
     public List<RetrievedChunk> executeParallelRetrieval(String question,
                                                          List<NodeScore> targets,
                                                          int fallbackTopK,
-                                                         int topKMultiplier) {
+                                                         int topKMultiplier,
+                                                         List<MetadataFilter> metadataFilters) {
         List<IntentTask> intentTasks = targets.stream()
                 .map(nodeScore -> new IntentTask(
                         nodeScore,
-                        resolveIntentTopK(nodeScore, fallbackTopK, topKMultiplier)
+                        resolveIntentTopK(nodeScore, fallbackTopK, topKMultiplier),
+                        metadataFilters
                 ))
                 .toList();
         return super.executeParallelRetrieval(question, intentTasks, fallbackTopK);
@@ -72,6 +75,7 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
                             .collectionName(node.getCollectionName())
                             .query(question)
                             .topK(task.intentTopK())
+                            .metadataFilters(task.metadataFilters())
                             .build()
             );
         } catch (Exception e) {

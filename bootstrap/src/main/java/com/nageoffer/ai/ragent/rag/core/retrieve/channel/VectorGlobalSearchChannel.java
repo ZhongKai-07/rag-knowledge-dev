@@ -24,6 +24,7 @@ import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.rag.config.SearchChannelProperties;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
+import com.nageoffer.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy.CollectionParallelRetriever;
 import lombok.extern.slf4j.Slf4j;
@@ -126,7 +127,8 @@ public class VectorGlobalSearchChannel implements SearchChannel {
             List<RetrievedChunk> allChunks = retrieveFromAllCollections(
                     context.getMainQuestion(),
                     collections,
-                    context.getTopK() * topKMultiplier
+                    context.getTopK() * topKMultiplier,
+                    context
             );
 
             long latency = System.currentTimeMillis() - startTime;
@@ -185,9 +187,14 @@ public class VectorGlobalSearchChannel implements SearchChannel {
      */
     private List<RetrievedChunk> retrieveFromAllCollections(String question,
                                                             List<String> collections,
-                                                            int topK) {
-        // 使用模板方法执行并行检索
-        return parallelRetriever.executeParallelRetrieval(question, collections, topK);
+                                                            int topK,
+                                                            SearchContext context) {
+        // 将 collection 名称列表转换为携带 metadataFilters 的 CollectionTask 列表
+        var filters = MultiChannelRetrievalEngine.buildMetadataFilters(context);
+        List<CollectionParallelRetriever.CollectionTask> tasks = collections.stream()
+                .map(name -> new CollectionParallelRetriever.CollectionTask(name, filters))
+                .toList();
+        return parallelRetriever.executeParallelRetrieval(question, tasks, topK);
     }
 
     @Override

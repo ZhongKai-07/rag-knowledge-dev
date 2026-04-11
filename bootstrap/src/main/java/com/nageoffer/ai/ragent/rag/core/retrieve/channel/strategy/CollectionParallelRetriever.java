@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy;
 
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieveRequest;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.AbstractParallelRetriever;
@@ -31,9 +32,15 @@ import java.util.concurrent.Executor;
  * 继承模板类，实现 Collection 特定的检索逻辑
  */
 @Slf4j
-public class CollectionParallelRetriever extends AbstractParallelRetriever<String> {
+public class CollectionParallelRetriever extends AbstractParallelRetriever<CollectionParallelRetriever.CollectionTask> {
 
     private final RetrieverService retrieverService;
+
+    /**
+     * 单次检索任务载体：collection 名称 + 类型化的 metadata 过滤条件。
+     */
+    public record CollectionTask(String collectionName, List<MetadataFilter> metadataFilters) {
+    }
 
     public CollectionParallelRetriever(RetrieverService retrieverService, Executor executor) {
         super(executor);
@@ -41,24 +48,25 @@ public class CollectionParallelRetriever extends AbstractParallelRetriever<Strin
     }
 
     @Override
-    protected List<RetrievedChunk> createRetrievalTask(String question, String collectionName, int topK) {
+    protected List<RetrievedChunk> createRetrievalTask(String question, CollectionTask task, int topK) {
         try {
             return retrieverService.retrieve(
                     RetrieveRequest.builder()
-                            .collectionName(collectionName)
+                            .collectionName(task.collectionName())
                             .query(question)
                             .topK(topK)
+                            .metadataFilters(task.metadataFilters())
                             .build()
             );
         } catch (Exception e) {
-            log.error("在 collection {} 中检索失败，错误: {}", collectionName, e.getMessage(), e);
+            log.error("在 collection {} 中检索失败，错误: {}", task.collectionName(), e.getMessage(), e);
             return List.of();
         }
     }
 
     @Override
-    protected String getTargetIdentifier(String collectionName) {
-        return "Collection: " + collectionName;
+    protected String getTargetIdentifier(CollectionTask task) {
+        return "Collection: " + task.collectionName();
     }
 
     @Override

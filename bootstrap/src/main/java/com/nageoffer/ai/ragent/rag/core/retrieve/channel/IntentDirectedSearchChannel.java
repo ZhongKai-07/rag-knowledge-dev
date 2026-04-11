@@ -21,6 +21,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.config.SearchChannelProperties;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
+import com.nageoffer.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy.IntentParallelRetriever;
 import lombok.extern.slf4j.Slf4j;
@@ -105,7 +106,8 @@ public class IntentDirectedSearchChannel implements SearchChannel {
                     context.getMainQuestion(),
                     kbIntents,
                     context.getTopK(),
-                    topKMultiplier
+                    topKMultiplier,
+                    context
             );
 
             // 计算置信度（基于意图分数）
@@ -173,8 +175,12 @@ public class IntentDirectedSearchChannel implements SearchChannel {
     private List<RetrievedChunk> retrieveByIntents(String question,
                                                    List<NodeScore> kbIntents,
                                                    int fallbackTopK,
-                                                   int topKMultiplier) {
-        // 使用模板方法执行并行检索
-        return parallelRetriever.executeParallelRetrieval(question, kbIntents, fallbackTopK, topKMultiplier);
+                                                   int topKMultiplier,
+                                                   SearchContext context) {
+        // 使用模板方法执行并行检索，传入 metadata 过滤条件
+        return parallelRetriever.executeParallelRetrieval(
+                question, kbIntents, fallbackTopK, topKMultiplier,
+                MultiChannelRetrievalEngine.buildMetadataFilters(context)
+        );
     }
 }
