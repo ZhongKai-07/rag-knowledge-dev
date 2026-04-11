@@ -236,6 +236,11 @@ public class IndexerNode implements IngestionNode {
                 metadata.addProperty("source_location", source.getLocation());
             }
 
+            // 写入 security_level（从 context.metadata 读取，缺省为 0 = PUBLIC）
+            Object rawSecurityLevel = mergedMetadata.get("security_level");
+            int securityLevel = (rawSecurityLevel instanceof Number num) ? num.intValue() : 0;
+            metadata.addProperty("security_level", securityLevel);
+
             if (metadataFields != null && !metadataFields.isEmpty()) {
                 Map<String, Object> combined = new HashMap<>(mergedMetadata);
                 if (chunk.getMetadata() != null) {
