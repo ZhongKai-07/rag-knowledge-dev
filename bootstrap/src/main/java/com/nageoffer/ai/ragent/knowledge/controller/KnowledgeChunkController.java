@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Validated
-@SaCheckRole("admin")
+@SaCheckRole("SUPER_ADMIN")
 public class KnowledgeChunkController {
 
     private final KnowledgeChunkService knowledgeChunkService;

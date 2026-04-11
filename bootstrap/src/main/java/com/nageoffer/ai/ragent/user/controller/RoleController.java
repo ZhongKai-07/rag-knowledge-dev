@@ -34,34 +34,34 @@ public class RoleController {
 
     private final RoleService roleService;
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/role")
     public Result<String> createRole(@RequestBody RoleCreateRequest request) {
         String id = roleService.createRole(request.getName(), request.getDescription());
         return Results.success(id);
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}")
     public Result<Void> updateRole(@PathVariable String roleId, @RequestBody RoleCreateRequest request) {
         roleService.updateRole(roleId, request.getName(), request.getDescription());
         return Results.success();
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @DeleteMapping("/role/{roleId}")
     public Result<Void> deleteRole(@PathVariable String roleId) {
         roleService.deleteRole(roleId);
         return Results.success();
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/role")
     public Result<List<RoleDO>> listRoles() {
         return Results.success(roleService.listRoles());
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}/knowledge-bases")
     public Result<Void> setRoleKnowledgeBases(@PathVariable String roleId,
                                                @RequestBody List<String> kbIds) {
@@ -69,20 +69,20 @@ public class RoleController {
         return Results.success();
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/role/{roleId}/knowledge-bases")
     public Result<List<String>> getRoleKnowledgeBases(@PathVariable String roleId) {
         return Results.success(roleService.getRoleKnowledgeBaseIds(roleId));
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/user/{userId}/roles")
     public Result<Void> setUserRoles(@PathVariable String userId, @RequestBody List<String> roleIds) {
         roleService.setUserRoles(userId, roleIds);
         return Results.success();
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/user/{userId}/roles")
     public Result<List<RoleDO>> getUserRoles(@PathVariable String userId) {
         return Results.success(roleService.getUserRoles(userId));

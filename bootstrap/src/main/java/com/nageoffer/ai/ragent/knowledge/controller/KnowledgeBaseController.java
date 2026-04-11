@@ -57,7 +57,7 @@ public class KnowledgeBaseController {
     /**
      * 创建知识库
      */
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/knowledge-base")
     public Result<String> createKnowledgeBase(@RequestBody KnowledgeBaseCreateRequest requestParam) {
         return Results.success(knowledgeBaseService.create(requestParam));
@@ -66,7 +66,7 @@ public class KnowledgeBaseController {
     /**
      * 重命名知识库
      */
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/knowledge-base/{kb-id}")
     public Result<Void> renameKnowledgeBase(@PathVariable("kb-id") String kbId,
                                             @RequestBody KnowledgeBaseUpdateRequest requestParam) {
@@ -77,7 +77,7 @@ public class KnowledgeBaseController {
     /**
      * 删除知识库
      */
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @DeleteMapping("/knowledge-base/{kb-id}")
     public Result<Void> deleteKnowledgeBase(@PathVariable("kb-id") String kbId) {
         knowledgeBaseService.delete(kbId);

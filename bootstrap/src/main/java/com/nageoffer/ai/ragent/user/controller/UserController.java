@@ -68,7 +68,7 @@ public class UserController {
      */
     @GetMapping("/users")
     public Result<IPage<UserVO>> pageQuery(UserPageRequest requestParam) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole("SUPER_ADMIN");
         return Results.success(userService.pageQuery(requestParam));
     }
 
@@ -77,7 +77,7 @@ public class UserController {
      */
     @PostMapping("/users")
     public Result<String> create(@RequestBody UserCreateRequest requestParam) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole("SUPER_ADMIN");
         return Results.success(userService.create(requestParam));
     }
 
@@ -86,7 +86,7 @@ public class UserController {
      */
     @PutMapping("/users/{id}")
     public Result<Void> update(@PathVariable String id, @RequestBody UserUpdateRequest requestParam) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole("SUPER_ADMIN");
         userService.update(id, requestParam);
         return Results.success();
     }
@@ -96,7 +96,7 @@ public class UserController {
      */
     @DeleteMapping("/users/{id}")
     public Result<Void> delete(@PathVariable String id) {
-        StpUtil.checkRole("admin");
+        StpUtil.checkRole("SUPER_ADMIN");
         userService.delete(id);
         return Results.success();
     }
