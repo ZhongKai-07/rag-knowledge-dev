@@ -25,6 +25,7 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -132,6 +133,67 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to bulk delete chunks from index: " + collectionName, e);
         }
+    }
+
+    @Override
+    public void updateChunksMetadata(String collectionName, String docId, Map<String, Object> fields) {
+        if (fields == null || fields.isEmpty()) {
+            return;
+        }
+        String paramsJson = buildParamsJson(fields);
+        String requestBody = """
+                {
+                  "script": {
+                    "source": "for (entry in params.fields.entrySet()) { ctx._source.metadata[entry.getKey()] = entry.getValue(); }",
+                    "params": { "fields": %s },
+                    "lang": "painless"
+                  },
+                  "query": {
+                    "term": { "metadata.doc_id": "%s" }
+                  }
+                }
+                """.formatted(paramsJson, escapeJson(docId));
+
+        try (var response = client.generic().execute(
+                Requests.builder()
+                        .method("POST")
+                        .endpoint(collectionName + "/_update_by_query?refresh=true&wait_for_completion=true")
+                        .json(requestBody)
+                        .build())) {
+            if (response.getStatus() >= 300) {
+                throw new RuntimeException("OpenSearch _update_by_query failed with status " + response.getStatus());
+            }
+            log.info("Updated chunk metadata for doc {} in index {}, fields={}", docId, collectionName, fields.keySet());
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to updateChunksMetadata on OpenSearch", e);
+        }
+    }
+
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private String buildParamsJson(Map<String, Object> fields) {
+        StringBuilder sb = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, Object> e : fields.entrySet()) {
+            if (!first) sb.append(',');
+            first = false;
+            sb.append('"').append(escapeJson(e.getKey())).append('"').append(':');
+            Object v = e.getValue();
+            if (v instanceof Number || v instanceof Boolean) {
+                sb.append(v);
+            } else if (v == null) {
+                sb.append("null");
+            } else {
+                sb.append('"').append(escapeJson(v.toString())).append('"');
+            }
+        }
+        sb.append('}');
+        return sb.toString();
     }
 
     private Map<String, Object> buildDocument(String collectionName, String docId, VectorChunk chunk) {

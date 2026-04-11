@@ -96,6 +96,12 @@ public class PgVectorStoreService implements VectorStoreService {
         );
     }
 
+    @Override
+    public void updateChunksMetadata(String collectionName, String docId, Map<String, Object> fields) {
+        throw new UnsupportedOperationException(
+                "updateChunksMetadata is not supported by this vector store (current PR only targets OpenSearch)");
+    }
+
     private String buildMetadataJson(String collectionName, String docId, VectorChunk chunk) {
         Map<String, Object> meta = new LinkedHashMap<>();
         if (chunk.getMetadata() != null) {
