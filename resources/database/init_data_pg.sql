@@ -11,9 +11,9 @@ INSERT INTO t_role (id, name, description, role_type, max_security_level) VALUES
     ('2', '普通用户',   '默认普通用户角色',                    'USER',        0)
 ON CONFLICT (id) DO NOTHING;
 
--- 默认管理员账户（密码: admin，生产环境请立即修改）
+-- 默认管理员账户（密码: 123456，生产环境请立即修改）
 INSERT INTO t_user (id, username, password, role, dept_id, avatar, create_time, update_time, deleted)
-VALUES ('1', 'admin', 'admin', 'SUPER_ADMIN', '1', 'https://avatars.githubusercontent.com/u/583231?v=4', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+VALUES ('1', 'admin', '123456', 'SUPER_ADMIN', '1', 'https://avatars.githubusercontent.com/u/583231?v=4', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
 ON CONFLICT (id) DO NOTHING;
 
 -- 用户-角色关联
