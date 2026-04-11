@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.knowledge.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingMode;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseCreateRequest;
@@ -56,6 +57,7 @@ public class KnowledgeBaseController {
     /**
      * 创建知识库
      */
+    @SaCheckRole("admin")
     @PostMapping("/knowledge-base")
     public Result<String> createKnowledgeBase(@RequestBody KnowledgeBaseCreateRequest requestParam) {
         return Results.success(knowledgeBaseService.create(requestParam));
@@ -64,6 +66,7 @@ public class KnowledgeBaseController {
     /**
      * 重命名知识库
      */
+    @SaCheckRole("admin")
     @PutMapping("/knowledge-base/{kb-id}")
     public Result<Void> renameKnowledgeBase(@PathVariable("kb-id") String kbId,
                                             @RequestBody KnowledgeBaseUpdateRequest requestParam) {
@@ -74,6 +77,7 @@ public class KnowledgeBaseController {
     /**
      * 删除知识库
      */
+    @SaCheckRole("admin")
     @DeleteMapping("/knowledge-base/{kb-id}")
     public Result<Void> deleteKnowledgeBase(@PathVariable("kb-id") String kbId) {
         knowledgeBaseService.delete(kbId);

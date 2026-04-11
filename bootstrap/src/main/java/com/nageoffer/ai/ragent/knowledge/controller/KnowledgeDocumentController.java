@@ -162,6 +162,7 @@ public class KnowledgeDocumentController {
     @GetMapping("/knowledge-base/docs/{docId}/chunk-logs")
     public Result<IPage<KnowledgeDocumentChunkLogVO>> getChunkLogs(@PathVariable String docId,
                                                                    Page<KnowledgeDocumentChunkLogVO> page) {
+        checkDocAccess(docId);
         return Results.success(documentService.getChunkLogs(docId, page));
     }
 }

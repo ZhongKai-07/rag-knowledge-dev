@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -216,10 +217,16 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam) {
+        // Fail-closed: non-admin user with empty accessible set → return empty page.
+        // null = admin pathway (controller skipped injection); empty set = user has zero access.
+        Set<String> accessibleKbIds = requestParam.getAccessibleKbIds();
+        if (accessibleKbIds != null && accessibleKbIds.isEmpty()) {
+            return new Page<>(requestParam.getCurrent(), requestParam.getSize(), 0);
+        }
+
         LambdaQueryWrapper<KnowledgeBaseDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                 .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
-                .in(requestParam.getAccessibleKbIds() != null && !requestParam.getAccessibleKbIds().isEmpty(),
-                        KnowledgeBaseDO::getId, requestParam.getAccessibleKbIds())
+                .in(accessibleKbIds != null, KnowledgeBaseDO::getId, accessibleKbIds)
                 .eq(KnowledgeBaseDO::getDeleted, 0)
                 .orderByDesc(KnowledgeBaseDO::getUpdateTime);
 

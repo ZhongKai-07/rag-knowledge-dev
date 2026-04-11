@@ -551,13 +551,17 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         if (!StringUtils.hasText(keyword)) {
             return Collections.emptyList();
         }
+        // Fail-closed: non-admin user with empty accessible set → return empty list.
+        if (accessibleKbIds != null && accessibleKbIds.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         int size = Math.min(Math.max(limit, 1), 20);
         Page<KnowledgeDocumentDO> mpPage = new Page<>(1, size);
         LambdaQueryWrapper<KnowledgeDocumentDO> qw = new LambdaQueryWrapper<KnowledgeDocumentDO>()
                 .eq(KnowledgeDocumentDO::getDeleted, 0)
                 .like(KnowledgeDocumentDO::getDocName, keyword)
-                .in(accessibleKbIds != null && !accessibleKbIds.isEmpty(),
+                .in(accessibleKbIds != null,
                         KnowledgeDocumentDO::getKbId, accessibleKbIds)
                 .orderByDesc(KnowledgeDocumentDO::getUpdateTime);
 

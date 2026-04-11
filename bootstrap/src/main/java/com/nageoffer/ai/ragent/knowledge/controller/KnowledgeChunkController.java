@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.knowledge.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
@@ -44,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @Validated
+@SaCheckRole("admin")
 public class KnowledgeChunkController {
 
     private final KnowledgeChunkService knowledgeChunkService;
