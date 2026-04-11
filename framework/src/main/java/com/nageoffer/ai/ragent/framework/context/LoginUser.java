@@ -22,8 +22,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 /**
- * 当前登录用户的上下文快照
+ * 当前登录用户的上下文快照。
+ *
+ * <p>由 {@code UserContextInterceptor} 在请求进入时一次性从数据库装载，塞进
+ * {@code UserContext}（TTL ThreadLocal）。业务代码通过静态方法访问。
+ *
+ * <p><strong>字段分两代：</strong>
+ * <ul>
+ *     <li>legacy：{@code role} —— 单字符串角色，保留给 Sa-Token 兼容层。PR3 移除。</li>
+ *     <li>新增：{@code deptId} / {@code roleTypes} / {@code maxSecurityLevel} —— 支持多角色 RBAC。</li>
+ * </ul>
  */
 @Data
 @NoArgsConstructor
@@ -42,12 +53,31 @@ public class LoginUser {
     private String username;
 
     /**
-     * 角色（如 admin/user）
+     * Legacy 单字符串角色（admin/user）。
+     *
+     * @deprecated PR3 里移除，用 {@link #roleTypes} 代替
      */
+    @Deprecated
     private String role;
 
     /**
      * 用户头像
      */
     private String avatar;
+
+    /**
+     * 所属部门 ID。
+     */
+    private String deptId;
+
+    /**
+     * 用户挂载的所有角色类型（跨 {@code t_user_role} 的所有关联去重）。
+     */
+    private Set<RoleType> roleTypes;
+
+    /**
+     * 用户跨所有角色的最大 {@code security_level}。
+     * 用于向量检索过滤：{@code metadata.security_level <= maxSecurityLevel}。
+     */
+    private int maxSecurityLevel;
 }
