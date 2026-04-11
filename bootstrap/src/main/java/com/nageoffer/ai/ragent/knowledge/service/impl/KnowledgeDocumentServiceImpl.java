@@ -75,10 +75,13 @@ import com.nageoffer.ai.ragent.rag.dto.StoredFileDTO;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nageoffer.ai.ragent.knowledge.mq.SecurityLevelRefreshEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -525,11 +528,51 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             }
         }
 
+        // security_level 变更：写入 updateWrapper，事务提交后发 MQ 刷新 OpenSearch
+        boolean securityLevelChanged = false;
+        int newSecurityLevel = 0;
+        if (requestParam.getSecurityLevel() != null) {
+            int oldLevel = documentDO.getSecurityLevel() == null ? 0 : documentDO.getSecurityLevel();
+            newSecurityLevel = requestParam.getSecurityLevel();
+            if (oldLevel != newSecurityLevel) {
+                updateWrapper.set(KnowledgeDocumentDO::getSecurityLevel, newSecurityLevel);
+                securityLevelChanged = true;
+            }
+        }
+
         documentMapper.update(updateWrapper);
 
         if (scheduleChanged) {
             KnowledgeDocumentDO updated = documentMapper.selectById(docId);
             scheduleService.upsertSchedule(updated);
+        }
+
+        // 事务提交后异步发 MQ 刷新 OpenSearch 中的 security_level metadata
+        if (securityLevelChanged) {
+            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(documentDO.getKbId());
+            SecurityLevelRefreshEvent event = new SecurityLevelRefreshEvent(docId, kb.getCollectionName(), newSecurityLevel);
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        messageQueueProducer.send(
+                                "knowledge-document-security-level_topic${unique-name:}",
+                                docId,
+                                "security_level 刷新",
+                                event
+                        );
+                        log.info("security_level 刷新事件已发出: docId={}", event.getDocId());
+                    }
+                });
+            } else {
+                messageQueueProducer.send(
+                        "knowledge-document-security-level_topic${unique-name:}",
+                        docId,
+                        "security_level 刷新",
+                        event
+                );
+            }
+            log.info("已提交 security_level 刷新事件: docId={}, newLevel={}", docId, newSecurityLevel);
         }
     }
 
