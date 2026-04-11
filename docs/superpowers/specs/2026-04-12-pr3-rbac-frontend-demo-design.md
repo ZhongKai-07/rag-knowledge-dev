@@ -258,7 +258,8 @@ public interface KbAccessService {
      * </ul>
      *
      * <p>实现要点：不需要真的开事务预执行，只需基于当前 DB 快照对"去掉这一批关联/角色后剩下谁还有 SUPER_ADMIN 来源" 做 SQL 聚合。
-     * 注意：必须把 {@code t_role.deleted=0} 和 {@code t_role_kb_relation/t_user_role.deleted=0} 过滤条件都带上，避免误把软删的角色当作有效 SUPER_ADMIN 来源。
+     * 不变量只依赖 user/user_role/role 三张表：聚合 SQL 必须带上 {@code t_user.deleted=0} AND {@code t_user_role.deleted=0} AND {@code t_role.deleted=0 AND t_role.role_type='SUPER_ADMIN'}。
+     * <b>不要 JOIN {@code t_role_kb_relation}</b> —— KB 绑定表决定"某角色能看哪些 KB"，与"某用户是不是有效 SUPER_ADMIN" 无关；错误地 INNER JOIN 会漏算"挂了 SUPER_ADMIN 角色但该角色没有任何 KB 绑定" 的用户，正好是我们想保护的唯一超管的常见形态。
      *
      * <p>【核心使用规则】所有 4 处 mutation 路径统一一条规则：
      * <blockquote>
