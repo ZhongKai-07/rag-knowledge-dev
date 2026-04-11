@@ -53,6 +53,7 @@ DROP INDEX IF EXISTS public.idx_conversation_user_time;
 DROP INDEX IF EXISTS public.idx_conversation_summary;
 DROP INDEX IF EXISTS public.idx_conversation_id;
 DROP INDEX IF EXISTS public.idx_conv_user;
+ALTER TABLE IF EXISTS ONLY public.sys_dept DROP CONSTRAINT IF EXISTS uk_dept_code;
 ALTER TABLE IF EXISTS ONLY public.t_user DROP CONSTRAINT IF EXISTS uk_user_username;
 ALTER TABLE IF EXISTS ONLY public.t_rag_trace_node DROP CONSTRAINT IF EXISTS uk_run_node;
 ALTER TABLE IF EXISTS ONLY public.t_rag_trace_run DROP CONSTRAINT IF EXISTS uk_run_id;
@@ -64,6 +65,7 @@ ALTER TABLE IF EXISTS ONLY public.t_knowledge_document_schedule DROP CONSTRAINT 
 ALTER TABLE IF EXISTS ONLY public.t_conversation DROP CONSTRAINT IF EXISTS uk_conversation_user;
 ALTER TABLE IF EXISTS ONLY public.t_knowledge_base DROP CONSTRAINT IF EXISTS uk_collection_name;
 ALTER TABLE IF EXISTS ONLY public.t_user_role DROP CONSTRAINT IF EXISTS t_user_role_pkey;
+ALTER TABLE IF EXISTS ONLY public.sys_dept DROP CONSTRAINT IF EXISTS sys_dept_pkey;
 ALTER TABLE IF EXISTS ONLY public.t_user DROP CONSTRAINT IF EXISTS t_user_pkey;
 ALTER TABLE IF EXISTS ONLY public.t_sample_question DROP CONSTRAINT IF EXISTS t_sample_question_pkey;
 ALTER TABLE IF EXISTS ONLY public.t_role DROP CONSTRAINT IF EXISTS t_role_pkey;
@@ -90,6 +92,7 @@ ALTER TABLE IF EXISTS ONLY public.t_conversation_summary DROP CONSTRAINT IF EXIS
 ALTER TABLE IF EXISTS ONLY public.t_conversation DROP CONSTRAINT IF EXISTS t_conversation_pkey;
 DROP TABLE IF EXISTS public.t_user_role;
 DROP TABLE IF EXISTS public.t_user;
+DROP TABLE IF EXISTS public.sys_dept;
 DROP TABLE IF EXISTS public.t_sample_question;
 DROP TABLE IF EXISTS public.t_role_kb_relation;
 DROP TABLE IF EXISTS public.t_role;
@@ -455,6 +458,7 @@ CREATE TABLE public.t_knowledge_base (
     collection_name character varying(64) NOT NULL,
     created_by character varying(20) NOT NULL,
     updated_by character varying(20),
+    dept_id character varying(20) DEFAULT 'GLOBAL'::character varying NOT NULL,
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     deleted smallint DEFAULT 0 NOT NULL
@@ -466,6 +470,13 @@ CREATE TABLE public.t_knowledge_base (
 --
 
 COMMENT ON TABLE public.t_knowledge_base IS '知识库表';
+
+
+--
+-- Name: COLUMN t_knowledge_base.dept_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_knowledge_base.dept_id IS '归属部门ID（决定哪个 DEPT_ADMIN 能管理此知识库）';
 
 
 --
@@ -521,6 +532,7 @@ CREATE TABLE public.t_knowledge_document (
     pipeline_id character varying(20),
     created_by character varying(20) NOT NULL,
     updated_by character varying(20),
+    security_level smallint DEFAULT 0 NOT NULL,
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     deleted smallint DEFAULT 0 NOT NULL
@@ -532,6 +544,13 @@ CREATE TABLE public.t_knowledge_document (
 --
 
 COMMENT ON TABLE public.t_knowledge_document IS '知识库文档表';
+
+
+--
+-- Name: COLUMN t_knowledge_document.security_level; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_knowledge_document.security_level IS '文档安全等级：0=PUBLIC, 1=INTERNAL, 2=CONFIDENTIAL, 3=RESTRICTED';
 
 
 --
@@ -982,6 +1001,8 @@ CREATE TABLE public.t_role (
     id character varying(20) NOT NULL,
     name character varying(64) NOT NULL,
     description character varying(256),
+    role_type character varying(32) DEFAULT 'USER'::character varying NOT NULL,
+    max_security_level smallint DEFAULT 0 NOT NULL,
     created_by character varying(64),
     updated_by character varying(64),
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
@@ -998,11 +1019,33 @@ CREATE TABLE public.t_role_kb_relation (
     id character varying(20) NOT NULL,
     role_id character varying(20) NOT NULL,
     kb_id character varying(20) NOT NULL,
+    permission character varying(16) DEFAULT 'READ'::character varying NOT NULL,
     created_by character varying(64),
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted integer DEFAULT 0
 );
+
+
+--
+-- Name: COLUMN t_role.role_type; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_role.role_type IS 'SUPER_ADMIN/DEPT_ADMIN/USER';
+
+
+--
+-- Name: COLUMN t_role.max_security_level; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_role.max_security_level IS '该角色可访问的最高安全等级（0-3）';
+
+
+--
+-- Name: COLUMN t_role_kb_relation.permission; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_role_kb_relation.permission IS 'READ/WRITE/MANAGE';
 
 
 --
@@ -1042,6 +1085,48 @@ COMMENT ON COLUMN public.t_sample_question.title IS '展示标题';
 
 
 --
+-- Name: sys_dept; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sys_dept (
+    id character varying(20) NOT NULL,
+    dept_code character varying(32) NOT NULL,
+    dept_name character varying(64) NOT NULL,
+    create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    deleted smallint DEFAULT 0
+);
+
+
+--
+-- Name: TABLE sys_dept; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.sys_dept IS '部门表';
+
+
+--
+-- Name: COLUMN sys_dept.id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sys_dept.id IS '主键ID';
+
+
+--
+-- Name: COLUMN sys_dept.dept_code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sys_dept.dept_code IS '部门编码，全局唯一';
+
+
+--
+-- Name: COLUMN sys_dept.dept_name; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.sys_dept.dept_name IS '部门名称';
+
+
+--
 -- Name: t_user; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1051,6 +1136,7 @@ CREATE TABLE public.t_user (
     password character varying(128) NOT NULL,
     role character varying(32) NOT NULL,
     avatar character varying(128),
+    dept_id character varying(20),
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted smallint DEFAULT 0
@@ -1097,6 +1183,13 @@ COMMENT ON COLUMN public.t_user.role IS '角色：admin/user';
 --
 
 COMMENT ON COLUMN public.t_user.avatar IS '用户头像';
+
+
+--
+-- Name: COLUMN t_user.dept_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_user.dept_id IS '所属部门ID';
 
 
 --
@@ -1317,6 +1410,22 @@ ALTER TABLE ONLY public.t_role
 
 ALTER TABLE ONLY public.t_sample_question
     ADD CONSTRAINT t_sample_question_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sys_dept sys_dept_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sys_dept
+    ADD CONSTRAINT sys_dept_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sys_dept uk_dept_code; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sys_dept
+    ADD CONSTRAINT uk_dept_code UNIQUE (dept_code);
 
 
 --

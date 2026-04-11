@@ -8,12 +8,27 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- User & Conversation Tables
 -- ============================================
 
+CREATE TABLE sys_dept (
+    id          VARCHAR(20)  NOT NULL PRIMARY KEY,
+    dept_code   VARCHAR(32)  NOT NULL,
+    dept_name   VARCHAR(64)  NOT NULL,
+    create_time TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    deleted     SMALLINT     DEFAULT 0,
+    CONSTRAINT uk_dept_code UNIQUE (dept_code)
+);
+COMMENT ON TABLE sys_dept IS '部门表';
+COMMENT ON COLUMN sys_dept.id IS '主键ID';
+COMMENT ON COLUMN sys_dept.dept_code IS '部门编码，全局唯一';
+COMMENT ON COLUMN sys_dept.dept_name IS '部门名称';
+
 CREATE TABLE t_user (
     id           VARCHAR(20)  NOT NULL PRIMARY KEY,
     username     VARCHAR(64)  NOT NULL,
     password     VARCHAR(128) NOT NULL,
     role         VARCHAR(32)  NOT NULL,
     avatar       VARCHAR(128),
+    dept_id      VARCHAR(20),           -- 新增
     create_time  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
     update_time  TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
     deleted      SMALLINT     DEFAULT 0,
@@ -25,9 +40,77 @@ COMMENT ON COLUMN t_user.username IS '用户名，唯一';
 COMMENT ON COLUMN t_user.password IS '密码';
 COMMENT ON COLUMN t_user.role IS '角色：admin/user';
 COMMENT ON COLUMN t_user.avatar IS '用户头像';
+COMMENT ON COLUMN t_user.dept_id IS '所属部门ID';
 COMMENT ON COLUMN t_user.create_time IS '创建时间';
 COMMENT ON COLUMN t_user.update_time IS '更新时间';
 COMMENT ON COLUMN t_user.deleted IS '是否删除 0：正常 1：删除';
+
+CREATE TABLE t_role (
+    id                  VARCHAR(20)  NOT NULL PRIMARY KEY,
+    name                VARCHAR(64)  NOT NULL,
+    description         VARCHAR(256),
+    role_type           VARCHAR(32) NOT NULL DEFAULT 'USER',
+    max_security_level  SMALLINT    NOT NULL DEFAULT 0,
+    created_by          VARCHAR(64),
+    updated_by          VARCHAR(64),
+    create_time         TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    update_time         TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    deleted             INTEGER      DEFAULT 0,
+    CONSTRAINT uk_role_name UNIQUE (name)
+);
+COMMENT ON TABLE t_role IS '角色表';
+COMMENT ON COLUMN t_role.id IS '主键ID';
+COMMENT ON COLUMN t_role.name IS '角色名称';
+COMMENT ON COLUMN t_role.description IS '角色描述';
+COMMENT ON COLUMN t_role.role_type IS 'SUPER_ADMIN/DEPT_ADMIN/USER';
+COMMENT ON COLUMN t_role.max_security_level IS '该角色可访问的最高安全等级（0-3）';
+COMMENT ON COLUMN t_role.created_by IS '创建人';
+COMMENT ON COLUMN t_role.updated_by IS '修改人';
+COMMENT ON COLUMN t_role.create_time IS '创建时间';
+COMMENT ON COLUMN t_role.update_time IS '更新时间';
+COMMENT ON COLUMN t_role.deleted IS '是否删除 0：正常 1：删除';
+
+CREATE TABLE t_role_kb_relation (
+    id          VARCHAR(20) NOT NULL PRIMARY KEY,
+    role_id     VARCHAR(20) NOT NULL,
+    kb_id       VARCHAR(20) NOT NULL,
+    permission  VARCHAR(16) NOT NULL DEFAULT 'READ',
+    created_by  VARCHAR(64),
+    create_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    deleted     INTEGER     DEFAULT 0
+);
+CREATE INDEX idx_role_kb_role_id ON t_role_kb_relation (role_id);
+CREATE INDEX idx_role_kb_kb_id ON t_role_kb_relation (kb_id);
+COMMENT ON TABLE t_role_kb_relation IS '角色-知识库关联表';
+COMMENT ON COLUMN t_role_kb_relation.id IS '主键ID';
+COMMENT ON COLUMN t_role_kb_relation.role_id IS '角色ID';
+COMMENT ON COLUMN t_role_kb_relation.kb_id IS '知识库ID';
+COMMENT ON COLUMN t_role_kb_relation.permission IS 'READ/WRITE/MANAGE';
+COMMENT ON COLUMN t_role_kb_relation.created_by IS '创建人';
+COMMENT ON COLUMN t_role_kb_relation.create_time IS '创建时间';
+COMMENT ON COLUMN t_role_kb_relation.update_time IS '更新时间';
+COMMENT ON COLUMN t_role_kb_relation.deleted IS '是否删除 0：正常 1：删除';
+
+CREATE TABLE t_user_role (
+    id          VARCHAR(20) NOT NULL PRIMARY KEY,
+    user_id     VARCHAR(20) NOT NULL,
+    role_id     VARCHAR(20) NOT NULL,
+    created_by  VARCHAR(64),
+    create_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+    deleted     INTEGER     DEFAULT 0
+);
+CREATE INDEX idx_user_role_user_id ON t_user_role (user_id);
+CREATE INDEX idx_user_role_role_id ON t_user_role (role_id);
+COMMENT ON TABLE t_user_role IS '用户-角色关联表';
+COMMENT ON COLUMN t_user_role.id IS '主键ID';
+COMMENT ON COLUMN t_user_role.user_id IS '用户ID';
+COMMENT ON COLUMN t_user_role.role_id IS '角色ID';
+COMMENT ON COLUMN t_user_role.created_by IS '创建人';
+COMMENT ON COLUMN t_user_role.create_time IS '创建时间';
+COMMENT ON COLUMN t_user_role.update_time IS '更新时间';
+COMMENT ON COLUMN t_user_role.deleted IS '是否删除 0：正常 1：删除';
 
 CREATE TABLE t_conversation (
     id              VARCHAR(20) NOT NULL PRIMARY KEY,
@@ -121,6 +204,7 @@ CREATE TABLE t_knowledge_base (
     collection_name VARCHAR(64) NOT NULL,
     created_by      VARCHAR(20)  NOT NULL,
     updated_by      VARCHAR(20),
+    dept_id         VARCHAR(20) NOT NULL DEFAULT 'GLOBAL',
     create_time     TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time     TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted         SMALLINT     NOT NULL DEFAULT 0,
@@ -128,6 +212,7 @@ CREATE TABLE t_knowledge_base (
 );
 CREATE INDEX idx_kb_name ON t_knowledge_base (name);
 COMMENT ON TABLE t_knowledge_base IS '知识库表';
+COMMENT ON COLUMN t_knowledge_base.dept_id IS '归属部门ID（决定哪个 DEPT_ADMIN 能管理此知识库）';
 
 CREATE TABLE t_knowledge_document (
     id               VARCHAR(20)        NOT NULL PRIMARY KEY,
@@ -149,12 +234,14 @@ CREATE TABLE t_knowledge_document (
     pipeline_id      VARCHAR(20),
     created_by       VARCHAR(20)   NOT NULL,
     updated_by       VARCHAR(20),
+    security_level   SMALLINT      NOT NULL DEFAULT 0,
     create_time      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time      TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted          SMALLINT      NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_kb_id ON t_knowledge_document (kb_id);
 COMMENT ON TABLE t_knowledge_document IS '知识库文档表';
+COMMENT ON COLUMN t_knowledge_document.security_level IS '文档安全等级：0=PUBLIC, 1=INTERNAL, 2=CONFIDENTIAL, 3=RESTRICTED';
 
 CREATE TABLE t_knowledge_chunk (
     id           VARCHAR(20)      NOT NULL PRIMARY KEY,
@@ -519,6 +606,7 @@ COMMENT ON COLUMN t_knowledge_base.updated_by IS '修改人';
 COMMENT ON COLUMN t_knowledge_base.create_time IS '创建时间';
 COMMENT ON COLUMN t_knowledge_base.update_time IS '更新时间';
 COMMENT ON COLUMN t_knowledge_base.deleted IS '是否删除 0：正常 1：删除';
+-- Note: dept_id comment already added above inline
 
 -- t_knowledge_document
 COMMENT ON COLUMN t_knowledge_document.id IS 'ID';
