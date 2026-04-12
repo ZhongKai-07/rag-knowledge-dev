@@ -39,7 +39,11 @@ public class RoleController {
     @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/role")
     public Result<String> createRole(@RequestBody RoleCreateRequest request) {
-        String id = roleService.createRole(request.getName(), request.getDescription());
+        String id = roleService.createRole(
+                request.getName(),
+                request.getDescription(),
+                request.getRoleType(),
+                request.getMaxSecurityLevel());
         return Results.success(id);
     }
 
@@ -71,15 +75,15 @@ public class RoleController {
     @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}/knowledge-bases")
     public Result<Void> setRoleKnowledgeBases(
-            @PathVariable String roleId, @RequestBody List<String> kbIds) {
-        roleService.setRoleKnowledgeBases(roleId, kbIds);
+            @PathVariable String roleId, @RequestBody List<RoleKbBindingRequest> bindings) {
+        roleService.setRoleKnowledgeBases(roleId, bindings);
         return Results.success();
     }
 
     @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/role/{roleId}/knowledge-bases")
-    public Result<List<String>> getRoleKnowledgeBases(@PathVariable String roleId) {
-        return Results.success(roleService.getRoleKnowledgeBaseIds(roleId));
+    public Result<List<RoleKbBindingRequest>> getRoleKnowledgeBases(@PathVariable String roleId) {
+        return Results.success(roleService.getRoleKnowledgeBases(roleId));
     }
 
     @PutMapping("/user/{userId}/roles")
@@ -103,5 +107,12 @@ public class RoleController {
         // PR3 新增
         private String roleType;
         private Integer maxSecurityLevel;
+    }
+
+    @Data
+    public static class RoleKbBindingRequest {
+        private String kbId;
+        /** 权限级别：READ / WRITE / MANAGE */
+        private String permission;
     }
 }

@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.user.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.user.controller.RoleController.RoleKbBindingRequest;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
@@ -45,10 +46,12 @@ public class RoleServiceImpl implements RoleService {
     private final KbAccessService kbAccessService;
 
     @Override
-    public String createRole(String name, String description) {
+    public String createRole(String name, String description, String roleType, Integer maxSecurityLevel) {
         RoleDO role = new RoleDO();
         role.setName(name);
         role.setDescription(description);
+        role.setRoleType(roleType != null ? roleType : RoleType.USER.name());
+        role.setMaxSecurityLevel(maxSecurityLevel != null ? maxSecurityLevel : 0);
         roleMapper.insert(role);
         return role.getId();
     }
@@ -129,17 +132,18 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
-    public void setRoleKnowledgeBases(String roleId, List<String> kbIds) {
-        // Logical delete existing relations
+    public void setRoleKnowledgeBases(String roleId, List<RoleKbBindingRequest> bindings) {
+        // Delete existing relations
         roleKbRelationMapper.delete(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class)
                         .eq(RoleKbRelationDO::getRoleId, roleId));
 
-        // Insert new relations
-        for (String kbId : kbIds) {
+        // Insert new relations with permission
+        for (RoleKbBindingRequest binding : bindings) {
             RoleKbRelationDO relation = new RoleKbRelationDO();
             relation.setRoleId(roleId);
-            relation.setKbId(kbId);
+            relation.setKbId(binding.getKbId());
+            relation.setPermission(binding.getPermission() != null ? binding.getPermission() : "MANAGE");
             roleKbRelationMapper.insert(relation);
         }
 
@@ -148,12 +152,17 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public List<String> getRoleKnowledgeBaseIds(String roleId) {
+    public List<RoleKbBindingRequest> getRoleKnowledgeBases(String roleId) {
         return roleKbRelationMapper.selectList(
                         Wrappers.lambdaQuery(RoleKbRelationDO.class)
                                 .eq(RoleKbRelationDO::getRoleId, roleId))
                 .stream()
-                .map(RoleKbRelationDO::getKbId)
+                .map(rel -> {
+                    RoleKbBindingRequest binding = new RoleKbBindingRequest();
+                    binding.setKbId(rel.getKbId());
+                    binding.setPermission(rel.getPermission() != null ? rel.getPermission() : "MANAGE");
+                    return binding;
+                })
                 .toList();
     }
 
