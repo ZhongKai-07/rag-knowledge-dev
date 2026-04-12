@@ -31,8 +31,6 @@ import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.exception.ServiceException;
@@ -40,6 +38,7 @@ import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -65,6 +64,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final VectorStoreAdmin vectorStoreAdmin;
     private final S3Client s3Client;
+    private final KbAccessService kbAccessService;
 
     @Transactional
     @Override
@@ -90,22 +90,8 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             throw new ServiceException("集合名称已存在：" + requestParam.getCollectionName());
         }
 
-        // 解析 dept_id
-        String effectiveDeptId;
-        LoginUser currentUser = UserContext.hasUser() ? UserContext.get() : null;
-        if (currentUser == null) {
-            effectiveDeptId = requestParam.getDeptId() != null ? requestParam.getDeptId() : "GLOBAL";
-        } else if (currentUser.getRoleTypes() != null && currentUser.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
-            // SUPER_ADMIN 可任意指定；未指定时默认 GLOBAL
-            effectiveDeptId = requestParam.getDeptId() != null ? requestParam.getDeptId() : "GLOBAL";
-        } else if (currentUser.getRoleTypes() != null && currentUser.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
-            if (currentUser.getDeptId() == null) {
-                throw new ClientException("DEPT_ADMIN 必须有 dept_id 才能创建知识库");
-            }
-            effectiveDeptId = currentUser.getDeptId();
-        } else {
-            throw new ClientException("无创建知识库权限");
-        }
+        // 解析 dept_id（授权与归属逻辑收归 KbAccessService）
+        String effectiveDeptId = kbAccessService.resolveCreateKbDeptId(requestParam.getDeptId());
 
         KnowledgeBaseDO kbDO = KnowledgeBaseDO.builder()
                 .name(requestParam.getName())

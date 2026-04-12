@@ -17,7 +17,6 @@
 
 package com.nageoffer.ai.ragent.knowledge.controller;
 
-import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingMode;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseCreateRequest;
@@ -57,7 +56,6 @@ public class KnowledgeBaseController {
     /**
      * 创建知识库
      */
-    @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/knowledge-base")
     public Result<String> createKnowledgeBase(@RequestBody KnowledgeBaseCreateRequest requestParam) {
         return Results.success(knowledgeBaseService.create(requestParam));
@@ -66,10 +64,10 @@ public class KnowledgeBaseController {
     /**
      * 重命名知识库
      */
-    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/knowledge-base/{kb-id}")
     public Result<Void> renameKnowledgeBase(@PathVariable("kb-id") String kbId,
                                             @RequestBody KnowledgeBaseUpdateRequest requestParam) {
+        kbAccessService.checkManageAccess(kbId);
         knowledgeBaseService.rename(kbId, requestParam);
         return Results.success();
     }
@@ -77,9 +75,9 @@ public class KnowledgeBaseController {
     /**
      * 删除知识库
      */
-    @SaCheckRole("SUPER_ADMIN")
     @DeleteMapping("/knowledge-base/{kb-id}")
     public Result<Void> deleteKnowledgeBase(@PathVariable("kb-id") String kbId) {
+        kbAccessService.checkManageAccess(kbId);
         knowledgeBaseService.delete(kbId);
         return Results.success();
     }
@@ -98,8 +96,8 @@ public class KnowledgeBaseController {
      */
     @GetMapping("/knowledge-base")
     public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest requestParam) {
-        // RBAC: non-admin users only see accessible KBs
-        if (UserContext.hasUser() && !"admin".equals(UserContext.getRole())) {
+        // RBAC: non-super-admin users only see accessible KBs
+        if (UserContext.hasUser() && !kbAccessService.isSuperAdmin()) {
             Set<String> accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
             requestParam.setAccessibleKbIds(accessibleKbIds);
         }
