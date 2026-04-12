@@ -51,7 +51,7 @@ public class SpacesController {
     @GetMapping("/spaces/stats")
     public Result<SpacesStatsVO> getStats() {
         String userId = UserContext.getUserId();
-        boolean isAdmin = "admin".equals(UserContext.getRole());
+        boolean isAdmin = kbAccessService.isSuperAdmin();
 
         if (isAdmin) {
             // Admin sees everything — query total counts directly.

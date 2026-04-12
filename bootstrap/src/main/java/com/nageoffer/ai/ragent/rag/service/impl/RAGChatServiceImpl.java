@@ -111,7 +111,7 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         // RBAC: resolve accessible KB IDs
         Set<String> accessibleKbIds = null;
-        if (UserContext.hasUser() && userId != null && !"admin".equals(UserContext.getRole())) {
+        if (UserContext.hasUser() && userId != null && !kbAccessService.isSuperAdmin()) {
             accessibleKbIds = kbAccessService.getAccessibleKbIds(userId);
         }
 

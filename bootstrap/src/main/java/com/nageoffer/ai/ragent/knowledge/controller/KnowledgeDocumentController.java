@@ -133,7 +133,7 @@ public class KnowledgeDocumentController {
     public Result<List<KnowledgeDocumentSearchVO>> search(@RequestParam(value = "keyword", required = false) String keyword,
                                                           @RequestParam(value = "limit", defaultValue = "8") int limit) {
         Set<String> accessibleKbIds = null;
-        if (UserContext.hasUser() && !"admin".equals(UserContext.getRole())) {
+        if (UserContext.hasUser() && !kbAccessService.isSuperAdmin()) {
             accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
         }
         return Results.success(documentService.search(keyword, limit, accessibleKbIds));
