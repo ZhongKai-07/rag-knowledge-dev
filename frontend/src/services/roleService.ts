@@ -3,6 +3,7 @@ import { api } from "@/services/api";
 export interface RoleItem {
   id: string;
   name: string;
+  roleType: string;
   description?: string | null;
   createTime?: string | null;
   updateTime?: string | null;
