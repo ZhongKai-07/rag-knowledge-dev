@@ -43,6 +43,7 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -65,7 +66,7 @@ public class KbAccessServiceImpl implements KbAccessService {
 
     @Override
     public Set<String> getAccessibleKbIds(String userId, Permission minPermission) {
-        // SUPER_ADMIN 全量放行
+        // SUPER_ADMIN 全量，不走缓存
         if (isSuperAdmin()) {
             return knowledgeBaseMapper.selectList(
                     Wrappers.lambdaQuery(KnowledgeBaseDO.class)
@@ -73,7 +74,12 @@ public class KbAccessServiceImpl implements KbAccessService {
             ).stream().map(KnowledgeBaseDO::getId).collect(Collectors.toSet());
         }
 
-        // Cache 仅对默认 READ 级别生效，更高级别的查询不走缓存（避免 key 爆炸）
+        // DEPT_ADMIN bypass cache —— 每次 JOIN: RBAC 授权 KB ∪ 同部门 KB
+        if (isDeptAdmin()) {
+            return computeDeptAdminAccessibleKbIds(userId, minPermission);
+        }
+
+        // USER 走 PR1 原有缓存路径
         boolean cacheable = minPermission == Permission.READ;
         String cacheKey = CACHE_PREFIX + userId;
         if (cacheable) {
@@ -83,16 +89,37 @@ public class KbAccessServiceImpl implements KbAccessService {
                 return cached;
             }
         }
+        Set<String> result = computeRbacKbIds(userId, minPermission);
+        if (cacheable) {
+            redissonClient.getBucket(cacheKey).<Set<String>>set(result, CACHE_TTL);
+        }
+        return result;
+    }
 
+    /** DEPT_ADMIN 的可见 KB = RBAC 授权 KB ∪ 本部门所有 KB */
+    private Set<String> computeDeptAdminAccessibleKbIds(String userId, Permission minPermission) {
+        Set<String> rbacKbs = computeRbacKbIds(userId, minPermission);
+        LoginUser user = UserContext.get();
+        String deptId = user.getDeptId();
+        if (deptId != null) {
+            List<KnowledgeBaseDO> deptKbs = knowledgeBaseMapper.selectList(
+                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+                            .eq(KnowledgeBaseDO::getDeptId, deptId)
+                            .select(KnowledgeBaseDO::getId)
+            );
+            deptKbs.stream().map(KnowledgeBaseDO::getId).forEach(rbacKbs::add);
+        }
+        return rbacKbs;
+    }
+
+    /** 原 PR1 RBAC 路径抽成私有方法（user → roles → kb_relations → filter permission） */
+    private Set<String> computeRbacKbIds(String userId, Permission minPermission) {
         // user → roles
         List<UserRoleDO> userRoles = userRoleMapper.selectList(
                 Wrappers.lambdaQuery(UserRoleDO.class)
                         .eq(UserRoleDO::getUserId, userId));
         if (userRoles.isEmpty()) {
-            if (cacheable) {
-                redissonClient.getBucket(cacheKey).<Set<String>>set(Set.of(), CACHE_TTL);
-            }
-            return Set.of();
+            return new HashSet<>();
         }
 
         List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
@@ -104,7 +131,7 @@ public class KbAccessServiceImpl implements KbAccessService {
         Set<String> kbIds = relations.stream()
                 .filter(r -> permissionSatisfies(r.getPermission(), minPermission))
                 .map(RoleKbRelationDO::getKbId)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(HashSet::new));
 
         // 过滤已删除的 KB
         if (!kbIds.isEmpty()) {
@@ -112,12 +139,11 @@ public class KbAccessServiceImpl implements KbAccessService {
                     Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                             .in(KnowledgeBaseDO::getId, kbIds)
                             .select(KnowledgeBaseDO::getId));
-            kbIds = validKbs.stream().map(KnowledgeBaseDO::getId).collect(Collectors.toSet());
+            kbIds = validKbs.stream()
+                    .map(KnowledgeBaseDO::getId)
+                    .collect(Collectors.toCollection(HashSet::new));
         }
 
-        if (cacheable) {
-            redissonClient.getBucket(cacheKey).<Set<String>>set(kbIds, CACHE_TTL);
-        }
         return kbIds;
     }
 
@@ -141,7 +167,18 @@ public class KbAccessServiceImpl implements KbAccessService {
         if (isSuperAdmin()) {
             return;
         }
-        // 普通用户
+        if (isDeptAdmin()) {
+            // DEPT_ADMIN 同部门 KB 直接放行（不走缓存）
+            LoginUser user = UserContext.get();
+            if (user.getDeptId() != null) {
+                KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+                if (kb != null && user.getDeptId().equals(kb.getDeptId())) {
+                    return;
+                }
+            }
+            // 否则退化到 RBAC 检查
+        }
+        // 普通用户（或 DEPT_ADMIN 访问非本部门 KB）
         Set<String> accessible = getAccessibleKbIds(UserContext.getUserId(), Permission.READ);
         if (!accessible.contains(kbId)) {
             throw new ClientException("无权访问该知识库: " + kbId);
