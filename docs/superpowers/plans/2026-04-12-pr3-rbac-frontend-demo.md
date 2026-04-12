@@ -124,7 +124,7 @@ frontend/src/
 │   ├── admin/roles/RoleListPage.tsx                (new columns + binding permission)
 │   ├── admin/knowledge/KnowledgeListPage.tsx       (dept_id in create dialog)
 │   └── admin/knowledge/KnowledgeDocumentsPage.tsx  (security_level column/dialog/edit)
-├── components/chat/Sidebar.tsx                     (admin entry via permissions)
+├── components/layout/Sidebar.tsx                   (admin entry via permissions; verified actual path)
 └── pages/SpacesPage.tsx                            (admin entry via permissions)
 ```
 
@@ -2061,7 +2061,7 @@ Frontend MOD:
 - `frontend/src/pages/admin/AdminLayout.tsx` — sidebar filter + roleLabel 4-tier + menu id field
 - `frontend/src/pages/admin/users/UserListPage.tsx` — remove references to `user.role === "admin"` (only visibility conditions; form rebuild comes in Slice S2)
 - `frontend/src/pages/SpacesPage.tsx` — admin entry condition switch
-- `frontend/src/components/chat/Sidebar.tsx` — admin entry condition switch (if it has one)
+- `frontend/src/components/layout/Sidebar.tsx` — admin entry condition switch (verified actual path; has a `user.role === "admin"` check around line 427 controlling the "进入后台" entry)
 - `frontend/src/pages/LoginPage.tsx` — post-login navigation unchanged (/spaces), but make sure stored user has new shape
 
 ---
@@ -2352,7 +2352,9 @@ const roleLabel = useMemo(() => {
 }, [permissions]);
 ```
 
-- [ ] **Step 9**: Update `frontend/src/pages/SpacesPage.tsx` and `frontend/src/components/chat/Sidebar.tsx` admin entry button
+- [ ] **Step 9**: Update `frontend/src/pages/SpacesPage.tsx` and `frontend/src/components/layout/Sidebar.tsx` admin entry button
+
+**Note:** The actual Sidebar path is `components/layout/Sidebar.tsx`, not `components/chat/Sidebar.tsx`. The chat page sidebar UI is inside `components/layout/Sidebar.tsx` (unified sidebar component used by both chat and admin via context). The `user.role === "admin"` check sits around line 427 of that file controlling the "进入后台" entry button — replace with `usePermissions().canSeeAdminMenu`.
 
 Grep for `user?.role === "admin"` or `user.role === "admin"` in those files. Replace with `usePermissions().canSeeAdminMenu`.
 
@@ -2417,7 +2419,7 @@ git add framework/src/main/java/com/nageoffer/ai/ragent/framework/context/LoginU
         frontend/src/pages/admin/AdminLayout.tsx \
         frontend/src/pages/admin/users/UserListPage.tsx \
         frontend/src/pages/SpacesPage.tsx \
-        frontend/src/components/chat/Sidebar.tsx
+        frontend/src/components/layout/Sidebar.tsx
 git commit -m "refactor(pr3)!: remove LoginUser.role field + migrate frontend to permissions hook
 
 BREAKING CHANGE: LoginUser / LoginVO / CurrentUserVO no longer expose \`role\` field.
@@ -2475,24 +2477,26 @@ Open http://localhost:5173/login → log in as admin/123456 → expect:
 
 - [ ] **Step 5**: API smoke via curl
 
+**Protocol note:** sa-token header name is `Authorization` with raw token (no `Bearer ` prefix; see `application.yaml:187-188` and `api.ts:15`). All permission rejections return HTTP 200 with body `code != "0"` — do not assert on HTTP 401/403 status. Check `.data` field from the wrapped `Result`.
+
 ```bash
-# Get token from browser localStorage or by:
+# 1. Login → raw token
 TOKEN=$(curl -s -X POST http://localhost:9090/api/ragent/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"123456"}' | jq -r '.data.token')
 
-# Check /user/me returns new shape
+# 2. /user/me — new shape check
 curl -s http://localhost:9090/api/ragent/user/me \
-  -H "Authorization: Bearer $TOKEN" | jq .
+  -H "Authorization: $TOKEN" | jq .
 ```
-Expected: response contains `userId`, `deptId`, `deptName`, `roleTypes`, `maxSecurityLevel`, `isSuperAdmin`, `isDeptAdmin` fields. No `role` field.
+Expected: response `.data` contains `userId`, `deptId`, `deptName`, `roleTypes`, `maxSecurityLevel`, `isSuperAdmin`, `isDeptAdmin`. No `role` field. For admin seed specifically: `deptId="1"`, `deptName="全局部门"`, `roleTypes=["SUPER_ADMIN"]`, `maxSecurityLevel=3`, `isSuperAdmin=true`, `isDeptAdmin=false`.
 
 ```bash
-# SysDept list
+# 3. SysDept list
 curl -s http://localhost:9090/api/ragent/sys-dept \
-  -H "Authorization: Bearer $TOKEN" | jq .
+  -H "Authorization: $TOKEN" | jq .
 ```
-Expected: array containing at least the GLOBAL dept (systemReserved=true).
+Expected: `.code == "0"`, `.data` is an array containing at least `{ id: "1", deptCode: "GLOBAL", deptName: "全局部门", systemReserved: true }`.
 
 - [ ] **Step 6**: No commit needed. If smoke fails, roll back to Task 0.15 and debug.
 
@@ -2754,7 +2758,10 @@ Expected: success.
 
 - [ ] **Step 4**: Manual smoke
 
-Load `/admin/users` as admin. Verify new columns render correctly with sample data (admin user should show no dept, empty roleTypes, max=0 initially; after Slice 8 fixture, alice/bob/carol will show colored chips).
+Load `/admin/users` as admin. Verify new columns render correctly with the existing seed from `init_data_pg.sql`:
+- admin row: 部门 = **全局部门** (chip), 角色类型 = **SUPER_ADMIN** (chip), 最大密级 = **3** (red badge)
+- The admin seed is wired via `sys_dept(id='1','GLOBAL')` + `t_role(id='1','超级管理员', role_type='SUPER_ADMIN', max_security_level=3)` + `t_user_role(user_id='1', role_id='1')`. These exist before any PR3 change; if the row shows empty dept/roleTypes, the UserProfileLoader JOIN is broken — debug Task 0.4/0.5 before proceeding.
+- (After Slice 8 curl-matrix fixture is loaded in a separate run, alice/bob/carol rows will also be visible.)
 
 - [ ] **Step 5**: Commit
 
@@ -3094,7 +3101,7 @@ git commit -m "feat(pr3): Slice 5a — Document upload security_level + list col
 
 **Files:**
 - Modify: `frontend/src/services/knowledgeService.ts` (add `updateDocumentSecurityLevel`)
-- Modify: document detail component (path depends on existing structure; likely inside `KnowledgeDocumentsPage.tsx` or a separate detail page)
+- Modify: `frontend/src/pages/admin/knowledge/KnowledgeChunksPage.tsx` — **this is the actual document detail page**, routed at `/admin/knowledge/:kbId/docs/:docId` per `router.tsx:124-125`. Despite the file name "ChunksPage", it is the page shown when a user clicks a document row on the documents list; it displays document metadata header + chunk list. The security_level edit button goes in the document header section of this page (NOT in `KnowledgeDocumentsPage.tsx` which is the per-KB documents *list*).
 
 - [ ] **Step 1**: Add service method
 
@@ -3158,7 +3165,7 @@ Edit a doc's security_level from 0 to 2, check backend logs for `security_level 
 - [ ] **Step 5**: Commit
 
 ```bash
-git add frontend/src/services/knowledgeService.ts frontend/src/pages/admin/knowledge/KnowledgeDocumentsPage.tsx
+git add frontend/src/services/knowledgeService.ts frontend/src/pages/admin/knowledge/KnowledgeChunksPage.tsx
 git commit -m "feat(pr3): Slice 5b — Document detail security_level edit with MQ refresh"
 ```
 
@@ -3172,13 +3179,18 @@ git commit -m "feat(pr3): Slice 5b — Document detail security_level edit with 
 - [ ] **Step 1**: Write idempotent SQL with business-key-based cleanup + insert
 
 ```sql
--- PR3 演示固定装置
+-- PR3 curl-matrix fixture
+-- 用途：为 docs/dev/pr3-curl-matrix.http 提供稳定的业务键和固定账号/角色/KB。
+-- 使用时机：仅在跑 curl 矩阵前加载；UI walkthrough 不应依赖此文件（walkthrough 要证明 UI CRUD 闭环）。
+--
 -- 可重复执行：基于业务键清理再插入，使用固定 ID 避免随机。
--- 依赖：sys_dept 表里已存在 GLOBAL 种子（id='1'）。
+-- 依赖：sys_dept 表里已存在 GLOBAL 种子（id='1'），t_user 里已存在 admin 种子（id='1'），
+--       由 init_data_pg.sql 提供。
 
 BEGIN;
 
 -- 1. 清理先前的演示数据（基于业务键）
+--    顺序：先删关联表，再删主表；避免外键/逻辑引用冲突
 DELETE FROM t_role_kb_relation WHERE role_id IN (
     SELECT id FROM t_role WHERE name IN ('研发部管理员', '法务部管理员', '普通研发员', '普通法务员')
 );
@@ -3196,41 +3208,50 @@ INSERT INTO sys_dept (id, dept_code, dept_name) VALUES
     ('3', 'LEGAL', '法务部');
 
 -- 3. 用户（密码明文 123456，沿用 seed admin 的 plain-text 约定）
+--    注意：t_user.role 列仍存在（Sa-Token 兼容层保留，PR3 不 drop）；业务授权走 t_user_role
 INSERT INTO t_user (id, username, password, role, dept_id, avatar) VALUES
     ('10', 'alice', '123456', 'user', '2', ''),
     ('11', 'bob',   '123456', 'user', '3', ''),
     ('12', 'carol', '123456', 'user', '2', '');
 
--- 4. 角色（role_type + max_security_level）
+-- 4. 角色（role_type + max_security_level，PR1 已加列）
 INSERT INTO t_role (id, name, description, role_type, max_security_level) VALUES
     ('100', '研发部管理员', '管理研发部的 KB 和用户', 'DEPT_ADMIN', 3),
     ('101', '法务部管理员', '管理法务部的 KB 和用户', 'DEPT_ADMIN', 3),
     ('102', '普通研发员',   '只读访问研发 KB',       'USER',       0),
     ('103', '普通法务员',   '只读访问法务 KB',       'USER',       0);
 
--- 5. 用户-角色关联
-INSERT INTO t_user_role (user_id, role_id) VALUES
-    ('10', '100'),   -- alice = 研发部管理员
-    ('11', '101'),   -- bob   = 法务部管理员
-    ('12', '102');   -- carol = 普通研发员 (max=0)
+-- 5. 用户-角色关联（schema_pg.sql 要求 t_user_role.id 显式 PK，必须提供）
+INSERT INTO t_user_role (id, user_id, role_id) VALUES
+    ('1001', '10', '100'),   -- alice = 研发部管理员
+    ('1002', '11', '101'),   -- bob   = 法务部管理员
+    ('1003', '12', '102');   -- carol = 普通研发员 (max=0)
 
--- 6. 知识库（预建，演示跨部门隔离）
---    collection_name / vector_space_name 等字段请保持与 schema 一致；这里只给出关键字段
-INSERT INTO t_knowledge_base (id, name, description, dept_id, collection_name) VALUES
-    ('kb-rnd-001',   '研发知识库', '研发部技术文档', '2', 'kb_rnd_001'),
-    ('kb-legal-001', '法务知识库', '法务部合同文档', '3', 'kb_legal_001');
+-- 6. 知识库（schema_pg.sql 实际列：id / name / embedding_model / collection_name / created_by / updated_by / dept_id）
+--    没有 description 列！embedding_model 和 created_by 是 NOT NULL 无默认，必须提供。
+--    embedding_model 值跟随 application.yaml 的当前配置 —— 'text-embedding-v1' 是 bailian 默认，
+--    若 RAG 运行时配置不同需手动对齐，否则向量入库会失败。
+INSERT INTO t_knowledge_base (id, name, embedding_model, collection_name, created_by, updated_by, dept_id) VALUES
+    ('kb-rnd-001',   '研发知识库', 'text-embedding-v1', 'kb_rnd_001',   '1', '1', '2'),
+    ('kb-legal-001', '法务知识库', 'text-embedding-v1', 'kb_legal_001', '1', '1', '3');
 
--- 7. 角色-KB 绑定（带 permission）
-INSERT INTO t_role_kb_relation (role_id, kb_id, permission) VALUES
-    ('100', 'kb-rnd-001',   'MANAGE'),
-    ('101', 'kb-legal-001', 'MANAGE'),
-    ('102', 'kb-rnd-001',   'READ');
+-- 7. 角色-KB 绑定（schema_pg.sql 要求 t_role_kb_relation.id 显式 PK，必须提供）
+INSERT INTO t_role_kb_relation (id, role_id, kb_id, permission) VALUES
+    ('2001', '100', 'kb-rnd-001',   'MANAGE'),
+    ('2002', '101', 'kb-legal-001', 'MANAGE'),
+    ('2003', '102', 'kb-rnd-001',   'READ');
 
 COMMIT;
 
--- 提示：验收第 10 步需要手动在 UI 上传两份文档到 kb-rnd-001（一份 security_level=0，一份 =2）。
--- 本 fixture 不 seed 文档/向量数据（向量需要走 embedding 管道）。
+-- 提示：curl 矩阵步骤如需实际触发 security-level 刷新，仍需手动 UI 上传文档到 kb-rnd-001
+-- （向量入库依赖 embedding 管道，无法用 SQL seed）。
 ```
+
+**Schema sanity check** — this fixture targets the actual PostgreSQL schema in `resources/database/schema_pg.sql`:
+- `t_role_kb_relation (id VARCHAR(20) NOT NULL PRIMARY KEY, role_id, kb_id, permission, ...)` — `id` is explicit PK, **no auto-generation**
+- `t_user_role (id VARCHAR(20) NOT NULL PRIMARY KEY, user_id, role_id, ...)` — same
+- `t_knowledge_base (id, name, embedding_model NOT NULL, collection_name, created_by NOT NULL, updated_by, dept_id NOT NULL DEFAULT 'GLOBAL', ...)` — **no `description` column** in the clean DDL
+- If your installed schema differs (some drafts added `description`), verify via `\d t_knowledge_base` in psql and adjust the INSERT accordingly before running.
 
 - [ ] **Step 2**: Dry-run
 
@@ -3271,7 +3292,25 @@ git commit -m "feat(pr3): Slice 8a — fixture_pr3_demo.sql (idempotent demo see
 ```http
 ### PR3 Permission Rules Bypass Test Matrix
 ### Usage: JetBrains HTTP Client / VSCode REST Client
-### Prerequisites: fixture_pr3_demo.sql loaded
+### Prerequisites: fixture_pr3_demo.sql loaded (Mode B baseline — see pr3-demo-walkthrough.md)
+###
+### *** Protocol notes (critical) ***
+### 1. Auth header: `Authorization: {{token}}` — NO "Bearer " prefix.
+###    The backend's sa-token configuration uses `token-name: Authorization`
+###    with raw tokens (application.yaml:187-188). The frontend axios instance
+###    (api.ts:15) also sends raw tokens. Adding "Bearer " will cause NotLoginException.
+###
+### 2. HTTP status: ALL successful business rejections return HTTP 200.
+###    GlobalExceptionHandler (line 92-105) wraps NotRoleException, NotLoginException,
+###    and ClientException into `Result.failure(...)` which serializes to HTTP 200
+###    with a JSON body `{ "code": "<non-zero>", "message": "...", "data": null }`.
+###    DO NOT assert on 403/409/400 HTTP status codes — they will never fire.
+###
+### 3. Assertion rule (per feedback_assertion_decoupling.md):
+###    - Primary:   assert response.body.code !== "0"
+###    - Secondary: loose message substring on stable Chinese keywords
+###      (e.g., 权限 / 未登录 / 本部门 / GLOBAL / SUPER_ADMIN), NEVER exact text
+###    - Positive (allowed) cases: assert response.body.code === "0"
 
 @host = http://localhost:9090/api/ragent
 
@@ -3312,115 +3351,125 @@ Content-Type: application/json
 > {% client.global.set("carol_token", response.body.data.token); %}
 
 ### -----------------------------------------------------
-### R3: DEPT_ADMIN reads /sys-dept → 403
+### R3: DEPT_ADMIN reads /sys-dept → code != "0" (权限/角色 拦截)
 GET {{host}}/sys-dept
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 
-### Expected: code != 0, message indicates forbidden
-
-### R4: DEPT_ADMIN creates a department → 403
+### R4a: DEPT_ADMIN creates a department → code != "0"
 POST {{host}}/sys-dept
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 Content-Type: application/json
 
 { "deptCode": "HACK", "deptName": "alice-hack" }
 
-### R4: SUPER_ADMIN deletes GLOBAL → 409
+### R4b: SUPER_ADMIN deletes GLOBAL → code != "0" (message contains GLOBAL)
 DELETE {{host}}/sys-dept/1
-Authorization: Bearer {{admin_token}}
+Authorization: {{admin_token}}
 
-### R6: DEPT_ADMIN creates KB in other dept → 403
+### R6a: DEPT_ADMIN creates KB in other dept → code != "0" (本部门)
+### Body has NO "description" field — t_knowledge_base schema has no such column
 POST {{host}}/knowledge-base
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 Content-Type: application/json
 
-{ "name": "非法 KB", "description": "试图创建到 LEGAL", "deptId": "3" }
+{ "name": "非法 KB", "deptId": "3", "embeddingModel": "text-embedding-v1" }
 
-### R6: DEPT_ADMIN creates KB in own dept → 200
+### R6b: DEPT_ADMIN creates KB in own dept → code == "0"
 POST {{host}}/knowledge-base
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 Content-Type: application/json
 
-{ "name": "研发 Q2 文档库", "description": "alice 创建的合法 KB", "deptId": "2" }
+{ "name": "研发 Q2 文档库", "deptId": "2", "embeddingModel": "text-embedding-v1" }
 
-### R7: DEPT_ADMIN bob updates alice's dept KB → 403
+### R7a: DEPT_ADMIN bob updates alice's dept KB → code != "0"
 PUT {{host}}/knowledge-base/kb-rnd-001
-Authorization: Bearer {{bob_token}}
+Authorization: {{bob_token}}
 Content-Type: application/json
 
 { "name": "偷改" }
 
-### R7: DEPT_ADMIN alice updates her dept KB → 200
+### R7b: DEPT_ADMIN alice updates her dept KB → code == "0"
 PUT {{host}}/knowledge-base/kb-rnd-001
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 Content-Type: application/json
 
 { "name": "研发知识库（改名）" }
 
-### R10: DEPT_ADMIN bob changes security_level of alice's doc → 403
-### Replace {{some_doc_id}} with an actual doc id after manual upload
+### R10: DEPT_ADMIN bob changes security_level of alice's doc → code != "0"
+### Before running: manually upload a doc to kb-rnd-001, copy its id, replace {{some_doc_id}} below
 PUT {{host}}/knowledge-base/docs/{{some_doc_id}}/security-level
-Authorization: Bearer {{bob_token}}
+Authorization: {{bob_token}}
 Content-Type: application/json
 
 { "newLevel": 3 }
 
-### R11: USER (carol) lists users → 403
+### R11: USER (carol) lists users → code != "0"
 GET {{host}}/users?current=1&size=10
-Authorization: Bearer {{carol_token}}
+Authorization: {{carol_token}}
 
-### R12: DEPT_ADMIN alice creates user in other dept → 403
+### R12a: DEPT_ADMIN alice creates user in other dept → code != "0" (本部门)
 POST {{host}}/users
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 Content-Type: application/json
 
 { "username": "hacker", "password": "x", "deptId": "3", "roleIds": ["102"] }
 
-### R12: DEPT_ADMIN alice creates user with SUPER_ADMIN role → 403
-### Replace {{super_admin_role_id}} with the actual super admin role id from admin seed
+### R12b: DEPT_ADMIN alice creates user with SUPER_ADMIN role → code != "0" (SUPER_ADMIN)
+### init_data_pg.sql seeds the SUPER_ADMIN role as id='1', use it directly
 POST {{host}}/users
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 Content-Type: application/json
 
-{ "username": "hacker2", "password": "x", "deptId": "2", "roleIds": ["{{super_admin_role_id}}"] }
+{ "username": "hacker2", "password": "x", "deptId": "2", "roleIds": ["1"] }
 
-### R13: DEPT_ADMIN alice deletes bob (other dept user) → 403
+### R13: DEPT_ADMIN alice deletes bob (other dept user) → code != "0" (本部门)
 DELETE {{host}}/users/11
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 
-### R14: DEPT_ADMIN alice assigns SUPER_ADMIN role to carol → 403
+### R14: DEPT_ADMIN alice assigns SUPER_ADMIN role to carol → code != "0" (SUPER_ADMIN)
 PUT {{host}}/user/12/roles
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 Content-Type: application/json
 
-["{{super_admin_role_id}}"]
+["1"]
 
-### R15: DEPT_ADMIN alice lists roles → 403
+### R15a: DEPT_ADMIN alice lists roles → code != "0"
 GET {{host}}/role
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 
-### R15: DEPT_ADMIN alice deletes a role → 403
+### R15b: DEPT_ADMIN alice deletes a role → code != "0"
 DELETE {{host}}/role/100
-Authorization: Bearer {{alice_token}}
+Authorization: {{alice_token}}
 
-### Last SUPER_ADMIN invariant: SUPER_ADMIN admin deletes themselves → 400 (if they are the only one)
+### Last SUPER_ADMIN invariant (a): SUPER_ADMIN admin deletes themselves → code != "0" (SUPER_ADMIN)
+### Admin id=1 per init_data_pg.sql; this is the only SUPER_ADMIN user on curl-matrix baseline
 DELETE {{host}}/users/1
-Authorization: Bearer {{admin_token}}
+Authorization: {{admin_token}}
 
-### Last SUPER_ADMIN invariant: admin tries to remove their own SUPER_ADMIN role → 400
-### (replace user id and roleIds appropriately)
+### Last SUPER_ADMIN invariant (b): admin tries to clear own roles → code != "0" (SUPER_ADMIN)
 PUT {{host}}/user/1/roles
-Authorization: Bearer {{admin_token}}
+Authorization: {{admin_token}}
 Content-Type: application/json
 
 []
 
+### Last SUPER_ADMIN invariant (c): admin tries to delete role id=1 (the SUPER_ADMIN seed) → code != "0"
+DELETE {{host}}/role/1
+Authorization: {{admin_token}}
+
+### Last SUPER_ADMIN invariant (d): admin tries to downgrade role id=1 to USER type → code != "0"
+PUT {{host}}/role/1
+Authorization: {{admin_token}}
+Content-Type: application/json
+
+{ "name": "超级管理员", "description": "系统超级管理员", "roleType": "USER", "maxSecurityLevel": 3 }
+
 ### UI-only rules (documented for completeness; no curl):
-### R1 - RequireAnyAdmin guard (browser redirect, not 403)
-### R2 - RequireMenuAccess hide/redirect
-### R5, R8 - list filter via isSuperAdmin() + getAccessibleKbIds()
-### R18 - modify own password (non-permission)
-### R19 - login (anonymous)
+### R1  - RequireAnyAdmin guard (browser redirect to /spaces, not 403)
+### R2  - RequireMenuAccess hide/redirect to /admin/dashboard + toast
+### R5, R8  - list filter via isSuperAdmin() + getAccessibleKbIds() (aggregate behavior, assert via UI)
+### R18 - modify own password (non-permission, no bypass possible)
+### R19 - login (anonymous, no token)
 ```
 
 - [ ] **Step 2**: Manual dry-run the key rules
@@ -3447,98 +3496,179 @@ git commit -m "docs(pr3): Slice 8b — curl bypass test matrix covering 19 permi
 ```markdown
 # PR3 Demo Walkthrough
 
-12 steps covering (1) Super admin management, (2) cross-department isolation, (3) security_level isolation.
+**Two distinct run modes** — this walkthrough and the curl matrix are designed to run independently against different rebuild baselines.
 
-## Prerequisites
+| Mode | Database baseline | Purpose |
+|---|---|---|
+| **UI walkthrough** (this document) | `schema_pg.sql` + `init_data_pg.sql` (**NO fixture**) | Prove the entire UI CRUD chain: admin creates departments, users, roles, assignments, KBs, documents |
+| **curl matrix** (`pr3-curl-matrix.http`) | `schema_pg.sql` + `init_data_pg.sql` + `fixture_pr3_demo.sql` | Bypass-test permission rules using stable business keys (alice/bob/carol + pre-built KBs) |
 
-- Database rebuilt with `schema_pg.sql` + `init_data_pg.sql` + `fixture_pr3_demo.sql`
+The walkthrough **must not** depend on fixture data — if it does, the UI creation chain is not being exercised and the acceptance criterion in spec §10.4 is not met. Run them in separate rebuild sessions.
+
+## Prerequisites (UI walkthrough)
+
+- Database freshly rebuilt: `DROP / CREATE / schema_pg.sql / init_data_pg.sql` (no fixture)
 - OpenSearch flushed (`curl -X DELETE http://localhost:9200/_all`)
-- Redis flushed
-- Backend running on :9090, frontend dev server on :5173
+- Redis flushed (`docker exec redis redis-cli FLUSHDB`)
+- Backend running on :9090, frontend dev server (or built) on :5173
 - Sample test documents ready on local disk:
-  - `test-public.md` (any content; will be uploaded as security_level=0)
-  - `test-confidential.md` (any content; will be uploaded as security_level=2)
+  - `test-public.md` (any content; uploaded as security_level=0 for contrast)
+  - `test-confidential.md` (any content; uploaded as security_level=2 for the key structural assertion in step 10)
 
-## Steps
+## Steps (strict 12-step, matches spec §10.4 exactly)
 
-### 1. admin login — 12 menu items
+### 1. admin login — 12 menu items + 超级管理员 label
 
 Open http://localhost:5173/login, log in as `admin` / `123456`.
-- Navigate to `/admin/dashboard`.
-- Verify the sidebar shows 12 menu items (Dashboard, 知识库管理, 部门管理, 用户管理, 意图管理, 数据通道, 关键词映射, 链路追踪, 评测记录, 示例问题, 角色管理, 系统设置).
-- Verify header roleLabel reads "超级管理员".
+- Redirected to `/spaces` (per Decision 3-B). Click "进入后台" / navigate to `/admin/dashboard`.
+- Verify the sidebar shows **12** menu items: Dashboard, 知识库管理, 意图管理, 数据通道, 关键词映射, 链路追踪, 评测记录, 示例问题, 部门管理, 用户管理, 角色管理, 系统设置.
+- Verify header roleLabel reads **"超级管理员"**.
+- On this baseline (init_data_pg.sql only), the users list contains a single row: `admin` with dept=全局部门, role_type=SUPER_ADMIN, max=3.
 
-### 2. Departments already seeded — verify
+### 2. Create the two demo departments via UI
 
-Go to `/admin/departments`. You should see 3 rows: GLOBAL (locked), 研发部 (RND), 法务部 (LEGAL) — all from fixture.
+Go to `/admin/departments`. The list contains 1 row: GLOBAL (locked, systemReserved=true).
 
-### 3. Users already seeded — verify
+Click **新建部门**:
+- `dept_code = RND`, `dept_name = 研发部` → save
+- `dept_code = LEGAL`, `dept_name = 法务部` → save
 
-Go to `/admin/users`. You should see admin / alice / bob / carol.
-- alice shows 部门=研发部, 角色类型=DEPT_ADMIN (chip), 最大密级=3 (red badge)
-- carol shows 部门=研发部, 角色类型=USER, 最大密级=0 (green badge)
+Verify list now shows 3 rows. Try **删除 GLOBAL** → error toast "GLOBAL 部门不可删除".
 
-### 4. Roles: role_type + max_security_level visible
+### 3. Create three demo users via UI
 
-Go to `/admin/roles`. Verify fixture-seeded roles show:
-- 研发部管理员: role_type=DEPT_ADMIN, max_security_level=3
-- 普通研发员: role_type=USER, max_security_level=0
+Go to `/admin/users`. Click **新增用户** three times:
 
-### 5. Role assignment verified via fixture
+| 用户名 | 密码 | 部门 | 备注 |
+|---|---|---|---|
+| alice | 123456 | 研发部 | 角色下一步分配 |
+| bob   | 123456 | 法务部 | 角色下一步分配 |
+| carol | 123456 | 研发部 | 角色下一步分配 |
 
-No action — fixture already wires alice → 研发部管理员, bob → 法务部管理员, carol → 普通研发员.
+For each: the 部门 dropdown must show RND + LEGAL + GLOBAL (admin sees all). The 角色 multi-select at this point has only the seeded role "超级管理员"/"普通用户"; leave unchecked, assignment happens in step 5.
 
-### 6. Alice login — 3 menu items + 研发部管理员 label
+**Important:** `max_security_level` is NOT a user form field — it's derived from roles. The user form must NOT expose it; if it does, that's a Slice S2.2 bug.
+
+### 4. Create three demo roles via UI
+
+Go to `/admin/roles`. Verify the role dialog has **role_type** and **max_security_level** dropdowns (Slice S3.1 deliverable).
+
+Click **新建角色** three times:
+
+| 角色名称 | role_type | max_security_level | 描述 |
+|---|---|---|---|
+| 研发部管理员 | DEPT_ADMIN | 3 | 管理研发部的 KB 和用户 |
+| 法务部管理员 | DEPT_ADMIN | 3 | 管理法务部的 KB 和用户 |
+| 普通研发员   | USER       | 0 | 只读访问研发 KB |
+
+- SUPER_ADMIN 选项出现在 role_type 下拉里（当前登录是 admin，Slice S3.1 允许 admin 选择）—— 但为了 Last SUPER_ADMIN 不变量演示，本步骤**不要**创建 SUPER_ADMIN 类型角色。
+- After each save, verify the role list shows the new row with the role_type chip and max_security_level badge.
+
+### 5. Assign roles to users via UI
+
+Return to `/admin/users`. For each user, click **编辑**:
+
+- alice → 角色多选里勾选 "研发部管理员" → 保存
+- bob → 角色多选里勾选 "法务部管理员" → 保存
+- carol → 角色多选里勾选 "普通研发员" → 保存
+
+After save, the user list rows update:
+- alice: 角色类型 chip = DEPT_ADMIN, 最大密级 badge = 3 (red)
+- bob: 角色类型 chip = DEPT_ADMIN, 最大密级 badge = 3 (red)
+- carol: 角色类型 chip = USER, 最大密级 badge = 0 (green)
+
+**This is the step that decides carol's max=0** — not step 3 (user create). Per spec §10.4 note: "max_security_level is derived from roles".
+
+### 6. alice login — 3 menu items + 研发部管理员 label
 
 Log out admin. Log in as `alice` / `123456`.
-- Sidebar shows only 3 items: Dashboard, 知识库管理, 用户管理.
-- Header roleLabel reads "研发部管理员".
+- Sidebar shows only **3** items: Dashboard, 知识库管理, 用户管理 (matrix A, Decision 3-A).
+- Header roleLabel reads **"研发部管理员"** (4-tier fallback from Slice 6; relies on `deptName` being populated via `UserProfileLoader`).
 
-### 7. Alice's /admin/knowledge — dept-scoped
+### 7. alice creates a KB via UI — dept_id locked to 研发部
 
-- Only 研发知识库 visible (not 法务知识库).
-- Click "新建知识库" — dept_id dropdown is locked to "研发部" (disabled).
+Go to `/admin/knowledge`. List is empty on this baseline.
 
-### 8. Alice's /admin/users — dept-scoped CRUD
+Click **新建知识库**:
+- Dialog shows 部门 dropdown **locked and disabled** at "研发部" (DEPT_ADMIN self-dept lock from Slice S4).
+- `name = 研发知识库`, save.
+- Verify the new KB is listed and dept column shows 研发部.
 
-- Only alice + carol visible (admin and bob hidden).
-- Edit carol → dept field locked, role dropdown shows "研发部管理员" and "普通研发员" but NOT any SUPER_ADMIN role.
+### 8. alice verifies user scoping — only 研发部 visible
 
-### 9. Alice uploads a confidential document
+- /admin/users shows only **alice + carol** (admin and bob hidden).
+- Click **编辑 carol**:
+  - 部门 dropdown locked at 研发部, disabled.
+  - 角色多选列表:
+    - "研发部管理员" ✅ visible (DEPT_ADMIN type)
+    - "普通研发员" ✅ visible (USER type)
+    - "超级管理员" ❌ hidden (SUPER_ADMIN type filtered out by `permissions.canAssignRole`)
+- Cancel out of the dialog.
 
-- Navigate to /admin/knowledge → 研发知识库 → 文档管理 → 新建文档.
-- Upload `test-confidential.md`, set **密级 = 2 机密**.
-- Wait for chunk processing (watch status transition from PENDING → RUNNING → SUCCESS).
+Attempt delete on alice's own row: button may be shown but the backend will reject via Last SUPER_ADMIN invariant test is N/A here (alice is DEPT_ADMIN, not SUPER_ADMIN). Instead try the negative test: alice has no way to reach bob (not in list). The protection is structural.
 
-### 10. Carol login — cannot retrieve level=2 doc
+### 9. alice uploads a confidential document via UI
+
+- Navigate to /admin/knowledge → 研发知识库 → 文档管理 → 新增文档.
+- Upload `test-confidential.md`, set **密级 = 2 机密** (Slice S5.1 upload dialog).
+- Wait for chunk processing (watch status transition PENDING → RUNNING → SUCCESS).
+- Verify the documents list shows the new row with **密级 badge = 2 机密 (orange)**.
+
+(Optional for contrast: upload `test-public.md` with 密级=0 to confirm both render.)
+
+### 10. carol login — retrieval excludes level=2 doc
 
 - Log out alice. Log in as `carol` / `123456`.
-- Open chat (click "返回聊天" or navigate to /chat).
-- Ask "机密架构的核心要点是什么？" (or any query related to the uploaded doc).
-- **Structural assertion:** The response's retrieval sources (visible in chat UI or trace) MUST NOT include `test-confidential.md`. Carol's max_security_level=0, doc's security_level=2, so OpenSearch filter excludes it.
+- carol has no access to /admin (only USER role_type → `canSeeAdminMenu` = false → Navigate to /spaces).
+- On /spaces, carol should see the "研发知识库" space (via RBAC: 普通研发员 role is READ-bound to 研发知识库 via the role-KB binding... **wait, this requires step 5 to have created that binding**).
 
-### 11. Bob login — no research 部门 resources visible
+**Sub-step 5b (missing from original 5, added here for completeness):** After step 5, admin (re-login briefly if needed) goes to /admin/roles → 普通研发员 → **知识库** button → bind 研发知识库 with permission READ.
+
+Once carol can see the KB, open chat for 研发知识库 and ask a question related to the confidential doc content (e.g., "机密架构的核心要点是什么？").
+
+**Structural assertion (Decision 3-L, not text-coupled):**
+- The response's retrieved sources (visible in chat UI or `/rag/traces` if observability is on) MUST NOT include a source whose `docId` matches the `test-confidential.md` upload from step 9.
+- Carol's `max_security_level = 0`, doc's `security_level = 2`, OpenSearch metadata filter `security_level <= 0` excludes it.
+- **Do not assert on response text** ("未找到"/"not found" etc.) — the answer wording depends on prompt templates and must not couple to this security test.
+
+### 11. bob login — law-only scope + cross-dept forbidden
 
 - Log out carol. Log in as `bob` / `123456`.
-- /admin/knowledge shows only 法务知识库; 研发知识库 hidden.
-- /admin/users shows only bob (alice/carol hidden).
-- Raw curl: try `PUT /knowledge-base/kb-rnd-001` with bob's token → expect 403 (handled by R7 in curl matrix).
+- Sidebar shows 3 items (same as alice).
+- /admin/knowledge shows nothing — bob has no KB created or bound yet. (Contrast with fixture-based matrix which pre-binds 法务知识库.)
+- /admin/users shows only **bob** (alice/carol hidden, different dept).
+- Open a terminal and attempt raw curl cross-dept write (recall: header is raw token, no Bearer):
+
+```bash
+BOB_TOKEN=$(curl -s -X POST http://localhost:9090/api/ragent/auth/login -H "Content-Type: application/json" -d '{"username":"bob","password":"123456"}' | jq -r '.data.token')
+curl -s -X PUT http://localhost:9090/api/ragent/knowledge-base/<rnd-kb-id> \
+  -H "Authorization: $BOB_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"偷改"}' | jq .
+```
+
+Expected response shape: `{ "code": "<non-zero>", "message": "无权管理其他部门知识库: <rnd-kb-id>", "data": null }` — **HTTP status is 200**, not 403. Confirm via the response `code` field (not status code) that the permission was rejected.
 
 ### 12. Code hygiene grep
 
-From the repo root:
+From the repo root (use Git Bash / WSL on Windows since these are regex patterns):
 
-    grep -rn '"admin"\.equals' bootstrap/src/main/java/ | grep -v /\*     # should be empty or docs only
-    grep -rn "LoginUser\.role\|\.getRole()" bootstrap/src/main/java/com/nageoffer/ai/ragent/user/ bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/
-    grep -rn "user\.role\|user?\.role" frontend/src/ --include="*.ts" --include="*.tsx"
+```bash
+grep -rn '"admin"\.equals' bootstrap/src/main/java/ | grep -v '/\*'          # should be empty or docs only
+grep -rn 'LoginUser\.role\|\.getRole()' bootstrap/src/main/java/com/nageoffer/ai/ragent/user/ bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/
+grep -rn 'user\.role\|user?\.role' frontend/src/ --include='*.ts' --include='*.tsx'
+grep -rn 'LoginUser\.role' framework/src/main/java/
+```
 
-Expected: no matches outside of deprecated/legacy notes.
+Expected: no business-layer matches. The `t_user.role` column stays (Sa-Token compat layer reads it for legacy `UserDO.getRole()`), so `UserDO.getRole()` may still appear in DAO layer — that's acceptable as long as it's not referenced from business logic.
 
 ## Troubleshooting
 
-- **Step 10 fails (carol retrieves confidential doc)**: Check OpenSearch index was flushed after fixture load; re-upload the doc; verify `security_level` column in `t_knowledge_document` matches the metadata in OpenSearch.
-- **Alice sees wrong menu count**: Clear browser localStorage and re-login; stale authStore may persist old user shape.
-- **Fixture PK conflict on re-run**: Ensure fixture uses `DELETE ... WHERE` before INSERT; if it still conflicts, grep for residual rows: `SELECT * FROM sys_dept WHERE dept_code IN ('RND','LEGAL');`
+- **Step 1 admin shows no dept / empty roleTypes / max=0**: `UserProfileLoader` JOIN is broken. Check `init_data_pg.sql` seeded `t_user_role(id='1', user_id='1', role_id='1')`; check `t_role(id='1')` has `role_type='SUPER_ADMIN'` and `max_security_level=3`; check `sys_dept(id='1')` exists. If all 3 seeds are present and the display is still wrong, `UserProfileLoaderImpl.load()` has a JOIN bug (Task 0.4).
+- **Step 6 alice sees 12 menus instead of 3**: `permissions.canSeeMenuItem` is not being called; likely `menuGroups` in `AdminLayout.tsx` missed the `id` field. Re-check Slice 6 in Task 0.15 Step 8.
+- **Step 6 alice roleLabel shows "部门管理员" instead of "研发部管理员"**: `deptName` is null on alice. Check that `UserProfileLoader` returns `deptName` from `sys_dept` JOIN; check Task 0.5 `AuthServiceImpl.login()` sets `vo.setDeptName(profile.deptName())`.
+- **Step 10 carol retrieves confidential doc**: Either (a) OpenSearch metadata wasn't indexed with `security_level`, or (b) `RAGChatServiceImpl` isn't passing the `maxSecurityLevel` filter into the retrieval query. Recheck PR1 delivery; PR3 only exposed this capability in UI.
+- **Stale frontend state**: clear browser localStorage (`localStorage.clear()`), force refresh. `authStore` persists to localStorage so old user shapes can cause mismatches after Task 0.15.
 ```
 
 - [ ] **Step 2**: Append a "PR3 Demo" section to `README.md`
@@ -3546,12 +3676,21 @@ Expected: no matches outside of deprecated/legacy notes.
 ```markdown
 ## PR3 Demo
 
-演示跨部门 RBAC 隔离 + security_level 检索过滤的完整流程：
+演示跨部门 RBAC 隔离 + security_level 检索过滤的完整流程。PR3 使用**两种独立运行模式**：
 
-1. 加载 fixture: `docker exec -i postgres psql -U postgres -d ragent < resources/database/fixture_pr3_demo.sql`
-2. 启动后端 + 前端
-3. 按 `docs/dev/pr3-demo-walkthrough.md` 的 12 步执行
-4. 对原始 HTTP 边界验证: `docs/dev/pr3-curl-matrix.http`
+### Mode A — UI CRUD walkthrough（证明前端创建闭环）
+
+1. 重建数据库：仅 `schema_pg.sql` + `init_data_pg.sql`（**不加载 fixture**）
+2. 清空 OpenSearch + Redis
+3. 启动后端 + 前端
+4. 按 `docs/dev/pr3-demo-walkthrough.md` 的 12 步逐项执行（admin 用 UI 创建部门 / 用户 / 角色 / 分配 / 上传文档）
+
+### Mode B — curl bypass matrix（证明后端授权边界）
+
+1. 重建数据库：`schema_pg.sql` + `init_data_pg.sql` + `fixture_pr3_demo.sql`
+2. 按 `docs/dev/pr3-curl-matrix.http` 逐条跑，验证每条权限规则在前端 UI 之外也被后端拦截
+
+两种模式**不可混合**：Mode A 依赖 UI 创建来证明 CRUD 闭环，若 fixture 预塞数据，walkthrough 的步骤 2-5 就没有证明价值。Mode B 依赖固定业务键来让 curl 断言稳定，若没有 fixture，账号/ID 每次运行都不同。
 
 设计文档: `docs/superpowers/specs/2026-04-12-pr3-rbac-frontend-demo-design.md`
 ```
@@ -3570,10 +3709,42 @@ git commit -m "docs(pr3): Slice 8c — demo walkthrough and README cross-ref"
 **Files:**
 - Create: `docs/dev/pr3-verification-log.md`
 
-- [ ] **Step 1**: Full rebuild per spec §10.3
+Slice 9 runs **two independent rebuild sessions**:
+
+- **Mode A — UI walkthrough**: rebuild with `schema_pg.sql` + `init_data_pg.sql` only (no fixture). Execute all 12 steps from `pr3-demo-walkthrough.md`. Records results in the walkthrough section of the log.
+- **Mode B — curl matrix**: rebuild with `schema_pg.sql` + `init_data_pg.sql` + `fixture_pr3_demo.sql`. Execute all bypass rules from `pr3-curl-matrix.http`. Records results in the curl-matrix section of the log.
+
+Both must pass for PR3 to be considered mergeable. If any step fails, halt verification and trace back to the owning Phase-0 or Slice task.
+
+- [ ] **Step 1**: Mode A rebuild (UI walkthrough baseline)
 
 ```bash
-# Step 1-3: data clean + frontend rebuild (bash / Git Bash)
+# bash / Git Bash
+docker exec postgres psql -U postgres -c "DROP DATABASE ragent;"
+docker exec postgres psql -U postgres -c "CREATE DATABASE ragent;"
+docker exec -i postgres psql -U postgres -d ragent < resources/database/schema_pg.sql
+docker exec -i postgres psql -U postgres -d ragent < resources/database/init_data_pg.sql
+# NO fixture_pr3_demo.sql here — walkthrough proves UI CRUD creates all demo data
+curl -X DELETE "http://localhost:9200/_all"
+docker exec redis redis-cli FLUSHDB
+cd frontend && npm run build
+```
+
+```powershell
+# PowerShell — backend start
+$env:NO_PROXY='localhost,127.0.0.1'; $env:no_proxy='localhost,127.0.0.1'
+mvn -pl bootstrap spring-boot:run
+```
+
+- [ ] **Step 2**: Mode A execution — run all 12 steps from `pr3-demo-walkthrough.md`
+
+Do this in order, manually click-through the UI. Record each step as PASS / FAIL with short notes in the log file.
+
+- [ ] **Step 3**: Mode B rebuild (curl matrix baseline)
+
+After Mode A completes, stop the backend and re-run the rebuild **with** the fixture this time:
+
+```bash
 docker exec postgres psql -U postgres -c "DROP DATABASE ragent;"
 docker exec postgres psql -U postgres -c "CREATE DATABASE ragent;"
 docker exec -i postgres psql -U postgres -d ragent < resources/database/schema_pg.sql
@@ -3581,18 +3752,15 @@ docker exec -i postgres psql -U postgres -d ragent < resources/database/init_dat
 docker exec -i postgres psql -U postgres -d ragent < resources/database/fixture_pr3_demo.sql
 curl -X DELETE "http://localhost:9200/_all"
 docker exec redis redis-cli FLUSHDB
-cd frontend && npm run build
 ```
 
-```powershell
-# Step 4: backend start (PowerShell)
-$env:NO_PROXY='localhost,127.0.0.1'; $env:no_proxy='localhost,127.0.0.1'
-mvn -pl bootstrap spring-boot:run
-```
+Restart backend (same PowerShell command). Frontend can stay up; curl matrix bypasses UI.
 
-- [ ] **Step 2**: Execute all 12 checklist items from `pr3-demo-walkthrough.md`
+- [ ] **Step 4**: Mode B execution — run every non-commented request in `pr3-curl-matrix.http`
 
-Create the log file and record each step's outcome:
+Record each rule's actual result. Remember: all permission rejections return **HTTP 200** with `code != "0"` in the body — don't expect 403/409. Assert on the `code` field.
+
+- [ ] **Step 5**: Write the verification log
 
 ```markdown
 # PR3 Verification Log
@@ -3601,41 +3769,46 @@ Create the log file and record each step's outcome:
 **Operator:** <name>
 **Commit tested:** <sha>
 
+## Mode A — UI walkthrough (schema + init_data only, NO fixture)
+
 | # | Step | Result | Notes |
 |---|---|---|---|
-| 1 | admin login + 12 menu | PASS |  |
-| 2 | departments fixture | PASS |  |
-| 3 | users fixture | PASS |  |
-| 4 | roles with role_type/max | PASS |  |
-| 5 | role assignments | PASS |  |
-| 6 | alice 3 menus + 研发部管理员 label | PASS |  |
-| 7 | alice /admin/knowledge dept-scoped | PASS |  |
-| 8 | alice /admin/users dept-scoped + role filter | PASS |  |
-| 9 | alice uploads security_level=2 doc | PASS |  |
-| 10 | carol retrieval excludes level=2 doc | PASS | 核心断言 |
-| 11 | bob cross-dept isolation | PASS |  |
-| 12 | grep hygiene (4 patterns clean) | PASS |  |
+| 1 | admin login + 12 menu + 超级管理员 label | PASS/FAIL |  |
+| 2 | Create 研发部 / 法务部 via UI | PASS/FAIL |  |
+| 3 | Create alice / bob / carol via UI | PASS/FAIL |  |
+| 4 | Create 3 roles with role_type + max_security_level via UI | PASS/FAIL |  |
+| 5 | Assign roles to users via UI (carol max=0 confirmed via badge color) | PASS/FAIL |  |
+| 6 | alice login → 3 menus + 研发部管理员 label | PASS/FAIL |  |
+| 7 | alice creates 研发知识库 → dept locked | PASS/FAIL |  |
+| 8 | alice /admin/users dept-scoped + SUPER_ADMIN role filtered | PASS/FAIL |  |
+| 9 | alice uploads test-confidential.md at security_level=2 | PASS/FAIL |  |
+| 10 | carol retrieval structurally excludes the level=2 doc | PASS/FAIL | **核心断言** |
+| 11 | bob sees only own dept + raw curl cross-dept write rejected | PASS/FAIL |  |
+| 12 | grep hygiene (4 patterns) clean | PASS/FAIL |  |
 
-## curl matrix bypass results
+## Mode B — curl bypass matrix (schema + init_data + fixture)
 
-Execute `docs/dev/pr3-curl-matrix.http`. Record rule pass/fail:
+Execute `docs/dev/pr3-curl-matrix.http`. Record each rule's result. Assert on `code` field, not HTTP status.
 
-| Rule | Result |
-|---|---|
-| R3 | PASS |
-| R4 | PASS |
-| R6 (forbidden) | PASS |
-| R6 (allowed) | PASS |
-| R7 | PASS |
-| R10 | PASS |
-| R11 | PASS |
-| R12 (forbidden dept) | PASS |
-| R12 (forbidden role) | PASS |
-| R13 | PASS |
-| R14 | PASS |
-| R15 | PASS |
-| Last SUPER_ADMIN delete self | PASS |
-| Last SUPER_ADMIN remove self role | PASS |
+| Rule | Expected | Actual | Result |
+|---|---|---|---|
+| R3 DEPT_ADMIN reads /sys-dept | code != "0" (权限/角色) | | PASS/FAIL |
+| R4 DEPT_ADMIN creates dept | code != "0" | | PASS/FAIL |
+| R4 SUPER_ADMIN deletes GLOBAL | code != "0" (GLOBAL) | | PASS/FAIL |
+| R6 DEPT_ADMIN creates KB in other dept | code != "0" (无权/其他部门) | | PASS/FAIL |
+| R6 DEPT_ADMIN creates KB in own dept | code == "0" | | PASS/FAIL |
+| R7 DEPT_ADMIN updates other-dept KB | code != "0" | | PASS/FAIL |
+| R7 DEPT_ADMIN updates own-dept KB | code == "0" | | PASS/FAIL |
+| R10 DEPT_ADMIN changes security_level of other-dept doc | code != "0" | | PASS/FAIL |
+| R11 USER lists users | code != "0" (权限) | | PASS/FAIL |
+| R12 DEPT_ADMIN creates user in other dept | code != "0" (本部门) | | PASS/FAIL |
+| R12 DEPT_ADMIN creates user with SUPER_ADMIN role | code != "0" (SUPER_ADMIN) | | PASS/FAIL |
+| R13 DEPT_ADMIN deletes other-dept user | code != "0" (本部门) | | PASS/FAIL |
+| R14 DEPT_ADMIN assigns SUPER_ADMIN role | code != "0" (SUPER_ADMIN) | | PASS/FAIL |
+| R15 DEPT_ADMIN lists roles | code != "0" (权限) | | PASS/FAIL |
+| R15 DEPT_ADMIN deletes role | code != "0" (权限) | | PASS/FAIL |
+| Last SUPER_ADMIN: admin delete self | code != "0" (最后一个 SUPER_ADMIN) | | PASS/FAIL |
+| Last SUPER_ADMIN: admin clears own roles | code != "0" (最后一个 SUPER_ADMIN) | | PASS/FAIL |
 
 ## Overall
 
