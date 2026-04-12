@@ -30,7 +30,7 @@ class LoginUserTests {
         LoginUser user = LoginUser.builder()
                 .userId("1")
                 .username("alice")
-                .role("admin")            // legacy
+
                 .avatar("https://x.com/a.png")
                 .deptId("OPS")
                 .roleTypes(Set.of(RoleType.SUPER_ADMIN, RoleType.USER))
@@ -49,7 +49,7 @@ class LoginUserTests {
         LoginUser user = LoginUser.builder()
                 .userId("2")
                 .username("bob")
-                .role("user")
+
                 .build();
 
         assertNull(user.getDeptId());
