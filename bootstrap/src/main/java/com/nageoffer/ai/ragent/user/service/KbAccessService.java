@@ -96,4 +96,25 @@ public interface KbAccessService {
      * 当前是否是 DEPT_ADMIN（任一部门）。
      */
     boolean isDeptAdmin();
+
+    // === PR3 新增：KB / 文档管理授权 ===
+
+    /**
+     * 创建 KB 时的权限解析器（Decision 3-H）。
+     * - 未登录：抛 ClientException("未登录用户不可创建知识库")；无 GLOBAL fallback
+     * - SUPER_ADMIN：返回 requestedDeptId，空则 fallback GLOBAL_DEPT_ID ("1")
+     * - DEPT_ADMIN：强制 self.deptId；若 requestedDeptId 非空且 != self.deptId 抛 403
+     * - USER：抛 403
+     */
+    String resolveCreateKbDeptId(String requestedDeptId);
+
+    /**
+     * 文档级管理权：doc → kb → checkManageAccess(kb.id)。
+     */
+    void checkDocManageAccess(String docId);
+
+    /**
+     * 文档 security_level 修改专用（目前等同 checkDocManageAccess，保留独立方法以便未来加 level-specific 规则）。
+     */
+    void checkDocSecurityLevelAccess(String docId, int newLevel);
 }

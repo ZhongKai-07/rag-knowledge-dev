@@ -24,7 +24,9 @@ import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
@@ -59,6 +61,7 @@ public class KbAccessServiceImpl implements KbAccessService {
     private final RedissonClient redissonClient;
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
+    private final KnowledgeDocumentMapper knowledgeDocumentMapper;
 
     @Override
     public Set<String> getAccessibleKbIds(String userId, Permission minPermission) {
@@ -258,5 +261,51 @@ public class KbAccessServiceImpl implements KbAccessService {
                 throw new ClientException("DEPT_ADMIN 不可分配 SUPER_ADMIN 角色");
             }
         }
+    }
+
+    @Override
+    public String resolveCreateKbDeptId(String requestedDeptId) {
+        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+            throw new ClientException("未登录用户不可创建知识库");
+        }
+        if (isSuperAdmin()) {
+            return (requestedDeptId == null || requestedDeptId.isBlank())
+                    ? SysDeptServiceImpl.GLOBAL_DEPT_ID
+                    : requestedDeptId;
+        }
+        if (!isDeptAdmin()) {
+            throw new ClientException("无权创建知识库");
+        }
+        LoginUser user = UserContext.get();
+        String selfDeptId = user.getDeptId();
+        if (selfDeptId == null) {
+            throw new ClientException("当前 DEPT_ADMIN 用户未挂载部门");
+        }
+        if (requestedDeptId != null && !requestedDeptId.isBlank()
+                && !requestedDeptId.equals(selfDeptId)) {
+            throw new ClientException("DEPT_ADMIN 只能在本部门创建知识库");
+        }
+        return selfDeptId;
+    }
+
+    @Override
+    public void checkDocManageAccess(String docId) {
+        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+            return; // 系统态
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        KnowledgeDocumentDO doc = knowledgeDocumentMapper.selectById(docId);
+        if (doc == null) {
+            throw new ClientException("文档不存在: " + docId);
+        }
+        checkManageAccess(doc.getKbId());
+    }
+
+    @Override
+    public void checkDocSecurityLevelAccess(String docId, int newLevel) {
+        checkDocManageAccess(docId);
+        // 当前与 checkDocManageAccess 等价；未来可加 newLevel 相关的细粒度规则
     }
 }
