@@ -30,10 +30,6 @@ public class LoginVO {
 
     private String username;
 
-    /** @deprecated 保留给 Task 0.15 移除 */
-    @Deprecated
-    private String role;
-
     private String token;
 
     private String avatar;

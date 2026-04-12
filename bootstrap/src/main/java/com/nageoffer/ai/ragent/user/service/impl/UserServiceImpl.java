@@ -60,10 +60,7 @@ public class UserServiceImpl implements UserService {
         String keyword = StrUtil.trimToNull(requestParam.getKeyword());
         Page<UserDO> page = new Page<>(requestParam.getCurrent(), requestParam.getSize());
         var wrapper = Wrappers.lambdaQuery(UserDO.class)
-                .and(StrUtil.isNotBlank(keyword), w -> w
-                        .like(UserDO::getUsername, keyword)
-                        .or()
-                        .like(UserDO::getRole, keyword))
+                .like(StrUtil.isNotBlank(keyword), UserDO::getUsername, keyword)
                 .orderByDesc(UserDO::getUpdateTime);
 
         if (!kbAccessService.isSuperAdmin() && kbAccessService.isDeptAdmin()) {
@@ -84,7 +81,6 @@ public class UserServiceImpl implements UserService {
         Assert.notNull(requestParam, () -> new ClientException("请求不能为空"));
         String username = StrUtil.trimToNull(requestParam.getUsername());
         String password = StrUtil.trimToNull(requestParam.getPassword());
-        String role = StrUtil.trimToNull(requestParam.getRole());
         Assert.notBlank(username, () -> new ClientException("用户名不能为空"));
         Assert.notBlank(password, () -> new ClientException("密码不能为空"));
 
@@ -93,13 +89,12 @@ public class UserServiceImpl implements UserService {
         if (DEFAULT_ADMIN_USERNAME.equalsIgnoreCase(username)) {
             throw new ClientException("默认管理员用户名不可用");
         }
-        role = normalizeRole(role);
         ensureUsernameAvailable(username, null);
 
         UserDO record = UserDO.builder()
                 .username(username)
                 .password(password)
-                .role(role)
+                .role(UserRole.USER.getCode())
                 .avatar(StrUtil.trimToNull(requestParam.getAvatar()))
                 .deptId(requestParam.getDeptId())
                 .build();
@@ -133,10 +128,6 @@ public class UserServiceImpl implements UserService {
                 ensureUsernameAvailable(username, record.getId());
             }
             record.setUsername(username);
-        }
-
-        if (requestParam.getRole() != null) {
-            record.setRole(normalizeRole(requestParam.getRole()));
         }
 
         if (requestParam.getAvatar() != null) {
@@ -214,20 +205,6 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private String normalizeRole(String role) {
-        String value = StrUtil.trimToNull(role);
-        if (StrUtil.isBlank(value)) {
-            return UserRole.USER.getCode();
-        }
-        if (UserRole.ADMIN.getCode().equalsIgnoreCase(value)) {
-            return UserRole.ADMIN.getCode();
-        }
-        if (UserRole.USER.getCode().equalsIgnoreCase(value)) {
-            return UserRole.USER.getCode();
-        }
-        throw new ClientException("角色类型不合法");
-    }
-
     private boolean passwordMatches(String input, String stored) {
         if (stored == null) {
             return input == null;
@@ -239,7 +216,6 @@ public class UserServiceImpl implements UserService {
         UserVO vo = UserVO.builder()
                 .id(String.valueOf(record.getId()))
                 .username(record.getUsername())
-                .role(record.getRole())
                 .avatar(record.getAvatar())
                 .createTime(record.getCreateTime())
                 .updateTime(record.getUpdateTime())

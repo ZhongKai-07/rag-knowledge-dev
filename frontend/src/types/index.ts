@@ -6,13 +6,17 @@ export type MessageStatus = "streaming" | "done" | "cancelled" | "error";
 
 export interface User {
   userId: string;
-  username?: string;
-  role: string;
-  token: string;
+  username: string;
   avatar?: string;
+  deptId: string | null;
+  deptName: string | null;
+  roleTypes: string[];
+  maxSecurityLevel: number;
+  isSuperAdmin: boolean;
+  isDeptAdmin: boolean;
+  /** Token is only present when stored from login response */
+  token?: string;
 }
-
-export type CurrentUser = Omit<User, "token">;
 
 export interface Session {
   id: string;

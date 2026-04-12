@@ -69,14 +69,6 @@ public final class UserContext {
     }
 
     /**
-     * 获取当前角色（未登录返回 null）
-     */
-    public static String getRole() {
-        LoginUser user = CONTEXT.get();
-        return user == null ? null : user.getRole();
-    }
-
-    /**
      * 获取当前头像（未登录返回 null）
      */
     public static String getAvatar() {

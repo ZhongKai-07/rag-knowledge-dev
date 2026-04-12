@@ -20,8 +20,6 @@ package com.nageoffer.ai.ragent.user.config;
 import cn.dev33.satoken.stp.StpUtil;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
 import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
 import jakarta.servlet.DispatcherType;
@@ -42,7 +40,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @RequiredArgsConstructor
 public class UserContextInterceptor implements HandlerInterceptor {
 
-    private final UserMapper userMapper;
     private final UserProfileLoader userProfileLoader;
 
     @Override
@@ -57,8 +54,6 @@ public class UserContextInterceptor implements HandlerInterceptor {
         }
 
         String loginId = StpUtil.getLoginIdAsString();
-        UserDO user = userMapper.selectById(loginId);
-
         LoadedUserProfile profile = userProfileLoader.load(loginId);
         if (profile == null) {
             return true;
@@ -68,7 +63,6 @@ public class UserContextInterceptor implements HandlerInterceptor {
                 LoginUser.builder()
                         .userId(profile.userId())
                         .username(profile.username())
-                        .role(user.getRole()) // legacy, still populated until Task 0.15
                         .avatar(profile.avatar())
                         .deptId(profile.deptId())
                         .roleTypes(profile.roleTypes())

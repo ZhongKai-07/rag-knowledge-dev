@@ -30,11 +30,7 @@ import java.util.Set;
  * <p>由 {@code UserContextInterceptor} 在请求进入时一次性从数据库装载，塞进
  * {@code UserContext}（TTL ThreadLocal）。业务代码通过静态方法访问。
  *
- * <p><strong>字段分两代：</strong>
- * <ul>
- *     <li>legacy：{@code role} —— 单字符串角色，保留给 Sa-Token 兼容层。PR3 移除。</li>
- *     <li>新增：{@code deptId} / {@code roleTypes} / {@code maxSecurityLevel} —— 支持多角色 RBAC。</li>
- * </ul>
+ * <p>包含多角色 RBAC 字段：{@code deptId} / {@code roleTypes} / {@code maxSecurityLevel}。
  */
 @Data
 @NoArgsConstructor
@@ -51,14 +47,6 @@ public class LoginUser {
      * 用户名
      */
     private String username;
-
-    /**
-     * Legacy 单字符串角色（admin/user）。
-     *
-     * @deprecated PR3 里移除，用 {@link #roleTypes} 代替
-     */
-    @Deprecated
-    private String role;
 
     /**
      * 用户头像

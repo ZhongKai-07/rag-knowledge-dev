@@ -22,29 +22,7 @@ import { UserListPage } from "@/pages/admin/users/UserListPage";
 import { RoleListPage } from "@/pages/admin/roles/RoleListPage";
 import { RagEvaluationPage } from "@/pages/admin/evaluations/RagEvaluationPage";
 import { useAuthStore } from "@/stores/authStore";
-
-function RequireAuth({ children }: { children: JSX.Element }) {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  return children;
-}
-
-function RequireAdmin({ children }: { children: JSX.Element }) {
-  const user = useAuthStore((state) => state.user);
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user?.role !== "admin") {
-    return <Navigate to="/spaces" replace />;
-  }
-
-  return children;
-}
+import { RequireAuth, RequireAnyAdmin, RequireSuperAdmin, RequireMenuAccess } from "@/router/guards";
 
 function RedirectIfAuth({ children }: { children: JSX.Element }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -99,9 +77,11 @@ export const router = createBrowserRouter([
   {
     path: "/admin",
     element: (
-      <RequireAdmin>
-        <AdminLayout />
-      </RequireAdmin>
+      <RequireAuth>
+        <RequireAnyAdmin>
+          <AdminLayout />
+        </RequireAnyAdmin>
+      </RequireAuth>
     ),
     children: [
       {
@@ -110,67 +90,71 @@ export const router = createBrowserRouter([
       },
       {
         path: "dashboard",
-        element: <DashboardPage />
+        element: <RequireMenuAccess menuId="dashboard"><DashboardPage /></RequireMenuAccess>
       },
       {
         path: "knowledge",
-        element: <KnowledgeListPage />
+        element: <RequireMenuAccess menuId="knowledge"><KnowledgeListPage /></RequireMenuAccess>
       },
       {
         path: "knowledge/:kbId",
-        element: <KnowledgeDocumentsPage />
+        element: <RequireMenuAccess menuId="knowledge"><KnowledgeDocumentsPage /></RequireMenuAccess>
       },
       {
         path: "knowledge/:kbId/docs/:docId",
-        element: <KnowledgeChunksPage />
+        element: <RequireMenuAccess menuId="knowledge"><KnowledgeChunksPage /></RequireMenuAccess>
       },
       {
         path: "intent-tree",
-        element: <IntentTreePage />
+        element: <RequireSuperAdmin><IntentTreePage /></RequireSuperAdmin>
       },
       {
         path: "intent-list",
-        element: <IntentListPage />
+        element: <RequireSuperAdmin><IntentListPage /></RequireSuperAdmin>
       },
       {
         path: "intent-list/:id/edit",
-        element: <IntentEditPage />
+        element: <RequireSuperAdmin><IntentEditPage /></RequireSuperAdmin>
       },
       {
         path: "ingestion",
-        element: <IngestionPage />
+        element: <RequireSuperAdmin><IngestionPage /></RequireSuperAdmin>
       },
       {
         path: "traces",
-        element: <RagTracePage />
+        element: <RequireSuperAdmin><RagTracePage /></RequireSuperAdmin>
       },
       {
         path: "traces/:traceId",
-        element: <RagTraceDetailPage />
+        element: <RequireSuperAdmin><RagTraceDetailPage /></RequireSuperAdmin>
       },
       {
         path: "settings",
-        element: <SystemSettingsPage />
+        element: <RequireSuperAdmin><SystemSettingsPage /></RequireSuperAdmin>
       },
       {
         path: "sample-questions",
-        element: <SampleQuestionPage />
+        element: <RequireSuperAdmin><SampleQuestionPage /></RequireSuperAdmin>
       },
       {
         path: "mappings",
-        element: <QueryTermMappingPage />
+        element: <RequireSuperAdmin><QueryTermMappingPage /></RequireSuperAdmin>
       },
       {
         path: "users",
-        element: <UserListPage />
+        element: <RequireMenuAccess menuId="users"><UserListPage /></RequireMenuAccess>
       },
       {
         path: "roles",
-        element: <RoleListPage />
+        element: <RequireSuperAdmin><RoleListPage /></RequireSuperAdmin>
       },
       {
         path: "evaluations",
-        element: <RagEvaluationPage />
+        element: <RequireSuperAdmin><RagEvaluationPage /></RequireSuperAdmin>
+      },
+      {
+        path: "departments",
+        element: <RequireSuperAdmin><div className="admin-page"><h1 className="admin-page-title">部门管理</h1><p className="admin-page-subtitle">Slice 1 待实现</p></div></RequireSuperAdmin>
       }
     ]
   },

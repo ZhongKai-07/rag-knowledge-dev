@@ -3,14 +3,12 @@ import { Pencil, Plus, RefreshCw, ShieldCheck, Trash2, UserPlus } from "lucide-r
 import { toast } from "sonner";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar } from "@/components/common/Avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PageResult, UserItem, UserCreatePayload, UserUpdatePayload } from "@/services/userService";
 import { createUser, deleteUser, getUsersPage, updateUser } from "@/services/userService";
@@ -20,15 +18,9 @@ import { getErrorMessage } from "@/utils/error";
 
 const PAGE_SIZE = 10;
 
-const roleOptions = [
-  { value: "admin", label: "管理员" },
-  { value: "user", label: "成员" }
-];
-
 const buildEmptyForm = () => ({
   username: "",
   password: "",
-  role: "user",
   avatar: "",
   roleIds: [] as string[]
 });
@@ -77,9 +69,7 @@ export function UserListPage() {
   const loadUserRoleNames = async (userList: UserItem[]) => {
     const names: Record<string, string> = {};
     await Promise.all(
-      userList
-        .filter((u) => u.role !== "admin")
-        .map(async (u) => {
+      userList.map(async (u) => {
           try {
             const roles = await getUserRoles(u.id);
             names[u.id] = roles.map((r) => r.name).join(", ");
@@ -179,7 +169,6 @@ export function UserListPage() {
       setForm({
         username: user.username || "",
         password: "",
-        role: user.role || "user",
         avatar: user.avatar || "",
         roleIds: assigned.map((r) => r.id)
       });
@@ -187,7 +176,6 @@ export function UserListPage() {
       setForm({
         username: user.username || "",
         password: "",
-        role: user.role || "user",
         avatar: user.avatar || "",
         roleIds: []
       });
@@ -220,29 +208,22 @@ export function UserListPage() {
         const payload: UserCreatePayload = {
           username: trimmedUsername,
           password: trimmedPassword,
-          role: form.role || "user",
-          avatar: form.avatar?.trim() || undefined
+          avatar: form.avatar?.trim() || undefined,
+          roleIds: form.roleIds.length > 0 ? form.roleIds : undefined
         };
-        const newUserId = await createUser(payload);
-        // 创建后分配 RBAC 角色
-        if (form.roleIds.length > 0 && form.role !== "admin") {
-          await setUserRoles(newUserId, form.roleIds);
-        }
+        await createUser(payload);
         toast.success("创建成功");
         setPageNo(1);
         await loadUsers(1, keyword);
       } else if (dialogState.user) {
         const payload: UserUpdatePayload = {
           username: trimmedUsername,
-          role: form.role || "user",
           avatar: form.avatar?.trim() || undefined,
           password: trimmedPassword || undefined
         };
         await updateUser(dialogState.user.id, payload);
         // 更新 RBAC 角色
-        if (form.role !== "admin") {
-          await setUserRoles(dialogState.user.id, form.roleIds);
-        }
+        await setUserRoles(dialogState.user.id, form.roleIds);
         toast.success("更新成功");
         await loadUsers(pageNo, keyword);
       }
@@ -299,8 +280,7 @@ export function UserListPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[200px]">用户</TableHead>
-                  <TableHead className="w-[100px]">系统角色</TableHead>
-                  <TableHead className="w-[160px]">RBAC 角色</TableHead>
+                  <TableHead className="w-[200px]">RBAC 角色</TableHead>
                   <TableHead className="w-[160px]">创建时间</TableHead>
                   <TableHead className="w-[200px] text-left">操作</TableHead>
                 </TableRow>
@@ -308,7 +288,6 @@ export function UserListPage() {
               <TableBody>
                 {users.map((user) => {
                   const isProtected = isProtectedAdmin(user);
-                  const roleLabel = user.role === "admin" ? "管理员" : "成员";
                   return (
                     <TableRow key={user.id}>
                       <TableCell>
@@ -327,16 +306,9 @@ export function UserListPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.role === "admin" ? "default" : "secondary"}>{roleLabel}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {user.role === "admin" ? (
-                          <span className="text-xs text-muted-foreground">-</span>
-                        ) : (
-                          <span className="text-sm text-slate-700">
-                            {userRoleNames[user.id] || <span className="text-muted-foreground">未分配</span>}
-                          </span>
-                        )}
+                        <span className="text-sm text-slate-700">
+                          {userRoleNames[user.id] || <span className="text-muted-foreground">未分配</span>}
+                        </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(user.createTime)}</TableCell>
                       <TableCell className="text-center">
@@ -421,21 +393,6 @@ export function UserListPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">角色</label>
-              <Select value={form.role} onValueChange={(value) => setForm((prev) => ({ ...prev, role: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="请选择角色" />
-                </SelectTrigger>
-                <SelectContent>
-                  {roleOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
               <label className="text-sm font-medium">头像</label>
               <Input
                 value={form.avatar}
@@ -443,7 +400,7 @@ export function UserListPage() {
                 placeholder="可选，填写头像 URL"
               />
             </div>
-            {form.role !== "admin" && allRoles.length > 0 && (
+            {allRoles.length > 0 && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">RBAC 角色</label>
                 <div className="max-h-[160px] overflow-y-auto border rounded-md">

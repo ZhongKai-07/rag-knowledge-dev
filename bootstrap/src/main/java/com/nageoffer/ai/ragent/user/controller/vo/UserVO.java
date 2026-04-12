@@ -36,7 +36,6 @@ public class UserVO {
 
     private String id;
     private String username;
-    private String role;
     private String avatar;
     private Date createTime;
     private Date updateTime;

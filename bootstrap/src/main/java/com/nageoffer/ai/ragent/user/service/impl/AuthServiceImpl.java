@@ -64,7 +64,6 @@ public class AuthServiceImpl implements AuthService {
         LoginVO vo = new LoginVO();
         vo.setUserId(profile.userId());
         vo.setUsername(profile.username());
-        vo.setRole(user.getRole()); // legacy, Task 0.15 removes
         vo.setToken(StpUtil.getTokenValue());
         vo.setAvatar(avatar);
         vo.setDeptId(profile.deptId());

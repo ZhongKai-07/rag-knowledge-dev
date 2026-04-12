@@ -67,7 +67,6 @@ public class UserController {
         CurrentUserVO vo = new CurrentUserVO();
         vo.setUserId(profile.userId());
         vo.setUsername(profile.username());
-        vo.setRole(user.getRole()); // legacy, Task 0.15 removes
         vo.setAvatar(profile.avatar());
         vo.setDeptId(profile.deptId());
         vo.setDeptName(profile.deptName());

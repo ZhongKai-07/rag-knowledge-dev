@@ -3,10 +3,14 @@ import { api } from "@/services/api";
 export interface UserItem {
   id: string;
   username: string;
-  role: string;
   avatar?: string | null;
   createTime?: string | null;
   updateTime?: string | null;
+  // PR3 新增
+  deptId?: string | null;
+  deptName?: string | null;
+  roleTypes?: string[];
+  maxSecurityLevel?: number;
 }
 
 export interface PageResult<T> {
@@ -20,15 +24,16 @@ export interface PageResult<T> {
 export interface UserCreatePayload {
   username: string;
   password: string;
-  role?: string;
   avatar?: string | null;
+  deptId?: string;
+  roleIds?: string[];
 }
 
 export interface UserUpdatePayload {
   username?: string;
   password?: string;
-  role?: string;
   avatar?: string | null;
+  deptId?: string;
 }
 
 export interface ChangePasswordPayload {

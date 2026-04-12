@@ -25,6 +25,7 @@ import {
   Workflow
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { usePermissions, type AdminMenuId } from "@/utils/permissions";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -55,6 +56,7 @@ type MenuChild = {
 
 type MenuItem = {
   id?: string;
+  menuId?: AdminMenuId;
   path: string;
   label: string;
   icon: any;
@@ -72,17 +74,20 @@ const menuGroups: MenuGroup[] = [
     title: "导航",
     items: [
       {
+        menuId: "dashboard",
         path: "/admin/dashboard",
         label: "Dashboard",
         icon: LayoutDashboard
       },
       {
+        menuId: "knowledge",
         path: "/admin/knowledge",
         label: "知识库管理",
         icon: Database
       },
       {
         id: "intent",
+        menuId: "intent-tree",
         path: "/admin/intent-tree",
         label: "意图管理",
         icon: Layers,
@@ -101,6 +106,7 @@ const menuGroups: MenuGroup[] = [
       },
       {
         id: "ingestion",
+        menuId: "ingestion",
         path: "/admin/ingestion",
         label: "数据通道",
         icon: Upload,
@@ -120,16 +126,19 @@ const menuGroups: MenuGroup[] = [
         ]
       },
       {
+        menuId: "mappings",
         path: "/admin/mappings",
         label: "关键词映射",
         icon: KeyRound
       },
       {
+        menuId: "traces",
         path: "/admin/traces",
         label: "链路追踪",
         icon: Workflow
       },
       {
+        menuId: "evaluations",
         path: "/admin/evaluations",
         label: "评测记录",
         icon: ClipboardCheck
@@ -140,21 +149,25 @@ const menuGroups: MenuGroup[] = [
     title: "设置",
     items: [
       {
+        menuId: "users",
         path: "/admin/users",
         label: "用户管理",
         icon: Users
       },
       {
+        menuId: "roles",
         path: "/admin/roles",
         label: "角色管理",
         icon: ShieldCheck
       },
       {
+        menuId: "sample-questions",
         path: "/admin/sample-questions",
         label: "示例问题",
         icon: Lightbulb
       },
       {
+        menuId: "settings",
         path: "/admin/settings",
         label: "系统设置",
         icon: Settings
@@ -306,9 +319,25 @@ export function AdminLayout() {
     return items;
   }, [location.pathname, location.search]);
 
+  const permissions = usePermissions();
+
+  const visibleMenuGroups = useMemo(
+    () => menuGroups.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.menuId ? permissions.canSeeMenuItem(item.menuId) : true),
+    })).filter((group) => group.items.length > 0),
+    [permissions]
+  );
+
+  const roleLabel = useMemo(() => {
+    if (permissions.isSuperAdmin) return "超级管理员";
+    if (permissions.isDeptAdmin && permissions.deptName) return `${permissions.deptName}管理员`;
+    if (permissions.isDeptAdmin) return "部门管理员";
+    return "成员";
+  }, [permissions]);
+
   const avatarUrl = user?.avatar?.trim();
   const showAvatar = Boolean(avatarUrl);
-  const roleLabel = user?.role === "admin" ? "管理员" : "成员";
   const isIngestionActive = location.pathname.startsWith("/admin/ingestion");
   const isIntentActive =
     location.pathname.startsWith("/admin/intent-tree") || location.pathname.startsWith("/admin/intent-list");
@@ -434,7 +463,7 @@ export function AdminLayout() {
         </div>
 
         <nav className="flex-1 space-y-4 px-2 pb-4">
-          {menuGroups.map((group) => (
+          {visibleMenuGroups.map((group) => (
             <div key={group.title} className="space-y-2">
               {!collapsed && (
                 <p className="admin-sidebar__group-title">{group.title}</p>
