@@ -84,6 +84,10 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `KbAccessService` | RBAC 权限校验（`user→roles→kb_relations` 链） |
 | `AuthController` | 登录/登出（Sa-Token） |
 | `RoleService` | 角色-知识库关联管理 |
+| `SysDeptService` | 部门 CRUD（GLOBAL 硬保护 + 删除前引用计数校验） |
+| `SysDeptController` | 部门 REST API（类级 `@SaCheckRole("SUPER_ADMIN")`） |
+| `UserProfileLoader` | 单次 JOIN 加载用户身份快照（user+dept+roles），不走缓存 |
+| `SuperAdminMutationIntent` | Last-SUPER_ADMIN 不变量的 mutation 语义类型（sealed interface） |
 
 ## 关键 Gotchas
 

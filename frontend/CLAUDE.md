@@ -29,6 +29,10 @@ npm run format
 src/
 ├── main.tsx              ← 应用入口，挂载 React + Router
 ├── App.tsx               ← 路由定义（React Router v6）
+├── utils/
+│   └── permissions.ts    ← 权限判断单一真相源（getPermissions 纯函数 + usePermissions hook）
+├── router/
+│   └── guards.tsx        ← 路由守卫（RequireAuth / RequireAnyAdmin / RequireSuperAdmin / RequireMenuAccess）
 ├── pages/                ← 页面组件
 │   ├── LoginPage.tsx
 │   ├── SpacesPage.tsx    ← 知识库空间入口（登录后默认跳转）
@@ -114,6 +118,7 @@ src/
 | `roleService.ts` | 角色管理 + 角色-知识库关联 |
 | `userService.ts` | 用户 CRUD（管理员） |
 | `ingestionService.ts` | 摄入管道 + 任务管理 |
+| `sysDeptService.ts` | 部门 CRUD（SUPER_ADMIN only） |
 
 ## 关键 UI 约定
 
@@ -133,6 +138,12 @@ src/
 - **品牌名**：应用名称是 "HT KnowledgeBase"（不是 "Ragent"），影响 `index.html` title、`.env` 中 `VITE_APP_NAME`、`Sidebar.tsx`、`AdminLayout.tsx`。
 - **`KnowledgeChunksPage.tsx` 实际是文档详情页**：路由 `knowledge/:kbId/docs/:docId` 指向它（`router.tsx:124-125`），不是分块管理页。`KnowledgeDocumentsPage.tsx` 才是按 KB 分组的文档列表页。写涉及"文档详情"的改动时，改 `KnowledgeChunksPage.tsx`。
 - **Sidebar 在 `components/layout/Sidebar.tsx`**：不是 `components/chat/Sidebar.tsx`（后者不存在）。管理后台入口按钮（"进入后台"）的 `user.role === "admin"` 判断在该文件约第 427 行。
+
+## 权限层（PR3 新增）
+
+- `utils/permissions.ts`：`getPermissions(user)` 纯函数（非 React 代码/单测可用）+ `usePermissions()` hook（组件用）。所有 `canSeeMenuItem` / `canManageKb` / `canManageUser` 等判断都从这里走，不要在组件里内联 `user.isSuperAdmin` 判断
+- `router/guards.tsx`：`RequireAnyAdmin`（SUPER + DEPT 可进 /admin）/ `RequireSuperAdmin`（仅 SUPER）/ `RequireMenuAccess(menuId)`（按菜单项粒度）。失败策略：Navigate + toast，不做 403 页
+- `AdminLayout.tsx` 的侧边栏通过 `usePermissions().canSeeMenuItem(item.id)` 动态过滤菜单项，DEPT_ADMIN 见 3 项（Dashboard / 知识库 / 用户管理）
 
 ## 技术栈速查
 
