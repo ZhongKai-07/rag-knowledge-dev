@@ -22,11 +22,35 @@ import {
   toggleChunk,
   getChunksPage,
   getDocument,
-  updateChunk
+  updateChunk,
+  updateDocumentSecurityLevel
 } from "@/services/knowledgeService";
 import { getErrorMessage } from "@/utils/error";
+import { usePermissions } from "@/utils/permissions";
 
 const PAGE_SIZE = 10;
+
+const SECURITY_OPTIONS = [
+  { value: "0", label: "0 公开" },
+  { value: "1", label: "1 内部" },
+  { value: "2", label: "2 机密" },
+  { value: "3", label: "3 绝密" },
+];
+
+const securityLevelBadgeClass = (level?: number | null) => {
+  switch (level) {
+    case 0: return "border-green-200 bg-green-50 text-green-700";
+    case 1: return "border-blue-200 bg-blue-50 text-blue-700";
+    case 2: return "border-amber-200 bg-amber-50 text-amber-700";
+    case 3: return "border-red-200 bg-red-50 text-red-700";
+    default: return "border-slate-200 bg-slate-50 text-slate-500";
+  }
+};
+
+const securityLevelLabel = (level?: number | null) => {
+  const opt = SECURITY_OPTIONS.find((o) => o.value === String(level ?? 0));
+  return opt ? opt.label : String(level ?? 0);
+};
 
 const truncateText = (value?: string | null, max = 120) => {
   if (!value) return "-";
@@ -46,6 +70,7 @@ const enabledLabel = (enabled?: number | null) => (enabled === 1 ? "启用" : "�
 export function KnowledgeChunksPage() {
   const { kbId, docId } = useParams();
   const navigate = useNavigate();
+  const permissions = usePermissions();
   const [doc, setDoc] = useState<KnowledgeDocument | null>(null);
   const [pageData, setPageData] = useState<PageResult<KnowledgeChunk> | null>(null);
   const [pageNo, setPageNo] = useState(1);
@@ -58,6 +83,9 @@ export function KnowledgeChunksPage() {
     chunk: null
   });
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeChunk | null>(null);
+  const [secLevelDialogOpen, setSecLevelDialogOpen] = useState(false);
+  const [secLevelValue, setSecLevelValue] = useState("0");
+  const [secLevelSaving, setSecLevelSaving] = useState(false);
   const chunks = pageData?.records || [];
 
   const selectedList = useMemo(() => Array.from(selectedIds), [selectedIds]);
@@ -177,16 +205,56 @@ export function KnowledgeChunksPage() {
     }
   };
 
+  const handleOpenSecLevelDialog = () => {
+    setSecLevelValue(String(doc?.securityLevel ?? 0));
+    setSecLevelDialogOpen(true);
+  };
+
+  const handleSaveSecLevel = async () => {
+    if (!docId) return;
+    setSecLevelSaving(true);
+    try {
+      await updateDocumentSecurityLevel(docId, Number(secLevelValue));
+      toast.success("密级已更新");
+      setSecLevelDialogOpen(false);
+      // Reload doc to reflect updated securityLevel
+      const updated = await getDocument(docId);
+      setDoc(updated);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "更新密级失败"));
+      console.error(error);
+    } finally {
+      setSecLevelSaving(false);
+    }
+  };
+
+  const canEditSecLevel = permissions.isSuperAdmin || permissions.isDeptAdmin;
+
   return (
     <div className="admin-page">
       <div className="admin-page-header">
         <div>
           <h1 className="admin-page-title">分块管理</h1>
-          <p className="admin-page-subtitle">
-            {doc?.docName || docId} {kbId ? `（知识库: ${kbId}）` : ""}
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="admin-page-subtitle mb-0">
+              {doc?.docName || docId} {kbId ? `（知识库: ${kbId}）` : ""}
+            </p>
+            {doc && (
+              <Badge
+                variant="outline"
+                className={`text-xs ${securityLevelBadgeClass(doc.securityLevel)}`}
+              >
+                密级 {securityLevelLabel(doc.securityLevel)}
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="admin-page-actions">
+          {canEditSecLevel && (
+            <Button variant="outline" onClick={handleOpenSecLevelDialog}>
+              修改密级
+            </Button>
+          )}
           <Button variant="outline" onClick={() => navigate(`/admin/knowledge/${kbId}`)}>
             返回文档
           </Button>
@@ -390,6 +458,41 @@ export function KnowledgeChunksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 修改密级对话框 */}
+      <Dialog open={secLevelDialogOpen} onOpenChange={(open) => { if (!open) setSecLevelDialogOpen(false); }}>
+        <DialogContent className="sm:max-w-[360px]" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => { e.preventDefault(); requestAnimationFrame(() => (document.activeElement as HTMLElement)?.blur()); }}>
+          <DialogHeader>
+            <DialogTitle>修改文档密级</DialogTitle>
+            <DialogDescription>
+              为文档 [{doc?.docName}] 设置新的密级
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium">密级</label>
+            <Select value={secLevelValue} onValueChange={setSecLevelValue}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SECURITY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSecLevelDialogOpen(false)} disabled={secLevelSaving}>
+              取消
+            </Button>
+            <Button onClick={handleSaveSecLevel} disabled={secLevelSaving}>
+              {secLevelSaving ? "保存中..." : "保存"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
