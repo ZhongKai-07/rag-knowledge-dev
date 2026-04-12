@@ -20,12 +20,14 @@ package com.nageoffer.ai.ragent.user.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.controller.request.LoginRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.LoginVO;
+import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.service.AuthService;
+import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +38,7 @@ public class AuthServiceImpl implements AuthService {
     private static final String DEFAULT_AVATAR_URL = "https://avatars.githubusercontent.com/u/583231?v=4";
 
     private final UserMapper userMapper;
+    private final UserProfileLoader userProfileLoader;
 
     @Override
     public LoginVO login(LoginRequest requestParam) {
@@ -54,7 +57,23 @@ public class AuthServiceImpl implements AuthService {
         String loginId = user.getId().toString();
         StpUtil.login(loginId);
         String avatar = StrUtil.isBlank(user.getAvatar()) ? DEFAULT_AVATAR_URL : user.getAvatar();
-        return new LoginVO(loginId, user.getRole(), StpUtil.getTokenValue(), avatar);
+        LoadedUserProfile profile = userProfileLoader.load(loginId);
+        if (profile == null) {
+            throw new ClientException("加载用户资料失败");
+        }
+        LoginVO vo = new LoginVO();
+        vo.setUserId(profile.userId());
+        vo.setUsername(profile.username());
+        vo.setRole(user.getRole()); // legacy, Task 0.15 removes
+        vo.setToken(StpUtil.getTokenValue());
+        vo.setAvatar(avatar);
+        vo.setDeptId(profile.deptId());
+        vo.setDeptName(profile.deptName());
+        vo.setRoleTypes(profile.roleTypes().stream().map(Enum::name).toList());
+        vo.setMaxSecurityLevel(profile.maxSecurityLevel());
+        vo.setIsSuperAdmin(profile.isSuperAdmin());
+        vo.setIsDeptAdmin(profile.isDeptAdmin());
+        return vo;
     }
 
     @Override
