@@ -345,4 +345,100 @@ public class KbAccessServiceImpl implements KbAccessService {
         checkDocManageAccess(docId);
         // 当前与 checkDocManageAccess 等价；未来可加 newLevel 相关的细粒度规则
     }
+
+    // === Last SUPER_ADMIN 系统级硬不变量（Decision 3-M）===
+
+    @Override
+    public int countActiveSuperAdmins() {
+        return countSuperAdminsExcluding(java.util.Set.of(), java.util.Set.of(), java.util.Map.of());
+    }
+
+    @Override
+    public boolean isUserSuperAdmin(String userId) {
+        if (userId == null) return false;
+        List<RoleDO> superAdminRoles = roleMapper.selectList(
+                Wrappers.lambdaQuery(RoleDO.class)
+                        .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
+        );
+        if (superAdminRoles.isEmpty()) return false;
+        Set<String> superAdminRoleIds = superAdminRoles.stream()
+                .map(RoleDO::getId).collect(Collectors.toSet());
+        Long count = userRoleMapper.selectCount(
+                Wrappers.lambdaQuery(UserRoleDO.class)
+                        .eq(UserRoleDO::getUserId, userId)
+                        .in(UserRoleDO::getRoleId, superAdminRoleIds)
+        );
+        return count != null && count > 0;
+    }
+
+    @Override
+    public int simulateActiveSuperAdminCountAfter(
+            com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent intent) {
+        if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.DeleteUser du) {
+            return countSuperAdminsExcluding(
+                    java.util.Set.of(du.userId()), java.util.Set.of(), java.util.Map.of());
+        } else if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.ReplaceUserRoles rur) {
+            return countSuperAdminsExcluding(
+                    java.util.Set.of(), java.util.Set.of(),
+                    java.util.Map.of(rur.userId(), new java.util.HashSet<>(rur.newRoleIds())));
+        } else if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.ChangeRoleType crt) {
+            if (!RoleType.SUPER_ADMIN.name().equals(crt.newRoleType())) {
+                return countSuperAdminsExcluding(
+                        java.util.Set.of(), java.util.Set.of(crt.roleId()), java.util.Map.of());
+            }
+            return countActiveSuperAdmins();
+        } else if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.DeleteRole dr) {
+            return countSuperAdminsExcluding(
+                    java.util.Set.of(), java.util.Set.of(dr.roleId()), java.util.Map.of());
+        }
+        throw new IllegalArgumentException("Unknown SuperAdminMutationIntent type: " + intent.getClass());
+    }
+
+    /**
+     * 核心聚合：基于当前 DB 快照计算"在给定的排除条件下"还有多少有效 SUPER_ADMIN 用户。
+     *
+     * @param excludedUserIds    视为已删除的用户 id
+     * @param invalidatedRoleIds 视为"不再是 SUPER_ADMIN 来源"的 role id
+     * @param userRoleOverrides  用户的模拟角色集覆盖（key=userId, value=新 roleIds）
+     */
+    private int countSuperAdminsExcluding(
+            Set<String> excludedUserIds,
+            Set<String> invalidatedRoleIds,
+            java.util.Map<String, Set<String>> userRoleOverrides) {
+        // 1. 有效 SUPER_ADMIN role id 集合（剔除 invalidatedRoleIds）
+        List<RoleDO> superRoles = roleMapper.selectList(
+                Wrappers.lambdaQuery(RoleDO.class)
+                        .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
+        );
+        Set<String> validSuperRoleIds = superRoles.stream()
+                .map(RoleDO::getId)
+                .filter(id -> !invalidatedRoleIds.contains(id))
+                .collect(Collectors.toSet());
+        if (validSuperRoleIds.isEmpty()) return 0;
+
+        // 2. 对每个 user 判断其"模拟后角色集"是否与 validSuperRoleIds 有交集
+        List<UserDO> allUsers = userMapper.selectList(
+                Wrappers.lambdaQuery(UserDO.class).select(UserDO::getId)
+        );
+        int count = 0;
+        for (UserDO user : allUsers) {
+            if (excludedUserIds.contains(user.getId())) continue;
+            Set<String> effectiveRoleIds;
+            if (userRoleOverrides.containsKey(user.getId())) {
+                effectiveRoleIds = userRoleOverrides.get(user.getId());
+            } else {
+                effectiveRoleIds = userRoleMapper.selectList(
+                        Wrappers.lambdaQuery(UserRoleDO.class)
+                                .eq(UserRoleDO::getUserId, user.getId())
+                ).stream().map(UserRoleDO::getRoleId).collect(Collectors.toSet());
+            }
+            for (String rid : effectiveRoleIds) {
+                if (validSuperRoleIds.contains(rid)) {
+                    count++;
+                    break;
+                }
+            }
+        }
+        return count;
+    }
 }

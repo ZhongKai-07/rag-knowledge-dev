@@ -117,4 +117,22 @@ public interface KbAccessService {
      * 文档 security_level 修改专用（目前等同 checkDocManageAccess，保留独立方法以便未来加 level-specific 规则）。
      */
     void checkDocSecurityLevelAccess(String docId, int newLevel);
+
+    // === Last SUPER_ADMIN 系统级硬不变量（Decision 3-M）===
+
+    /**
+     * 当前系统内有效 SUPER_ADMIN 用户数量。
+     */
+    int countActiveSuperAdmins();
+
+    /**
+     * 判断某用户当前是否有任一有效 SUPER_ADMIN 角色。
+     */
+    boolean isUserSuperAdmin(String userId);
+
+    /**
+     * Post-mutation 模拟器：返回 mutation 执行后剩余的有效 SUPER_ADMIN 用户数量。
+     * 调用方用 {@code < 1} 判断是否拒绝。
+     */
+    int simulateActiveSuperAdminCountAfter(SuperAdminMutationIntent intent);
 }
