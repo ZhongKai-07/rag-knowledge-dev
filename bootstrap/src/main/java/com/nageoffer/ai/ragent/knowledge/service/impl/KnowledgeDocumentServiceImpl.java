@@ -528,52 +528,56 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             }
         }
 
-        // security_level 变更：写入 updateWrapper，事务提交后发 MQ 刷新 OpenSearch
-        boolean securityLevelChanged = false;
-        int newSecurityLevel = 0;
-        if (requestParam.getSecurityLevel() != null) {
-            int oldLevel = documentDO.getSecurityLevel() == null ? 0 : documentDO.getSecurityLevel();
-            newSecurityLevel = requestParam.getSecurityLevel();
-            if (oldLevel != newSecurityLevel) {
-                updateWrapper.set(KnowledgeDocumentDO::getSecurityLevel, newSecurityLevel);
-                securityLevelChanged = true;
-            }
-        }
-
         documentMapper.update(updateWrapper);
 
         if (scheduleChanged) {
             KnowledgeDocumentDO updated = documentMapper.selectById(docId);
             scheduleService.upsertSchedule(updated);
         }
+    }
 
-        // 事务提交后异步发 MQ 刷新 OpenSearch 中的 security_level metadata
-        if (securityLevelChanged) {
-            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(documentDO.getKbId());
-            SecurityLevelRefreshEvent event = new SecurityLevelRefreshEvent(docId, kb.getCollectionName(), newSecurityLevel);
-            if (TransactionSynchronizationManager.isSynchronizationActive()) {
-                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        messageQueueProducer.send(
-                                "knowledge-document-security-level_topic${unique-name:}",
-                                docId,
-                                "security_level 刷新",
-                                event
-                        );
-                        log.info("security_level 刷新事件已发出: docId={}", event.getDocId());
-                    }
-                });
-            } else {
-                messageQueueProducer.send(
-                        "knowledge-document-security-level_topic${unique-name:}",
-                        docId,
-                        "security_level 刷新",
-                        event
-                );
-            }
-            log.info("已提交 security_level 刷新事件: docId={}, newLevel={}", docId, newSecurityLevel);
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateSecurityLevel(String docId, Integer newLevel) {
+        KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
+        Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
+
+        int oldLevel = documentDO.getSecurityLevel() == null ? 0 : documentDO.getSecurityLevel();
+        if (oldLevel == newLevel) {
+            return;
         }
+
+        documentMapper.update(
+                Wrappers.lambdaUpdate(KnowledgeDocumentDO.class)
+                        .eq(KnowledgeDocumentDO::getId, docId)
+                        .set(KnowledgeDocumentDO::getSecurityLevel, newLevel)
+                        .set(KnowledgeDocumentDO::getUpdatedBy, UserContext.getUsername())
+        );
+
+        KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(documentDO.getKbId());
+        SecurityLevelRefreshEvent event = new SecurityLevelRefreshEvent(docId, kb.getCollectionName(), newLevel);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    messageQueueProducer.send(
+                            "knowledge-document-security-level_topic${unique-name:}",
+                            docId,
+                            "security_level 刷新",
+                            event
+                    );
+                    log.info("security_level 刷新事件已发出: docId={}", event.getDocId());
+                }
+            });
+        } else {
+            messageQueueProducer.send(
+                    "knowledge-document-security-level_topic${unique-name:}",
+                    docId,
+                    "security_level 刷新",
+                    event
+            );
+        }
+        log.info("已提交 security_level 刷新事件: docId={}, newLevel={}", docId, newLevel);
     }
 
     @Override

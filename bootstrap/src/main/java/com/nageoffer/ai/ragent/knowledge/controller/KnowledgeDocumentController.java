@@ -28,6 +28,7 @@ import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
@@ -68,7 +69,7 @@ public class KnowledgeDocumentController {
     public Result<KnowledgeDocumentVO> upload(@PathVariable("kb-id") String kbId,
                                               @RequestPart(value = "file", required = false) MultipartFile file,
                                               @ModelAttribute KnowledgeDocumentUploadRequest requestParam) {
-        kbAccessService.checkAccess(kbId);
+        kbAccessService.checkManageAccess(kbId);
         return Results.success(documentService.upload(kbId, requestParam, file));
     }
 
@@ -77,7 +78,7 @@ public class KnowledgeDocumentController {
      */
     @PostMapping("/knowledge-base/docs/{doc-id}/chunk")
     public Result<Void> startChunk(@PathVariable(value = "doc-id") String docId) {
-        checkDocAccess(docId);
+        kbAccessService.checkDocManageAccess(docId);
         documentService.startChunk(docId);
         return Results.success();
     }
@@ -87,7 +88,7 @@ public class KnowledgeDocumentController {
      */
     @DeleteMapping("/knowledge-base/docs/{doc-id}")
     public Result<Void> delete(@PathVariable(value = "doc-id") String docId) {
-        checkDocAccess(docId);
+        kbAccessService.checkDocManageAccess(docId);
         documentService.delete(docId);
         return Results.success();
     }
@@ -110,7 +111,7 @@ public class KnowledgeDocumentController {
     @PutMapping("/knowledge-base/docs/{docId}")
     public Result<Void> update(@PathVariable String docId,
                                @RequestBody KnowledgeDocumentUpdateRequest requestParam) {
-        checkDocAccess(docId);
+        kbAccessService.checkDocManageAccess(docId);
         documentService.update(docId, requestParam);
         return Results.success();
     }
@@ -144,16 +145,28 @@ public class KnowledgeDocumentController {
     @PatchMapping("/knowledge-base/docs/{docId}/enable")
     public Result<Void> enable(@PathVariable String docId,
                                @RequestParam("value") boolean enabled) {
-        checkDocAccess(docId);
+        kbAccessService.checkDocManageAccess(docId);
         documentService.enable(docId, enabled);
         return Results.success();
     }
 
-    private void checkDocAccess(String docId) {
-        KnowledgeDocumentVO doc = documentService.get(docId);
-        if (doc != null) {
-            kbAccessService.checkAccess(doc.getKbId());
+    /**
+     * 修改文档安全等级（专用入口；不走通用 update）。
+     */
+    @PutMapping("/knowledge-base/docs/{docId}/security-level")
+    public Result<Void> updateSecurityLevel(@PathVariable String docId,
+                                            @RequestBody UpdateSecurityLevelRequest requestParam) {
+        if (requestParam.getNewLevel() == null || requestParam.getNewLevel() < 0 || requestParam.getNewLevel() > 3) {
+            throw new ClientException("newLevel 必须在 0-3 之间");
         }
+        kbAccessService.checkDocSecurityLevelAccess(docId, requestParam.getNewLevel());
+        documentService.updateSecurityLevel(docId, requestParam.getNewLevel());
+        return Results.success();
+    }
+
+    @lombok.Data
+    public static class UpdateSecurityLevelRequest {
+        private Integer newLevel;
     }
 
     /**
@@ -162,7 +175,7 @@ public class KnowledgeDocumentController {
     @GetMapping("/knowledge-base/docs/{docId}/chunk-logs")
     public Result<IPage<KnowledgeDocumentChunkLogVO>> getChunkLogs(@PathVariable String docId,
                                                                    Page<KnowledgeDocumentChunkLogVO> page) {
-        checkDocAccess(docId);
+        kbAccessService.checkDocManageAccess(docId);
         return Results.success(documentService.getChunkLogs(docId, page));
     }
 }

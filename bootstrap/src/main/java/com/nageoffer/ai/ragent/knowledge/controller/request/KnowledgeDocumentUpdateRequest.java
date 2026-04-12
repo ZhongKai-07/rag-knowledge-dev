@@ -62,8 +62,4 @@ public class KnowledgeDocumentUpdateRequest {
      */
     private String scheduleCron;
 
-    /**
-     * 新的安全等级。null 表示不修改。
-     */
-    private Integer securityLevel;
 }

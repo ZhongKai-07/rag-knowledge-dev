@@ -118,4 +118,12 @@ public interface KnowledgeDocumentService {
      * @return 分块日志分页结果
      */
     IPage<KnowledgeDocumentChunkLogVO> getChunkLogs(String docId, Page<KnowledgeDocumentChunkLogVO> page);
+
+    /**
+     * 修改文档安全等级（专用入口）
+     *
+     * @param docId    文档 ID
+     * @param newLevel 新安全等级（0-3）
+     */
+    void updateSecurityLevel(String docId, Integer newLevel);
 }
