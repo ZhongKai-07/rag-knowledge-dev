@@ -18,6 +18,8 @@
 package com.nageoffer.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.framework.context.RoleType;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
@@ -26,6 +28,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
+import com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,8 +63,55 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public void updateRole(
+            String roleId,
+            String name,
+            String description,
+            String roleType,
+            Integer maxSecurityLevel) {
+        RoleDO existing = roleMapper.selectById(roleId);
+        if (existing == null) {
+            throw new ClientException("角色不存在");
+        }
+
+        // Last SUPER_ADMIN pre-check: guard against demoting the last super-admin role
+        if (RoleType.SUPER_ADMIN.name().equals(existing.getRoleType())
+                && roleType != null
+                && !RoleType.SUPER_ADMIN.name().equals(roleType)) {
+            int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+                    new SuperAdminMutationIntent.ChangeRoleType(roleId, roleType));
+            if (after < 1) {
+                throw new ClientException("不能降级该角色：此操作会使系统失去最后一个 SUPER_ADMIN");
+            }
+        }
+
+        RoleDO update = new RoleDO();
+        update.setId(roleId);
+        update.setName(name);
+        update.setDescription(description);
+        if (roleType != null) {
+            update.setRoleType(roleType);
+        }
+        if (maxSecurityLevel != null) {
+            update.setMaxSecurityLevel(maxSecurityLevel);
+        }
+        roleMapper.updateById(update);
+
+        // Evict cache for all users that hold this role (role_type affects accessible KBs)
+        evictCacheForRole(roleId);
+    }
+
+    @Override
     @Transactional
     public void deleteRole(String roleId) {
+        RoleDO role = roleMapper.selectById(roleId);
+        if (role != null && RoleType.SUPER_ADMIN.name().equals(role.getRoleType())) {
+            int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+                    new SuperAdminMutationIntent.DeleteRole(roleId));
+            if (after < 1) {
+                throw new ClientException("不能删除该角色：此操作会使系统失去最后一个 SUPER_ADMIN");
+            }
+        }
         evictCacheForRole(roleId);
         roleKbRelationMapper.delete(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
@@ -110,6 +160,12 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public void setUserRoles(String userId, List<String> roleIds) {
+        int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+                new SuperAdminMutationIntent.ReplaceUserRoles(userId, roleIds));
+        if (after < 1) {
+            throw new ClientException("不能修改该用户角色：此操作会使系统失去最后一个 SUPER_ADMIN");
+        }
+
         userRoleMapper.delete(
                 Wrappers.lambdaQuery(UserRoleDO.class)
                         .eq(UserRoleDO::getUserId, userId));

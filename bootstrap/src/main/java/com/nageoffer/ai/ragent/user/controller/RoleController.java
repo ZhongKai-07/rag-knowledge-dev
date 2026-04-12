@@ -21,6 +21,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ import java.util.List;
 public class RoleController {
 
     private final RoleService roleService;
+    private final KbAccessService kbAccessService;
 
     @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/role")
@@ -44,7 +46,12 @@ public class RoleController {
     @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}")
     public Result<Void> updateRole(@PathVariable String roleId, @RequestBody RoleCreateRequest request) {
-        roleService.updateRole(roleId, request.getName(), request.getDescription());
+        roleService.updateRole(
+                roleId,
+                request.getName(),
+                request.getDescription(),
+                request.getRoleType(),
+                request.getMaxSecurityLevel());
         return Results.success();
     }
 
@@ -63,8 +70,8 @@ public class RoleController {
 
     @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}/knowledge-bases")
-    public Result<Void> setRoleKnowledgeBases(@PathVariable String roleId,
-                                               @RequestBody List<String> kbIds) {
+    public Result<Void> setRoleKnowledgeBases(
+            @PathVariable String roleId, @RequestBody List<String> kbIds) {
         roleService.setRoleKnowledgeBases(roleId, kbIds);
         return Results.success();
     }
@@ -75,9 +82,10 @@ public class RoleController {
         return Results.success(roleService.getRoleKnowledgeBaseIds(roleId));
     }
 
-    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/user/{userId}/roles")
-    public Result<Void> setUserRoles(@PathVariable String userId, @RequestBody List<String> roleIds) {
+    public Result<Void> setUserRoles(
+            @PathVariable String userId, @RequestBody List<String> roleIds) {
+        kbAccessService.checkAssignRolesAccess(userId, roleIds);
         roleService.setUserRoles(userId, roleIds);
         return Results.success();
     }
@@ -92,5 +100,8 @@ public class RoleController {
     public static class RoleCreateRequest {
         private String name;
         private String description;
+        // PR3 新增
+        private String roleType;
+        private Integer maxSecurityLevel;
     }
 }

@@ -26,6 +26,9 @@ public interface RoleService {
 
     void updateRole(String roleId, String name, String description);
 
+    /** PR3：支持同时更新 roleType 和 maxSecurityLevel（含 Last-SUPER_ADMIN 前置校验） */
+    void updateRole(String roleId, String name, String description, String roleType, Integer maxSecurityLevel);
+
     void deleteRole(String roleId);
 
     List<RoleDO> listRoles();
