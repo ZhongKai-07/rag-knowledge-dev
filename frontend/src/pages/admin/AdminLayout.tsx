@@ -22,7 +22,8 @@ import {
   Users,
   ShieldCheck,
   FolderKanban,
-  Workflow
+  Workflow,
+  Building2
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissions, type AdminMenuId } from "@/utils/permissions";
@@ -161,6 +162,12 @@ const menuGroups: MenuGroup[] = [
         icon: ShieldCheck
       },
       {
+        menuId: "departments",
+        path: "/admin/departments",
+        label: "部门管理",
+        icon: Building2
+      },
+      {
         menuId: "sample-questions",
         path: "/admin/sample-questions",
         label: "示例问题",
@@ -188,7 +195,8 @@ const breadcrumbMap: Record<string, string> = {
   mappings: "关键词映射",
   settings: "系统设置",
   users: "用户管理",
-  roles: "角色管理"
+  roles: "角色管理",
+  departments: "部门管理"
 };
 
 export function AdminLayout() {

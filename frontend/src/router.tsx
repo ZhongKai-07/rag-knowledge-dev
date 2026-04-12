@@ -21,6 +21,7 @@ import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTerm
 import { UserListPage } from "@/pages/admin/users/UserListPage";
 import { RoleListPage } from "@/pages/admin/roles/RoleListPage";
 import { RagEvaluationPage } from "@/pages/admin/evaluations/RagEvaluationPage";
+import { DepartmentListPage } from "@/pages/admin/departments/DepartmentListPage";
 import { useAuthStore } from "@/stores/authStore";
 import { RequireAuth, RequireAnyAdmin, RequireSuperAdmin, RequireMenuAccess } from "@/router/guards";
 
@@ -154,7 +155,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "departments",
-        element: <RequireSuperAdmin><div className="admin-page"><h1 className="admin-page-title">部门管理</h1><p className="admin-page-subtitle">Slice 1 待实现</p></div></RequireSuperAdmin>
+        element: <RequireSuperAdmin><DepartmentListPage /></RequireSuperAdmin>
       }
     ]
   },
