@@ -8,6 +8,7 @@ import * as z from "zod";
 
 import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,6 +53,28 @@ const PROCESS_MODE_OPTIONS = [
   { value: "chunk", label: "直接分块" },
   { value: "pipeline", label: "数据通道" }
 ];
+
+const SECURITY_OPTIONS = [
+  { value: "0", label: "0 公开" },
+  { value: "1", label: "1 内部" },
+  { value: "2", label: "2 机密" },
+  { value: "3", label: "3 绝密" },
+];
+
+const securityLevelBadgeClass = (level?: number | null) => {
+  switch (level) {
+    case 0: return "border-green-200 bg-green-50 text-green-700";
+    case 1: return "border-blue-200 bg-blue-50 text-blue-700";
+    case 2: return "border-amber-200 bg-amber-50 text-amber-700";
+    case 3: return "border-red-200 bg-red-50 text-red-700";
+    default: return "border-slate-200 bg-slate-50 text-slate-500";
+  }
+};
+
+const securityLevelLabel = (level?: number | null) => {
+  const opt = SECURITY_OPTIONS.find((o) => o.value === String(level ?? 0));
+  return opt ? opt.label : String(level ?? 0);
+};
 
 const NO_CHUNK_VALUE = -1;
 
@@ -436,6 +459,7 @@ export function KnowledgeDocumentsPage() {
                   <TableHead className="w-[120px]">状态</TableHead>
                   <TableHead className="w-[80px]">启用</TableHead>
                   <TableHead className="w-[90px]">分块数</TableHead>
+                  <TableHead className="w-[80px]">密级</TableHead>
                   <TableHead className="w-[90px]">类型</TableHead>
                   <TableHead className="w-[90px]">大小</TableHead>
                   <TableHead className="w-[170px]">更新时间</TableHead>
@@ -500,6 +524,14 @@ export function KnowledgeDocumentsPage() {
                       })()}
                     </TableCell>
                     <TableCell>{doc.chunkCount ?? "-"}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn("px-2 py-0.5 text-xs", securityLevelBadgeClass(doc.securityLevel))}
+                      >
+                        {securityLevelLabel(doc.securityLevel)}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{doc.fileType || "-"}</TableCell>
                     <TableCell>{formatSize(doc.fileSize)}</TableCell>
                     <TableCell>{formatDate(doc.updateTime)}</TableCell>
@@ -910,7 +942,8 @@ const uploadSchema = z
     targetChars: z.string().optional(),
     maxChars: z.string().optional(),
     minChars: z.string().optional(),
-    overlapChars: z.string().optional()
+    overlapChars: z.string().optional(),
+    securityLevel: z.string().default("0")
   })
   .superRefine((values, ctx) => {
     const isBlank = (value?: string) => !value || value.trim() === "";
@@ -1005,7 +1038,8 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
       targetChars: "1400",
       maxChars: "1800",
       minChars: "600",
-      overlapChars: "0"
+      overlapChars: "0",
+      securityLevel: "0"
     }
   });
 
@@ -1048,7 +1082,8 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
         targetChars: "1400",
         maxChars: "1800",
         minChars: "600",
-        overlapChars: "0"
+        overlapChars: "0",
+        securityLevel: "0"
       });
       setNoChunk(false);
       setOriginalChunkSize("512");
@@ -1165,7 +1200,8 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
         processMode: values.processMode,
         chunkStrategy: values.processMode === "chunk" ? values.chunkStrategy : undefined,
         chunkConfig: chunkConfig ?? null,
-        pipelineId: values.processMode === "pipeline" ? values.pipelineId : null
+        pipelineId: values.processMode === "pipeline" ? values.pipelineId : null,
+        securityLevel: Number(values.securityLevel ?? "0")
       };
       await onSubmit(payload);
     } catch (error) {
@@ -1321,6 +1357,31 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
                 ) : null}
               </div>
             ) : null}
+
+            <FormField
+              control={form.control}
+              name="securityLevel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>文档密级</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择密级" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {SECURITY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="space-y-3 rounded-lg border p-3">
               <FormField
