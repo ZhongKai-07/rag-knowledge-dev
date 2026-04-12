@@ -88,12 +88,14 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 ## 关键 Gotchas
 
 - **SSE 是异步的**：`streamChat()` 立即返回，`StreamCallback` 在独立线程池上执行。不要在调用线程读取回调内设置的 ThreadLocal 值。
-- **Admin RBAC 特殊处理**：`KbAccessService.getAccessibleKbIds()` 不会返回所有 KB（即使是 admin）。"管理员看全部" 的逻辑在 Controller 层通过 `"admin".equals(UserContext.getRole())` 单独实现。新增需要管理员全量访问的接口，必须自行处理这个分支。
+- **SUPER_ADMIN 权限**：`KbAccessService.getAccessibleKbIds()` 对 `SUPER_ADMIN` 直接返回全量 KB（在 service 内部处理，不再依赖 controller 层判断）。判断当前用户是否超管用 `kbAccessService.isSuperAdmin()`。`@SaCheckRole` 注解用 `"SUPER_ADMIN"` 而非 `"admin"`（PR1 已全局替换，旧字符串不存在了）。
 - **@TableLogic 自动过滤**：带 `@TableLogic` 的实体 MyBatis Plus 自动追加 `WHERE deleted=0`，不要再手动 `.eq(::getDeleted, 0)`。
 - **两份 Schema 文件**：`schema_pg.sql`（干净 DDL）和 `full_schema_pg.sql`（pg_dump 格式）需同步维护。改表结构时必须两个都改。
 - **PostgreSQL 小写折叠**：`selectMaps` 中 `.select("kb_id AS kbId")` 的 map key 是 `kbid` 不是 `kbId`。始终用 snake_case 别名（`AS kb_id`）再用 `row.get("kb_id")` 取值。
 - **RagTraceContext 提前清空**：`ChatRateLimitAspect.finally` 在流结束前就清了上下文。在回调构造器里捕获 `traceId` 等值，不要等到回调时再读。
 - **Knowledge Spaces**：`t_conversation.kb_id` 区分会话所属空间。`validateKbOwnership()` 用 `Objects.equals()` 做 null 安全比较；`kb_id=NULL` 的旧会话是 fail-closed 的（不属于任何空间）。
+- **`t_knowledge_base` 没有 `description` 列**：schema_pg.sql 里只有 `id / name / embedding_model / collection_name / created_by / updated_by / dept_id`。`embedding_model` 和 `created_by` 是 NOT NULL 无默认。写 INSERT 或 fixture 时必须提供这两个字段，且不要尝试插入 `description`。
+- **`t_user_role.id` 和 `t_role_kb_relation.id` 是显式主键**：`VARCHAR(20) NOT NULL PRIMARY KEY`，无自动生成（不同于 `@TableId(type=ASSIGN_ID)` 的 Java 层雪花 ID）。手写 SQL INSERT 时必须显式提供 `id` 值，否则 NOT NULL 违反。
 
 ## 数据库访问
 

@@ -131,6 +131,8 @@ src/
 - **Vite 热更新 vs 后端重启**：前端改动即时生效，后端 Java 改动需要手动重启 `mvn -pl bootstrap spring-boot:run`，改完后端后一定先确认后端已重启再验证接口。
 - **SSE 聊天接口**：`GET /rag/v3/chat` 用 SSE 推送，前端通过原生 `EventSource` 或自定义 fetch 流处理，不是 WebSocket。取消生成调用 `POST /rag/v3/stop`，带 `taskId`。
 - **品牌名**：应用名称是 "HT KnowledgeBase"（不是 "Ragent"），影响 `index.html` title、`.env` 中 `VITE_APP_NAME`、`Sidebar.tsx`、`AdminLayout.tsx`。
+- **`KnowledgeChunksPage.tsx` 实际是文档详情页**：路由 `knowledge/:kbId/docs/:docId` 指向它（`router.tsx:124-125`），不是分块管理页。`KnowledgeDocumentsPage.tsx` 才是按 KB 分组的文档列表页。写涉及"文档详情"的改动时，改 `KnowledgeChunksPage.tsx`。
+- **Sidebar 在 `components/layout/Sidebar.tsx`**：不是 `components/chat/Sidebar.tsx`（后者不存在）。管理后台入口按钮（"进入后台"）的 `user.role === "admin"` 判断在该文件约第 427 行。
 
 ## 技术栈速查
 

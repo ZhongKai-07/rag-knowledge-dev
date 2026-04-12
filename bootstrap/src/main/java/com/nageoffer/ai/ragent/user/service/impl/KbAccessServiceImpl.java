@@ -31,8 +31,10 @@ import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
+import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
@@ -63,6 +65,7 @@ public class KbAccessServiceImpl implements KbAccessService {
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
+    private final SysDeptMapper sysDeptMapper;
 
     @Override
     public Set<String> getAccessibleKbIds(String userId, Permission minPermission) {
@@ -101,14 +104,16 @@ public class KbAccessServiceImpl implements KbAccessService {
         Set<String> rbacKbs = computeRbacKbIds(userId, minPermission);
         LoginUser user = UserContext.get();
         String deptId = user.getDeptId();
-        if (deptId != null) {
-            List<KnowledgeBaseDO> deptKbs = knowledgeBaseMapper.selectList(
-                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                            .eq(KnowledgeBaseDO::getDeptId, deptId)
-                            .select(KnowledgeBaseDO::getId)
-            );
-            deptKbs.stream().map(KnowledgeBaseDO::getId).forEach(rbacKbs::add);
+        if (deptId == null) {
+            log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", userId);
+            return rbacKbs;
         }
+        List<KnowledgeBaseDO> deptKbs = knowledgeBaseMapper.selectList(
+                Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+                        .eq(KnowledgeBaseDO::getDeptId, deptId)
+                        .select(KnowledgeBaseDO::getId)
+        );
+        deptKbs.stream().map(KnowledgeBaseDO::getId).forEach(rbacKbs::add);
         return rbacKbs;
     }
 
@@ -170,7 +175,9 @@ public class KbAccessServiceImpl implements KbAccessService {
         if (isDeptAdmin()) {
             // DEPT_ADMIN 同部门 KB 直接放行（不走缓存）
             LoginUser user = UserContext.get();
-            if (user.getDeptId() != null) {
+            if (user.getDeptId() == null) {
+                log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", UserContext.getUserId());
+            } else {
                 KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
                 if (kb != null && user.getDeptId().equals(kb.getDeptId())) {
                     return;
@@ -181,6 +188,7 @@ public class KbAccessServiceImpl implements KbAccessService {
         // 普通用户（或 DEPT_ADMIN 访问非本部门 KB）
         Set<String> accessible = getAccessibleKbIds(UserContext.getUserId(), Permission.READ);
         if (!accessible.contains(kbId)) {
+            log.warn("权限拒绝: userId={}, kbId={}, action=READ", UserContext.getUserId(), kbId);
             throw new ClientException("无权访问该知识库: " + kbId);
         }
     }
@@ -203,8 +211,10 @@ public class KbAccessServiceImpl implements KbAccessService {
             if (user.getDeptId() != null && user.getDeptId().equals(kb.getDeptId())) {
                 return;
             }
+            log.warn("权限拒绝: userId={}, kbId={}, action=MANAGE, reason=跨部门", UserContext.getUserId(), kbId);
             throw new ClientException("无权管理其他部门知识库: " + kbId);
         }
+        log.warn("权限拒绝: userId={}, kbId={}, action=MANAGE, reason=非管理员", UserContext.getUserId(), kbId);
         throw new ClientException("无管理权限: " + kbId);
     }
 
@@ -241,9 +251,11 @@ public class KbAccessServiceImpl implements KbAccessService {
         }
         LoginUser user = UserContext.get();
         if (!isDeptAdmin()) {
+            log.warn("权限拒绝: userId={}, action=CREATE_USER, reason=非管理员", UserContext.getUserId());
             throw new ClientException("无权创建用户");
         }
         if (user.getDeptId() == null || !user.getDeptId().equals(targetDeptId)) {
+            log.warn("权限拒绝: userId={}, action=CREATE_USER, reason=跨部门, targetDept={}", UserContext.getUserId(), targetDeptId);
             throw new ClientException("DEPT_ADMIN 只能在本部门创建用户");
         }
         // 禁止给新用户分配 role_type=SUPER_ADMIN 的角色
@@ -268,6 +280,7 @@ public class KbAccessServiceImpl implements KbAccessService {
             return;
         }
         if (!isDeptAdmin()) {
+            log.warn("权限拒绝: userId={}, targetUserId={}, action=MANAGE_USER, reason=非管理员", UserContext.getUserId(), targetUserId);
             throw new ClientException("无权管理用户");
         }
         LoginUser current = UserContext.get();
@@ -276,6 +289,7 @@ public class KbAccessServiceImpl implements KbAccessService {
             throw new ClientException("目标用户不存在");
         }
         if (target.getDeptId() == null || !target.getDeptId().equals(current.getDeptId())) {
+            log.warn("权限拒绝: userId={}, targetUserId={}, action=MANAGE_USER, reason=跨部门", UserContext.getUserId(), targetUserId);
             throw new ClientException("DEPT_ADMIN 只能管理本部门用户");
         }
     }
@@ -306,9 +320,13 @@ public class KbAccessServiceImpl implements KbAccessService {
             throw new ClientException("未登录用户不可创建知识库");
         }
         if (isSuperAdmin()) {
-            return (requestedDeptId == null || requestedDeptId.isBlank())
+            String effectiveDeptId = (requestedDeptId == null || requestedDeptId.isBlank())
                     ? SysDeptServiceImpl.GLOBAL_DEPT_ID
                     : requestedDeptId;
+            if (sysDeptMapper.selectById(effectiveDeptId) == null) {
+                throw new ClientException("目标部门不存在: " + effectiveDeptId);
+            }
+            return effectiveDeptId;
         }
         if (!isDeptAdmin()) {
             throw new ClientException("无权创建知识库");
