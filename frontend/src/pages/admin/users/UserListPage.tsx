@@ -14,6 +14,8 @@ import type { PageResult, UserItem, UserCreatePayload, UserUpdatePayload } from 
 import { createUser, deleteUser, getUsersPage, updateUser } from "@/services/userService";
 import type { RoleItem } from "@/services/roleService";
 import { getRoles, getUserRoles, setUserRoles } from "@/services/roleService";
+import type { SysDept } from "@/services/sysDeptService";
+import { listDepartments } from "@/services/sysDeptService";
 import { getErrorMessage } from "@/utils/error";
 import { usePermissions } from "@/utils/permissions";
 
@@ -36,10 +38,11 @@ function SecurityLevelBadge({ level }: { level: number }) {
   );
 }
 
-const buildEmptyForm = () => ({
+const buildEmptyForm = (deptId = "") => ({
   username: "",
   password: "",
   avatar: "",
+  deptId,
   roleIds: [] as string[],
 });
 
@@ -59,7 +62,11 @@ export function UserListPage() {
     user: null,
   });
   const [form, setForm] = useState(buildEmptyForm());
+
+  // Data for dialog selects
   const [allRoles, setAllRoles] = useState<RoleItem[]>([]);
+  const [allDepts, setAllDepts] = useState<SysDept[]>([]);
+  const [dialogLoading, setDialogLoading] = useState(false);
 
   const users = pageData?.records || [];
 
@@ -106,24 +113,39 @@ export function UserListPage() {
     }
   };
 
+  // DEPT_ADMIN: dept is locked to their own deptId
+  const deptLocked = permissions.isDeptAdmin && !permissions.isSuperAdmin;
+
   const openCreateDialog = async () => {
-    setForm(buildEmptyForm());
+    const defaultDeptId = deptLocked ? (permissions.deptId ?? "") : "";
+    setForm(buildEmptyForm(defaultDeptId));
     setDialogState({ open: true, mode: "create", user: null });
+    setDialogLoading(true);
     try {
-      const roles = await getRoles();
+      const [roles, depts] = await Promise.all([getRoles(), listDepartments()]);
       setAllRoles(roles);
-    } catch { /* ignore */ }
+      setAllDepts(depts);
+    } catch { /* ignore */ } finally {
+      setDialogLoading(false);
+    }
   };
 
   const openEditDialog = async (user: UserItem) => {
     setDialogState({ open: true, mode: "edit", user });
+    setDialogLoading(true);
     try {
-      const [roles, assigned] = await Promise.all([getRoles(), getUserRoles(user.id)]);
+      const [roles, depts, assigned] = await Promise.all([
+        getRoles(),
+        listDepartments(),
+        getUserRoles(user.id),
+      ]);
       setAllRoles(roles);
+      setAllDepts(depts);
       setForm({
         username: user.username || "",
         password: "",
         avatar: user.avatar || "",
+        deptId: user.deptId || "",
         roleIds: assigned.map((r) => r.id),
       });
     } catch {
@@ -131,8 +153,11 @@ export function UserListPage() {
         username: user.username || "",
         password: "",
         avatar: user.avatar || "",
+        deptId: user.deptId || "",
         roleIds: [],
       });
+    } finally {
+      setDialogLoading(false);
     }
   };
 
@@ -159,11 +184,16 @@ export function UserListPage() {
           toast.error("请输入初始密码");
           return;
         }
+        if (!form.deptId) {
+          toast.error("请选择部门");
+          return;
+        }
+        // Atomic create: single call creates user + assigns roles in one request
         const payload: UserCreatePayload = {
           username: trimmedUsername,
           password: trimmedPassword,
           avatar: form.avatar?.trim() || undefined,
-          deptId: "",
+          deptId: form.deptId,
           roleIds: form.roleIds,
         };
         await createUser(payload);
@@ -175,8 +205,10 @@ export function UserListPage() {
           username: trimmedUsername,
           avatar: form.avatar?.trim() || undefined,
           password: trimmedPassword || undefined,
+          deptId: form.deptId || undefined,
         };
         await updateUser(dialogState.user.id, payload);
+        // Edit: update roles separately
         await setUserRoles(dialogState.user.id, form.roleIds);
         toast.success("更新成功");
         await loadUsers(pageNo, keyword);
@@ -194,6 +226,9 @@ export function UserListPage() {
   };
 
   const isProtectedAdmin = (user: UserItem) => user.username === "admin";
+
+  // Only roles the current user can assign (DEPT_ADMIN cannot assign SUPER_ADMIN roles)
+  const availableRoles = allRoles.filter((r) => permissions.canAssignRole(r));
 
   return (
     <div className="admin-page">
@@ -344,71 +379,129 @@ export function UserListPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Create / Edit dialog (basic) */}
+      {/* Create / Edit dialog */}
       <Dialog open={dialogState.open} onOpenChange={(open) => setDialogState((prev) => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent className="sm:max-w-[460px]">
           <DialogHeader>
             <DialogTitle>{dialogState.mode === "create" ? "新增用户" : "编辑用户"}</DialogTitle>
             <DialogDescription>
-              {dialogState.mode === "create" ? "配置账号基本信息" : "更新账号信息，密码留空则不修改"}
+              {dialogState.mode === "create" ? "配置账号基本信息与角色" : "更新账号信息，密码留空则不修改"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">用户名</label>
-              <Input
-                value={form.username}
-                onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
-                placeholder="请输入用户名"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">密码</label>
-              <Input
-                type="password"
-                value={form.password}
-                onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                placeholder={dialogState.mode === "create" ? "设置初始密码" : "留空则不修改"}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">头像</label>
-              <Input
-                value={form.avatar}
-                onChange={(event) => setForm((prev) => ({ ...prev, avatar: event.target.value }))}
-                placeholder="可选，填写头像 URL"
-              />
-            </div>
-            {allRoles.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">RBAC 角色</label>
-                <div className="max-h-[160px] overflow-y-auto border rounded-md">
-                  {allRoles.map((role) => (
-                    <label
-                      key={role.id}
-                      className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 cursor-pointer transition-colors"
-                    >
-                      <Checkbox
-                        checked={form.roleIds.includes(role.id)}
-                        onCheckedChange={() => toggleFormRole(role.id)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm text-slate-900">{role.name}</span>
-                        {role.description && (
-                          <span className="text-xs text-muted-foreground ml-2">{role.description}</span>
-                        )}
-                      </div>
-                    </label>
-                  ))}
-                </div>
+
+          {dialogLoading ? (
+            <div className="text-center py-6 text-muted-foreground">加载中...</div>
+          ) : (
+            <div className="space-y-4">
+              {/* 用户名 */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">用户名</label>
+                <Input
+                  value={form.username}
+                  onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))}
+                  placeholder="请输入用户名"
+                />
               </div>
-            )}
-          </div>
+
+              {/* 密码 */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">
+                  密码
+                  {dialogState.mode === "edit" && (
+                    <span className="text-muted-foreground font-normal ml-1">（留空则不修改）</span>
+                  )}
+                </label>
+                <Input
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                  placeholder={dialogState.mode === "create" ? "设置初始密码" : "留空则不修改"}
+                />
+              </div>
+
+              {/* 部门 — DEPT_ADMIN 锁定到本部门，SUPER_ADMIN 可选所有 */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">部门</label>
+                {deptLocked ? (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-md border bg-slate-50 text-sm text-slate-700">
+                    <span>
+                      {allDepts.find((d) => d.id === form.deptId)?.deptName
+                        ?? permissions.deptName
+                        ?? form.deptId}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">（本部门锁定）</span>
+                  </div>
+                ) : (
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={form.deptId}
+                    onChange={(e) => setForm((prev) => ({ ...prev, deptId: e.target.value }))}
+                  >
+                    <option value="">请选择部门</option>
+                    {allDepts.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.deptName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* 头像 */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">
+                  头像 <span className="text-muted-foreground font-normal">（可选）</span>
+                </label>
+                <Input
+                  value={form.avatar}
+                  onChange={(e) => setForm((prev) => ({ ...prev, avatar: e.target.value }))}
+                  placeholder="填写头像 URL（可选）"
+                />
+              </div>
+
+              {/* 角色分配 — 过滤掉当前用户无权分配的角色类型 */}
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">角色分配</label>
+                {availableRoles.length === 0 ? (
+                  <div className="text-sm text-muted-foreground py-2">
+                    暂无可分配角色，请先在
+                    <a href="/admin/roles" className="text-indigo-600 underline mx-1">角色管理</a>
+                    中创建
+                  </div>
+                ) : (
+                  <div className="max-h-[180px] overflow-y-auto border rounded-md divide-y">
+                    {availableRoles.map((role) => (
+                      <label
+                        key={role.id}
+                        className="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <Checkbox
+                          checked={form.roleIds.includes(role.id)}
+                          onCheckedChange={() => toggleFormRole(role.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm text-slate-900">{role.name}</span>
+                          {role.roleType && (
+                            <span className="ml-2 text-xs text-muted-foreground">[{role.roleType}]</span>
+                          )}
+                          {role.description && (
+                            <span className="text-xs text-muted-foreground ml-1 truncate">{role.description}</span>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">选择该用户的角色（决定可访问的知识库范围）</p>
+              </div>
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogState({ open: false, mode: "create", user: null })}>
               取消
             </Button>
-            <Button onClick={handleSave}>
+            <Button onClick={handleSave} disabled={dialogLoading}>
               {dialogState.mode === "create" ? (
                 <>
                   <Plus className="mr-2 h-4 w-4" />
