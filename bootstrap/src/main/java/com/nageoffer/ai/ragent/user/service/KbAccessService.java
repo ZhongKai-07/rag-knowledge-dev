@@ -70,4 +70,30 @@ public interface KbAccessService {
      * 清除指定用户的权限缓存
      */
     void evictCache(String userId);
+
+    // === PR3 新增：用户管理授权 ===
+
+    /**
+     * 创建用户授权。SUPER_ADMIN 任何 deptId；
+     * DEPT_ADMIN 仅 targetDeptId == self.deptId 且 roleIds 中不含 role_type=SUPER_ADMIN 的角色。
+     */
+    void checkCreateUserAccess(String targetDeptId, java.util.List<String> roleIds);
+
+    /**
+     * 改/删用户授权。SUPER_ADMIN 任何 target；
+     * DEPT_ADMIN 仅当 target.deptId == self.deptId。
+     */
+    void checkUserManageAccess(String targetUserId);
+
+    /**
+     * 分配角色授权。
+     * SUPER_ADMIN 任何；DEPT_ADMIN 仅当 target.deptId == self.deptId
+     * 且 newRoleIds 中不含 role_type=SUPER_ADMIN 的角色。
+     */
+    void checkAssignRolesAccess(String targetUserId, java.util.List<String> newRoleIds);
+
+    /**
+     * 当前是否是 DEPT_ADMIN（任一部门）。
+     */
+    boolean isDeptAdmin();
 }

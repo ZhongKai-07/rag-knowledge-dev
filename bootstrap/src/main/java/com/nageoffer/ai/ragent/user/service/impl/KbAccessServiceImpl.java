@@ -25,9 +25,13 @@ import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +57,8 @@ public class KbAccessServiceImpl implements KbAccessService {
     private final RoleKbRelationMapper roleKbRelationMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final RedissonClient redissonClient;
+    private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
 
     @Override
     public Set<String> getAccessibleKbIds(String userId, Permission minPermission) {
@@ -174,5 +180,83 @@ public class KbAccessServiceImpl implements KbAccessService {
     @Override
     public void evictCache(String userId) {
         redissonClient.getBucket(CACHE_PREFIX + userId).delete();
+    }
+
+    @Override
+    public boolean isDeptAdmin() {
+        if (!UserContext.hasUser()) {
+            return false;
+        }
+        LoginUser user = UserContext.get();
+        return user.getRoleTypes() != null && user.getRoleTypes().contains(RoleType.DEPT_ADMIN);
+    }
+
+    @Override
+    public void checkCreateUserAccess(String targetDeptId, java.util.List<String> roleIds) {
+        if (!UserContext.hasUser()) {
+            throw new ClientException("未登录用户不可创建用户");
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        LoginUser user = UserContext.get();
+        if (!isDeptAdmin()) {
+            throw new ClientException("无权创建用户");
+        }
+        if (user.getDeptId() == null || !user.getDeptId().equals(targetDeptId)) {
+            throw new ClientException("DEPT_ADMIN 只能在本部门创建用户");
+        }
+        // 禁止给新用户分配 role_type=SUPER_ADMIN 的角色
+        if (roleIds != null && !roleIds.isEmpty()) {
+            long superRoleCount = roleMapper.selectList(
+                    Wrappers.lambdaQuery(RoleDO.class)
+                            .in(RoleDO::getId, roleIds)
+                            .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
+            ).size();
+            if (superRoleCount > 0) {
+                throw new ClientException("DEPT_ADMIN 不可分配 SUPER_ADMIN 角色");
+            }
+        }
+    }
+
+    @Override
+    public void checkUserManageAccess(String targetUserId) {
+        if (!UserContext.hasUser()) {
+            throw new ClientException("未登录用户不可管理用户");
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        if (!isDeptAdmin()) {
+            throw new ClientException("无权管理用户");
+        }
+        LoginUser current = UserContext.get();
+        UserDO target = userMapper.selectById(targetUserId);
+        if (target == null) {
+            throw new ClientException("目标用户不存在");
+        }
+        if (target.getDeptId() == null || !target.getDeptId().equals(current.getDeptId())) {
+            throw new ClientException("DEPT_ADMIN 只能管理本部门用户");
+        }
+    }
+
+    @Override
+    public void checkAssignRolesAccess(String targetUserId, java.util.List<String> newRoleIds) {
+        // 先复用用户管理权校验
+        checkUserManageAccess(targetUserId);
+        if (isSuperAdmin()) {
+            return; // SUPER_ADMIN 可分配任意角色
+        }
+        // DEPT_ADMIN：newRoleIds 里不能有 SUPER_ADMIN 角色
+        if (newRoleIds != null && !newRoleIds.isEmpty()) {
+            long superRoleCount = roleMapper.selectList(
+                    Wrappers.lambdaQuery(RoleDO.class)
+                            .in(RoleDO::getId, newRoleIds)
+                            .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
+            ).size();
+            if (superRoleCount > 0) {
+                throw new ClientException("DEPT_ADMIN 不可分配 SUPER_ADMIN 角色");
+            }
+        }
     }
 }
