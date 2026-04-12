@@ -30,12 +30,19 @@ import com.nageoffer.ai.ragent.user.controller.request.UserCreateRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserPageRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserUpdateRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.UserVO;
+import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
+import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.enums.UserRole;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent;
+import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -44,25 +51,35 @@ public class UserServiceImpl implements UserService {
     private static final String DEFAULT_ADMIN_USERNAME = "admin";
 
     private final UserMapper userMapper;
+    private final UserRoleMapper userRoleMapper;
+    private final KbAccessService kbAccessService;
+    private final UserProfileLoader userProfileLoader;
 
     @Override
     public IPage<UserVO> pageQuery(UserPageRequest requestParam) {
         String keyword = StrUtil.trimToNull(requestParam.getKeyword());
         Page<UserDO> page = new Page<>(requestParam.getCurrent(), requestParam.getSize());
-        IPage<UserDO> result = userMapper.selectPage(
-                page,
-                Wrappers.lambdaQuery(UserDO.class)
-                        .eq(UserDO::getDeleted, 0)
-                        .and(StrUtil.isNotBlank(keyword), wrapper -> wrapper
-                                .like(UserDO::getUsername, keyword)
-                                .or()
-                                .like(UserDO::getRole, keyword))
-                        .orderByDesc(UserDO::getUpdateTime)
-        );
+        var wrapper = Wrappers.lambdaQuery(UserDO.class)
+                .and(StrUtil.isNotBlank(keyword), w -> w
+                        .like(UserDO::getUsername, keyword)
+                        .or()
+                        .like(UserDO::getRole, keyword))
+                .orderByDesc(UserDO::getUpdateTime);
+
+        if (!kbAccessService.isSuperAdmin() && kbAccessService.isDeptAdmin()) {
+            // DEPT_ADMIN only sees users from their dept
+            LoginUser currentUser = UserContext.get();
+            if (currentUser != null && currentUser.getDeptId() != null) {
+                wrapper.eq(UserDO::getDeptId, currentUser.getDeptId());
+            }
+        }
+
+        IPage<UserDO> result = userMapper.selectPage(page, wrapper);
         return result.convert(this::toVO);
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String create(UserCreateRequest requestParam) {
         Assert.notNull(requestParam, () -> new ClientException("请求不能为空"));
         String username = StrUtil.trimToNull(requestParam.getUsername());
@@ -70,6 +87,8 @@ public class UserServiceImpl implements UserService {
         String role = StrUtil.trimToNull(requestParam.getRole());
         Assert.notBlank(username, () -> new ClientException("用户名不能为空"));
         Assert.notBlank(password, () -> new ClientException("密码不能为空"));
+
+        kbAccessService.checkCreateUserAccess(requestParam.getDeptId(), requestParam.getRoleIds());
 
         if (DEFAULT_ADMIN_USERNAME.equalsIgnoreCase(username)) {
             throw new ClientException("默认管理员用户名不可用");
@@ -82,8 +101,19 @@ public class UserServiceImpl implements UserService {
                 .password(password)
                 .role(role)
                 .avatar(StrUtil.trimToNull(requestParam.getAvatar()))
+                .deptId(requestParam.getDeptId())
                 .build();
         userMapper.insert(record);
+
+        if (requestParam.getRoleIds() != null) {
+            for (String roleId : requestParam.getRoleIds()) {
+                UserRoleDO ur = new UserRoleDO();
+                ur.setUserId(record.getId());
+                ur.setRoleId(roleId);
+                userRoleMapper.insert(ur);
+            }
+        }
+
         return String.valueOf(record.getId());
     }
 
@@ -119,11 +149,22 @@ public class UserServiceImpl implements UserService {
             record.setPassword(password);
         }
 
+        if (requestParam.getDeptId() != null) {
+            record.setDeptId(requestParam.getDeptId());
+        }
+
         userMapper.updateById(record);
     }
 
     @Override
     public void delete(String id) {
+        if (kbAccessService.isUserSuperAdmin(id)) {
+            int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+                    new SuperAdminMutationIntent.DeleteUser(id));
+            if (after < 1) {
+                throw new ClientException("不能删除该用户：此操作会使系统失去最后一个 SUPER_ADMIN");
+            }
+        }
         UserDO record = loadById(id);
         ensureNotDefaultAdmin(record);
         userMapper.deleteById(record.getId());
@@ -140,9 +181,7 @@ public class UserServiceImpl implements UserService {
         LoginUser loginUser = UserContext.requireUser();
         UserDO record = userMapper.selectOne(
                 Wrappers.lambdaQuery(UserDO.class)
-                        .eq(UserDO::getId, loginUser.getUserId())
-                        .eq(UserDO::getDeleted, 0)
-        );
+                        .eq(UserDO::getId, loginUser.getUserId()));
         Assert.notNull(record, () -> new ClientException("用户不存在"));
         if (!passwordMatches(current, record.getPassword())) {
             throw new ClientException("当前密码不正确");
@@ -154,9 +193,7 @@ public class UserServiceImpl implements UserService {
     private UserDO loadById(String id) {
         UserDO record = userMapper.selectOne(
                 Wrappers.lambdaQuery(UserDO.class)
-                        .eq(UserDO::getId, id)
-                        .eq(UserDO::getDeleted, 0)
-        );
+                        .eq(UserDO::getId, id));
         Assert.notNull(record, () -> new ClientException("用户不存在"));
         return record;
     }
@@ -171,9 +208,7 @@ public class UserServiceImpl implements UserService {
         UserDO existing = userMapper.selectOne(
                 Wrappers.lambdaQuery(UserDO.class)
                         .eq(UserDO::getUsername, username)
-                        .eq(UserDO::getDeleted, 0)
-                        .ne(excludeId != null, UserDO::getId, excludeId)
-        );
+                        .ne(excludeId != null, UserDO::getId, excludeId));
         if (existing != null) {
             throw new ClientException("用户名已存在");
         }
@@ -201,7 +236,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private UserVO toVO(UserDO record) {
-        return UserVO.builder()
+        UserVO vo = UserVO.builder()
                 .id(String.valueOf(record.getId()))
                 .username(record.getUsername())
                 .role(record.getRole())
@@ -209,5 +244,19 @@ public class UserServiceImpl implements UserService {
                 .createTime(record.getCreateTime())
                 .updateTime(record.getUpdateTime())
                 .build();
+        // Enrich with profile data (deptName, roleTypes, maxSecurityLevel)
+        try {
+            LoadedUserProfile profile = userProfileLoader.load(record.getId());
+            if (profile != null) {
+                vo.setDeptId(profile.deptId());
+                vo.setDeptName(profile.deptName());
+                vo.setRoleTypes(profile.roleTypes().stream().map(Enum::name).toList());
+                vo.setMaxSecurityLevel(profile.maxSecurityLevel());
+            }
+        } catch (Exception ignored) {
+            // Best-effort enrichment; fall back to bare UserDO fields
+            vo.setDeptId(record.getDeptId());
+        }
+        return vo;
     }
 }

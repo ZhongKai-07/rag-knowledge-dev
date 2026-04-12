@@ -44,4 +44,7 @@ public class UserUpdateRequest {
      * 头像地址
      */
     private String avatar;
+
+    // --- PR3 新增 ---
+    private String deptId;
 }

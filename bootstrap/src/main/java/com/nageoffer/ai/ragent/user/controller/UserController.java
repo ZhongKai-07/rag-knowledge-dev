@@ -17,7 +17,6 @@
 
 package com.nageoffer.ai.ragent.user.controller;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
@@ -31,6 +30,7 @@ import com.nageoffer.ai.ragent.user.controller.request.UserUpdateRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.CurrentUserVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserVO;
 import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +52,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserProfileLoader userProfileLoader;
+    private final KbAccessService kbAccessService;
 
     /**
      * 获取当前登录用户信息
@@ -82,7 +83,9 @@ public class UserController {
      */
     @GetMapping("/users")
     public Result<IPage<UserVO>> pageQuery(UserPageRequest requestParam) {
-        StpUtil.checkRole("SUPER_ADMIN");
+        if (!kbAccessService.isSuperAdmin() && !kbAccessService.isDeptAdmin()) {
+            throw new ClientException("无权访问用户列表");
+        }
         return Results.success(userService.pageQuery(requestParam));
     }
 
@@ -91,7 +94,6 @@ public class UserController {
      */
     @PostMapping("/users")
     public Result<String> create(@RequestBody UserCreateRequest requestParam) {
-        StpUtil.checkRole("SUPER_ADMIN");
         return Results.success(userService.create(requestParam));
     }
 
@@ -100,7 +102,7 @@ public class UserController {
      */
     @PutMapping("/users/{id}")
     public Result<Void> update(@PathVariable String id, @RequestBody UserUpdateRequest requestParam) {
-        StpUtil.checkRole("SUPER_ADMIN");
+        kbAccessService.checkUserManageAccess(id);
         userService.update(id, requestParam);
         return Results.success();
     }
@@ -110,7 +112,7 @@ public class UserController {
      */
     @DeleteMapping("/users/{id}")
     public Result<Void> delete(@PathVariable String id) {
-        StpUtil.checkRole("SUPER_ADMIN");
+        kbAccessService.checkUserManageAccess(id);
         userService.delete(id);
         return Results.success();
     }

@@ -23,6 +23,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * 用户视图对象
@@ -39,4 +40,10 @@ public class UserVO {
     private String avatar;
     private Date createTime;
     private Date updateTime;
+
+    // --- PR3 新增 ---
+    private String deptId;
+    private String deptName;
+    private List<String> roleTypes;
+    private Integer maxSecurityLevel;
 }
