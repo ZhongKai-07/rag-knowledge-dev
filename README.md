@@ -246,3 +246,24 @@ cd frontend && npm install && npm run dev
 | `resources/database/upgrade_v1.0_to_v1.1.sql` | v1.0 → v1.1 增量升级 |
 | `resources/database/upgrade_v1.1_to_v1.2.sql` | v1.1 → v1.2 增量升级（RBAC 表） |
 | `resources/database/upgrade_v1.2_to_v1.3.sql` | v1.2 → v1.3 增量升级（会话关联知识库，kb_id） |
+| `resources/database/fixture_pr3_demo.sql` | PR3 curl 矩阵演示数据（alice/bob/carol + 研发/法务 KB），仅 Mode B 使用 |
+
+## PR3 Demo
+
+演示跨部门 RBAC 隔离 + security_level 检索过滤的完整流程。PR3 使用**两种独立运行模式**：
+
+### Mode A — UI CRUD walkthrough（证明前端创建闭环）
+
+1. 重建数据库：仅 `schema_pg.sql` + `init_data_pg.sql`（**不加载 fixture**）
+2. 清空 OpenSearch + Redis
+3. 启动后端 + 前端
+4. 按 `docs/dev/pr3-demo-walkthrough.md` 的 12 步逐项执行（admin 用 UI 创建部门 / 用户 / 角色 / 分配 / 上传文档）
+
+### Mode B — curl bypass matrix（证明后端授权边界）
+
+1. 重建数据库：`schema_pg.sql` + `init_data_pg.sql` + `fixture_pr3_demo.sql`
+2. 按 `docs/dev/pr3-curl-matrix.http` 逐条跑，验证每条权限规则在前端 UI 之外也被后端拦截
+
+两种模式**不可混合**：Mode A 依赖 UI 创建来证明 CRUD 闭环，若 fixture 预塞数据，walkthrough 的步骤 2-5 就没有证明价值。Mode B 依赖固定业务键来让 curl 断言稳定，若没有 fixture，账号/ID 每次运行都不同。
+
+设计文档: `docs/superpowers/specs/2026-04-12-pr3-rbac-frontend-demo-design.md`
