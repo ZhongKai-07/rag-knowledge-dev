@@ -5,6 +5,8 @@ export interface KnowledgeBase {
   name: string;
   embeddingModel: string;
   collectionName: string;
+  deptId?: string | null;
+  deptName?: string | null;
   createdBy?: string | null;
   documentCount?: number;
   createTime?: string;
@@ -29,6 +31,7 @@ export interface KnowledgeDocument {
   chunkConfig?: string | null;
   pipelineId?: string | number | null;
   status?: string | null;
+  securityLevel?: number | null;
   createdBy?: string | null;
   updatedBy?: string | null;
   createTime?: string | null;
@@ -107,6 +110,7 @@ export interface KnowledgeDocumentUploadPayload {
   chunkStrategy?: string;
   chunkConfig?: string | null;
   pipelineId?: string | null;
+  securityLevel?: number;
 }
 
 export interface KnowledgeChunkPageParams {
@@ -228,6 +232,9 @@ export const uploadDocument = async (
   if (payload.pipelineId) {
     formData.append("pipelineId", payload.pipelineId);
   }
+  if (payload.securityLevel !== undefined) {
+    formData.append("securityLevel", String(payload.securityLevel));
+  }
   return api.post<KnowledgeDocument, KnowledgeDocument>(`/knowledge-base/${kbId}/docs/upload`, formData, {
     headers: {
       "Content-Type": "multipart/form-data"
@@ -344,3 +351,10 @@ export const getChunkLogsPage = async (
     }
   );
 };
+
+export async function updateDocumentSecurityLevel(
+  docId: string,
+  newLevel: number
+): Promise<void> {
+  await api.put(`/knowledge-base/docs/${docId}/security-level`, { newLevel });
+}
