@@ -20,6 +20,7 @@ export interface RoleCreatePayload {
 export interface RoleKbBinding {
   kbId: string;
   permission: "READ" | "WRITE" | "MANAGE";
+  maxSecurityLevel?: number;
 }
 
 // 角色 CRUD

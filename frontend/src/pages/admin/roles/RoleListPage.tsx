@@ -81,8 +81,8 @@ export function RoleListPage() {
     role: null,
   });
   const [allKnowledgeBases, setAllKnowledgeBases] = useState<KnowledgeBase[]>([]);
-  // Map from kbId -> permission for currently checked KBs
-  const [kbBindings, setKbBindings] = useState<Map<string, RoleKbBinding["permission"]>>(new Map());
+  // Array of bindings for currently checked KBs (kbId + permission + maxSecurityLevel)
+  const [kbBindings, setKbBindings] = useState<RoleKbBinding[]>([]);
   const [kbLoading, setKbLoading] = useState(false);
 
   // 每个角色的 KB 数量缓存
@@ -179,16 +179,17 @@ export function RoleListPage() {
     setKbDialogState({ open: true, role });
     setKbLoading(true);
     try {
-      const [kbs, assignedBindings] = await Promise.all([
+      const [kbs, currentBindings] = await Promise.all([
         getKnowledgeBases(),
         getRoleKnowledgeBases(role.id),
       ]);
       setAllKnowledgeBases(kbs);
-      const map = new Map<string, RoleKbBinding["permission"]>();
-      for (const b of assignedBindings) {
-        map.set(b.kbId, b.permission);
-      }
-      setKbBindings(map);
+      const mapped = currentBindings.map((b: RoleKbBinding) => ({
+        kbId: b.kbId,
+        permission: b.permission || "MANAGE",
+        maxSecurityLevel: b.maxSecurityLevel ?? role.maxSecurityLevel ?? 0,
+      }));
+      setKbBindings(mapped);
     } catch (error) {
       toast.error(getErrorMessage(error, "加载知识库列表失败"));
     } finally {
@@ -198,32 +199,35 @@ export function RoleListPage() {
 
   const toggleKb = (kbId: string) => {
     setKbBindings((prev) => {
-      const next = new Map(prev);
-      if (next.has(kbId)) {
-        next.delete(kbId);
-      } else {
-        next.set(kbId, "MANAGE");
-      }
-      return next;
+      const exists = prev.find((b) => b.kbId === kbId);
+      if (exists) return prev.filter((b) => b.kbId !== kbId);
+      return [
+        ...prev,
+        {
+          kbId,
+          permission: "MANAGE" as const,
+          maxSecurityLevel: kbDialogState.role?.maxSecurityLevel ?? 0,
+        },
+      ];
     });
   };
 
   const setKbPermission = (kbId: string, permission: RoleKbBinding["permission"]) => {
-    setKbBindings((prev) => {
-      const next = new Map(prev);
-      next.set(kbId, permission);
-      return next;
-    });
+    setKbBindings((prev) =>
+      prev.map((b) => (b.kbId === kbId ? { ...b, permission } : b))
+    );
+  };
+
+  const setKbSecurityLevel = (kbId: string, level: number) => {
+    setKbBindings((prev) =>
+      prev.map((b) => (b.kbId === kbId ? { ...b, maxSecurityLevel: level } : b))
+    );
   };
 
   const handleSaveKb = async () => {
     if (!kbDialogState.role) return;
     try {
-      const bindings: RoleKbBinding[] = Array.from(kbBindings.entries()).map(([kbId, permission]) => ({
-        kbId,
-        permission,
-      }));
-      await setRoleKnowledgeBases(kbDialogState.role.id, bindings);
+      await setRoleKnowledgeBases(kbDialogState.role.id, kbBindings);
       toast.success("知识库权限已更新");
       setKbDialogState({ open: false, role: null });
       await loadRoles();
@@ -435,8 +439,8 @@ export function RoleListPage() {
           ) : (
             <div className="max-h-[360px] overflow-y-auto space-y-1">
               {allKnowledgeBases.map((kb) => {
-                const checked = kbBindings.has(kb.id);
-                const permission = kbBindings.get(kb.id) ?? "MANAGE";
+                const binding = kbBindings.find((b) => b.kbId === kb.id);
+                const checked = !!binding;
                 return (
                   <div
                     key={kb.id}
@@ -452,20 +456,37 @@ export function RoleListPage() {
                         {kb.collectionName || kb.id}
                       </div>
                     </div>
-                    {checked && (
-                      <Select
-                        value={permission}
-                        onValueChange={(val) => setKbPermission(kb.id, val as RoleKbBinding["permission"])}
-                      >
-                        <SelectTrigger className="w-[90px] h-7 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="READ">{PERMISSION_LABELS.READ}</SelectItem>
-                          <SelectItem value="WRITE">{PERMISSION_LABELS.WRITE}</SelectItem>
-                          <SelectItem value="MANAGE">{PERMISSION_LABELS.MANAGE}</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    {checked && binding && (
+                      <>
+                        <Select
+                          value={binding.permission}
+                          onValueChange={(val) => setKbPermission(kb.id, val as RoleKbBinding["permission"])}
+                        >
+                          <SelectTrigger className="w-[90px] h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="READ">{PERMISSION_LABELS.READ}</SelectItem>
+                            <SelectItem value="WRITE">{PERMISSION_LABELS.WRITE}</SelectItem>
+                            <SelectItem value="MANAGE">{PERMISSION_LABELS.MANAGE}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={String(binding.maxSecurityLevel ?? 0)}
+                          onValueChange={(v) => setKbSecurityLevel(kb.id, Number(v))}
+                        >
+                          <SelectTrigger className="w-24 h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[0, 1, 2, 3].map((lvl) => (
+                              <SelectItem key={lvl} value={String(lvl)}>
+                                Level {lvl}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
                     )}
                   </div>
                 );
@@ -475,7 +496,7 @@ export function RoleListPage() {
           <DialogFooter>
             <div className="flex items-center justify-between w-full">
               <span className="text-sm text-muted-foreground">
-                已选 {kbBindings.size} / {allKnowledgeBases.length} 个
+                已选 {kbBindings.length} / {allKnowledgeBases.length} 个
               </span>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setKbDialogState({ open: false, role: null })}>
