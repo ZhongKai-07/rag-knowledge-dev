@@ -19,7 +19,9 @@ package com.nageoffer.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.knowledge.controller.KnowledgeBaseController;
 import com.nageoffer.ai.ragent.user.controller.RoleController.RoleKbBindingRequest;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
@@ -34,7 +36,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -218,6 +224,92 @@ public class RoleServiceImpl implements RoleService {
         return roleMapper.selectList(
                 Wrappers.lambdaQuery(RoleDO.class)
                         .in(RoleDO::getId, roleIds));
+    }
+
+    @Override
+    public List<KnowledgeBaseController.KbRoleBindingVO> getKbRoleBindings(String kbId) {
+        List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getKbId, kbId));
+        if (relations.isEmpty()) {
+            return List.of();
+        }
+        List<String> roleIds = relations.stream().map(RoleKbRelationDO::getRoleId).toList();
+        Map<String, RoleDO> roleMap = roleMapper.selectList(
+                Wrappers.lambdaQuery(RoleDO.class).in(RoleDO::getId, roleIds))
+                .stream().collect(Collectors.toMap(RoleDO::getId, r -> r));
+
+        return relations.stream().map(rel -> {
+            KnowledgeBaseController.KbRoleBindingVO vo = new KnowledgeBaseController.KbRoleBindingVO();
+            vo.setRoleId(rel.getRoleId());
+            vo.setPermission(rel.getPermission());
+            vo.setMaxSecurityLevel(rel.getMaxSecurityLevel());
+            RoleDO role = roleMap.get(rel.getRoleId());
+            if (role != null) {
+                vo.setRoleName(role.getName());
+                vo.setRoleType(role.getRoleType());
+            }
+            return vo;
+        }).toList();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void setKbRoleBindings(String kbId,
+                                  List<KnowledgeBaseController.KbRoleBindingRequest> bindings) {
+        Set<String> affectedUserIds = new HashSet<>();
+
+        // ① 删除前先收集旧绑定涉及的用户
+        List<RoleKbRelationDO> oldRelations = roleKbRelationMapper.selectList(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getKbId, kbId));
+        Set<String> oldRoleIds = oldRelations.stream()
+                .map(RoleKbRelationDO::getRoleId).collect(Collectors.toSet());
+        if (!oldRoleIds.isEmpty()) {
+            userRoleMapper.selectList(
+                    Wrappers.lambdaQuery(UserRoleDO.class).in(UserRoleDO::getRoleId, oldRoleIds))
+                    .forEach(ur -> affectedUserIds.add(ur.getUserId()));
+        }
+
+        // ② 删除此 KB 的所有绑定
+        roleKbRelationMapper.delete(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getKbId, kbId));
+
+        // ③ 写入新绑定
+        if (bindings != null && !bindings.isEmpty()) {
+            for (KnowledgeBaseController.KbRoleBindingRequest binding : bindings) {
+                RoleDO role = roleMapper.selectById(binding.getRoleId());
+                if (role == null) continue;
+
+                int roleCeiling = (role.getMaxSecurityLevel() != null) ? role.getMaxSecurityLevel() : 0;
+                int level = (binding.getMaxSecurityLevel() != null)
+                        ? Math.min(binding.getMaxSecurityLevel(), roleCeiling)
+                        : roleCeiling;
+
+                // DEPT_ADMIN 额外校验：不超自身天花板
+                if (!kbAccessService.isSuperAdmin()) {
+                    int selfCeiling = UserContext.get().getMaxSecurityLevel();
+                    if (level > selfCeiling) {
+                        throw new ClientException("不可设置超过自身安全等级上限的绑定");
+                    }
+                }
+
+                RoleKbRelationDO relation = RoleKbRelationDO.builder()
+                        .roleId(binding.getRoleId())
+                        .kbId(kbId)
+                        .permission(binding.getPermission() != null ? binding.getPermission() : "READ")
+                        .maxSecurityLevel(level)
+                        .build();
+                roleKbRelationMapper.insert(relation);
+
+                // 收集新绑定涉及的用户
+                userRoleMapper.selectList(
+                        Wrappers.lambdaQuery(UserRoleDO.class)
+                                .eq(UserRoleDO::getRoleId, binding.getRoleId()))
+                        .forEach(ur -> affectedUserIds.add(ur.getUserId()));
+            }
+        }
+
+        // ④ 统一驱逐缓存
+        affectedUserIds.forEach(kbAccessService::evictCache);
     }
 
     private void evictCacheForRole(String roleId) {

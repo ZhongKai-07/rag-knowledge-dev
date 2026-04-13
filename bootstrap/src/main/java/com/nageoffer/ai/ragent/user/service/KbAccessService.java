@@ -158,4 +158,7 @@ public interface KbAccessService {
      * 调用方用 {@code < 1} 判断是否拒绝。
      */
     int simulateActiveSuperAdminCountAfter(SuperAdminMutationIntent intent);
+
+    /** 校验当前用户是否有权管理指定 KB 的角色绑定。SUPER_ADMIN 任意 KB；DEPT_ADMIN 仅 kb.dept_id == self.dept_id。 */
+    void checkKbRoleBindingAccess(String kbId);
 }

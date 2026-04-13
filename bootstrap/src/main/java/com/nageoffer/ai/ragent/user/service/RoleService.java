@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.user.service;
 
+import com.nageoffer.ai.ragent.knowledge.controller.KnowledgeBaseController;
 import com.nageoffer.ai.ragent.user.controller.RoleController.RoleKbBindingRequest;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import java.util.List;
@@ -46,4 +47,10 @@ public interface RoleService {
 
     /** 获取用户的角色列表 */
     List<RoleDO> getUserRoles(String userId);
+
+    /** 获取指定 KB 的所有角色绑定 */
+    List<KnowledgeBaseController.KbRoleBindingVO> getKbRoleBindings(String kbId);
+
+    /** 全量覆盖指定 KB 的角色绑定（仅影响此 KB，不影响其他 KB） */
+    void setKbRoleBindings(String kbId, List<KnowledgeBaseController.KbRoleBindingRequest> bindings);
 }

@@ -47,6 +47,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -483,6 +484,24 @@ public class KbAccessServiceImpl implements KbAccessService {
                     java.util.Set.of(), java.util.Set.of(dr.roleId()), java.util.Map.of());
         }
         throw new IllegalArgumentException("Unknown SuperAdminMutationIntent type: " + intent.getClass());
+    }
+
+    @Override
+    public void checkKbRoleBindingAccess(String kbId) {
+        if (isSuperAdmin()) {
+            return;
+        }
+        if (!isDeptAdmin()) {
+            throw new ClientException("需要管理员权限");
+        }
+        KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+        if (kb == null) {
+            throw new ClientException("知识库不存在");
+        }
+        LoginUser current = UserContext.requireUser();
+        if (!Objects.equals(current.getDeptId(), kb.getDeptId())) {
+            throw new ClientException("DEPT_ADMIN 只能管理本部门知识库的角色绑定");
+        }
     }
 
     /**
