@@ -34,6 +34,8 @@ import {
 import { getIngestionPipelines, type IngestionPipeline } from "@/services/ingestionService";
 import { getSystemSettings } from "@/services/settingsService";
 import { getErrorMessage } from "@/utils/error";
+import { usePermissions } from "@/utils/permissions";
+import KbSharingTab from "./KbSharingTab";
 
 const PAGE_SIZE = 10;
 
@@ -133,6 +135,7 @@ const formatChunkStrategy = (strategy?: string | null) => {
 export function KnowledgeDocumentsPage() {
   const { kbId } = useParams();
   const navigate = useNavigate();
+  const { isAnyAdmin } = usePermissions();
   const [kb, setKb] = useState<KnowledgeBase | null>(null);
   const [pageData, setPageData] = useState<PageResult<KnowledgeDocument> | null>(null);
   const [current, setCurrent] = useState(1);
@@ -608,6 +611,12 @@ export function KnowledgeDocumentsPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      {isAnyAdmin && kbId && (
+        <Card>
+          <KbSharingTab kbId={kbId} />
+        </Card>
+      )}
 
       <UploadDialog
         open={uploadOpen}

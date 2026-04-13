@@ -358,3 +358,29 @@ export async function updateDocumentSecurityLevel(
 ): Promise<void> {
   await api.put(`/knowledge-base/docs/${docId}/security-level`, { newLevel });
 }
+
+// KB 角色绑定管理
+export interface KbRoleBindingVO {
+  roleId: string;
+  roleName: string;
+  roleType: string;
+  permission: string;
+  maxSecurityLevel: number;
+}
+
+export interface KbRoleBindingRequest {
+  roleId: string;
+  permission: string;
+  maxSecurityLevel?: number;
+}
+
+export async function getKbRoleBindings(kbId: string): Promise<KbRoleBindingVO[]> {
+  return api.get<KbRoleBindingVO[], KbRoleBindingVO[]>(`/knowledge-base/${kbId}/role-bindings`);
+}
+
+export async function setKbRoleBindings(
+  kbId: string,
+  bindings: KbRoleBindingRequest[]
+): Promise<void> {
+  await api.put(`/knowledge-base/${kbId}/role-bindings`, bindings);
+}
