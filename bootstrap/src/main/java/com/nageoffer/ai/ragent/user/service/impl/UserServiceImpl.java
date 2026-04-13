@@ -140,7 +140,12 @@ public class UserServiceImpl implements UserService {
             record.setPassword(password);
         }
 
-        if (requestParam.getDeptId() != null) {
+        if (requestParam.getDeptId() != null
+                && !requestParam.getDeptId().equals(record.getDeptId())
+                && !kbAccessService.isSuperAdmin()) {
+            throw new ClientException("部门变更仅超级管理员可操作");
+        }
+        if (requestParam.getDeptId() != null && kbAccessService.isSuperAdmin()) {
             record.setDeptId(requestParam.getDeptId());
         }
 

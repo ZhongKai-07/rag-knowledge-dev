@@ -330,17 +330,7 @@ public class KbAccessServiceImpl implements KbAccessService {
             log.warn("权限拒绝: userId={}, action=CREATE_USER, reason=跨部门, targetDept={}", UserContext.getUserId(), targetDeptId);
             throw new ClientException("DEPT_ADMIN 只能在本部门创建用户");
         }
-        // 禁止给新用户分配 role_type=SUPER_ADMIN 的角色
-        if (roleIds != null && !roleIds.isEmpty()) {
-            long superRoleCount = roleMapper.selectList(
-                    Wrappers.lambdaQuery(RoleDO.class)
-                            .in(RoleDO::getId, roleIds)
-                            .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
-            ).size();
-            if (superRoleCount > 0) {
-                throw new ClientException("DEPT_ADMIN 不可分配 SUPER_ADMIN 角色");
-            }
-        }
+        validateRoleAssignment(roleIds);
     }
 
     @Override
@@ -373,15 +363,26 @@ public class KbAccessServiceImpl implements KbAccessService {
         if (isSuperAdmin()) {
             return; // SUPER_ADMIN 可分配任意角色
         }
-        // DEPT_ADMIN：newRoleIds 里不能有 SUPER_ADMIN 角色
-        if (newRoleIds != null && !newRoleIds.isEmpty()) {
-            long superRoleCount = roleMapper.selectList(
-                    Wrappers.lambdaQuery(RoleDO.class)
-                            .in(RoleDO::getId, newRoleIds)
-                            .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
-            ).size();
-            if (superRoleCount > 0) {
+        validateRoleAssignment(newRoleIds);
+    }
+
+    @Override
+    public void validateRoleAssignment(List<String> roleIds) {
+        if (isSuperAdmin() || roleIds == null || roleIds.isEmpty()) {
+            return;
+        }
+        int currentCeiling = UserContext.get().getMaxSecurityLevel();
+        List<RoleDO> roles = roleMapper.selectList(
+                Wrappers.lambdaQuery(RoleDO.class).in(RoleDO::getId, roleIds));
+        for (RoleDO role : roles) {
+            if (RoleType.SUPER_ADMIN.name().equals(role.getRoleType())) {
                 throw new ClientException("DEPT_ADMIN 不可分配 SUPER_ADMIN 角色");
+            }
+            if (RoleType.DEPT_ADMIN.name().equals(role.getRoleType())) {
+                throw new ClientException("DEPT_ADMIN 不可分配 DEPT_ADMIN 角色");
+            }
+            if (role.getMaxSecurityLevel() != null && role.getMaxSecurityLevel() > currentCeiling) {
+                throw new ClientException("不可分配超过自身安全等级上限的角色");
             }
         }
     }

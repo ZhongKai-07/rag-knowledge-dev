@@ -107,6 +107,15 @@ public interface KbAccessService {
     void checkAssignRolesAccess(String targetUserId, java.util.List<String> newRoleIds);
 
     /**
+     * 校验 DEPT_ADMIN 分配角色的合法性：
+     * - 不可分配 SUPER_ADMIN 角色
+     * - 不可分配 DEPT_ADMIN 角色
+     * - 不可分配 maxSecurityLevel > 自身天花板的角色
+     * SUPER_ADMIN 不受限制。
+     */
+    void validateRoleAssignment(java.util.List<String> roleIds);
+
+    /**
      * 当前是否是 DEPT_ADMIN（任一部门）。
      */
     boolean isDeptAdmin();
