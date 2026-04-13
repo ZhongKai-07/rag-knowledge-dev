@@ -67,11 +67,11 @@ public class SearchContext {
     private Set<String> accessibleKbIds;
 
     /**
-     * 当前用户跨所有挂载角色的最大安全等级。
-     * null 表示"不加 security_level 过滤"（系统态或 admin 调用路径）。
-     * 非 null 时检索层追加 metadata.security_level &lt;= maxSecurityLevel 过滤。
+     * 按 kbId 解析该用户对该 KB 的最高安全等级。
+     * 返回 null 表示不做安全等级过滤（如系统内部调用、未登录场景）。
+     * 返回 0 表示只看 level=0 的文档。
      */
-    private Integer maxSecurityLevel;
+    private java.util.function.Function<String, Integer> kbSecurityLevelResolver;
 
     /**
      * 扩展元数据

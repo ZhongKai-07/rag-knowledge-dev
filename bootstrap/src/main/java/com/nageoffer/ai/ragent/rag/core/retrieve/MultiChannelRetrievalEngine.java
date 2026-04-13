@@ -29,6 +29,7 @@ import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -60,6 +61,7 @@ public class MultiChannelRetrievalEngine {
     private final List<SearchResultPostProcessor> postProcessors;
     private final RetrieverService retrieverService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final KbAccessService kbAccessService;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
 
@@ -86,7 +88,7 @@ public class MultiChannelRetrievalEngine {
                     .query(context.getMainQuestion())
                     .topK(topK)
                     .collectionName(kb.getCollectionName())
-                    .metadataFilters(buildMetadataFilters(context))
+                    .metadataFilters(buildMetadataFilters(context, knowledgeBaseId))
                     .build();
             List<RetrievedChunk> chunks = retrieverService.retrieve(req);
 
@@ -257,33 +259,30 @@ public class MultiChannelRetrievalEngine {
                 .intents(subIntents)
                 .topK(topK)
                 .accessibleKbIds(accessibleKbIds)
-                .maxSecurityLevel(resolveMaxSecurityLevel())
+                .kbSecurityLevelResolver(kbId -> {
+                    if (!UserContext.hasUser()) return null;
+                    return kbAccessService.getMaxSecurityLevelForKb(UserContext.getUserId(), kbId);
+                })
                 .build();
     }
 
     /**
-     * 从当前线程用户上下文中获取最大安全等级。
-     * 系统态（MQ 消费者、定时任务）无登录态时返回 null，表示不加 security_level 过滤。
+     * 构建元数据过滤条件（按 KB 解析安全等级）。
+     *
+     * @param ctx  检索上下文（包含 kbSecurityLevelResolver）
+     * @param kbId 当前检索的知识库 ID
+     * @return 过滤条件列表
      */
-    private Integer resolveMaxSecurityLevel() {
-        if (UserContext.hasUser()) {
-            return UserContext.get().getMaxSecurityLevel();
-        }
-        return null;
-    }
-
-    /**
-     * 根据检索上下文构建 MetadataFilter 列表。
-     * 当 maxSecurityLevel 不为 null 时追加 security_level &lt;= maxSecurityLevel 过滤条件。
-     */
-    public static List<MetadataFilter> buildMetadataFilters(SearchContext ctx) {
+    public static List<MetadataFilter> buildMetadataFilters(SearchContext ctx, String kbId) {
         List<MetadataFilter> filters = new ArrayList<>();
-        if (ctx.getMaxSecurityLevel() != null) {
-            filters.add(new MetadataFilter(
-                    "security_level",
-                    MetadataFilter.FilterOp.LTE_OR_MISSING,
-                    ctx.getMaxSecurityLevel()
-            ));
+        if (ctx.getKbSecurityLevelResolver() != null && kbId != null) {
+            Integer level = ctx.getKbSecurityLevelResolver().apply(kbId);
+            if (level != null) {
+                filters.add(new MetadataFilter(
+                        "security_level",
+                        MetadataFilter.FilterOp.LTE_OR_MISSING,
+                        level));
+            }
         }
         return filters;
     }
