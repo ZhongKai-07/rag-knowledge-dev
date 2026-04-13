@@ -54,7 +54,7 @@ com.nageoffer.ai.ragent.framework/
 | 类 | 说明 |
 |----|------|
 | `UserContext` | 基于 ThreadLocal 存储当前登录用户信息 |
-| `LoginUser` | 携带 userId、username（legacy `role`）、`deptId`、`roleTypes`（`Set<RoleType>`）、`maxSecurityLevel`（`int`） |
+| `LoginUser` | 携带 userId、username、`deptId`、`roleTypes`（`Set<RoleType>`）、`maxSecurityLevel`（`int`） |
 | `RoleType` | 角色类型枚举：`SUPER_ADMIN / DEPT_ADMIN / USER` |
 | `Permission` | 知识库权限级别枚举：`READ / WRITE / MANAGE`（`ordinal()` 反映权限大小，可用于 `>=` 比较） |
 | `ApplicationContextHolder` | 静态持有 Spring `ApplicationContext`，供非 Bean 代码获取 Bean |
