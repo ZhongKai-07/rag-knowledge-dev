@@ -66,6 +66,9 @@ public interface KbAccessService {
      */
     boolean isSuperAdmin();
 
+    /** 校验当前用户是 SUPER_ADMIN 或 DEPT_ADMIN，否则抛异常 */
+    void checkAnyAdminAccess();
+
     /**
      * 清除指定用户的权限缓存
      */

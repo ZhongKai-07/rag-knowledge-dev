@@ -23,6 +23,7 @@ import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.request.SysDeptCreateRequest;
 import com.nageoffer.ai.ragent.user.controller.request.SysDeptUpdateRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,32 +39,37 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@SaCheckRole("SUPER_ADMIN")
 public class SysDeptController {
 
     private final SysDeptService sysDeptService;
+    private final KbAccessService kbAccessService;
 
     @GetMapping("/sys-dept")
     public Result<List<SysDeptVO>> list(@RequestParam(value = "keyword", required = false) String keyword) {
+        kbAccessService.checkAnyAdminAccess();
         return Results.success(sysDeptService.list(keyword));
     }
 
     @GetMapping("/sys-dept/{id}")
     public Result<SysDeptVO> getById(@PathVariable("id") String id) {
+        kbAccessService.checkAnyAdminAccess();
         return Results.success(sysDeptService.getById(id));
     }
 
+    @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/sys-dept")
     public Result<String> create(@RequestBody SysDeptCreateRequest request) {
         return Results.success(sysDeptService.create(request));
     }
 
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/sys-dept/{id}")
     public Result<Void> update(@PathVariable("id") String id, @RequestBody SysDeptUpdateRequest request) {
         sysDeptService.update(id, request);
         return Results.success();
     }
 
+    @SaCheckRole("SUPER_ADMIN")
     @DeleteMapping("/sys-dept/{id}")
     public Result<Void> delete(@PathVariable("id") String id) {
         sysDeptService.delete(id);

@@ -66,9 +66,9 @@ public class RoleController {
         return Results.success();
     }
 
-    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/role")
     public Result<List<RoleDO>> listRoles() {
+        kbAccessService.checkAnyAdminAccess();
         return Results.success(roleService.listRoles());
     }
 
@@ -94,9 +94,10 @@ public class RoleController {
         return Results.success();
     }
 
-    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/user/{userId}/roles")
     public Result<List<RoleDO>> getUserRoles(@PathVariable("userId") String userId) {
+        kbAccessService.checkAnyAdminAccess();
+        kbAccessService.checkUserManageAccess(userId);
         return Results.success(roleService.getUserRoles(userId));
     }
 

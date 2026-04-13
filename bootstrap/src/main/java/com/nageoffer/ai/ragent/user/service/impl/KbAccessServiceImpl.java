@@ -294,6 +294,17 @@ public class KbAccessServiceImpl implements KbAccessService {
     }
 
     @Override
+    public void checkAnyAdminAccess() {
+        LoginUser current = UserContext.get();
+        if (current == null) {
+            throw new ClientException("未登录");
+        }
+        if (!isSuperAdmin() && !isDeptAdmin()) {
+            throw new ClientException("需要管理员权限");
+        }
+    }
+
+    @Override
     public boolean isDeptAdmin() {
         if (!UserContext.hasUser()) {
             return false;
