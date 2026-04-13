@@ -71,6 +71,17 @@ public interface KbAccessService {
      */
     void evictCache(String userId);
 
+    /**
+     * 获取用户对指定 KB 的最高安全等级。
+     * <ul>
+     *   <li>SUPER_ADMIN → 3</li>
+     *   <li>DEPT_ADMIN 且 kb.dept_id == self.dept_id → MAX(自身角色天花板)</li>
+     *   <li>其他 → MAX(t_role_kb_relation.max_security_level) through user's roles</li>
+     *   <li>无权限 → 0（防御性兜底，不应到达检索阶段）</li>
+     * </ul>
+     */
+    Integer getMaxSecurityLevelForKb(String userId, String kbId);
+
     // === PR3 新增：用户管理授权 ===
 
     /**

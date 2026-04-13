@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 public class KbAccessServiceImpl implements KbAccessService {
 
     private static final String CACHE_PREFIX = "kb_access:";
+    private static final String KB_SECURITY_LEVEL_CACHE_PREFIX = "kb_security_level:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     private final UserRoleMapper userRoleMapper;
@@ -230,6 +231,66 @@ public class KbAccessServiceImpl implements KbAccessService {
     @Override
     public void evictCache(String userId) {
         redissonClient.getBucket(CACHE_PREFIX + userId).delete();
+        redissonClient.getBucket(KB_SECURITY_LEVEL_CACHE_PREFIX + userId).delete();
+    }
+
+    @Override
+    public Integer getMaxSecurityLevelForKb(String userId, String kbId) {
+        if (userId == null || kbId == null) {
+            return 0;
+        }
+
+        // SUPER_ADMIN: always max
+        LoginUser current = UserContext.get();
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
+            return 3;
+        }
+
+        // DEPT_ADMIN implicit access to same-dept KBs: use role ceiling
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
+            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+            if (kb != null && current.getDeptId() != null
+                    && current.getDeptId().equals(kb.getDeptId())) {
+                return current.getMaxSecurityLevel();
+            }
+        }
+
+        // Regular path: check Redis Hash cache
+        String cacheKey = KB_SECURITY_LEVEL_CACHE_PREFIX + userId;
+        RBucket<java.util.Map<String, Integer>> bucket = redissonClient.getBucket(cacheKey);
+        java.util.Map<String, Integer> cached = bucket.get();
+        if (cached != null && cached.containsKey(kbId)) {
+            return cached.get(kbId);
+        }
+
+        // Compute from DB
+        List<UserRoleDO> userRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
+        List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
+
+        int level = 0;
+        if (!roleIds.isEmpty()) {
+            List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                    Wrappers.lambdaQuery(RoleKbRelationDO.class)
+                            .in(RoleKbRelationDO::getRoleId, roleIds)
+                            .eq(RoleKbRelationDO::getKbId, kbId));
+            for (RoleKbRelationDO rel : relations) {
+                if (rel.getMaxSecurityLevel() != null && rel.getMaxSecurityLevel() > level) {
+                    level = rel.getMaxSecurityLevel();
+                }
+            }
+        }
+
+        // Write to cache (hash entry)
+        if (cached == null) {
+            cached = new java.util.HashMap<>();
+        }
+        cached.put(kbId, level);
+        bucket.set(cached, CACHE_TTL);
+
+        return level;
     }
 
     @Override
