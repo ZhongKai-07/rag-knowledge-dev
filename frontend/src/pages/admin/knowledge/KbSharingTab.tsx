@@ -22,6 +22,7 @@ export default function KbSharingTab({ kbId }: Props) {
   const [allRoles, setAllRoles] = useState<RoleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [noAccess, setNoAccess] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -36,7 +37,8 @@ export default function KbSharingTab({ kbId }: Props) {
           }))
         );
       } catch {
-        toast.error("加载失败");
+        // 权限不足时静默隐藏，不弹错误
+        setNoAccess(true);
       } finally {
         setLoading(false);
       }
@@ -82,6 +84,7 @@ export default function KbSharingTab({ kbId }: Props) {
     allRoles.find((r) => r.id === roleId)?.name ?? roleId;
 
   if (loading) return <div className="p-4 text-muted-foreground">加载中...</div>;
+  if (noAccess) return null;
 
   return (
     <div className="space-y-4 p-4">
