@@ -16,7 +16,7 @@ export type AdminMenuId =
   | "roles"
   | "settings";
 
-const DEPT_VISIBLE: AdminMenuId[] = ["dashboard", "knowledge", "users"];
+const DEPT_VISIBLE: AdminMenuId[] = ["dashboard", "knowledge", "users", "roles"];
 
 export interface Permissions {
   isSuperAdmin: boolean;
@@ -55,7 +55,11 @@ export function getPermissions(user: User | null): Permissions {
       isSuperAdmin || (isDeptAdmin && targetUser.deptId === user?.deptId),
     canEditDocSecurityLevel: (doc) =>
       isSuperAdmin || (isDeptAdmin && doc.kbDeptId === user?.deptId),
-    canAssignRole: (role) => isSuperAdmin || role.roleType !== "SUPER_ADMIN",
+    canAssignRole: (role) => {
+      if (isSuperAdmin) return true;
+      // DEPT_ADMIN cannot assign SUPER_ADMIN or DEPT_ADMIN roles
+      return role.roleType !== "SUPER_ADMIN" && role.roleType !== "DEPT_ADMIN";
+    },
   };
 }
 

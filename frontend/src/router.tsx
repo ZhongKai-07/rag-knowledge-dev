@@ -147,7 +147,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "roles",
-        element: <RequireSuperAdmin><RoleListPage /></RequireSuperAdmin>
+        element: <RequireMenuAccess menuId="roles"><RoleListPage /></RequireMenuAccess>
       },
       {
         path: "evaluations",
