@@ -1,0 +1,307 @@
+<mxfile host="app.diagrams.net" modified="2026-04-14T00:00:00.000Z" agent="Claude Code" version="24.0.0" type="device">
+  <diagram id="ragent-erd" name="Database ERD">
+    <mxGraphModel dx="2200" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="3300" pageHeight="2339" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ========== Domain Labels ========== -->
+        <mxCell id="domain_user" value="用户与权限域 (User &amp; RBAC)" style="text;html=1;fontSize=16;fontStyle=5;fillColor=#dae8fc;strokeColor=#6c8ebf;align=center;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="760" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="domain_knowledge" value="知识库管理域 (Knowledge)" style="text;html=1;fontSize=16;fontStyle=5;fillColor=#d5e8d4;strokeColor=#82b366;align=center;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="860" y="10" width="660" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="domain_conversation" value="会话域 (Conversation)" style="text;html=1;fontSize=16;fontStyle=5;fillColor=#fff2cc;strokeColor=#d6b656;align=center;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="760" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="domain_rag" value="RAG 域 (Intent &amp; Trace &amp; Eval)" style="text;html=1;fontSize=16;fontStyle=5;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="860" y="580" width="660" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="domain_ingestion" value="文档入库域 (Ingestion)" style="text;html=1;fontSize=16;fontStyle=5;fillColor=#f8cecc;strokeColor=#b85450;align=center;rounded=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="10" width="500" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- ========== USER & RBAC DOMAIN ========== -->
+
+        <!-- sys_dept -->
+        <mxCell id="sys_dept" value="&lt;b&gt;sys_dept&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;dept_code : VARCHAR(32) UK&lt;br&gt;dept_name : VARCHAR(64)&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="220" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- t_user -->
+        <mxCell id="t_user" value="&lt;b&gt;t_user&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;username : VARCHAR(64) UK&lt;br&gt;password : VARCHAR(128)&lt;br&gt;role : VARCHAR(32)&lt;br&gt;avatar : VARCHAR(128)&lt;br&gt;&lt;b&gt;dept_id : VARCHAR(20) FK→sys_dept&lt;/b&gt;&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="220" width="260" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- t_role -->
+        <mxCell id="t_role" value="&lt;b&gt;t_role&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;name : VARCHAR(64) UK&lt;br&gt;description : VARCHAR(256)&lt;br&gt;role_type : VARCHAR(32) [SUPER_ADMIN/DEPT_ADMIN/USER]&lt;br&gt;max_security_level : SMALLINT (0-3)&lt;br&gt;deleted : INTEGER&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="440" y="60" width="340" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- t_user_role -->
+        <mxCell id="t_user_role" value="&lt;b&gt;t_user_role&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;user_id : VARCHAR(20) FK→t_user&lt;/b&gt;&lt;br&gt;&lt;b&gt;role_id : VARCHAR(20) FK→t_role&lt;/b&gt;&lt;br&gt;deleted : INTEGER&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="400" y="260" width="250" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- t_role_kb_relation -->
+        <mxCell id="t_role_kb_relation" value="&lt;b&gt;t_role_kb_relation&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;role_id : VARCHAR(20) FK→t_role&lt;/b&gt;&lt;br&gt;&lt;b&gt;kb_id : VARCHAR(20) FK→t_knowledge_base&lt;/b&gt;&lt;br&gt;permission : VARCHAR(16) [READ/WRITE/MANAGE]&lt;br&gt;max_security_level : SMALLINT (0-3)&lt;br&gt;deleted : INTEGER&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="400" y="420" width="340" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- ========== KNOWLEDGE DOMAIN ========== -->
+
+        <!-- t_knowledge_base -->
+        <mxCell id="t_knowledge_base" value="&lt;b&gt;t_knowledge_base&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;name : VARCHAR(128)&lt;br&gt;embedding_model : VARCHAR(64)&lt;br&gt;collection_name : VARCHAR(64) UK&lt;br&gt;created_by : VARCHAR(20)&lt;br&gt;&lt;b&gt;dept_id : VARCHAR(20) FK→sys_dept&lt;/b&gt;&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="880" y="60" width="280" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_document -->
+        <mxCell id="t_knowledge_document" value="&lt;b&gt;t_knowledge_document&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;kb_id : VARCHAR(20) FK→t_knowledge_base&lt;/b&gt;&lt;br&gt;doc_name : VARCHAR(256)&lt;br&gt;file_url : VARCHAR(1024)&lt;br&gt;file_type : VARCHAR(16)&lt;br&gt;status : VARCHAR(16)&lt;br&gt;security_level : SMALLINT (0-3)&lt;br&gt;pipeline_id : VARCHAR(20)&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="880" y="260" width="280" height="180" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_chunk -->
+        <mxCell id="t_knowledge_chunk" value="&lt;b&gt;t_knowledge_chunk&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;kb_id : VARCHAR(20) FK→t_knowledge_base&lt;/b&gt;&lt;br&gt;&lt;b&gt;doc_id : VARCHAR(20) FK→t_knowledge_document&lt;/b&gt;&lt;br&gt;chunk_index : INTEGER&lt;br&gt;content : TEXT&lt;br&gt;token_count : INTEGER&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="260" width="280" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_document_chunk_log -->
+        <mxCell id="t_knowledge_document_chunk_log" value="&lt;b&gt;t_knowledge_document_chunk_log&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;doc_id : VARCHAR(20) FK→t_knowledge_document&lt;/b&gt;&lt;br&gt;status : VARCHAR(16)&lt;br&gt;total_duration : BIGINT&lt;br&gt;chunk_count : INTEGER&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="450" width="280" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_document_schedule -->
+        <mxCell id="t_knowledge_document_schedule" value="&lt;b&gt;t_knowledge_document_schedule&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;doc_id : VARCHAR(20) UK FK→t_knowledge_document&lt;/b&gt;&lt;br&gt;&lt;b&gt;kb_id : VARCHAR(20) FK→t_knowledge_base&lt;/b&gt;&lt;br&gt;cron_expr : VARCHAR(64)&lt;br&gt;enabled : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="880" y="480" width="280" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_document_schedule_exec -->
+        <mxCell id="t_knowledge_document_schedule_exec" value="&lt;b&gt;t_knowledge_document_schedule_exec&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;schedule_id : VARCHAR(20) FK→schedule&lt;/b&gt;&lt;br&gt;&lt;b&gt;doc_id : VARCHAR(20) FK→t_knowledge_document&lt;/b&gt;&lt;br&gt;status : VARCHAR(16)&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="640" y="480" width="220" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_vector -->
+        <mxCell id="t_knowledge_vector" value="&lt;b&gt;t_knowledge_vector&lt;/b&gt; (pgvector)&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;content : TEXT&lt;br&gt;metadata : JSONB&lt;br&gt;embedding : vector(1536)&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;verticalAlign=top;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="60" width="260" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- ========== CONVERSATION DOMAIN ========== -->
+
+        <!-- t_conversation -->
+        <mxCell id="t_conversation" value="&lt;b&gt;t_conversation&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;conversation_id : VARCHAR(20)&lt;br&gt;&lt;b&gt;user_id : VARCHAR(20) FK→t_user&lt;/b&gt;&lt;br&gt;&lt;b&gt;kb_id : VARCHAR(20) FK→t_knowledge_base&lt;/b&gt;&lt;br&gt;title : VARCHAR(128)&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="630" width="260" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- t_message -->
+        <mxCell id="t_message" value="&lt;b&gt;t_message&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;conversation_id : VARCHAR(20) FK→t_conversation&lt;/b&gt;&lt;br&gt;&lt;b&gt;user_id : VARCHAR(20) FK→t_user&lt;/b&gt;&lt;br&gt;role : VARCHAR(16)&lt;br&gt;content : TEXT&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="380" y="630" width="260" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- t_conversation_summary -->
+        <mxCell id="t_conversation_summary" value="&lt;b&gt;t_conversation_summary&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;conversation_id : VARCHAR(20) FK→t_conversation&lt;/b&gt;&lt;br&gt;&lt;b&gt;user_id : VARCHAR(20) FK→t_user&lt;/b&gt;&lt;br&gt;content : TEXT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="60" y="810" width="260" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- t_message_feedback -->
+        <mxCell id="t_message_feedback" value="&lt;b&gt;t_message_feedback&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;message_id : VARCHAR(20) FK→t_message&lt;/b&gt;&lt;br&gt;&lt;b&gt;conversation_id : VARCHAR(20)&lt;/b&gt;&lt;br&gt;&lt;b&gt;user_id : VARCHAR(20)&lt;/b&gt;&lt;br&gt;vote : SMALLINT&lt;br&gt;comment : VARCHAR(1024)&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="380" y="810" width="260" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- t_sample_question -->
+        <mxCell id="t_sample_question" value="&lt;b&gt;t_sample_question&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;title : VARCHAR(64)&lt;br&gt;question : VARCHAR(255)&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;verticalAlign=top;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="630" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- ========== RAG DOMAIN ========== -->
+
+        <!-- t_intent_node -->
+        <mxCell id="t_intent_node" value="&lt;b&gt;t_intent_node&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;kb_id : VARCHAR(20) FK→t_knowledge_base&lt;/b&gt;&lt;br&gt;intent_code : VARCHAR(64)&lt;br&gt;name : VARCHAR(64)&lt;br&gt;level : SMALLINT&lt;br&gt;parent_code : VARCHAR(64)&lt;br&gt;kind : SMALLINT [0=KB/1=SYSTEM/2=MCP]&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="880" y="630" width="300" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- t_query_term_mapping -->
+        <mxCell id="t_query_term_mapping" value="&lt;b&gt;t_query_term_mapping&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;domain : VARCHAR(64)&lt;br&gt;source_term : VARCHAR(128)&lt;br&gt;target_term : VARCHAR(128)&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;verticalAlign=top;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="880" y="840" width="240" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- t_rag_trace_run -->
+        <mxCell id="t_rag_trace_run" value="&lt;b&gt;t_rag_trace_run&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;trace_id : VARCHAR(64) UK&lt;br&gt;conversation_id : VARCHAR(20)&lt;br&gt;&lt;b&gt;user_id : VARCHAR(20) FK→t_user&lt;/b&gt;&lt;br&gt;status : VARCHAR(16)&lt;br&gt;duration_ms : BIGINT&lt;br&gt;extra_data : TEXT (JSON)&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="630" width="260" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- t_rag_trace_node -->
+        <mxCell id="t_rag_trace_node" value="&lt;b&gt;t_rag_trace_node&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;trace_id : VARCHAR(20) FK→t_rag_trace_run&lt;/b&gt;&lt;br&gt;node_id : VARCHAR(20)&lt;br&gt;node_type : VARCHAR(16)&lt;br&gt;status : VARCHAR(16)&lt;br&gt;duration_ms : BIGINT&lt;br&gt;extra_data : TEXT (JSON)&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="820" width="260" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- t_rag_evaluation_record -->
+        <mxCell id="t_rag_evaluation_record" value="&lt;b&gt;t_rag_evaluation_record&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;trace_id : VARCHAR(64)&lt;br&gt;conversation_id : VARCHAR(20)&lt;br&gt;&lt;b&gt;user_id : VARCHAR(20)&lt;/b&gt;&lt;br&gt;original_query : TEXT&lt;br&gt;answer : TEXT&lt;br&gt;eval_status : VARCHAR(16)&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1520" y="630" width="260" height="150" as="geometry" />
+        </mxCell>
+
+        <!-- ========== INGESTION DOMAIN ========== -->
+
+        <!-- t_ingestion_pipeline -->
+        <mxCell id="t_ingestion_pipeline" value="&lt;b&gt;t_ingestion_pipeline&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;name : VARCHAR(100) UK&lt;br&gt;description : TEXT&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="60" width="220" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- t_ingestion_pipeline_node -->
+        <mxCell id="t_ingestion_pipeline_node" value="&lt;b&gt;t_ingestion_pipeline_node&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;pipeline_id : VARCHAR(20) FK→pipeline&lt;/b&gt;&lt;br&gt;node_id : VARCHAR(20)&lt;br&gt;node_type : VARCHAR(16)&lt;br&gt;next_node_id : VARCHAR(20)&lt;br&gt;settings_json : JSONB&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1860" y="60" width="220" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- t_ingestion_task -->
+        <mxCell id="t_ingestion_task" value="&lt;b&gt;t_ingestion_task&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;pipeline_id : VARCHAR(20) FK→pipeline&lt;/b&gt;&lt;br&gt;source_type : VARCHAR(20)&lt;br&gt;status : VARCHAR(16)&lt;br&gt;chunk_count : INTEGER&lt;br&gt;deleted : SMALLINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="230" width="220" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- t_ingestion_task_node -->
+        <mxCell id="t_ingestion_task_node" value="&lt;b&gt;t_ingestion_task_node&lt;/b&gt;&lt;hr size=&quot;1&quot;&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;id : VARCHAR(20) PK&lt;br&gt;&lt;b&gt;task_id : VARCHAR(20) FK→task&lt;/b&gt;&lt;br&gt;&lt;b&gt;pipeline_id : VARCHAR(20) FK→pipeline&lt;/b&gt;&lt;br&gt;node_type : VARCHAR(16)&lt;br&gt;status : VARCHAR(16)&lt;br&gt;duration_ms : BIGINT&lt;/font&gt;" style="shape=mxgraph.er.entity;whiteSpace=wrap;html=1;align=left;spacingLeft=8;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="1860" y="230" width="220" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- ========== RELATIONSHIPS ========== -->
+
+        <!-- sys_dept → t_user (1:N) -->
+        <mxCell id="rel_dept_user" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="sys_dept" target="t_user">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_dept_user_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#6c8ebf;" vertex="1" connectable="0" parent="rel_dept_user">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- sys_dept → t_knowledge_base (1:N) -->
+        <mxCell id="rel_dept_kb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="sys_dept" target="t_knowledge_base">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_dept_kb_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#82b366;" vertex="1" connectable="0" parent="rel_dept_kb">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_user → t_user_role (1:N) -->
+        <mxCell id="rel_user_userrole" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="t_user" target="t_user_role">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_user_userrole_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#6c8ebf;" vertex="1" connectable="0" parent="rel_user_userrole">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_role → t_user_role (1:N) -->
+        <mxCell id="rel_role_userrole" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="t_role" target="t_user_role">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_role_userrole_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#6c8ebf;" vertex="1" connectable="0" parent="rel_role_userrole">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_role → t_role_kb_relation (1:N) -->
+        <mxCell id="rel_role_rolekb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=2;" edge="1" parent="1" source="t_user_role" target="t_role_kb_relation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_base → t_role_kb_relation (1:N) -->
+        <mxCell id="rel_kb_rolekb" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0;exitY=0.7;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="t_knowledge_base" target="t_role_kb_relation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_kb_rolekb_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#82b366;" vertex="1" connectable="0" parent="rel_kb_rolekb">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_knowledge_base → t_knowledge_document (1:N) -->
+        <mxCell id="rel_kb_doc" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="t_knowledge_base" target="t_knowledge_document">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_kb_doc_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#82b366;" vertex="1" connectable="0" parent="rel_kb_doc">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_knowledge_document → t_knowledge_chunk (1:N) -->
+        <mxCell id="rel_doc_chunk" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=2;" edge="1" parent="1" source="t_knowledge_document" target="t_knowledge_chunk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_doc_chunk_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#82b366;" vertex="1" connectable="0" parent="rel_doc_chunk">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_knowledge_document → t_knowledge_document_chunk_log (1:N) -->
+        <mxCell id="rel_doc_log" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.8;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=1;dashed=1;" edge="1" parent="1" source="t_knowledge_document" target="t_knowledge_document_chunk_log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_document → t_knowledge_document_schedule (1:1) -->
+        <mxCell id="rel_doc_schedule" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#82b366;strokeWidth=1;dashed=1;" edge="1" parent="1" source="t_knowledge_document" target="t_knowledge_document_schedule">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_doc_schedule_label" value="1:1" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#82b366;" vertex="1" connectable="0" parent="rel_doc_schedule">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_user → t_conversation (1:N) -->
+        <mxCell id="rel_user_conv" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="t_user" target="t_conversation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_user_conv_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#d6b656;" vertex="1" connectable="0" parent="rel_user_conv">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_conversation → t_message (1:N) -->
+        <mxCell id="rel_conv_msg" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=2;" edge="1" parent="1" source="t_conversation" target="t_message">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_conv_msg_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#d6b656;" vertex="1" connectable="0" parent="rel_conv_msg">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_conversation → t_conversation_summary (1:N) -->
+        <mxCell id="rel_conv_summary" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=1;dashed=1;" edge="1" parent="1" source="t_conversation" target="t_conversation_summary">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- t_message → t_message_feedback (1:N) -->
+        <mxCell id="rel_msg_feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#d6b656;strokeWidth=1;dashed=1;" edge="1" parent="1" source="t_message" target="t_message_feedback">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- t_knowledge_base → t_intent_node (1:N) -->
+        <mxCell id="rel_kb_intent" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="t_knowledge_document" target="t_intent_node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- t_rag_trace_run → t_rag_trace_node (1:N) -->
+        <mxCell id="rel_trace_node" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#9673a6;strokeWidth=2;" edge="1" parent="1" source="t_rag_trace_run" target="t_rag_trace_node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_trace_node_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#9673a6;" vertex="1" connectable="0" parent="rel_trace_node">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_ingestion_pipeline → t_ingestion_pipeline_node (1:N) -->
+        <mxCell id="rel_pipe_node" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="t_ingestion_pipeline" target="t_ingestion_pipeline_node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_pipe_node_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#b85450;" vertex="1" connectable="0" parent="rel_pipe_node">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_ingestion_pipeline → t_ingestion_task (1:N) -->
+        <mxCell id="rel_pipe_task" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="t_ingestion_pipeline" target="t_ingestion_task">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_pipe_task_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#b85450;" vertex="1" connectable="0" parent="rel_pipe_task">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+        <!-- t_ingestion_task → t_ingestion_task_node (1:N) -->
+        <mxCell id="rel_task_tasknode" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;strokeWidth=2;" edge="1" parent="1" source="t_ingestion_task" target="t_ingestion_task_node">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel_task_tasknode_label" value="1:N" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=10;fontColor=#b85450;" vertex="1" connectable="0" parent="rel_task_tasknode">
+          <mxGeometry x="-0.2" relative="1" as="geometry"><mxPoint as="offset" /></mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -48,7 +48,6 @@ __pycache__/
 .venv/
 
 ### Misc ###
-/log/
 infra-ai/.claude/
 .claude.local.md
 hs_err_pid*.log

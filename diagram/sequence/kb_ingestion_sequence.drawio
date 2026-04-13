@@ -1,0 +1,470 @@
+<mxfile host="app.diagrams.net" modified="2026-04-07T00:00:00.000Z" agent="Claude" version="24.0.0" type="device">
+  <diagram id="kb-ingestion-sequence" name="知识库创建与文档入库时序图">
+    <mxGraphModel dx="1800" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="2400" pageHeight="3400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ==================== Title ==================== -->
+        <mxCell id="title" value="知识库创建 &amp; 文档入库 时序图" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="400" y="10" width="500" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== Participants ==================== -->
+        <!-- User / Frontend -->
+        <mxCell id="p1" value="&lt;b&gt;用户 / 前端&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="80" y="60" width="120" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- KnowledgeBaseController -->
+        <mxCell id="p2" value="&lt;b&gt;KnowledgeBase&lt;br&gt;Controller&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="280" y="60" width="120" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- KnowledgeDocumentController -->
+        <mxCell id="p3" value="&lt;b&gt;KnowledgeDoc&lt;br&gt;Controller&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="480" y="60" width="120" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- KnowledgeDocumentService -->
+        <mxCell id="p4" value="&lt;b&gt;KnowledgeDoc&lt;br&gt;Service&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="680" y="60" width="120" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- FileStorageService -->
+        <mxCell id="p5" value="&lt;b&gt;FileStorage&lt;br&gt;Service&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="870" y="60" width="110" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- RocketMQ -->
+        <mxCell id="p6" value="&lt;b&gt;RocketMQ&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="60" width="110" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- ChunkConsumer -->
+        <mxCell id="p7" value="&lt;b&gt;DocumentChunk&lt;br&gt;Consumer&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="60" width="120" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- DocumentParser (Tika) -->
+        <mxCell id="p8" value="&lt;b&gt;DocumentParser&lt;br&gt;(Tika)&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="60" width="120" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- ChunkingStrategy -->
+        <mxCell id="p9" value="&lt;b&gt;Chunking&lt;br&gt;Strategy&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1600" y="60" width="110" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- EmbeddingService -->
+        <mxCell id="p10" value="&lt;b&gt;Embedding&lt;br&gt;Service&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1770" y="60" width="110" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- VectorStore (OpenSearch/Milvus) -->
+        <mxCell id="p11" value="&lt;b&gt;VectorStore&lt;br&gt;(OpenSearch)&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1940" y="60" width="120" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- PostgreSQL -->
+        <mxCell id="p12" value="&lt;b&gt;PostgreSQL&lt;/b&gt;" style="shape=umlLifeline;perimeter=lifelinePerimeter;whiteSpace=wrap;html=1;container=0;dropTarget=0;collapsible=0;recursiveResize=0;outlineConnect=0;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};size=40;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="2120" y="60" width="110" height="2300" as="geometry" />
+        </mxCell>
+
+        <!-- ==================== PHASE 1: 创建知识库 ==================== -->
+        <mxCell id="phase1" value="阶段一：创建知识库" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=top;align=left;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="130" width="160" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 1. Create KB request -->
+        <mxCell id="m1" value="POST /knowledge-base&lt;br&gt;{name, description}" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1" source="p1" target="p2">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="240" y="180" />
+            </Array>
+            <mxPoint x="140" y="180" as="sourcePoint" />
+            <mxPoint x="340" y="180" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 2. Save to DB -->
+        <mxCell id="m2" value="INSERT t_knowledge_base" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="220" as="sourcePoint" />
+            <mxPoint x="2175" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 2b. Create vector space -->
+        <mxCell id="m2b" value="ensureVectorSpace()&lt;br&gt;创建向量索引" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="260" as="sourcePoint" />
+            <mxPoint x="2000" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 2c. Vector space response -->
+        <mxCell id="m2c" value="Index created ✓" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="2000" y="290" as="sourcePoint" />
+            <mxPoint x="340" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 3. Return KB VO -->
+        <mxCell id="m3" value="返回 KnowledgeBaseVO" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="340" y="320" as="sourcePoint" />
+            <mxPoint x="140" y="320" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== PHASE 2: 上传文档 ==================== -->
+        <mxCell id="phase2" value="阶段二：上传文档" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=top;align=left;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="370" width="160" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 4. Upload doc -->
+        <mxCell id="m4" value="POST /knowledge-base/{kbId}/docs/upload&lt;br&gt;(multipart file)" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="420" as="sourcePoint" />
+            <mxPoint x="540" y="420" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 5. Controller -> Service -->
+        <mxCell id="m5" value="upload(file, request)" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="460" as="sourcePoint" />
+            <mxPoint x="740" y="460" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 6. Store file to S3 -->
+        <mxCell id="m6" value="storeFile(file)&lt;br&gt;上传到 S3" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="500" as="sourcePoint" />
+            <mxPoint x="925" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 6b. S3 response -->
+        <mxCell id="m6b" value="fileUrl" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="925" y="530" as="sourcePoint" />
+            <mxPoint x="740" y="530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 7. Save doc record -->
+        <mxCell id="m7" value="INSERT t_knowledge_document&lt;br&gt;status = PENDING" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="570" as="sourcePoint" />
+            <mxPoint x="2175" y="570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 8. Return doc VO -->
+        <mxCell id="m8a" value="DocumentVO" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="610" as="sourcePoint" />
+            <mxPoint x="540" y="610" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m8b" value="200 OK + DocumentVO" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="640" as="sourcePoint" />
+            <mxPoint x="140" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== PHASE 3: 触发分块处理 ==================== -->
+        <mxCell id="phase3" value="阶段三：触发分块（异步）" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=top;align=left;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="690" width="190" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 9. Start chunk -->
+        <mxCell id="m9" value="POST /knowledge-base/docs/{docId}/chunk" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="740" as="sourcePoint" />
+            <mxPoint x="540" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 10. Controller -> Service startChunk -->
+        <mxCell id="m10" value="startChunk(docId)" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="780" as="sourcePoint" />
+            <mxPoint x="740" y="780" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 11. Send transactional message -->
+        <mxCell id="m11" value="sendInTransaction()&lt;br&gt;KnowledgeDocumentChunkEvent" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="820" as="sourcePoint" />
+            <mxPoint x="1105" y="820" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Transaction callback box -->
+        <mxCell id="txbox" value="&lt;b&gt;事务回调&lt;/b&gt;&lt;br&gt;UPDATE status = RUNNING" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="760" y="850" width="180" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 11b. Update DB in callback -->
+        <mxCell id="m11b" value="UPDATE t_knowledge_document&lt;br&gt;status = RUNNING" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="910" as="sourcePoint" />
+            <mxPoint x="2175" y="910" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 12. MQ ack -->
+        <mxCell id="m12" value="消息发送成功" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1105" y="950" as="sourcePoint" />
+            <mxPoint x="740" y="950" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 13. Return 200 immediately -->
+        <mxCell id="m13a" value="OK" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="980" as="sourcePoint" />
+            <mxPoint x="540" y="980" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="m13b" value="200 OK（异步处理中）" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="1010" as="sourcePoint" />
+            <mxPoint x="140" y="1010" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== PHASE 4: 异步消费处理 ==================== -->
+        <mxCell id="phase4" value="阶段四：异步消费 &amp; 文档处理（CHUNK 模式）" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=top;align=left;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="1060" width="320" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Async separator -->
+        <mxCell id="async_line" value="" style="endArrow=none;dashed=1;html=1;strokeColor=#999999;strokeWidth=2;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="30" y="1050" as="sourcePoint" />
+            <mxPoint x="2230" y="1050" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="async_label" value="── 异步分界线 ──" style="text;html=1;fontSize=11;fontStyle=2;align=center;verticalAlign=middle;fillColor=none;fontColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="1035" width="130" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- 14. MQ deliver to consumer -->
+        <mxCell id="m14" value="投递消息&lt;br&gt;ChunkEvent" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1105" y="1100" as="sourcePoint" />
+            <mxPoint x="1290" y="1100" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 15. Consumer -> Service executeChunk -->
+        <mxCell id="m15" value="executeChunk(docId)" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1290" y="1140" as="sourcePoint" />
+            <mxPoint x="740" y="1140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== Step 1: Extract ===== -->
+        <mxCell id="step1_box" value="&lt;b&gt;① Extract&lt;/b&gt; 文件解析" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="1170" width="150" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 16. Download file from S3 -->
+        <mxCell id="m16" value="downloadFile(fileUrl)&lt;br&gt;从 S3 下载文件" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1220" as="sourcePoint" />
+            <mxPoint x="925" y="1220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 16b. File bytes -->
+        <mxCell id="m16b" value="byte[]" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="925" y="1250" as="sourcePoint" />
+            <mxPoint x="740" y="1250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 17. Parse with Tika -->
+        <mxCell id="m17" value="parse(bytes, mimeType)&lt;br&gt;PDF/Word/Excel → 文本" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1290" as="sourcePoint" />
+            <mxPoint x="1480" y="1290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 17b. Parsed text -->
+        <mxCell id="m17b" value="rawText (纯文本)" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1480" y="1330" as="sourcePoint" />
+            <mxPoint x="740" y="1330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== Step 2: Chunk ===== -->
+        <mxCell id="step2_box" value="&lt;b&gt;② Chunk&lt;/b&gt; 文本分块" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="1360" width="150" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 18. Chunk text -->
+        <mxCell id="m18" value="chunk(text, strategy, size, overlap)&lt;br&gt;按策略切分文本" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1410" as="sourcePoint" />
+            <mxPoint x="1655" y="1410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 18b. Chunks -->
+        <mxCell id="m18b" value="List&lt;TextChunk&gt;" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1655" y="1450" as="sourcePoint" />
+            <mxPoint x="740" y="1450" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== Step 3: Embed ===== -->
+        <mxCell id="step3_box" value="&lt;b&gt;③ Embed&lt;/b&gt; 向量化" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="1480" width="150" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 19. Generate embeddings -->
+        <mxCell id="m19" value="embed(chunks)&lt;br&gt;调用 Embedding 模型" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1530" as="sourcePoint" />
+            <mxPoint x="1825" y="1530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 19b. Embeddings -->
+        <mxCell id="m19b" value="List&lt;float[]&gt; embeddings" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1825" y="1570" as="sourcePoint" />
+            <mxPoint x="740" y="1570" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== Step 4: Persist ===== -->
+        <mxCell id="step4_box" value="&lt;b&gt;④ Persist&lt;/b&gt; 原子持久化" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=middle;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="1610" width="160" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- Transaction frame -->
+        <mxCell id="tx_frame" value="&lt;b&gt;@Transactional 原子事务&lt;/b&gt;" style="shape=mxgraph.uml25.frame;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d79b00;strokeWidth=2;fontSize=11;width=180;height=20;" vertex="1" parent="1">
+          <mxGeometry x="700" y="1650" width="1530" height="330" as="geometry" />
+        </mxCell>
+
+        <!-- 20. Delete old chunks from PG -->
+        <mxCell id="m20" value="DELETE t_knowledge_chunk&lt;br&gt;WHERE doc_id = ?" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1700" as="sourcePoint" />
+            <mxPoint x="2175" y="1700" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 21. Insert new chunks to PG -->
+        <mxCell id="m21" value="BATCH INSERT t_knowledge_chunk&lt;br&gt;(新分块记录)" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1760" as="sourcePoint" />
+            <mxPoint x="2175" y="1760" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 22. Delete old vectors from OpenSearch -->
+        <mxCell id="m22" value="deleteDocumentVectors(docId)&lt;br&gt;删除旧向量" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1820" as="sourcePoint" />
+            <mxPoint x="2000" y="1820" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 22b. Delete ack -->
+        <mxCell id="m22b" value="deleted ✓" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="2000" y="1850" as="sourcePoint" />
+            <mxPoint x="740" y="1850" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 23. Index new vectors to OpenSearch -->
+        <mxCell id="m23" value="indexDocumentChunks()&lt;br&gt;Bulk API 写入 content + embedding + metadata" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1890" as="sourcePoint" />
+            <mxPoint x="2000" y="1890" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 23b. Index ack -->
+        <mxCell id="m23b" value="indexed ✓" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="2000" y="1920" as="sourcePoint" />
+            <mxPoint x="740" y="1920" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 24. Update doc status -->
+        <mxCell id="m24" value="UPDATE t_knowledge_document&lt;br&gt;status = SUCCESS, chunkCount = N" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="1950" as="sourcePoint" />
+            <mxPoint x="2175" y="1950" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- End of transaction -->
+
+        <!-- 25. Save chunk log -->
+        <mxCell id="m25" value="INSERT t_knowledge_document_chunk_log&lt;br&gt;(各阶段耗时记录)" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="2010" as="sourcePoint" />
+            <mxPoint x="2175" y="2010" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 26. Consumer done -->
+        <mxCell id="m26" value="处理完成" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="740" y="2060" as="sourcePoint" />
+            <mxPoint x="1290" y="2060" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== PHASE 5: 用户查询状态 ==================== -->
+        <mxCell id="phase5" value="阶段五：查询处理状态" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=top;align=left;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="2110" width="180" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 27. Poll status -->
+        <mxCell id="m27" value="GET /knowledge-base/docs/{docId}&lt;br&gt;轮询文档状态" style="html=1;verticalAlign=bottom;endArrow=block;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="140" y="2160" as="sourcePoint" />
+            <mxPoint x="540" y="2160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 28. Return status -->
+        <mxCell id="m28" value="DocumentVO&lt;br&gt;{status: SUCCESS, chunkCount: N}" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;edgeStyle=elbowEdgeStyle;elbow=vertical;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="540" y="2200" as="sourcePoint" />
+            <mxPoint x="140" y="2200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ==================== Legend ==================== -->
+        <mxCell id="legend" value="&lt;b&gt;图例&lt;/b&gt;&lt;br&gt;━━ 同步调用&lt;br&gt;┅┅ 返回/响应&lt;br&gt;&lt;font color=&quot;#9673a6&quot;&gt;■&lt;/font&gt; 处理节点　&lt;font color=&quot;#d79b00&quot;&gt;■&lt;/font&gt; 事务边界" style="shape=note;whiteSpace=wrap;html=1;size=14;verticalAlign=top;align=left;fillColor=#f5f5f5;strokeColor=#666666;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="10" y="2250" width="190" height="80" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
