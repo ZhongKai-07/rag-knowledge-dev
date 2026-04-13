@@ -281,7 +281,7 @@ public class MultiChannelRetrievalEngine {
         if (ctx.getMaxSecurityLevel() != null) {
             filters.add(new MetadataFilter(
                     "security_level",
-                    MetadataFilter.FilterOp.LTE,
+                    MetadataFilter.FilterOp.LTE_OR_MISSING,
                     ctx.getMaxSecurityLevel()
             ));
         }

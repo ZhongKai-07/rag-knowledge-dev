@@ -220,6 +220,8 @@ public class OpenSearchRetrieverService implements RetrieverService {
                     { "term": { "%s": %s } }""".formatted(path, jsonValue(f.value()));
             case LTE -> """
                     { "range": { "%s": { "lte": %s } } }""".formatted(path, jsonValue(f.value()));
+            case LTE_OR_MISSING -> """
+                    { "bool": { "should": [{ "range": { "%s": { "lte": %s } } }, { "bool": { "must_not": { "exists": { "field": "%s" } } } }], "minimum_should_match": 1 } }""".formatted(path, jsonValue(f.value()), path);
             case GTE -> """
                     { "range": { "%s": { "gte": %s } } }""".formatted(path, jsonValue(f.value()));
             case LT -> """

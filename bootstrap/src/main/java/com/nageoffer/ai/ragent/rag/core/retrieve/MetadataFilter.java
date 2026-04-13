@@ -54,6 +54,8 @@ public record MetadataFilter(String field, FilterOp op, Object value) {
     public enum FilterOp {
         EQ,
         LTE,
+        /** 字段值 &lt;= value，或字段不存在（兼容未设置 security_level 的旧数据） */
+        LTE_OR_MISSING,
         GTE,
         LT,
         GT,

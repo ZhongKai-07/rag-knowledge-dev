@@ -100,7 +100,7 @@ public class UserController {
      * 更新用户
      */
     @PutMapping("/users/{id}")
-    public Result<Void> update(@PathVariable String id, @RequestBody UserUpdateRequest requestParam) {
+    public Result<Void> update(@PathVariable("id") String id, @RequestBody UserUpdateRequest requestParam) {
         kbAccessService.checkUserManageAccess(id);
         userService.update(id, requestParam);
         return Results.success();
@@ -110,7 +110,7 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/users/{id}")
-    public Result<Void> delete(@PathVariable String id) {
+    public Result<Void> delete(@PathVariable("id") String id) {
         kbAccessService.checkUserManageAccess(id);
         userService.delete(id);
         return Results.success();

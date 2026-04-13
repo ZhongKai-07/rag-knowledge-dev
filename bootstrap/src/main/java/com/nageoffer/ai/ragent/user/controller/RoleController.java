@@ -49,7 +49,7 @@ public class RoleController {
 
     @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}")
-    public Result<Void> updateRole(@PathVariable String roleId, @RequestBody RoleCreateRequest request) {
+    public Result<Void> updateRole(@PathVariable("roleId") String roleId, @RequestBody RoleCreateRequest request) {
         roleService.updateRole(
                 roleId,
                 request.getName(),
@@ -61,7 +61,7 @@ public class RoleController {
 
     @SaCheckRole("SUPER_ADMIN")
     @DeleteMapping("/role/{roleId}")
-    public Result<Void> deleteRole(@PathVariable String roleId) {
+    public Result<Void> deleteRole(@PathVariable("roleId") String roleId) {
         roleService.deleteRole(roleId);
         return Results.success();
     }
@@ -75,20 +75,20 @@ public class RoleController {
     @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}/knowledge-bases")
     public Result<Void> setRoleKnowledgeBases(
-            @PathVariable String roleId, @RequestBody List<RoleKbBindingRequest> bindings) {
+            @PathVariable("roleId") String roleId, @RequestBody List<RoleKbBindingRequest> bindings) {
         roleService.setRoleKnowledgeBases(roleId, bindings);
         return Results.success();
     }
 
     @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/role/{roleId}/knowledge-bases")
-    public Result<List<RoleKbBindingRequest>> getRoleKnowledgeBases(@PathVariable String roleId) {
+    public Result<List<RoleKbBindingRequest>> getRoleKnowledgeBases(@PathVariable("roleId") String roleId) {
         return Results.success(roleService.getRoleKnowledgeBases(roleId));
     }
 
     @PutMapping("/user/{userId}/roles")
     public Result<Void> setUserRoles(
-            @PathVariable String userId, @RequestBody List<String> roleIds) {
+            @PathVariable("userId") String userId, @RequestBody List<String> roleIds) {
         kbAccessService.checkAssignRolesAccess(userId, roleIds);
         roleService.setUserRoles(userId, roleIds);
         return Results.success();
@@ -96,7 +96,7 @@ public class RoleController {
 
     @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/user/{userId}/roles")
-    public Result<List<RoleDO>> getUserRoles(@PathVariable String userId) {
+    public Result<List<RoleDO>> getUserRoles(@PathVariable("userId") String userId) {
         return Results.success(roleService.getUserRoles(userId));
     }
 

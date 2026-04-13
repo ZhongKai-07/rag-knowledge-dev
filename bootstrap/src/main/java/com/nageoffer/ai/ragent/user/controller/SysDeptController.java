@@ -44,12 +44,12 @@ public class SysDeptController {
     private final SysDeptService sysDeptService;
 
     @GetMapping("/sys-dept")
-    public Result<List<SysDeptVO>> list(@RequestParam(required = false) String keyword) {
+    public Result<List<SysDeptVO>> list(@RequestParam(value = "keyword", required = false) String keyword) {
         return Results.success(sysDeptService.list(keyword));
     }
 
     @GetMapping("/sys-dept/{id}")
-    public Result<SysDeptVO> getById(@PathVariable String id) {
+    public Result<SysDeptVO> getById(@PathVariable("id") String id) {
         return Results.success(sysDeptService.getById(id));
     }
 
@@ -59,13 +59,13 @@ public class SysDeptController {
     }
 
     @PutMapping("/sys-dept/{id}")
-    public Result<Void> update(@PathVariable String id, @RequestBody SysDeptUpdateRequest request) {
+    public Result<Void> update(@PathVariable("id") String id, @RequestBody SysDeptUpdateRequest request) {
         sysDeptService.update(id, request);
         return Results.success();
     }
 
     @DeleteMapping("/sys-dept/{id}")
-    public Result<Void> delete(@PathVariable String id) {
+    public Result<Void> delete(@PathVariable("id") String id) {
         sysDeptService.delete(id);
         return Results.success();
     }
