@@ -131,39 +131,52 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void setRoleKnowledgeBases(String roleId, List<RoleKbBindingRequest> bindings) {
-        // Delete existing relations
+        // 删除旧的关联
         roleKbRelationMapper.delete(
-                Wrappers.lambdaQuery(RoleKbRelationDO.class)
-                        .eq(RoleKbRelationDO::getRoleId, roleId));
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
 
-        // Insert new relations with permission
-        for (RoleKbBindingRequest binding : bindings) {
-            RoleKbRelationDO relation = new RoleKbRelationDO();
-            relation.setRoleId(roleId);
-            relation.setKbId(binding.getKbId());
-            relation.setPermission(binding.getPermission() != null ? binding.getPermission() : "MANAGE");
-            roleKbRelationMapper.insert(relation);
+        if (bindings != null && !bindings.isEmpty()) {
+            // 加载角色天花板用于默认值和上界校验
+            RoleDO role = roleMapper.selectById(roleId);
+            int roleCeiling = (role != null && role.getMaxSecurityLevel() != null)
+                    ? role.getMaxSecurityLevel() : 0;
+
+            for (RoleKbBindingRequest binding : bindings) {
+                int level = (binding.getMaxSecurityLevel() != null)
+                        ? binding.getMaxSecurityLevel()
+                        : roleCeiling;
+                // 上界校验：不超角色天花板
+                if (level > roleCeiling) {
+                    level = roleCeiling;
+                }
+
+                RoleKbRelationDO relation = RoleKbRelationDO.builder()
+                        .roleId(roleId)
+                        .kbId(binding.getKbId())
+                        .permission(binding.getPermission() != null ? binding.getPermission() : "MANAGE")
+                        .maxSecurityLevel(level)
+                        .build();
+                roleKbRelationMapper.insert(relation);
+            }
         }
 
-        // Evict cache for all affected users
+        // 清除所有持有该角色的用户缓存
         evictCacheForRole(roleId);
     }
 
     @Override
     public List<RoleKbBindingRequest> getRoleKnowledgeBases(String roleId) {
-        return roleKbRelationMapper.selectList(
-                        Wrappers.lambdaQuery(RoleKbRelationDO.class)
-                                .eq(RoleKbRelationDO::getRoleId, roleId))
-                .stream()
-                .map(rel -> {
-                    RoleKbBindingRequest binding = new RoleKbBindingRequest();
-                    binding.setKbId(rel.getKbId());
-                    binding.setPermission(rel.getPermission() != null ? rel.getPermission() : "MANAGE");
-                    return binding;
-                })
-                .toList();
+        List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
+        return relations.stream().map(r -> {
+            RoleKbBindingRequest req = new RoleKbBindingRequest();
+            req.setKbId(r.getKbId());
+            req.setPermission(r.getPermission() != null ? r.getPermission() : "MANAGE");
+            req.setMaxSecurityLevel(r.getMaxSecurityLevel());
+            return req;
+        }).toList();
     }
 
     @Override
