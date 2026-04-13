@@ -62,7 +62,7 @@ const buildEmptyForm = (): RoleCreatePayload => ({
 });
 
 export function RoleListPage() {
-  const permissions = usePermissions();
+  const { isSuperAdmin } = usePermissions();
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<RoleItem | null>(null);
@@ -94,19 +94,23 @@ export function RoleListPage() {
       const data = await getRoles();
       setRoles(data);
 
-      // 加载每个角色的知识库数量
-      const counts: Record<string, number> = {};
-      await Promise.all(
-        data.map(async (role) => {
-          try {
-            const bindings = await getRoleKnowledgeBases(role.id);
-            counts[role.id] = bindings.length;
-          } catch {
-            counts[role.id] = 0;
-          }
-        })
-      );
-      setRoleKbCounts(counts);
+      // 加载每个角色的知识库数量（仅 SUPER_ADMIN 有权限访问该接口）
+      if (isSuperAdmin) {
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          data.map(async (role) => {
+            try {
+              const bindings = await getRoleKnowledgeBases(role.id);
+              counts[role.id] = bindings.length;
+            } catch {
+              counts[role.id] = 0;
+            }
+          })
+        );
+        setRoleKbCounts(counts);
+      } else {
+        setRoleKbCounts({});
+      }
     } catch (error) {
       toast.error(getErrorMessage(error, "加载角色列表失败"));
     } finally {
@@ -253,10 +257,12 @@ export function RoleListPage() {
             <RefreshCw className="w-4 h-4 mr-2" />
             刷新
           </Button>
-          <Button className="admin-primary-gradient" onClick={openCreateDialog}>
-            <ShieldCheck className="w-4 h-4 mr-2" />
-            新建角色
-          </Button>
+          {isSuperAdmin && (
+            <Button className="admin-primary-gradient" onClick={openCreateDialog}>
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              新建角色
+            </Button>
+          )}
         </div>
       </div>
 
@@ -301,23 +307,29 @@ export function RoleListPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openKbDialog(role)}>
-                          <BookOpen className="w-4 h-4 mr-0.5" />
-                          知识库
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(role)}>
-                          <Pencil className="w-4 h-4 mr-0.5" />
-                          编辑
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(role)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-0.5" />
-                          删除
-                        </Button>
+                        {isSuperAdmin && (
+                          <Button variant="outline" size="sm" onClick={() => openKbDialog(role)}>
+                            <BookOpen className="w-4 h-4 mr-0.5" />
+                            知识库
+                          </Button>
+                        )}
+                        {isSuperAdmin && (
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(role)}>
+                            <Pencil className="w-4 h-4 mr-0.5" />
+                            编辑
+                          </Button>
+                        )}
+                        {isSuperAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeleteTarget(role)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-0.5" />
+                            删除
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -382,7 +394,7 @@ export function RoleListPage() {
                   <SelectValue placeholder="选择角色类型" />
                 </SelectTrigger>
                 <SelectContent>
-                  {permissions.isSuperAdmin && (
+                  {isSuperAdmin && (
                     <SelectItem value="SUPER_ADMIN">SUPER_ADMIN（超级管理员）</SelectItem>
                   )}
                   <SelectItem value="DEPT_ADMIN">DEPT_ADMIN（部门管理员）</SelectItem>
