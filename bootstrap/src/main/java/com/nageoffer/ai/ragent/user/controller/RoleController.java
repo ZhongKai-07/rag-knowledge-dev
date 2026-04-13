@@ -114,5 +114,7 @@ public class RoleController {
         private String kbId;
         /** 权限级别：READ / WRITE / MANAGE */
         private String permission;
+        /** 该角色对该 KB 的最高安全等级（0-3），可选，默认取 role.maxSecurityLevel */
+        private Integer maxSecurityLevel;
     }
 }

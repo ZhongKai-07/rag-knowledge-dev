@@ -75,6 +75,7 @@ CREATE TABLE t_role_kb_relation (
     role_id     VARCHAR(20) NOT NULL,
     kb_id       VARCHAR(20) NOT NULL,
     permission  VARCHAR(16) NOT NULL DEFAULT 'READ',
+    max_security_level SMALLINT NOT NULL DEFAULT 0,
     created_by  VARCHAR(64),
     create_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
@@ -87,6 +88,7 @@ COMMENT ON COLUMN t_role_kb_relation.id IS '主键ID';
 COMMENT ON COLUMN t_role_kb_relation.role_id IS '角色ID';
 COMMENT ON COLUMN t_role_kb_relation.kb_id IS '知识库ID';
 COMMENT ON COLUMN t_role_kb_relation.permission IS 'READ/WRITE/MANAGE';
+COMMENT ON COLUMN t_role_kb_relation.max_security_level IS '该角色对该 KB 可访问的最高安全等级（0-3），检索时按此值过滤';
 COMMENT ON COLUMN t_role_kb_relation.created_by IS '创建人';
 COMMENT ON COLUMN t_role_kb_relation.create_time IS '创建时间';
 COMMENT ON COLUMN t_role_kb_relation.update_time IS '更新时间';

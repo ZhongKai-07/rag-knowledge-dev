@@ -1020,6 +1020,7 @@ CREATE TABLE public.t_role_kb_relation (
     role_id character varying(20) NOT NULL,
     kb_id character varying(20) NOT NULL,
     permission character varying(16) DEFAULT 'READ'::character varying NOT NULL,
+    max_security_level smallint DEFAULT 0 NOT NULL,
     created_by character varying(64),
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
@@ -1046,6 +1047,13 @@ COMMENT ON COLUMN public.t_role.max_security_level IS '该角色可访问的最�
 --
 
 COMMENT ON COLUMN public.t_role_kb_relation.permission IS 'READ/WRITE/MANAGE';
+
+
+--
+-- Name: COLUMN t_role_kb_relation.max_security_level; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_role_kb_relation.max_security_level IS '该角色对该 KB 可访问的最高安全等级（0-3），检索时按此值过滤';
 
 
 --
