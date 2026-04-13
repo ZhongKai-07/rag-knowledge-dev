@@ -21,7 +21,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.config.SearchChannelProperties;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
-import com.nageoffer.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
+
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy.IntentParallelRetriever;
 import lombok.extern.slf4j.Slf4j;
@@ -177,10 +177,9 @@ public class IntentDirectedSearchChannel implements SearchChannel {
                                                    int fallbackTopK,
                                                    int topKMultiplier,
                                                    SearchContext context) {
-        // 使用模板方法执行并行检索，传入 metadata 过滤条件
+        // 使用模板方法执行并行检索，传入 SearchContext 用于 per-KB metadata 过滤
         return parallelRetriever.executeParallelRetrieval(
                 question, kbIntents, fallbackTopK, topKMultiplier,
-                MultiChannelRetrievalEngine.buildMetadataFilters(context)
-        );
+                context);
     }
 }

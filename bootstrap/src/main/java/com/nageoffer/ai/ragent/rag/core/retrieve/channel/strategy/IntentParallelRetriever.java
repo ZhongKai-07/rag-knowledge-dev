@@ -21,9 +21,11 @@ import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.core.intent.IntentNode;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
 import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;
+import com.nageoffer.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieveRequest;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.AbstractParallelRetriever;
+import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -48,19 +50,19 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
     }
 
     /**
-     * 执行并行检索（重载方法，支持动态 TopK 计算和 metadata 过滤）
+     * 执行并行检索（重载方法，支持动态 TopK 计算和 per-KB metadata 过滤）
      */
     public List<RetrievedChunk> executeParallelRetrieval(String question,
                                                          List<NodeScore> targets,
                                                          int fallbackTopK,
                                                          int topKMultiplier,
-                                                         List<MetadataFilter> metadataFilters) {
+                                                         SearchContext context) {
         List<IntentTask> intentTasks = targets.stream()
                 .map(nodeScore -> new IntentTask(
                         nodeScore,
                         resolveIntentTopK(nodeScore, fallbackTopK, topKMultiplier),
-                        metadataFilters
-                ))
+                        MultiChannelRetrievalEngine.buildMetadataFilters(
+                                context, nodeScore.getNode().getKbId())))
                 .toList();
         return super.executeParallelRetrieval(question, intentTasks, fallbackTopK);
     }

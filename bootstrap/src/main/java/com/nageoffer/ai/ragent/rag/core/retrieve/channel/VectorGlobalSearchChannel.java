@@ -31,10 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
@@ -108,10 +105,10 @@ public class VectorGlobalSearchChannel implements SearchChannel {
         try {
             log.info("执行向量全局检索，问题：{}", context.getMainQuestion());
 
-            // 获取所有 KB 类型的 collection
-            List<String> collections = getAllKBCollections(context);
+            // 获取所有可访问的 KB
+            List<KnowledgeBaseDO> kbs = getAccessibleKBs(context);
 
-            if (collections.isEmpty()) {
+            if (kbs.isEmpty()) {
                 log.warn("未找到任何 KB collection，跳过全局检索");
                 return SearchChannelResult.builder()
                         .channelType(SearchChannelType.VECTOR_GLOBAL)
@@ -126,9 +123,9 @@ public class VectorGlobalSearchChannel implements SearchChannel {
             int topKMultiplier = properties.getChannels().getVectorGlobal().getTopKMultiplier();
             List<RetrievedChunk> allChunks = retrieveFromAllCollections(
                     context.getMainQuestion(),
-                    collections,
-                    context.getTopK() * topKMultiplier,
-                    context
+                    kbs,
+                    context,
+                    context.getTopK() * topKMultiplier
             );
 
             long latency = System.currentTimeMillis() - startTime;
@@ -156,43 +153,32 @@ public class VectorGlobalSearchChannel implements SearchChannel {
     }
 
     /**
-     * 获取所有 KB 类型的 collection（受 RBAC 约束）
+     * 获取所有可访问的 KB（受 RBAC 约束）
      */
-    private List<String> getAllKBCollections(SearchContext context) {
-        Set<String> collections = new HashSet<>();
-
-        // 从知识库表获取全量 collection（全局检索兜底）
-        List<KnowledgeBaseDO> kbList = knowledgeBaseMapper.selectList(
-                Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                        .select(KnowledgeBaseDO::getId, KnowledgeBaseDO::getCollectionName)
-                        .eq(KnowledgeBaseDO::getDeleted, 0)
-        );
-        for (KnowledgeBaseDO kb : kbList) {
-            // RBAC filter: if accessibleKbIds is set, only include accessible KBs
-            if (context.getAccessibleKbIds() != null
-                    && !context.getAccessibleKbIds().contains(kb.getId())) {
-                continue;
-            }
-            String collectionName = kb.getCollectionName();
-            if (collectionName != null && !collectionName.isBlank()) {
-                collections.add(collectionName);
-            }
+    private List<KnowledgeBaseDO> getAccessibleKBs(SearchContext context) {
+        List<KnowledgeBaseDO> kbs = knowledgeBaseMapper.selectList(
+                Wrappers.lambdaQuery(KnowledgeBaseDO.class));
+        if (context.getAccessibleKbIds() != null && !context.getAccessibleKbIds().isEmpty()) {
+            kbs = kbs.stream()
+                    .filter(kb -> context.getAccessibleKbIds().contains(kb.getId()))
+                    .toList();
         }
-
-        return new ArrayList<>(collections);
+        return kbs.stream()
+                .filter(kb -> kb.getCollectionName() != null && !kb.getCollectionName().isBlank())
+                .toList();
     }
 
     /**
-     * 并行在所有 collection 中检索
+     * 并行在所有 collection 中检索（per-KB metadata filters）
      */
     private List<RetrievedChunk> retrieveFromAllCollections(String question,
-                                                            List<String> collections,
-                                                            int topK,
-                                                            SearchContext context) {
-        // 将 collection 名称列表转换为携带 metadataFilters 的 CollectionTask 列表
-        var filters = MultiChannelRetrievalEngine.buildMetadataFilters(context);
-        List<CollectionParallelRetriever.CollectionTask> tasks = collections.stream()
-                .map(name -> new CollectionParallelRetriever.CollectionTask(name, filters))
+                                                            List<KnowledgeBaseDO> kbs,
+                                                            SearchContext context,
+                                                            int topK) {
+        List<CollectionParallelRetriever.CollectionTask> tasks = kbs.stream()
+                .map(kb -> new CollectionParallelRetriever.CollectionTask(
+                        kb.getCollectionName(),
+                        MultiChannelRetrievalEngine.buildMetadataFilters(context, kb.getId())))
                 .toList();
         return parallelRetriever.executeParallelRetrieval(question, tasks, topK);
     }
