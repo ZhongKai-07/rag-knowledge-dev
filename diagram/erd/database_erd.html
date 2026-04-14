@@ -1,0 +1,246 @@
+
+<style>
+#erd { padding: 1rem 0; }
+#erd svg { max-width: 100%; }
+.legend { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; padding:0 4px; }
+.legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-text-secondary); }
+.legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+</style>
+<div id="erd"></div>
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#7F77DD"></div>会话与消息</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>知识库</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#EF9F27"></div>摄取流水线</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>RAG 追踪</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#888780"></div>基础/独立</div>
+</div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '12px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#3C3489' : '#EEEDFE',
+    primaryTextColor: dark ? '#CECBF6' : '#3C3489',
+    primaryBorderColor: dark ? '#7F77DD' : '#7F77DD',
+    secondaryColor: dark ? '#085041' : '#E1F5EE',
+    tertiaryColor: dark ? '#3C3489' : '#E6F1FB',
+  },
+});
+const diagram = `erDiagram
+  t_user {
+    varchar id PK
+    varchar username
+    varchar password
+    varchar role
+    varchar avatar
+  }
+  t_conversation {
+    varchar id PK
+    varchar conversation_id
+    varchar user_id FK
+    varchar title
+    timestamp last_time
+  }
+  t_conversation_summary {
+    varchar id PK
+    varchar conversation_id FK
+    varchar user_id FK
+    varchar last_message_id FK
+    text content
+  }
+  t_message {
+    varchar id PK
+    varchar conversation_id FK
+    varchar user_id FK
+    varchar role
+    text content
+  }
+  t_message_feedback {
+    varchar id PK
+    varchar message_id FK
+    varchar conversation_id FK
+    varchar user_id FK
+    smallint vote
+    varchar reason
+  }
+  t_knowledge_base {
+    varchar id PK
+    varchar name
+    varchar embedding_model
+    varchar collection_name
+    varchar created_by
+  }
+  t_knowledge_document {
+    varchar id PK
+    varchar kb_id FK
+    varchar doc_name
+    varchar status
+    varchar pipeline_id FK
+    smallint enabled
+  }
+  t_knowledge_chunk {
+    varchar id PK
+    varchar kb_id FK
+    varchar doc_id FK
+    integer chunk_index
+    text content
+    smallint enabled
+  }
+  t_knowledge_vector {
+    varchar id PK
+    text content
+    jsonb metadata
+    vector embedding
+  }
+  t_knowledge_document_chunk_log {
+    varchar id PK
+    varchar doc_id FK
+    varchar status
+    bigint total_duration
+    integer chunk_count
+  }
+  t_knowledge_document_schedule {
+    varchar id PK
+    varchar doc_id FK
+    varchar kb_id FK
+    varchar cron_expr
+    smallint enabled
+  }
+  t_knowledge_document_schedule_exec {
+    varchar id PK
+    varchar schedule_id FK
+    varchar doc_id FK
+    varchar kb_id FK
+    varchar status
+  }
+  t_intent_node {
+    varchar id PK
+    varchar kb_id FK
+    varchar intent_code
+    varchar name
+    smallint level
+    varchar parent_code
+    varchar mcp_tool_id
+    smallint kind
+  }
+  t_ingestion_pipeline {
+    varchar id PK
+    varchar name
+    text description
+  }
+  t_ingestion_pipeline_node {
+    varchar id PK
+    varchar pipeline_id FK
+    varchar node_id
+    varchar node_type
+    varchar next_node_id
+    jsonb settings_json
+  }
+  t_ingestion_task {
+    varchar id PK
+    varchar pipeline_id FK
+    varchar source_type
+    varchar status
+    integer chunk_count
+  }
+  t_ingestion_task_node {
+    varchar id PK
+    varchar task_id FK
+    varchar pipeline_id FK
+    varchar node_id
+    varchar status
+    bigint duration_ms
+  }
+  t_rag_trace_run {
+    varchar id PK
+    varchar trace_id
+    varchar conversation_id FK
+    varchar user_id FK
+    varchar status
+    bigint duration_ms
+  }
+  t_rag_trace_node {
+    varchar id PK
+    varchar trace_id FK
+    varchar node_id
+    varchar parent_node_id
+    varchar node_type
+    varchar status
+  }
+  t_rag_evaluation_record {
+    varchar id PK
+    varchar trace_id
+    varchar conversation_id FK
+    varchar message_id FK
+    varchar user_id FK
+    text original_query
+    text answer
+  }
+  t_query_term_mapping {
+    varchar id PK
+    varchar domain
+    varchar source_term
+    varchar target_term
+    smallint match_type
+  }
+  t_sample_question {
+    varchar id PK
+    varchar title
+    varchar question
+  }
+
+  t_user ||--o{ t_conversation : "创建"
+  t_user ||--o{ t_message : "发送"
+  t_user ||--o{ t_message_feedback : "反馈"
+  t_conversation ||--o{ t_message : "包含"
+  t_conversation ||--o{ t_message_feedback : "关联"
+  t_conversation ||--o| t_conversation_summary : "摘要"
+  t_message ||--o{ t_message_feedback : "被评价"
+  t_knowledge_base ||--o{ t_knowledge_document : "包含"
+  t_knowledge_base ||--o{ t_knowledge_chunk : "归属"
+  t_knowledge_base ||--o{ t_intent_node : "定义"
+  t_knowledge_document ||--o{ t_knowledge_chunk : "切分"
+  t_knowledge_document ||--o{ t_knowledge_document_chunk_log : "日志"
+  t_knowledge_document ||--o| t_knowledge_document_schedule : "调度"
+  t_knowledge_document_schedule ||--o{ t_knowledge_document_schedule_exec : "执行"
+  t_ingestion_pipeline ||--o{ t_ingestion_pipeline_node : "包含节点"
+  t_ingestion_pipeline ||--o{ t_ingestion_task : "触发"
+  t_ingestion_pipeline ||--o{ t_knowledge_document : "处理"
+  t_ingestion_task ||--o{ t_ingestion_task_node : "执行节点"
+  t_rag_trace_run ||--o{ t_rag_trace_node : "包含节点"
+  t_rag_trace_run ||--o{ t_rag_evaluation_record : "评估"
+`;
+const { svg } = await mermaid.render('erd-svg', diagram);
+document.getElementById('erd').innerHTML = svg;
+document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+document.querySelectorAll('#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>

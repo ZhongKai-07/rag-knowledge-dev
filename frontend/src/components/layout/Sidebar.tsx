@@ -35,6 +35,7 @@ import {
 import { Loading } from "@/components/common/Loading";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
+import { usePermissions } from "@/utils/permissions";
 import { useChatStore } from "@/stores/chatStore";
 
 interface SidebarProps {
@@ -58,6 +59,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   } = useChatStore();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const permissions = usePermissions();
   const [query, setQuery] = React.useState("");
   const [renamingId, setRenamingId] = React.useState<string | null>(null);
   const [renameValue, setRenameValue] = React.useState("");
@@ -424,7 +426,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" side="top" sideOffset={8} className="w-48">
-              {user?.role === "admin" ? (
+              {permissions.canSeeAdminMenu ? (
                 <DropdownMenuItem
                   onClick={() => {
                     window.open("/admin", "_blank");

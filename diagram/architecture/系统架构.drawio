@@ -1,0 +1,72 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="第 1 页" id="WJKgPwSMYuVnjWrm5rOn">
+    <mxGraphModel dx="1040" dy="682" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Frontend" vertex="1">
+          <mxGeometry height="60" width="180" x="360" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="BootStrap&lt;div&gt;应用启动 + 业务逻辑编排&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="240" x="330" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-12" edge="1" parent="1" source="L_U52O4fBdhd7NcD5K-b-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="L_U52O4fBdhd7NcD5K-b-5">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="385" y="520" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="framework&lt;div&gt;基础设施层&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="300" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-13" edge="1" parent="1" source="L_U52O4fBdhd7NcD5K-b-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="L_U52O4fBdhd7NcD5K-b-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="infra-ai&lt;div&gt;ai相关基础设施层&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="480" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#bac8d3;strokeColor=#23445d;" value="基础设施资源&lt;div&gt;Docker / Database / S3 / Opensearch&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="360" x="270" y="525" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-6" edge="1" parent="1" source="L_U52O4fBdhd7NcD5K-b-1" style="endArrow=classic;html=1;rounded=0;exitX=0.652;exitY=1.017;exitDx=0;exitDy=0;entryX=0.618;entryY=-0.003;entryDx=0;entryDy=0;exitPerimeter=0;entryPerimeter=0;dashed=1;" target="L_U52O4fBdhd7NcD5K-b-2" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="400" y="380" as="sourcePoint" />
+            <mxPoint x="450" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-7" edge="1" parent="1" source="L_U52O4fBdhd7NcD5K-b-2" style="endArrow=classic;html=1;rounded=0;exitX=0.418;exitY=0.01;exitDx=0;exitDy=0;exitPerimeter=0;dashed=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="510" y="310" as="sourcePoint" />
+            <mxPoint x="430" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-8" edge="1" parent="1" source="L_U52O4fBdhd7NcD5K-b-2" style="endArrow=classic;html=1;rounded=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" target="L_U52O4fBdhd7NcD5K-b-3" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="400" y="380" as="sourcePoint" />
+            <mxPoint x="450" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-9" edge="1" parent="1" source="L_U52O4fBdhd7NcD5K-b-2" style="endArrow=classic;html=1;rounded=0;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" target="L_U52O4fBdhd7NcD5K-b-4" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="390" y="370" as="sourcePoint" />
+            <mxPoint x="390" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="MCP Server&lt;div&gt;提供MCP外部工具&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="750" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="RAGAS&lt;div&gt;用于离线测评&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="120" x="750" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-14" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="chat&lt;div&gt;embedding&lt;/div&gt;&lt;div&gt;rerank&lt;/div&gt;&lt;div&gt;模型降级与容错&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="60" x="610" y="415" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-15" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;" value="文档入库链路&lt;div&gt;知识库管理链路&lt;/div&gt;&lt;div&gt;RAG问答链路&lt;/div&gt;&lt;div&gt;RBAC权限管理链路&lt;/div&gt;&lt;div&gt;链路追踪链路&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="120" x="580" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="L_U52O4fBdhd7NcD5K-b-16" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="REST API" vertex="1">
+          <mxGeometry height="30" width="60" x="480" y="235" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

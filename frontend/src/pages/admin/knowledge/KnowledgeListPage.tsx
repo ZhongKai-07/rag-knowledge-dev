@@ -315,6 +315,7 @@ export function KnowledgeListPage() {
                   <TableHead className="w-[180px]">Embedding模型</TableHead>
                   <TableHead className="w-[220px]">Collection</TableHead>
                   <TableHead className="w-[90px]">文档数</TableHead>
+                  <TableHead className="w-[100px]">部门</TableHead>
                   <TableHead className="w-[120px]">负责人</TableHead>
                   <TableHead className="w-[160px]">创建时间</TableHead>
                   <TableHead className="w-[160px]">修改时间</TableHead>
@@ -349,6 +350,13 @@ export function KnowledgeListPage() {
                       )}
                     </TableCell>
                     <TableCell>{kb.documentCount ?? "-"}</TableCell>
+                    <TableCell>
+                      {kb.deptName ? (
+                        <Badge variant="outline" className="border-violet-200 bg-violet-50 text-violet-700 text-xs">
+                          {kb.deptName}
+                        </Badge>
+                      ) : "-"}
+                    </TableCell>
                     <TableCell>{kb.createdBy || "-"}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(kb.createTime)}

@@ -47,9 +47,9 @@ public class RagEvaluationController {
      */
     @GetMapping("/rag/evaluations")
     public Result<IPage<RagEvaluationRecordVO>> page(
-            @RequestParam(defaultValue = "1") int current,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String evalStatus) {
+            @RequestParam(value = "current", defaultValue = "1") int current,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "evalStatus", required = false) String evalStatus) {
         return Results.success(evaluationService.pageQuery(current, size, evalStatus));
     }
 
@@ -57,7 +57,7 @@ public class RagEvaluationController {
      * 查看单条评测详情
      */
     @GetMapping("/rag/evaluations/{id}")
-    public Result<RagEvaluationRecordVO> detail(@PathVariable String id) {
+    public Result<RagEvaluationRecordVO> detail(@PathVariable("id") String id) {
         return Results.success(evaluationService.detail(id));
     }
 
@@ -66,8 +66,8 @@ public class RagEvaluationController {
      */
     @GetMapping("/rag/evaluations/export")
     public Result<List<RagEvaluationService.RagasExportItem>> exportForRagas(
-            @RequestParam(required = false) String evalStatus,
-            @RequestParam(defaultValue = "100") int limit) {
+            @RequestParam(value = "evalStatus", required = false) String evalStatus,
+            @RequestParam(value = "limit", defaultValue = "100") int limit) {
         return Results.success(evaluationService.exportForRagas(evalStatus, limit));
     }
 
@@ -75,7 +75,7 @@ public class RagEvaluationController {
      * 回填评测结果（由外部评测工具调用）
      */
     @PutMapping("/rag/evaluations/{id}/metrics")
-    public Result<Void> updateMetrics(@PathVariable String id, @RequestBody Map<String, String> body) {
+    public Result<Void> updateMetrics(@PathVariable("id") String id, @RequestBody Map<String, String> body) {
         evaluationService.updateMetrics(id, body.get("evalMetrics"));
         return Results.success();
     }

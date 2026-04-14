@@ -17,20 +17,28 @@
 
 package com.nageoffer.ai.ragent.user.controller.vo;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class LoginVO {
 
     private String userId;
 
-    private String role;
+    private String username;
 
     private String token;
 
     private String avatar;
+
+    // --- PR3 新增 ---
+    private String deptId;
+    private String deptName;
+    private List<String> roleTypes;
+    private Integer maxSecurityLevel;
+    private Boolean isSuperAdmin;
+    private Boolean isDeptAdmin;
 }

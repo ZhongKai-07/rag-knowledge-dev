@@ -44,6 +44,16 @@ public class RoleDO {
 
     private String description;
 
+    /**
+     * 角色类型：SUPER_ADMIN / DEPT_ADMIN / USER
+     */
+    private String roleType;
+
+    /**
+     * 该角色可访问的最高安全等级（0-3）
+     */
+    private Integer maxSecurityLevel;
+
     @TableField(fill = FieldFill.INSERT)
     private String createdBy;
 

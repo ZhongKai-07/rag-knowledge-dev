@@ -33,7 +33,9 @@ import { Button } from "@/components/ui/button";
 
 import { createKnowledgeBase } from "@/services/knowledgeService";
 import { getSystemSettings, type ModelCandidate } from "@/services/settingsService";
+import { listDepartments, type SysDept } from "@/services/sysDeptService";
 import { getErrorMessage } from "@/utils/error";
+import { usePermissions } from "@/utils/permissions";
 
 const formSchema = z.object({
   name: z.string().min(1, "请输入知识库名称").max(50, "名称不能超过50个字符"),
@@ -43,6 +45,7 @@ const formSchema = z.object({
     .min(1, "请输入Collection名称")
     .max(50, "名称不能超过50个字符")
     .regex(/^[a-z0-9]+$/, "只能包含小写英文字母和数字"),
+  deptId: z.string().min(1, "请选择所属部门"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -61,6 +64,12 @@ export function CreateKnowledgeBaseDialog({
   const [loading, setLoading] = useState(false);
   const [modelLoading, setModelLoading] = useState(false);
   const [embeddingModels, setEmbeddingModels] = useState<ModelCandidate[]>([]);
+  const [departments, setDepartments] = useState<SysDept[]>([]);
+  const [deptLoading, setDeptLoading] = useState(false);
+
+  const permissions = usePermissions();
+  const deptLocked = permissions.isDeptAdmin && !permissions.isSuperAdmin;
+  const defaultDeptId = deptLocked ? (permissions.deptId ?? "") : "1";
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -68,6 +77,7 @@ export function CreateKnowledgeBaseDialog({
       name: "",
       embeddingModel: "",
       collectionName: "",
+      deptId: defaultDeptId,
     },
   });
 
@@ -92,6 +102,27 @@ export function CreateKnowledgeBaseDialog({
           setModelLoading(false);
         }
       });
+
+    setDeptLoading(true);
+    listDepartments()
+      .then((depts) => {
+        if (!active) return;
+        setDepartments(depts);
+        // Pre-fill deptId: locked → user's dept, else first available dept (fallback "1")
+        if (deptLocked && permissions.deptId) {
+          form.setValue("deptId", permissions.deptId);
+        } else if (!deptLocked && depts.length > 0) {
+          const globalDept = depts.find((d) => d.id === "1");
+          form.setValue("deptId", globalDept ? globalDept.id : depts[0].id);
+        }
+      })
+      .catch(() => {
+        if (active) setDepartments([]);
+      })
+      .finally(() => {
+        if (active) setDeptLoading(false);
+      });
+
     return () => {
       active = false;
     };
@@ -130,6 +161,7 @@ export function CreateKnowledgeBaseDialog({
         name: "",
         embeddingModel: "",
         collectionName: "",
+        deptId: defaultDeptId,
       });
     }
     onOpenChange(nextOpen);
@@ -222,6 +254,50 @@ export function CreateKnowledgeBaseDialog({
                   <FormDescription>
                     只能包含小写英文字母和数字
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="deptId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>所属部门</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={deptLocked}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="选择所属部门" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {deptLoading ? (
+                        <SelectItem value="loading" disabled>
+                          加载中...
+                        </SelectItem>
+                      ) : departments.length === 0 ? (
+                        <SelectItem value="empty" disabled>
+                          暂无部门
+                        </SelectItem>
+                      ) : (
+                        departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id}>
+                            {dept.deptName}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {deptLocked && (
+                    <FormDescription>
+                      部门管理员只能在本部门下创建知识库
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

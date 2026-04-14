@@ -36,12 +36,11 @@ public class UserCreateRequest {
     private String password;
 
     /**
-     * 角色（admin/user）
-     */
-    private String role;
-
-    /**
      * 头像地址
      */
     private String avatar;
+
+    // --- PR3 新增 ---
+    private String deptId;
+    private java.util.List<String> roleIds;
 }

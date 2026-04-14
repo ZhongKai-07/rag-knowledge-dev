@@ -59,6 +59,11 @@ public class KnowledgeBaseDO {
     private String collectionName;
 
     /**
+     * 归属部门 ID（决定哪个 DEPT_ADMIN 能管理此知识库）
+     */
+    private String deptId;
+
+    /**
      * 创建人
      */
     private String createdBy;

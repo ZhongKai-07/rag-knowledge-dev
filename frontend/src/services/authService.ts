@@ -1,8 +1,29 @@
 import { api } from "@/services/api";
-import type { CurrentUser, User } from "@/types";
 
-export interface LoginResponse extends User {}
-export interface CurrentUserResponse extends CurrentUser {}
+export interface LoginResponse {
+  userId: string;
+  username: string;
+  avatar?: string;
+  token: string;
+  deptId: string | null;
+  deptName: string | null;
+  roleTypes: string[];
+  maxSecurityLevel: number;
+  isSuperAdmin: boolean;
+  isDeptAdmin: boolean;
+}
+
+export interface CurrentUserResponse {
+  userId: string;
+  username: string;
+  avatar?: string;
+  deptId: string | null;
+  deptName: string | null;
+  roleTypes: string[];
+  maxSecurityLevel: number;
+  isSuperAdmin: boolean;
+  isDeptAdmin: boolean;
+}
 
 export async function login(username: string, password: string) {
   return api.post<LoginResponse>("/auth/login", { username, password });

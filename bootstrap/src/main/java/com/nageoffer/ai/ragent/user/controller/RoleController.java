@@ -21,6 +21,7 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -33,58 +34,70 @@ import java.util.List;
 public class RoleController {
 
     private final RoleService roleService;
+    private final KbAccessService kbAccessService;
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/role")
     public Result<String> createRole(@RequestBody RoleCreateRequest request) {
-        String id = roleService.createRole(request.getName(), request.getDescription());
+        String id = roleService.createRole(
+                request.getName(),
+                request.getDescription(),
+                request.getRoleType(),
+                request.getMaxSecurityLevel());
         return Results.success(id);
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}")
-    public Result<Void> updateRole(@PathVariable String roleId, @RequestBody RoleCreateRequest request) {
-        roleService.updateRole(roleId, request.getName(), request.getDescription());
+    public Result<Void> updateRole(@PathVariable("roleId") String roleId, @RequestBody RoleCreateRequest request) {
+        roleService.updateRole(
+                roleId,
+                request.getName(),
+                request.getDescription(),
+                request.getRoleType(),
+                request.getMaxSecurityLevel());
         return Results.success();
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @DeleteMapping("/role/{roleId}")
-    public Result<Void> deleteRole(@PathVariable String roleId) {
+    public Result<Void> deleteRole(@PathVariable("roleId") String roleId) {
         roleService.deleteRole(roleId);
         return Results.success();
     }
 
-    @SaCheckRole("admin")
     @GetMapping("/role")
     public Result<List<RoleDO>> listRoles() {
+        kbAccessService.checkAnyAdminAccess();
         return Results.success(roleService.listRoles());
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}/knowledge-bases")
-    public Result<Void> setRoleKnowledgeBases(@PathVariable String roleId,
-                                               @RequestBody List<String> kbIds) {
-        roleService.setRoleKnowledgeBases(roleId, kbIds);
+    public Result<Void> setRoleKnowledgeBases(
+            @PathVariable("roleId") String roleId, @RequestBody List<RoleKbBindingRequest> bindings) {
+        roleService.setRoleKnowledgeBases(roleId, bindings);
         return Results.success();
     }
 
-    @SaCheckRole("admin")
+    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/role/{roleId}/knowledge-bases")
-    public Result<List<String>> getRoleKnowledgeBases(@PathVariable String roleId) {
-        return Results.success(roleService.getRoleKnowledgeBaseIds(roleId));
+    public Result<List<RoleKbBindingRequest>> getRoleKnowledgeBases(@PathVariable("roleId") String roleId) {
+        return Results.success(roleService.getRoleKnowledgeBases(roleId));
     }
 
-    @SaCheckRole("admin")
     @PutMapping("/user/{userId}/roles")
-    public Result<Void> setUserRoles(@PathVariable String userId, @RequestBody List<String> roleIds) {
+    public Result<Void> setUserRoles(
+            @PathVariable("userId") String userId, @RequestBody List<String> roleIds) {
+        kbAccessService.checkAssignRolesAccess(userId, roleIds);
         roleService.setUserRoles(userId, roleIds);
         return Results.success();
     }
 
-    @SaCheckRole("admin")
     @GetMapping("/user/{userId}/roles")
-    public Result<List<RoleDO>> getUserRoles(@PathVariable String userId) {
+    public Result<List<RoleDO>> getUserRoles(@PathVariable("userId") String userId) {
+        kbAccessService.checkAnyAdminAccess();
+        kbAccessService.checkUserManageAccess(userId);
         return Results.success(roleService.getUserRoles(userId));
     }
 
@@ -92,5 +105,16 @@ public class RoleController {
     public static class RoleCreateRequest {
         private String name;
         private String description;
+        private String roleType;
+        private Integer maxSecurityLevel;
+    }
+
+    @Data
+    public static class RoleKbBindingRequest {
+        private String kbId;
+        /** 权限级别：READ / WRITE / MANAGE */
+        private String permission;
+        /** 该角色对该 KB 的最高安全等级（0-3），可选，默认取 role.maxSecurityLevel */
+        private Integer maxSecurityLevel;
     }
 }

@@ -22,7 +22,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
+import java.util.List;
 
 /**
  * 向量检索请求参数：
@@ -55,14 +55,12 @@ public class RetrieveRequest {
     private String collectionName;
 
     /**
-     * 元数据等值过滤条件（扩展项）：
-     * - key 为 metadata 字段名
-     * - value 为匹配值
-     * 实现层可以根据 Map 自动拼接 Milvus Expr（AND 连接）。
+     * 类型化的元数据过滤条件列表。
+     * 每个元素表示 "metadata.&lt;field&gt; &lt;op&gt; &lt;value&gt;" 的原子条件，AND 连接。
      * <p>
-     * 例如：
-     * {"biz_type": "ATTENDANCE", "env": "TEST"}
+     * 由下游 RetrieverService 的具体实现（OpenSearch/Milvus/pgvector）负责翻译。
+     * null 或空列表表示不加过滤。
      */
-    private Map<String, Object> metadataFilters;
+    private List<MetadataFilter> metadataFilters;
 }
 

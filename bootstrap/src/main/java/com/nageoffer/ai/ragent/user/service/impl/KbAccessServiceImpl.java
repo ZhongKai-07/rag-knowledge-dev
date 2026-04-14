@@ -18,15 +18,27 @@
 package com.nageoffer.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.framework.context.LoginUser;
+import com.nageoffer.ai.ragent.framework.context.Permission;
+import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
+import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
+import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -34,7 +46,13 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,81 +62,558 @@ import java.util.stream.Collectors;
 public class KbAccessServiceImpl implements KbAccessService {
 
     private static final String CACHE_PREFIX = "kb_access:";
+    private static final String DEPT_ADMIN_CACHE_PREFIX = "kb_access:dept:";
+    private static final String KB_SECURITY_LEVEL_CACHE_PREFIX = "kb_security_level:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
     private final UserRoleMapper userRoleMapper;
     private final RoleKbRelationMapper roleKbRelationMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final RedissonClient redissonClient;
+    private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
+    private final KnowledgeDocumentMapper knowledgeDocumentMapper;
+    private final SysDeptMapper sysDeptMapper;
 
     @Override
-    public Set<String> getAccessibleKbIds(String userId) {
-        // Check cache
-        String cacheKey = CACHE_PREFIX + userId;
-        RBucket<Set<String>> bucket = redissonClient.getBucket(cacheKey);
-        Set<String> cached = bucket.get();
-        if (cached != null) {
-            return cached;
+    public Set<String> getAccessibleKbIds(String userId, Permission minPermission) {
+        // SUPER_ADMIN 全量，不走缓存
+        if (isSuperAdmin()) {
+            return knowledgeBaseMapper.selectList(
+                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+                            .select(KnowledgeBaseDO::getId)
+            ).stream().map(KnowledgeBaseDO::getId).collect(Collectors.toSet());
         }
 
-        // Query: user -> roles
+        // DEPT_ADMIN: RBAC 授权 KB ∪ 同部门 KB；READ 路径走缓存（kb_access:dept:{userId}）
+        if (isDeptAdmin()) {
+            boolean cacheable = minPermission == Permission.READ;
+            String cacheKey = DEPT_ADMIN_CACHE_PREFIX + userId;
+            if (cacheable) {
+                RBucket<Set<String>> bucket = redissonClient.getBucket(cacheKey);
+                Set<String> cached = bucket.get();
+                if (cached != null) {
+                    return cached;
+                }
+            }
+            Set<String> result = computeDeptAdminAccessibleKbIds(userId, minPermission);
+            if (cacheable) {
+                redissonClient.getBucket(cacheKey).<Set<String>>set(result, CACHE_TTL);
+            }
+            return result;
+        }
+
+        // USER 走 PR1 原有缓存路径
+        boolean cacheable = minPermission == Permission.READ;
+        String cacheKey = CACHE_PREFIX + userId;
+        if (cacheable) {
+            RBucket<Set<String>> bucket = redissonClient.getBucket(cacheKey);
+            Set<String> cached = bucket.get();
+            if (cached != null) {
+                return cached;
+            }
+        }
+        Set<String> result = computeRbacKbIds(userId, minPermission);
+        if (cacheable) {
+            redissonClient.getBucket(cacheKey).<Set<String>>set(result, CACHE_TTL);
+        }
+        return result;
+    }
+
+    /** DEPT_ADMIN 的可见 KB = RBAC 授权 KB ∪ 本部门所有 KB */
+    private Set<String> computeDeptAdminAccessibleKbIds(String userId, Permission minPermission) {
+        Set<String> rbacKbs = computeRbacKbIds(userId, minPermission);
+        LoginUser user = UserContext.get();
+        String deptId = user.getDeptId();
+        if (deptId == null) {
+            log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", userId);
+            return rbacKbs;
+        }
+        List<KnowledgeBaseDO> deptKbs = knowledgeBaseMapper.selectList(
+                Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+                        .eq(KnowledgeBaseDO::getDeptId, deptId)
+                        .select(KnowledgeBaseDO::getId)
+        );
+        deptKbs.stream().map(KnowledgeBaseDO::getId).forEach(rbacKbs::add);
+        return rbacKbs;
+    }
+
+    /** RBAC 路径：user → roles → kb_relations → filter permission */
+    private Set<String> computeRbacKbIds(String userId, Permission minPermission) {
+        // user → roles
         List<UserRoleDO> userRoles = userRoleMapper.selectList(
                 Wrappers.lambdaQuery(UserRoleDO.class)
                         .eq(UserRoleDO::getUserId, userId));
-
         if (userRoles.isEmpty()) {
-            bucket.set(Set.of(), CACHE_TTL);
-            return Set.of();
+            return new HashSet<>();
         }
 
-        List<String> roleIds = userRoles.stream()
-                .map(UserRoleDO::getRoleId)
-                .toList();
+        List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
 
-        // Query: roles -> kb_ids
+        // roles → kb_relations 过滤 permission >= minPermission
         List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class)
                         .in(RoleKbRelationDO::getRoleId, roleIds));
-
         Set<String> kbIds = relations.stream()
+                .filter(r -> permissionSatisfies(r.getPermission(), minPermission))
                 .map(RoleKbRelationDO::getKbId)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(HashSet::new));
 
-        // Filter out deleted KBs
+        // 过滤已删除的 KB
         if (!kbIds.isEmpty()) {
             List<KnowledgeBaseDO> validKbs = knowledgeBaseMapper.selectList(
                     Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                             .in(KnowledgeBaseDO::getId, kbIds)
                             .select(KnowledgeBaseDO::getId));
-
             kbIds = validKbs.stream()
                     .map(KnowledgeBaseDO::getId)
-                    .collect(Collectors.toSet());
+                    .collect(Collectors.toCollection(HashSet::new));
         }
 
-        bucket.set(kbIds, CACHE_TTL);
         return kbIds;
+    }
+
+    private boolean permissionSatisfies(String actual, Permission required) {
+        if (actual == null) return false;
+        try {
+            return Permission.valueOf(actual).ordinal() >= required.ordinal();
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown permission value in DB: {}", actual);
+            return false;
+        }
+    }
+
+    /** Null-safe dept equality. user==null or either deptId==null returns false. */
+    private static boolean sameDept(LoginUser user, String otherDeptId) {
+        return user != null && Objects.equals(user.getDeptId(), otherDeptId);
     }
 
     @Override
     public void checkAccess(String kbId) {
-        // System context (MQ consumer, scheduled task) — no full login state, skip
+        // 系统态（MQ 消费者、定时任务）—— 没有登录态，直接放行
         if (!UserContext.hasUser() || UserContext.getUserId() == null) {
             return;
         }
-        // Admin bypass
-        if ("admin".equals(UserContext.getRole())) {
+        if (isSuperAdmin()) {
             return;
         }
-        // User authorization check
-        Set<String> accessible = getAccessibleKbIds(UserContext.getUserId());
+        if (isDeptAdmin()) {
+            LoginUser user = UserContext.get();
+            if (user.getDeptId() == null) {
+                log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", UserContext.getUserId());
+            } else {
+                KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+                if (kb != null && sameDept(user, kb.getDeptId())) {
+                    return;
+                }
+            }
+        }
+        Set<String> accessible = getAccessibleKbIds(UserContext.getUserId(), Permission.READ);
         if (!accessible.contains(kbId)) {
+            log.warn("权限拒绝: userId={}, kbId={}, action=READ", UserContext.getUserId(), kbId);
             throw new ClientException("无权访问该知识库: " + kbId);
         }
     }
 
     @Override
+    public void checkManageAccess(String kbId) {
+        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+            return;
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        LoginUser user = UserContext.get();
+        if (user.getRoleTypes() != null && user.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
+            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+            if (kb == null) {
+                throw new ClientException("知识库不存在: " + kbId);
+            }
+            if (sameDept(user, kb.getDeptId())) {
+                return;
+            }
+            log.warn("权限拒绝: userId={}, kbId={}, action=MANAGE, reason=跨部门", UserContext.getUserId(), kbId);
+            throw new ClientException("无权管理其他部门知识库: " + kbId);
+        }
+        log.warn("权限拒绝: userId={}, kbId={}, action=MANAGE, reason=非管理员", UserContext.getUserId(), kbId);
+        throw new ClientException("无管理权限: " + kbId);
+    }
+
+    @Override
+    public boolean isSuperAdmin() {
+        if (!UserContext.hasUser()) {
+            return false;
+        }
+        LoginUser user = UserContext.get();
+        return user.getRoleTypes() != null && user.getRoleTypes().contains(RoleType.SUPER_ADMIN);
+    }
+
+    @Override
     public void evictCache(String userId) {
         redissonClient.getBucket(CACHE_PREFIX + userId).delete();
+        redissonClient.getBucket(DEPT_ADMIN_CACHE_PREFIX + userId).delete();
+        redissonClient.getBucket(KB_SECURITY_LEVEL_CACHE_PREFIX + userId).delete();
+    }
+
+    @Override
+    public Integer getMaxSecurityLevelForKb(String userId, String kbId) {
+        if (userId == null || kbId == null) {
+            return 0;
+        }
+
+        // SUPER_ADMIN: always max
+        LoginUser current = UserContext.get();
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
+            return 3;
+        }
+
+        // DEPT_ADMIN implicit access to same-dept KBs: use role ceiling
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
+            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+            if (kb != null && sameDept(current, kb.getDeptId())) {
+                return current.getMaxSecurityLevel();
+            }
+        }
+
+        // Regular path: check Redis Hash cache
+        String cacheKey = KB_SECURITY_LEVEL_CACHE_PREFIX + userId;
+        RBucket<Map<String, Integer>> bucket = redissonClient.getBucket(cacheKey);
+        Map<String, Integer> cached = bucket.get();
+        if (cached != null && cached.containsKey(kbId)) {
+            return cached.get(kbId);
+        }
+
+        // Compute from DB
+        List<UserRoleDO> userRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
+        List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
+
+        int level = 0;
+        if (!roleIds.isEmpty()) {
+            List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                    Wrappers.lambdaQuery(RoleKbRelationDO.class)
+                            .in(RoleKbRelationDO::getRoleId, roleIds)
+                            .eq(RoleKbRelationDO::getKbId, kbId));
+            for (RoleKbRelationDO rel : relations) {
+                if (rel.getMaxSecurityLevel() != null && rel.getMaxSecurityLevel() > level) {
+                    level = rel.getMaxSecurityLevel();
+                }
+            }
+        }
+
+        // Write to cache (hash entry)
+        if (cached == null) {
+            cached = new HashMap<>();
+        }
+        cached.put(kbId, level);
+        bucket.set(cached, CACHE_TTL);
+
+        return level;
+    }
+
+    @Override
+    public Map<String, Integer> getMaxSecurityLevelsForKbs(String userId, Collection<String> kbIds) {
+        if (userId == null || kbIds == null || kbIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        LoginUser current = UserContext.hasUser() ? UserContext.get() : null;
+
+        // SUPER_ADMIN: every requested KB → max ceiling 3
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
+            Map<String, Integer> result = new HashMap<>(kbIds.size() * 2);
+            for (String kbId : kbIds) {
+                if (kbId != null) result.put(kbId, 3);
+            }
+            return result;
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+
+        // RBAC bindings: 2 queries (user→roles, roles+kbs→relations) for the whole batch
+        List<UserRoleDO> userRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
+        if (!userRoles.isEmpty()) {
+            List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
+            List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                    Wrappers.lambdaQuery(RoleKbRelationDO.class)
+                            .in(RoleKbRelationDO::getRoleId, roleIds)
+                            .in(RoleKbRelationDO::getKbId, kbIds));
+            for (RoleKbRelationDO rel : relations) {
+                Integer level = rel.getMaxSecurityLevel() == null ? 0 : rel.getMaxSecurityLevel();
+                result.merge(rel.getKbId(), level, Math::max);
+            }
+        }
+
+        // DEPT_ADMIN implicit access to same-dept KBs overrides RBAC ceiling
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)
+                && current.getDeptId() != null) {
+            int deptCeiling = current.getMaxSecurityLevel();
+            List<KnowledgeBaseDO> sameDeptKbs = knowledgeBaseMapper.selectList(
+                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+                            .in(KnowledgeBaseDO::getId, kbIds)
+                            .eq(KnowledgeBaseDO::getDeptId, current.getDeptId())
+                            .select(KnowledgeBaseDO::getId));
+            for (KnowledgeBaseDO kb : sameDeptKbs) {
+                result.merge(kb.getId(), deptCeiling, Math::max);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void checkAnyAdminAccess() {
+        LoginUser current = UserContext.get();
+        if (current == null) {
+            throw new ClientException("未登录");
+        }
+        if (!isSuperAdmin() && !isDeptAdmin()) {
+            throw new ClientException("需要管理员权限");
+        }
+    }
+
+    @Override
+    public boolean isDeptAdmin() {
+        if (!UserContext.hasUser()) {
+            return false;
+        }
+        LoginUser user = UserContext.get();
+        return user.getRoleTypes() != null && user.getRoleTypes().contains(RoleType.DEPT_ADMIN);
+    }
+
+    @Override
+    public void checkCreateUserAccess(String targetDeptId, List<String> roleIds) {
+        if (!UserContext.hasUser()) {
+            throw new ClientException("未登录用户不可创建用户");
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        LoginUser user = UserContext.get();
+        if (!isDeptAdmin()) {
+            log.warn("权限拒绝: userId={}, action=CREATE_USER, reason=非管理员", UserContext.getUserId());
+            throw new ClientException("无权创建用户");
+        }
+        if (!sameDept(user, targetDeptId)) {
+            log.warn("权限拒绝: userId={}, action=CREATE_USER, reason=跨部门, targetDept={}", UserContext.getUserId(), targetDeptId);
+            throw new ClientException("DEPT_ADMIN 只能在本部门创建用户");
+        }
+        validateRoleAssignment(roleIds);
+    }
+
+    @Override
+    public void checkUserManageAccess(String targetUserId) {
+        if (!UserContext.hasUser()) {
+            throw new ClientException("未登录用户不可管理用户");
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        if (!isDeptAdmin()) {
+            log.warn("权限拒绝: userId={}, targetUserId={}, action=MANAGE_USER, reason=非管理员", UserContext.getUserId(), targetUserId);
+            throw new ClientException("无权管理用户");
+        }
+        LoginUser current = UserContext.get();
+        UserDO target = userMapper.selectById(targetUserId);
+        if (target == null) {
+            throw new ClientException("目标用户不存在");
+        }
+        if (!sameDept(current, target.getDeptId())) {
+            log.warn("权限拒绝: userId={}, targetUserId={}, action=MANAGE_USER, reason=跨部门", UserContext.getUserId(), targetUserId);
+            throw new ClientException("DEPT_ADMIN 只能管理本部门用户");
+        }
+    }
+
+    @Override
+    public void checkAssignRolesAccess(String targetUserId, List<String> newRoleIds) {
+        // 先复用用户管理权校验
+        checkUserManageAccess(targetUserId);
+        if (isSuperAdmin()) {
+            return; // SUPER_ADMIN 可分配任意角色
+        }
+        validateRoleAssignment(newRoleIds);
+    }
+
+    @Override
+    public void validateRoleAssignment(List<String> roleIds) {
+        if (isSuperAdmin() || roleIds == null || roleIds.isEmpty()) {
+            return;
+        }
+        int currentCeiling = UserContext.get().getMaxSecurityLevel();
+        List<RoleDO> roles = roleMapper.selectList(
+                Wrappers.lambdaQuery(RoleDO.class).in(RoleDO::getId, roleIds));
+        for (RoleDO role : roles) {
+            if (RoleType.SUPER_ADMIN.name().equals(role.getRoleType())) {
+                throw new ClientException("DEPT_ADMIN 不可分配 SUPER_ADMIN 角色");
+            }
+            if (RoleType.DEPT_ADMIN.name().equals(role.getRoleType())) {
+                throw new ClientException("DEPT_ADMIN 不可分配 DEPT_ADMIN 角色");
+            }
+            if (role.getMaxSecurityLevel() != null && role.getMaxSecurityLevel() > currentCeiling) {
+                throw new ClientException("不可分配超过自身安全等级上限的角色");
+            }
+        }
+    }
+
+    @Override
+    public String resolveCreateKbDeptId(String requestedDeptId) {
+        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+            throw new ClientException("未登录用户不可创建知识库");
+        }
+        if (isSuperAdmin()) {
+            String effectiveDeptId = (requestedDeptId == null || requestedDeptId.isBlank())
+                    ? SysDeptServiceImpl.GLOBAL_DEPT_ID
+                    : requestedDeptId;
+            if (sysDeptMapper.selectById(effectiveDeptId) == null) {
+                throw new ClientException("目标部门不存在: " + effectiveDeptId);
+            }
+            return effectiveDeptId;
+        }
+        if (!isDeptAdmin()) {
+            throw new ClientException("无权创建知识库");
+        }
+        LoginUser user = UserContext.get();
+        String selfDeptId = user.getDeptId();
+        if (selfDeptId == null) {
+            throw new ClientException("当前 DEPT_ADMIN 用户未挂载部门");
+        }
+        if (requestedDeptId != null && !requestedDeptId.isBlank()
+                && !requestedDeptId.equals(selfDeptId)) {
+            throw new ClientException("DEPT_ADMIN 只能在本部门创建知识库");
+        }
+        return selfDeptId;
+    }
+
+    @Override
+    public void checkDocManageAccess(String docId) {
+        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+            return; // 系统态
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        KnowledgeDocumentDO doc = knowledgeDocumentMapper.selectById(docId);
+        if (doc == null) {
+            throw new ClientException("文档不存在: " + docId);
+        }
+        checkManageAccess(doc.getKbId());
+    }
+
+    @Override
+    public void checkDocSecurityLevelAccess(String docId, int newLevel) {
+        checkDocManageAccess(docId);
+    }
+
+    // === Last SUPER_ADMIN 系统级硬不变量（Decision 3-M）===
+
+    @Override
+    public int countActiveSuperAdmins() {
+        return countSuperAdminsExcluding(Set.of(), Set.of(), Map.of());
+    }
+
+    @Override
+    public boolean isUserSuperAdmin(String userId) {
+        if (userId == null) return false;
+        List<RoleDO> superAdminRoles = roleMapper.selectList(
+                Wrappers.lambdaQuery(RoleDO.class)
+                        .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
+        );
+        if (superAdminRoles.isEmpty()) return false;
+        Set<String> superAdminRoleIds = superAdminRoles.stream()
+                .map(RoleDO::getId).collect(Collectors.toSet());
+        Long count = userRoleMapper.selectCount(
+                Wrappers.lambdaQuery(UserRoleDO.class)
+                        .eq(UserRoleDO::getUserId, userId)
+                        .in(UserRoleDO::getRoleId, superAdminRoleIds)
+        );
+        return count != null && count > 0;
+    }
+
+    @Override
+    public int simulateActiveSuperAdminCountAfter(SuperAdminMutationIntent intent) {
+        if (intent instanceof SuperAdminMutationIntent.DeleteUser du) {
+            return countSuperAdminsExcluding(Set.of(du.userId()), Set.of(), Map.of());
+        } else if (intent instanceof SuperAdminMutationIntent.ReplaceUserRoles rur) {
+            return countSuperAdminsExcluding(
+                    Set.of(), Set.of(),
+                    Map.of(rur.userId(), new HashSet<>(rur.newRoleIds())));
+        } else if (intent instanceof SuperAdminMutationIntent.ChangeRoleType crt) {
+            if (!RoleType.SUPER_ADMIN.name().equals(crt.newRoleType())) {
+                return countSuperAdminsExcluding(Set.of(), Set.of(crt.roleId()), Map.of());
+            }
+            return countActiveSuperAdmins();
+        } else if (intent instanceof SuperAdminMutationIntent.DeleteRole dr) {
+            return countSuperAdminsExcluding(Set.of(), Set.of(dr.roleId()), Map.of());
+        }
+        throw new IllegalArgumentException("Unknown SuperAdminMutationIntent type: " + intent.getClass());
+    }
+
+    @Override
+    public void checkKbRoleBindingAccess(String kbId) {
+        if (isSuperAdmin()) {
+            return;
+        }
+        if (!isDeptAdmin()) {
+            throw new ClientException("需要管理员权限");
+        }
+        KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+        if (kb == null) {
+            throw new ClientException("知识库不存在");
+        }
+        LoginUser current = UserContext.requireUser();
+        if (!sameDept(current, kb.getDeptId())) {
+            throw new ClientException("DEPT_ADMIN 只能管理本部门知识库的角色绑定");
+        }
+    }
+
+    /**
+     * 核心聚合：基于当前 DB 快照计算"在给定的排除条件下"还有多少有效 SUPER_ADMIN 用户。
+     *
+     * @param excludedUserIds    视为已删除的用户 id
+     * @param invalidatedRoleIds 视为"不再是 SUPER_ADMIN 来源"的 role id
+     * @param userRoleOverrides  用户的模拟角色集覆盖（key=userId, value=新 roleIds）
+     */
+    private int countSuperAdminsExcluding(
+            Set<String> excludedUserIds,
+            Set<String> invalidatedRoleIds,
+            Map<String, Set<String>> userRoleOverrides) {
+        // 1. 有效 SUPER_ADMIN role id 集合（剔除 invalidatedRoleIds）
+        List<RoleDO> superRoles = roleMapper.selectList(
+                Wrappers.lambdaQuery(RoleDO.class)
+                        .eq(RoleDO::getRoleType, RoleType.SUPER_ADMIN.name())
+        );
+        Set<String> validSuperRoleIds = superRoles.stream()
+                .map(RoleDO::getId)
+                .filter(id -> !invalidatedRoleIds.contains(id))
+                .collect(Collectors.toSet());
+        if (validSuperRoleIds.isEmpty()) return 0;
+
+        // 2. 对每个 user 判断其"模拟后角色集"是否与 validSuperRoleIds 有交集
+        List<UserDO> allUsers = userMapper.selectList(
+                Wrappers.lambdaQuery(UserDO.class).select(UserDO::getId)
+        );
+        int count = 0;
+        for (UserDO user : allUsers) {
+            if (excludedUserIds.contains(user.getId())) continue;
+            Set<String> effectiveRoleIds;
+            if (userRoleOverrides.containsKey(user.getId())) {
+                effectiveRoleIds = userRoleOverrides.get(user.getId());
+            } else {
+                effectiveRoleIds = userRoleMapper.selectList(
+                        Wrappers.lambdaQuery(UserRoleDO.class)
+                                .eq(UserRoleDO::getUserId, user.getId())
+                ).stream().map(UserRoleDO::getRoleId).collect(Collectors.toSet());
+            }
+            for (String rid : effectiveRoleIds) {
+                if (validSuperRoleIds.contains(rid)) {
+                    count++;
+                    break;
+                }
+            }
+        }
+        return count;
     }
 }

@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.rag.core.vector;
 import com.nageoffer.ai.ragent.core.chunk.VectorChunk;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 向量存储服务接口
@@ -67,4 +68,17 @@ public interface VectorStoreService {
      * @param chunkIds       chunk 唯一标识列表
      */
     void deleteChunksByIds(String collectionName, List<String> chunkIds);
+
+    /**
+     * 批量更新指定文档的所有 chunk 在向量库里的 metadata 字段（不动 vector）。
+     *
+     * <p>用于 {@code security_level} 等 document 级字段变更后的 chunk metadata 刷新。
+     * OpenSearch 实现走 {@code POST {collection}/_update_by_query} 带 Painless script；
+     * Milvus / pgvector 实现当前抛 {@code UnsupportedOperationException}（本 PR 外的 follow-up 补齐）。
+     *
+     * @param collectionName 目标向量集合/索引名
+     * @param docId          文档 ID（用于 {@code metadata.doc_id} 过滤）
+     * @param fields         要更新的字段名 → 新值
+     */
+    void updateChunksMetadata(String collectionName, String docId, Map<String, Object> fields);
 }

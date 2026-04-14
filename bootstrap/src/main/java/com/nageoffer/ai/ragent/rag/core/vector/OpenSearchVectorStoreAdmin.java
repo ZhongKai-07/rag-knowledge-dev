@@ -242,6 +242,7 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
                         "pipeline_id": { "type": "keyword" },
                         "source_type": { "type": "keyword" },
                         "source_location": { "type": "keyword", "index": false },
+                        "security_level": { "type": "integer" },
                         "keywords": {
                           "type": "text",
                           "analyzer": "%s",

@@ -55,7 +55,7 @@ public class QueryTermMappingController {
      * 查询映射规则详情
      */
     @GetMapping("/mappings/{id}")
-    public Result<QueryTermMappingVO> queryById(@PathVariable String id) {
+    public Result<QueryTermMappingVO> queryById(@PathVariable("id") String id) {
         return Results.success(queryTermMappingAdminService.queryById(id));
     }
 
@@ -71,7 +71,7 @@ public class QueryTermMappingController {
      * 更新映射规则
      */
     @PutMapping("/mappings/{id}")
-    public Result<Void> update(@PathVariable String id, @RequestBody QueryTermMappingUpdateRequest requestParam) {
+    public Result<Void> update(@PathVariable("id") String id, @RequestBody QueryTermMappingUpdateRequest requestParam) {
         queryTermMappingAdminService.update(id, requestParam);
         return Results.success();
     }
@@ -80,7 +80,7 @@ public class QueryTermMappingController {
      * 删除映射规则
      */
     @DeleteMapping("/mappings/{id}")
-    public Result<Void> delete(@PathVariable String id) {
+    public Result<Void> delete(@PathVariable("id") String id) {
         queryTermMappingAdminService.delete(id);
         return Results.success();
     }

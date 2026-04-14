@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -167,6 +168,12 @@ public class MilvusVectorStoreService implements VectorStoreService {
         DeleteResp resp = milvusClient.delete(deleteReq);
         log.info("Milvus 批量删除 chunk 向量索引成功, collection={}, count={}, deleteCnt={}",
                 collectionName, chunkIds.size(), resp.getDeleteCnt());
+    }
+
+    @Override
+    public void updateChunksMetadata(String collectionName, String docId, Map<String, Object> fields) {
+        throw new UnsupportedOperationException(
+                "updateChunksMetadata is not supported by this vector store (current PR only targets OpenSearch)");
     }
 
     private List<float[]> extractVectors(List<VectorChunk> chunks, int expectedDim) {

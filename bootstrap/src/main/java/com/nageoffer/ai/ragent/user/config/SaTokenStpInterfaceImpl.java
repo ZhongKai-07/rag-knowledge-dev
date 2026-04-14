@@ -19,8 +19,7 @@ package com.nageoffer.ai.ragent.user.config;
 
 import cn.dev33.satoken.stp.StpInterface;
 import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -28,53 +27,34 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Sa-Token 权限认证接口实现类
- * 用于实现 Sa-Token 框架的权限和角色验证逻辑
+ * Sa-Token 权限认证接口实现。
+ *
+ * <p>{@code @SaCheckRole("X")} 注解匹配的是这里 {@link #getRoleList} 返回的字符串列表元素。
+ * PR1 后返回值是 {@code List<RoleType.name()>}，所以注解里的字符串也从 {@code "admin"}
+ * 替换成 {@code "SUPER_ADMIN"}（见 Task 10）。
  */
 @Component
 @RequiredArgsConstructor
 public class SaTokenStpInterfaceImpl implements StpInterface {
 
-    /**
-     * 用户数据访问层
-     */
-    private final UserMapper userMapper;
+    private final RoleMapper roleMapper;
 
-    /**
-     * 获取用户权限列表
-     *
-     * @param loginId   登录用户ID
-     * @param loginType 登录类型
-     * @return 权限列表（当前实现返回空列表）
-     */
     @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
         return Collections.emptyList();
     }
 
-    /**
-     * 获取用户角色列表
-     *
-     * @param loginId   登录用户ID
-     * @param loginType 登录类型
-     * @return 角色列表，包含用户的角色信息
-     */
     @Override
     public List<String> getRoleList(Object loginId, String loginType) {
         if (loginId == null) {
             return Collections.emptyList();
         }
-
         String loginIdStr = loginId.toString();
         if (!StrUtil.isNumeric(loginIdStr)) {
             return Collections.emptyList();
         }
 
-        UserDO user = userMapper.selectById(loginIdStr);
-        if (user == null || StrUtil.isBlank(user.getRole())) {
-            return Collections.emptyList();
-        }
-
-        return List.of(user.getRole());
+        List<String> roleTypes = roleMapper.selectRoleTypesByUserId(loginIdStr);
+        return roleTypes == null ? Collections.emptyList() : roleTypes;
     }
 }

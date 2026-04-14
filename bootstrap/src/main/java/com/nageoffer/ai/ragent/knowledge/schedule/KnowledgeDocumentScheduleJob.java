@@ -40,6 +40,7 @@ import java.util.concurrent.RejectedExecutionException;
 public class KnowledgeDocumentScheduleJob {
 
     private final KnowledgeDocumentScheduleMapper scheduleMapper;
+    @org.springframework.beans.factory.annotation.Qualifier("knowledgeChunkExecutor")
     private final Executor knowledgeChunkExecutor;
     private final KnowledgeScheduleProperties scheduleProperties;
     private final ScheduleLockManager lockManager;

@@ -61,4 +61,5 @@ public class KnowledgeDocumentUpdateRequest {
      * 定时表达式（cron）
      */
     private String scheduleCron;
+
 }

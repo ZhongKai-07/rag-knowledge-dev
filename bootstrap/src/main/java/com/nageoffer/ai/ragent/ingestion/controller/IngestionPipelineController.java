@@ -58,7 +58,7 @@ public class IngestionPipelineController {
      * 更新数据摄入流水线
      */
     @PutMapping("/ingestion/pipelines/{id}")
-    public Result<IngestionPipelineVO> update(@PathVariable String id,
+    public Result<IngestionPipelineVO> update(@PathVariable("id") String id,
                                               @RequestBody IngestionPipelineUpdateRequest request) {
         return Results.success(pipelineService.update(id, request));
     }
@@ -67,7 +67,7 @@ public class IngestionPipelineController {
      * 获取单个数据摄入流水线详情
      */
     @GetMapping("/ingestion/pipelines/{id}")
-    public Result<IngestionPipelineVO> get(@PathVariable String id) {
+    public Result<IngestionPipelineVO> get(@PathVariable("id") String id) {
         return Results.success(pipelineService.get(id));
     }
 
@@ -85,7 +85,7 @@ public class IngestionPipelineController {
      * 删除数据摄入流水线
      */
     @DeleteMapping("/ingestion/pipelines/{id}")
-    public Result<Void> delete(@PathVariable String id) {
+    public Result<Void> delete(@PathVariable("id") String id) {
         pipelineService.delete(id);
         return Results.success();
     }

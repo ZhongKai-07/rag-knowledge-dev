@@ -40,7 +40,7 @@ public class MessageFeedbackController {
      * 提交点赞/踩反馈（异步，通过 MQ 持久化）
      */
     @PostMapping("/conversations/messages/{messageId}/feedback")
-    public Result<Void> submitFeedback(@PathVariable String messageId,
+    public Result<Void> submitFeedback(@PathVariable("messageId") String messageId,
                                        @RequestBody MessageFeedbackRequest request) {
         feedbackService.submitFeedbackAsync(messageId, request);
         return Results.success();

@@ -17,18 +17,21 @@
 
 package com.nageoffer.ai.ragent.user.controller;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.nageoffer.ai.ragent.framework.context.LoginUser;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.request.ChangePasswordRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserCreateRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserPageRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserUpdateRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.CurrentUserVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserVO;
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.convention.Result;
-import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -48,6 +51,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final UserProfileLoader userProfileLoader;
+    private final KbAccessService kbAccessService;
 
     /**
      * 获取当前登录用户信息
@@ -55,12 +60,21 @@ public class UserController {
     @GetMapping("/user/me")
     public Result<CurrentUserVO> currentUser() {
         LoginUser user = UserContext.requireUser();
-        return Results.success(new CurrentUserVO(
-                user.getUserId(),
-                user.getUsername(),
-                user.getRole(),
-                user.getAvatar()
-        ));
+        LoadedUserProfile profile = userProfileLoader.load(user.getUserId());
+        if (profile == null) {
+            throw new ClientException("加载用户资料失败");
+        }
+        CurrentUserVO vo = new CurrentUserVO();
+        vo.setUserId(profile.userId());
+        vo.setUsername(profile.username());
+        vo.setAvatar(profile.avatar());
+        vo.setDeptId(profile.deptId());
+        vo.setDeptName(profile.deptName());
+        vo.setRoleTypes(profile.roleTypes().stream().map(Enum::name).toList());
+        vo.setMaxSecurityLevel(profile.maxSecurityLevel());
+        vo.setIsSuperAdmin(profile.isSuperAdmin());
+        vo.setIsDeptAdmin(profile.isDeptAdmin());
+        return Results.success(vo);
     }
 
     /**
@@ -68,7 +82,9 @@ public class UserController {
      */
     @GetMapping("/users")
     public Result<IPage<UserVO>> pageQuery(UserPageRequest requestParam) {
-        StpUtil.checkRole("admin");
+        if (!kbAccessService.isSuperAdmin() && !kbAccessService.isDeptAdmin()) {
+            throw new ClientException("无权访问用户列表");
+        }
         return Results.success(userService.pageQuery(requestParam));
     }
 
@@ -77,7 +93,6 @@ public class UserController {
      */
     @PostMapping("/users")
     public Result<String> create(@RequestBody UserCreateRequest requestParam) {
-        StpUtil.checkRole("admin");
         return Results.success(userService.create(requestParam));
     }
 
@@ -85,8 +100,8 @@ public class UserController {
      * 更新用户
      */
     @PutMapping("/users/{id}")
-    public Result<Void> update(@PathVariable String id, @RequestBody UserUpdateRequest requestParam) {
-        StpUtil.checkRole("admin");
+    public Result<Void> update(@PathVariable("id") String id, @RequestBody UserUpdateRequest requestParam) {
+        kbAccessService.checkUserManageAccess(id);
         userService.update(id, requestParam);
         return Results.success();
     }
@@ -95,8 +110,8 @@ public class UserController {
      * 删除用户
      */
     @DeleteMapping("/users/{id}")
-    public Result<Void> delete(@PathVariable String id) {
-        StpUtil.checkRole("admin");
+    public Result<Void> delete(@PathVariable("id") String id) {
+        kbAccessService.checkUserManageAccess(id);
         userService.delete(id);
         return Results.success();
     }

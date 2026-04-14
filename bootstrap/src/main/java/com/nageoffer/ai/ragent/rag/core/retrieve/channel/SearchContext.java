@@ -67,6 +67,13 @@ public class SearchContext {
     private Set<String> accessibleKbIds;
 
     /**
+     * 当前用户对每个可访问 KB 的最高安全等级（kbId → level）。
+     * 由 RBAC 解析后预填一次，下游通道 O(1) 查表。
+     * key 缺失表示该 KB 不做安全等级过滤（系统态/未登录），value=0 表示仅 level=0 的文档可见。
+     */
+    private Map<String, Integer> kbSecurityLevels;
+
+    /**
      * 扩展元数据
      */
     @Builder.Default

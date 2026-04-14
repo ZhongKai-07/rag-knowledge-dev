@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Database, FileText, LogOut, Settings } from "lucide-react";
 
 import { useAuthStore } from "@/stores/authStore";
+import { usePermissions } from "@/utils/permissions";
 import { Avatar } from "@/components/common/Avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,11 +60,12 @@ export function SpacesPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
 
+  const permissions = usePermissions();
   const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBase[]>([]);
   const [stats, setStats] = useState<SpacesStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = permissions.canSeeAdminMenu;
   const avatarUrl = user?.avatar?.trim();
   const showAvatar = Boolean(avatarUrl);
 
@@ -171,7 +173,7 @@ export function SpacesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={8} className="w-40">
                 <div className="px-3 py-2 text-xs text-slate-500">
-                  {user?.username || "用户"} · {isAdmin ? "管理员" : "成员"}
+                  {user?.username || "用户"} · {permissions.isSuperAdmin ? "超级管理员" : permissions.isDeptAdmin ? "部门管理员" : "成员"}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-rose-600 focus:text-rose-600">

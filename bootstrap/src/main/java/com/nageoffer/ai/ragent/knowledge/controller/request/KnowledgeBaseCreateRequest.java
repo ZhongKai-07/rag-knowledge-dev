@@ -36,4 +36,11 @@ public class KnowledgeBaseCreateRequest {
      * Milvus Collection 名称
      */
     private String collectionName;
+
+    /**
+     * 归属部门 ID。
+     * - SUPER_ADMIN 创建时：由请求参数指定
+     * - DEPT_ADMIN 创建时：被强制覆盖为 user.dept_id（忽略请求参数）
+     */
+    private String deptId;
 }

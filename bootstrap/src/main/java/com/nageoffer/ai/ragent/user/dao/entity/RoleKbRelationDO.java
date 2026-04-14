@@ -44,6 +44,16 @@ public class RoleKbRelationDO {
 
     private String kbId;
 
+    /**
+     * 权限级别：READ / WRITE / MANAGE
+     */
+    private String permission;
+
+    /**
+     * 该角色对该 KB 可访问的最高安全等级（0-3）
+     */
+    private Integer maxSecurityLevel;
+
     @TableField(fill = FieldFill.INSERT)
     private String createdBy;
 

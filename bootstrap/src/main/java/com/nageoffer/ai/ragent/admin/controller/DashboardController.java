@@ -22,7 +22,9 @@ import com.nageoffer.ai.ragent.admin.controller.vo.DashboardPerformanceVO;
 import com.nageoffer.ai.ragent.admin.controller.vo.DashboardTrendsVO;
 import com.nageoffer.ai.ragent.admin.service.DashboardService;
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,21 +37,31 @@ import org.springframework.web.bind.annotation.RestController;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final KbAccessService kbAccessService;
 
     @GetMapping("/overview")
-    public Result<DashboardOverviewVO> overview(@RequestParam(required = false) String window) {
+    public Result<DashboardOverviewVO> overview(@RequestParam(value = "window", required = false) String window) {
+        checkAdminAccess();
         return Results.success(dashboardService.loadOverview(window));
     }
 
     @GetMapping("/performance")
-    public Result<DashboardPerformanceVO> performance(@RequestParam(required = false) String window) {
+    public Result<DashboardPerformanceVO> performance(@RequestParam(value = "window", required = false) String window) {
+        checkAdminAccess();
         return Results.success(dashboardService.loadPerformance(window));
     }
 
     @GetMapping("/trends")
-    public Result<DashboardTrendsVO> trends(@RequestParam String metric,
-                                            @RequestParam(required = false) String window,
-                                            @RequestParam(required = false) String granularity) {
+    public Result<DashboardTrendsVO> trends(@RequestParam("metric") String metric,
+                                            @RequestParam(value = "window", required = false) String window,
+                                            @RequestParam(value = "granularity", required = false) String granularity) {
+        checkAdminAccess();
         return Results.success(dashboardService.loadTrends(metric, window, granularity));
+    }
+
+    private void checkAdminAccess() {
+        if (!kbAccessService.isSuperAdmin() && !kbAccessService.isDeptAdmin()) {
+            throw new ClientException("无权访问仪表板");
+        }
     }
 }

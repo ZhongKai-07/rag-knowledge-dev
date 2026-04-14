@@ -1,0 +1,180 @@
+### PR3 Permission Rules Bypass Test Matrix
+### Usage: JetBrains HTTP Client / VSCode REST Client
+### Prerequisites: fixture_pr3_demo.sql loaded (Mode B baseline — see pr3-demo-walkthrough.md)
+###
+### *** Protocol notes (critical) ***
+### 1. Auth header: `Authorization: {{token}}` — NO "Bearer " prefix.
+###    The backend's sa-token configuration uses `token-name: Authorization`
+###    with raw tokens (application.yaml:187-188). The frontend axios instance
+###    (api.ts:15) also sends raw tokens. Adding "Bearer " will cause NotLoginException.
+###
+### 2. HTTP status: ALL successful business rejections return HTTP 200.
+###    GlobalExceptionHandler (line 92-105) wraps NotRoleException, NotLoginException,
+###    and ClientException into `Result.failure(...)` which serializes to HTTP 200
+###    with a JSON body `{ "code": "<non-zero>", "message": "...", "data": null }`.
+###    DO NOT assert on 403/409/400 HTTP status codes — they will never fire.
+###
+### 3. Assertion rule (per feedback_assertion_decoupling.md):
+###    - Primary:   assert response.body.code !== "0"
+###    - Secondary: loose message substring on stable Chinese keywords
+###      (e.g., 权限 / 未登录 / 本部门 / GLOBAL / SUPER_ADMIN), NEVER exact text
+###    - Positive (allowed) cases: assert response.body.code === "0"
+
+@host = http://localhost:9090/api/ragent
+
+### Login: admin (SUPER_ADMIN)
+# @name loginAdmin
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "123456" }
+
+> {% client.global.set("admin_token", response.body.data.token); %}
+
+### Login: alice (研发部 DEPT_ADMIN)
+# @name loginAlice
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "alice", "password": "123456" }
+
+> {% client.global.set("alice_token", response.body.data.token); %}
+
+### Login: bob (法务部 DEPT_ADMIN)
+# @name loginBob
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "bob", "password": "123456" }
+
+> {% client.global.set("bob_token", response.body.data.token); %}
+
+### Login: carol (研发部 USER, max=0)
+# @name loginCarol
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "username": "carol", "password": "123456" }
+
+> {% client.global.set("carol_token", response.body.data.token); %}
+
+### -----------------------------------------------------
+### R3: DEPT_ADMIN reads /sys-dept → code != "0" (权限/角色 拦截)
+GET {{host}}/sys-dept
+Authorization: {{alice_token}}
+
+### R4a: DEPT_ADMIN creates a department → code != "0"
+POST {{host}}/sys-dept
+Authorization: {{alice_token}}
+Content-Type: application/json
+
+{ "deptCode": "HACK", "deptName": "alice-hack" }
+
+### R4b: SUPER_ADMIN deletes GLOBAL → code != "0" (message contains GLOBAL)
+DELETE {{host}}/sys-dept/1
+Authorization: {{admin_token}}
+
+### R6a: DEPT_ADMIN creates KB in other dept → code != "0" (本部门)
+### Body has NO "description" field — t_knowledge_base schema has no such column
+POST {{host}}/knowledge-base
+Authorization: {{alice_token}}
+Content-Type: application/json
+
+{ "name": "非法 KB", "deptId": "3", "embeddingModel": "text-embedding-v1" }
+
+### R6b: DEPT_ADMIN creates KB in own dept → code == "0"
+POST {{host}}/knowledge-base
+Authorization: {{alice_token}}
+Content-Type: application/json
+
+{ "name": "研发 Q2 文档库", "deptId": "2", "embeddingModel": "text-embedding-v1" }
+
+### R7a: DEPT_ADMIN bob updates alice's dept KB → code != "0"
+PUT {{host}}/knowledge-base/kb-rnd-001
+Authorization: {{bob_token}}
+Content-Type: application/json
+
+{ "name": "偷改" }
+
+### R7b: DEPT_ADMIN alice updates her dept KB → code == "0"
+PUT {{host}}/knowledge-base/kb-rnd-001
+Authorization: {{alice_token}}
+Content-Type: application/json
+
+{ "name": "研发知识库（改名）" }
+
+### R10: DEPT_ADMIN bob changes security_level of alice's doc → code != "0"
+### Before running: manually upload a doc to kb-rnd-001, copy its id, replace {{some_doc_id}} below
+PUT {{host}}/knowledge-base/docs/{{some_doc_id}}/security-level
+Authorization: {{bob_token}}
+Content-Type: application/json
+
+{ "newLevel": 3 }
+
+### R11: USER (carol) lists users → code != "0"
+GET {{host}}/users?current=1&size=10
+Authorization: {{carol_token}}
+
+### R12a: DEPT_ADMIN alice creates user in other dept → code != "0" (本部门)
+POST {{host}}/users
+Authorization: {{alice_token}}
+Content-Type: application/json
+
+{ "username": "hacker", "password": "x", "deptId": "3", "roleIds": ["102"] }
+
+### R12b: DEPT_ADMIN alice creates user with SUPER_ADMIN role → code != "0" (SUPER_ADMIN)
+### init_data_pg.sql seeds the SUPER_ADMIN role as id='1', use it directly
+POST {{host}}/users
+Authorization: {{alice_token}}
+Content-Type: application/json
+
+{ "username": "hacker2", "password": "x", "deptId": "2", "roleIds": ["1"] }
+
+### R13: DEPT_ADMIN alice deletes bob (other dept user) → code != "0" (本部门)
+DELETE {{host}}/users/11
+Authorization: {{alice_token}}
+
+### R14: DEPT_ADMIN alice assigns SUPER_ADMIN role to carol → code != "0" (SUPER_ADMIN)
+PUT {{host}}/user/12/roles
+Authorization: {{alice_token}}
+Content-Type: application/json
+
+["1"]
+
+### R15a: DEPT_ADMIN alice lists roles → code != "0"
+GET {{host}}/role
+Authorization: {{alice_token}}
+
+### R15b: DEPT_ADMIN alice deletes a role → code != "0"
+DELETE {{host}}/role/100
+Authorization: {{alice_token}}
+
+### Last SUPER_ADMIN invariant (a): SUPER_ADMIN admin deletes themselves → code != "0" (SUPER_ADMIN)
+### Admin id=1 per init_data_pg.sql; this is the only SUPER_ADMIN user on curl-matrix baseline
+DELETE {{host}}/users/1
+Authorization: {{admin_token}}
+
+### Last SUPER_ADMIN invariant (b): admin tries to clear own roles → code != "0" (SUPER_ADMIN)
+PUT {{host}}/user/1/roles
+Authorization: {{admin_token}}
+Content-Type: application/json
+
+[]
+
+### Last SUPER_ADMIN invariant (c): admin tries to delete role id=1 (the SUPER_ADMIN seed) → code != "0"
+DELETE {{host}}/role/1
+Authorization: {{admin_token}}
+
+### Last SUPER_ADMIN invariant (d): admin tries to downgrade role id=1 to USER type → code != "0"
+PUT {{host}}/role/1
+Authorization: {{admin_token}}
+Content-Type: application/json
+
+{ "name": "超级管理员", "description": "系统超级管理员", "roleType": "USER", "maxSecurityLevel": 3 }
+
+### UI-only rules (documented for completeness; no curl):
+### R1  - RequireAnyAdmin guard (browser redirect to /spaces, not 403)
+### R2  - RequireMenuAccess hide/redirect to /admin/dashboard + toast
+### R5, R8  - list filter via isSuperAdmin() + getAccessibleKbIds() (aggregate behavior, assert via UI)
+### R18 - modify own password (non-permission, no bypass possible)
+### R19 - login (anonymous, no token)

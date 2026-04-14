@@ -28,7 +28,9 @@ import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.RoleService;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -52,6 +54,7 @@ public class KnowledgeBaseController {
 
     private final KnowledgeBaseService knowledgeBaseService;
     private final KbAccessService kbAccessService;
+    private final RoleService roleService;
 
     /**
      * 创建知识库
@@ -67,6 +70,7 @@ public class KnowledgeBaseController {
     @PutMapping("/knowledge-base/{kb-id}")
     public Result<Void> renameKnowledgeBase(@PathVariable("kb-id") String kbId,
                                             @RequestBody KnowledgeBaseUpdateRequest requestParam) {
+        kbAccessService.checkManageAccess(kbId);
         knowledgeBaseService.rename(kbId, requestParam);
         return Results.success();
     }
@@ -76,6 +80,7 @@ public class KnowledgeBaseController {
      */
     @DeleteMapping("/knowledge-base/{kb-id}")
     public Result<Void> deleteKnowledgeBase(@PathVariable("kb-id") String kbId) {
+        kbAccessService.checkManageAccess(kbId);
         knowledgeBaseService.delete(kbId);
         return Results.success();
     }
@@ -94,8 +99,8 @@ public class KnowledgeBaseController {
      */
     @GetMapping("/knowledge-base")
     public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest requestParam) {
-        // RBAC: non-admin users only see accessible KBs
-        if (UserContext.hasUser() && !"admin".equals(UserContext.getRole())) {
+        // RBAC: non-super-admin users only see accessible KBs
+        if (UserContext.hasUser() && !kbAccessService.isSuperAdmin()) {
             Set<String> accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
             requestParam.setAccessibleKbIds(accessibleKbIds);
         }
@@ -112,5 +117,35 @@ public class KnowledgeBaseController {
                 .map(mode -> new ChunkStrategyVO(mode.getValue(), mode.getLabel(), mode.getDefaultConfig()))
                 .toList();
         return Results.success(list);
+    }
+
+    @GetMapping("/knowledge-base/{kb-id}/role-bindings")
+    public Result<List<KbRoleBindingVO>> getKbRoleBindings(@PathVariable("kb-id") String kbId) {
+        kbAccessService.checkKbRoleBindingAccess(kbId);
+        return Results.success(roleService.getKbRoleBindings(kbId));
+    }
+
+    @PutMapping("/knowledge-base/{kb-id}/role-bindings")
+    public Result<Void> setKbRoleBindings(@PathVariable("kb-id") String kbId,
+                                          @RequestBody List<KbRoleBindingRequest> bindings) {
+        kbAccessService.checkKbRoleBindingAccess(kbId);
+        roleService.setKbRoleBindings(kbId, bindings);
+        return Results.success();
+    }
+
+    @Data
+    public static class KbRoleBindingVO {
+        private String roleId;
+        private String roleName;
+        private String roleType;
+        private String permission;
+        private Integer maxSecurityLevel;
+    }
+
+    @Data
+    public static class KbRoleBindingRequest {
+        private String roleId;
+        private String permission;
+        private Integer maxSecurityLevel;
     }
 }

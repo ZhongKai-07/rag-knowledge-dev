@@ -52,7 +52,7 @@ public class ConversationController {
      * 获取会话列表
      */
     @GetMapping("/conversations")
-    public Result<List<ConversationVO>> listConversations(@RequestParam(required = false) String kbId) {
+    public Result<List<ConversationVO>> listConversations(@RequestParam(value = "kbId", required = false) String kbId) {
         return Results.success(conversationService.listByUserId(UserContext.getUserId(), kbId));
     }
 
@@ -60,8 +60,8 @@ public class ConversationController {
      * 重命名会话
      */
     @PutMapping("/conversations/{conversationId}")
-    public Result<Void> rename(@PathVariable String conversationId,
-                               @RequestParam String kbId,
+    public Result<Void> rename(@PathVariable("conversationId") String conversationId,
+                               @RequestParam("kbId") String kbId,
                                @RequestBody ConversationUpdateRequest request) {
         conversationService.validateKbOwnership(conversationId, UserContext.getUserId(), kbId);
         conversationService.rename(conversationId, request);
@@ -72,8 +72,8 @@ public class ConversationController {
      * 删除会话
      */
     @DeleteMapping("/conversations/{conversationId}")
-    public Result<Void> delete(@PathVariable String conversationId,
-                               @RequestParam String kbId) {
+    public Result<Void> delete(@PathVariable("conversationId") String conversationId,
+                               @RequestParam("kbId") String kbId) {
         conversationService.validateKbOwnership(conversationId, UserContext.getUserId(), kbId);
         conversationService.delete(conversationId);
         return Results.success();
@@ -83,8 +83,8 @@ public class ConversationController {
      * 获取会话消息列表
      */
     @GetMapping("/conversations/{conversationId}/messages")
-    public Result<List<ConversationMessageVO>> listMessages(@PathVariable String conversationId,
-                                                            @RequestParam String kbId) {
+    public Result<List<ConversationMessageVO>> listMessages(@PathVariable("conversationId") String conversationId,
+                                                            @RequestParam("kbId") String kbId) {
         conversationService.validateKbOwnership(conversationId, UserContext.getUserId(), kbId);
         return Results.success(conversationMessageService.listMessages(conversationId, UserContext.getUserId(), null, ConversationMessageOrder.ASC));
     }

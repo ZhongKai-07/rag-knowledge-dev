@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.core.retrieve;
 
 import cn.hutool.core.collection.CollUtil;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceNode;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannel;
@@ -28,13 +29,17 @@ import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -58,6 +63,7 @@ public class MultiChannelRetrievalEngine {
     private final List<SearchResultPostProcessor> postProcessors;
     private final RetrieverService retrieverService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final KbAccessService kbAccessService;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
 
@@ -84,6 +90,7 @@ public class MultiChannelRetrievalEngine {
                     .query(context.getMainQuestion())
                     .topK(topK)
                     .collectionName(kb.getCollectionName())
+                    .metadataFilters(buildMetadataFilters(context, knowledgeBaseId))
                     .build();
             List<RetrievedChunk> chunks = retrieverService.retrieve(req);
 
@@ -242,11 +249,15 @@ public class MultiChannelRetrievalEngine {
     }
 
     /**
-     * 构建检索上下文
+     * 构建检索上下文。在此一次性预解析当前用户对所有可访问 KB 的安全等级 map，
+     * 后续 channel/postprocessor 直接 O(1) 查表，不再每次回调 {@link KbAccessService#getMaxSecurityLevelForKb}。
      */
     private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int topK,
                                               Set<String> accessibleKbIds) {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
+        Map<String, Integer> kbSecurityLevels = (UserContext.hasUser() && accessibleKbIds != null && !accessibleKbIds.isEmpty())
+                ? kbAccessService.getMaxSecurityLevelsForKbs(UserContext.getUserId(), accessibleKbIds)
+                : Collections.emptyMap();
 
         return SearchContext.builder()
                 .originalQuestion(question)
@@ -254,6 +265,25 @@ public class MultiChannelRetrievalEngine {
                 .intents(subIntents)
                 .topK(topK)
                 .accessibleKbIds(accessibleKbIds)
+                .kbSecurityLevels(kbSecurityLevels)
                 .build();
+    }
+
+    /**
+     * 构建元数据过滤条件（按 KB 查表得到安全等级）。
+     */
+    public static List<MetadataFilter> buildMetadataFilters(SearchContext ctx, String kbId) {
+        List<MetadataFilter> filters = new ArrayList<>();
+        if (kbId == null || ctx.getKbSecurityLevels() == null) {
+            return filters;
+        }
+        Integer level = ctx.getKbSecurityLevels().get(kbId);
+        if (level != null) {
+            filters.add(new MetadataFilter(
+                    "security_level",
+                    MetadataFilter.FilterOp.LTE_OR_MISSING,
+                    level));
+        }
+        return filters;
     }
 }

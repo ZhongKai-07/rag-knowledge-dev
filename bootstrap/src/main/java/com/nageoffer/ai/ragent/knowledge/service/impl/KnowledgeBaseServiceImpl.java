@@ -38,6 +38,7 @@ import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -62,6 +64,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final VectorStoreAdmin vectorStoreAdmin;
     private final S3Client s3Client;
+    private final KbAccessService kbAccessService;
 
     @Transactional
     @Override
@@ -87,10 +90,14 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             throw new ServiceException("集合名称已存在：" + requestParam.getCollectionName());
         }
 
+        // 解析 dept_id（授权与归属逻辑收归 KbAccessService）
+        String effectiveDeptId = kbAccessService.resolveCreateKbDeptId(requestParam.getDeptId());
+
         KnowledgeBaseDO kbDO = KnowledgeBaseDO.builder()
                 .name(requestParam.getName())
                 .embeddingModel(requestParam.getEmbeddingModel())
                 .collectionName(requestParam.getCollectionName())
+                .deptId(effectiveDeptId)
                 .createdBy(UserContext.getUsername())
                 .updatedBy(UserContext.getUsername())
                 .deleted(0)
@@ -216,10 +223,16 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam) {
+        // Fail-closed: non-admin user with empty accessible set → return empty page.
+        // null = admin pathway (controller skipped injection); empty set = user has zero access.
+        Set<String> accessibleKbIds = requestParam.getAccessibleKbIds();
+        if (accessibleKbIds != null && accessibleKbIds.isEmpty()) {
+            return new Page<>(requestParam.getCurrent(), requestParam.getSize(), 0);
+        }
+
         LambdaQueryWrapper<KnowledgeBaseDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                 .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
-                .in(requestParam.getAccessibleKbIds() != null && !requestParam.getAccessibleKbIds().isEmpty(),
-                        KnowledgeBaseDO::getId, requestParam.getAccessibleKbIds())
+                .in(accessibleKbIds != null, KnowledgeBaseDO::getId, accessibleKbIds)
                 .eq(KnowledgeBaseDO::getDeleted, 0)
                 .orderByDesc(KnowledgeBaseDO::getUpdateTime);
 

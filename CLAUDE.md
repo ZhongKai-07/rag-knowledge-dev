@@ -85,6 +85,8 @@ Key config sections: database, Redis, RocketMQ, Milvus, AI model providers (Olla
 
 Docker Compose files in `resources/docker/` for Milvus and RocketMQ. Database init scripts in `resources/database/`.
 
+Full environment setup guide (Docker containers + DB init + backend/frontend start): `docs/dev/launch.md`
+
 Upgrade scripts in `resources/database/`:
 - `upgrade_v1.2_to_v1.3.sql` — adds `kb_id` to `t_conversation` for knowledge space isolation
 
@@ -100,11 +102,23 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - **`extra_data TEXT` JSON pattern**: Used in `t_rag_trace_run` and `t_rag_trace_node` for extensible metrics (token usage, question length) without schema migration. Parse with Gson in query service.
 - **Database access via Docker**: `docker exec postgres psql -U postgres -d ragent -c "SQL"`. User is `postgres`, not `ragent`.
 - **Two schema files maintained independently**: `schema_pg.sql` (clean DDL) and `full_schema_pg.sql` (pg_dump style) must BOTH be updated when changing table schemas. Forgetting one causes init/upgrade divergence.
-- **Admin RBAC special case**: `kbAccessService.getAccessibleKbIds()` walks `user→roles→kb_relations` chain — it does NOT return all KBs for admin. "Admin sees everything" is enforced at controller layer with `"admin".equals(UserContext.getRole())` checks. New endpoints that need admin-sees-all must handle this independently.
+- **`full_schema_pg.sql` COMMENT placement**: COMMENTs are in separate blocks (not inline after CREATE TABLE). Each has its own `-- Name: COLUMN ...; Type: COMMENT` header block. When adding columns, add the COMMENT in a new block near existing comments for the same table.
+- **Admin RBAC special case**: `KbAccessService.getAccessibleKbIds()` for `SUPER_ADMIN` returns all KBs (enforced inside the service, not at controller layer). Use `kbAccessService.isSuperAdmin()` to check admin status — do NOT use `"admin".equals(UserContext.getRole())` (that string is gone since PR1). `@SaCheckRole` annotations use `"SUPER_ADMIN"` not `"admin"`.
 - **@TableLogic auto-filter**: MyBatis Plus entities with `@TableLogic` on `deleted` field automatically append `WHERE deleted=0`. Do NOT add redundant `.eq(::getDeleted, 0)` conditions in queries.
 - **PostgreSQL folds unquoted identifiers to lowercase**: `selectMaps` with `.select("kb_id AS kbId")` produces map key `kbid`, not `kbId`. Always use snake_case aliases (`AS kb_id`, `AS doc_count`) and `row.get("kb_id")` — never camelCase.
 - **Frontend HMR vs Backend restart**: Vite dev server hot-reloads frontend changes instantly. Spring Boot requires manual restart (`mvn -pl bootstrap spring-boot:run`) after any Java code change. Always confirm backend is restarted before verifying backend changes.
+- **`mvn spring-boot:run` does NOT recompile stale classes after branch switch**: After `git checkout`, old `.class` files in `target/` remain. Run `mvn clean -pl bootstrap spring-boot:run` on first run in a new branch or new machine to force full recompilation with `-parameters`.
+- **`-parameters` flag: IntelliJ vs Maven divergence**: IntelliJ adds `-parameters` automatically; Maven only does so if `maven-compiler-plugin` has `<parameters>true</parameters>`. Without it: (1) `@RequestParam`/`@PathVariable` without explicit `value=` throw `IllegalArgumentException` at runtime; (2) `@RequiredArgsConstructor` on a bean with multiple candidates of the same type fails to inject. **Rule**: always write explicit `value=` on all `@RequestParam`/`@PathVariable` annotations; use `@Qualifier` for ambiguous bean types.
 - **API signature changes require full-text search**: When backend adds/changes required parameters (e.g., adding `@RequestParam String kbId`), grep ALL frontend callers — not just the ones listed in the plan. Missing callers cause runtime 400 errors.
+- **Sa-Token auth header is raw token, no Bearer prefix**: `Authorization: <token>` (NOT `Authorization: Bearer <token>`). See `application.yaml` `sa-token.token-name: Authorization` and `api.ts:15`. All permission rejections (NotRoleException, ClientException) return **HTTP 200** with `code != "0"` in the `Result` body — NOT HTTP 403/409. Assert on `code` field, never on HTTP status code.
+- **Table naming convention is inconsistent**: Most tables use `t_` prefix (`t_user`, `t_role`, `t_knowledge_base`), but the department table is `sys_dept` (with entity `SysDeptDO`, mapper `SysDeptMapper`). When searching for department-related code, grep for `sys_dept` / `SysDept`, NOT `t_department` / `Dept`.
+- **Seed data is not blank**: `init_data_pg.sql` wires admin user with `dept_id='1'` (GLOBAL), role `超级管理员` (`role_type=SUPER_ADMIN`, `max_security_level=3`), and `t_user_role` linking them. A fresh DB with `schema_pg.sql + init_data_pg.sql` already has a fully-privileged admin — not a "no dept / no role / max=0" user.
+- **security_level filter only implemented in OpenSearch**: `MilvusRetrieverService` and `PgRetrieverService` accept `metadataFilters` parameter but silently ignore it. Switching `rag.vector.type` to `milvus` or `pg` disables document security_level enforcement at retrieval time. Fix these implementations before using non-OpenSearch backends in production.
+- **Every controller needs explicit authorization**: `SaInterceptor` only enforces `StpUtil.checkLogin()` (login check), NOT role checks. New controllers must add their own `@SaCheckRole` or programmatic `kbAccessService` checks. `DashboardController` was audited and fixed for this in PR3.
+- **Per-KB security_level filtering**: `t_role_kb_relation.max_security_level` (SMALLINT, 0-3) controls per-KB retrieval filtering. `KbAccessService.getMaxSecurityLevelForKb(userId, kbId)` resolves it (SUPER_ADMIN=3, DEPT_ADMIN same-dept=role ceiling, others=MAX from relation). Cached in Redis Hash `kb_security_level:{userId}`, evicted alongside `kb_access:` cache.
+- **KB-centric sharing API**: `GET/PUT /knowledge-base/{kb-id}/role-bindings` (note: hyphenated `kb-id` in path, not `kbId`). SUPER_ADMIN any KB, DEPT_ADMIN own-dept only. Uses `checkKbRoleBindingAccess()`.
+- **DEPT_ADMIN implicit MANAGE on same-dept KBs**: `checkManageAccess()` and `checkAccess()` both pass for `kb.dept_id == self.dept_id` without needing `role_kb_relation` entries. Cross-dept access requires explicit binding.
+- **Frontend permission-gated components must handle backend rejection**: Components rendered for `isAnyAdmin` that call DEPT_ADMIN-restricted endpoints should catch errors and hide gracefully (e.g., `KbSharingTab` sets `noAccess=true` and returns `null`), not show error toasts. The backend is the authorization boundary; the frontend optimistically renders and fails gracefully.
 
 ## RAG Evaluation (RAGAS)
 
@@ -286,16 +300,22 @@ DashboardServiceImpl 跨域只读查询 rag + knowledge + user 的 Mapper 做聚
 用户管理:
   GET/POST/PUT/DELETE /users → UserController（admin only）
 
-角色管理:
-  POST /roles                    → 创建角色
-  PUT  /roles/{id}/knowledge-bases → 设置角色可访问的知识库列表
-  POST /roles/{id}/users          → 给角色分配用户
+角色管理（SUPER_ADMIN only）:
+  POST/PUT/DELETE /role           → 角色 CRUD
+  PUT  /role/{roleId}/knowledge-bases → 设置角色可访问的知识库列表（含 maxSecurityLevel）
+  PUT  /user/{userId}/roles       → 给用户分配角色
+
+KB 共享管理（AnyAdmin）:
+  GET /knowledge-base/{kb-id}/role-bindings  → 查看 KB 的角色绑定
+  PUT /knowledge-base/{kb-id}/role-bindings  → 全量覆盖 KB 的角色绑定
 
 权限校验（贯穿所有业务链路）:
   KbAccessService.getAccessibleKbIds(userId)
     → 查 t_user_role → 查 t_role_kb_relation → 返回可访问的 kbId 集合（Redis 缓存）
   KbAccessService.checkAccess(kbId)
-    → 校验当前用户是否有权访问指定知识库（admin 跳过）
+    → 校验当前用户是否有权访问指定知识库（SUPER_ADMIN 跳过，DEPT_ADMIN 同部门跳过）
+  KbAccessService.getMaxSecurityLevelForKb(userId, kbId)
+    → 按 KB 解析安全等级（Redis Hash 缓存）
 
 生效点:
   - RAG 检索时: RetrievalEngine 过滤 accessibleKbIds

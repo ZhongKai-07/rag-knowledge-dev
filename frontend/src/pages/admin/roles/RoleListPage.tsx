@@ -8,18 +8,45 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { RoleItem, RoleCreatePayload } from "@/services/roleService";
+import type { RoleItem, RoleCreatePayload, RoleKbBinding } from "@/services/roleService";
 import { getRoles, createRole, updateRole, deleteRole, getRoleKnowledgeBases, setRoleKnowledgeBases } from "@/services/roleService";
 import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeService";
+import { usePermissions } from "@/utils/permissions";
 import { getErrorMessage } from "@/utils/error";
+import { SecurityLevelBadge } from "@/components/common/SecurityLevelBadge";
+
+// ---- Role type badge ----
+function RoleTypeBadge({ type }: { type: string }) {
+  const colors: Record<string, string> = {
+    SUPER_ADMIN: "bg-red-100 text-red-800",
+    DEPT_ADMIN: "bg-blue-100 text-blue-800",
+    USER: "bg-gray-100 text-gray-800",
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[type] ?? colors.USER}`}>
+      {type}
+    </span>
+  );
+}
+
+// ---- Permission label for KB binding ----
+const PERMISSION_LABELS: Record<string, string> = {
+  READ: "只读",
+  WRITE: "读写",
+  MANAGE: "管理",
+};
 
 const buildEmptyForm = (): RoleCreatePayload => ({
   name: "",
-  description: ""
+  description: "",
+  roleType: "USER",
+  maxSecurityLevel: 0,
 });
 
 export function RoleListPage() {
+  const { isSuperAdmin } = usePermissions();
   const [roles, setRoles] = useState<RoleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<RoleItem | null>(null);
@@ -28,17 +55,18 @@ export function RoleListPage() {
   const [dialogState, setDialogState] = useState<{ open: boolean; mode: "create" | "edit"; role: RoleItem | null }>({
     open: false,
     mode: "create",
-    role: null
+    role: null,
   });
   const [form, setForm] = useState(buildEmptyForm());
 
   // 知识库配置 Dialog
   const [kbDialogState, setKbDialogState] = useState<{ open: boolean; role: RoleItem | null }>({
     open: false,
-    role: null
+    role: null,
   });
   const [allKnowledgeBases, setAllKnowledgeBases] = useState<KnowledgeBase[]>([]);
-  const [selectedKbIds, setSelectedKbIds] = useState<Set<string>>(new Set());
+  // Array of bindings for currently checked KBs (kbId + permission + maxSecurityLevel)
+  const [kbBindings, setKbBindings] = useState<RoleKbBinding[]>([]);
   const [kbLoading, setKbLoading] = useState(false);
 
   // 每个角色的 KB 数量缓存
@@ -50,19 +78,23 @@ export function RoleListPage() {
       const data = await getRoles();
       setRoles(data);
 
-      // 加载每个角色的知识库数量
-      const counts: Record<string, number> = {};
-      await Promise.all(
-        data.map(async (role) => {
-          try {
-            const kbIds = await getRoleKnowledgeBases(role.id);
-            counts[role.id] = kbIds.length;
-          } catch {
-            counts[role.id] = 0;
-          }
-        })
-      );
-      setRoleKbCounts(counts);
+      // 加载每个角色的知识库数量（仅 SUPER_ADMIN 有权限访问该接口）
+      if (isSuperAdmin) {
+        const counts: Record<string, number> = {};
+        await Promise.all(
+          data.map(async (role) => {
+            try {
+              const bindings = await getRoleKnowledgeBases(role.id);
+              counts[role.id] = bindings.length;
+            } catch {
+              counts[role.id] = 0;
+            }
+          })
+        );
+        setRoleKbCounts(counts);
+      } else {
+        setRoleKbCounts({});
+      }
     } catch (error) {
       toast.error(getErrorMessage(error, "加载角色列表失败"));
     } finally {
@@ -94,7 +126,12 @@ export function RoleListPage() {
   };
 
   const openEditDialog = (role: RoleItem) => {
-    setForm({ name: role.name, description: role.description || "" });
+    setForm({
+      name: role.name,
+      description: role.description || "",
+      roleType: role.roleType || "USER",
+      maxSecurityLevel: role.maxSecurityLevel ?? 0,
+    });
     setDialogState({ open: true, mode: "edit", role });
   };
 
@@ -105,7 +142,12 @@ export function RoleListPage() {
       return;
     }
     try {
-      const payload: RoleCreatePayload = { name: trimmedName, description: form.description?.trim() || "" };
+      const payload: RoleCreatePayload = {
+        name: trimmedName,
+        description: form.description?.trim() || "",
+        roleType: form.roleType,
+        maxSecurityLevel: form.maxSecurityLevel,
+      };
       if (dialogState.mode === "create") {
         await createRole(payload);
         toast.success("创建成功");
@@ -125,12 +167,17 @@ export function RoleListPage() {
     setKbDialogState({ open: true, role });
     setKbLoading(true);
     try {
-      const [kbs, assignedIds] = await Promise.all([
+      const [kbs, currentBindings] = await Promise.all([
         getKnowledgeBases(),
-        getRoleKnowledgeBases(role.id)
+        getRoleKnowledgeBases(role.id),
       ]);
       setAllKnowledgeBases(kbs);
-      setSelectedKbIds(new Set(assignedIds));
+      const mapped = currentBindings.map((b: RoleKbBinding) => ({
+        kbId: b.kbId,
+        permission: b.permission || "MANAGE",
+        maxSecurityLevel: b.maxSecurityLevel ?? role.maxSecurityLevel ?? 0,
+      }));
+      setKbBindings(mapped);
     } catch (error) {
       toast.error(getErrorMessage(error, "加载知识库列表失败"));
     } finally {
@@ -139,32 +186,42 @@ export function RoleListPage() {
   };
 
   const toggleKb = (kbId: string) => {
-    setSelectedKbIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(kbId)) {
-        next.delete(kbId);
-      } else {
-        next.add(kbId);
-      }
-      return next;
+    setKbBindings((prev) => {
+      const exists = prev.find((b) => b.kbId === kbId);
+      if (exists) return prev.filter((b) => b.kbId !== kbId);
+      return [
+        ...prev,
+        {
+          kbId,
+          permission: "MANAGE" as const,
+          maxSecurityLevel: kbDialogState.role?.maxSecurityLevel ?? 0,
+        },
+      ];
     });
+  };
+
+  const setKbPermission = (kbId: string, permission: RoleKbBinding["permission"]) => {
+    setKbBindings((prev) =>
+      prev.map((b) => (b.kbId === kbId ? { ...b, permission } : b))
+    );
+  };
+
+  const setKbSecurityLevel = (kbId: string, level: number) => {
+    setKbBindings((prev) =>
+      prev.map((b) => (b.kbId === kbId ? { ...b, maxSecurityLevel: level } : b))
+    );
   };
 
   const handleSaveKb = async () => {
     if (!kbDialogState.role) return;
     try {
-      await setRoleKnowledgeBases(kbDialogState.role.id, Array.from(selectedKbIds));
+      await setRoleKnowledgeBases(kbDialogState.role.id, kbBindings);
       toast.success("知识库权限已更新");
       setKbDialogState({ open: false, role: null });
       await loadRoles();
     } catch (error) {
       toast.error(getErrorMessage(error, "保存失败"));
     }
-  };
-
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleString("zh-CN");
   };
 
   return (
@@ -179,10 +236,12 @@ export function RoleListPage() {
             <RefreshCw className="w-4 h-4 mr-2" />
             刷新
           </Button>
-          <Button className="admin-primary-gradient" onClick={openCreateDialog}>
-            <ShieldCheck className="w-4 h-4 mr-2" />
-            新建角色
-          </Button>
+          {isSuperAdmin && (
+            <Button className="admin-primary-gradient" onClick={openCreateDialog}>
+              <ShieldCheck className="w-4 h-4 mr-2" />
+              新建角色
+            </Button>
+          )}
         </div>
       </div>
 
@@ -193,13 +252,14 @@ export function RoleListPage() {
           ) : roles.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">暂无角色，点击"新建角色"创建</div>
           ) : (
-            <Table className="min-w-[700px]">
+            <Table className="min-w-[800px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[180px]">角色名称</TableHead>
-                  <TableHead className="w-[240px]">描述</TableHead>
-                  <TableHead className="w-[120px]">可见知识库</TableHead>
-                  <TableHead className="w-[180px]">创建时间</TableHead>
+                  <TableHead className="w-[130px]">角色类型</TableHead>
+                  <TableHead className="w-[120px]">最大密级</TableHead>
+                  <TableHead className="w-[220px]">描述</TableHead>
+                  <TableHead className="w-[100px]">可见 KB 数</TableHead>
                   <TableHead className="w-[200px] text-left">操作</TableHead>
                 </TableRow>
               </TableHeader>
@@ -212,32 +272,43 @@ export function RoleListPage() {
                         <span className="font-medium text-slate-900">{role.name}</span>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <RoleTypeBadge type={role.roleType || "USER"} />
+                    </TableCell>
+                    <TableCell>
+                      <SecurityLevelBadge level={role.maxSecurityLevel ?? 0} showLevel />
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{role.description || "-"}</TableCell>
                     <TableCell>
                       <span className="text-sm font-medium text-indigo-600">
                         {roleKbCounts[role.id] ?? 0} 个
                       </span>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(role.createTime)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openKbDialog(role)}>
-                          <BookOpen className="w-4 h-4 mr-0.5" />
-                          知识库
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(role)}>
-                          <Pencil className="w-4 h-4 mr-0.5" />
-                          编辑
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => setDeleteTarget(role)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-0.5" />
-                          删除
-                        </Button>
+                        {isSuperAdmin && (
+                          <Button variant="outline" size="sm" onClick={() => openKbDialog(role)}>
+                            <BookOpen className="w-4 h-4 mr-0.5" />
+                            知识库
+                          </Button>
+                        )}
+                        {isSuperAdmin && (
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(role)}>
+                            <Pencil className="w-4 h-4 mr-0.5" />
+                            编辑
+                          </Button>
+                        )}
+                        {isSuperAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeleteTarget(role)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-0.5" />
+                            删除
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -268,7 +339,7 @@ export function RoleListPage() {
 
       {/* 创建/编辑 Dialog */}
       <Dialog open={dialogState.open} onOpenChange={(open) => setDialogState((prev) => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-[420px]">
+        <DialogContent className="sm:max-w-[440px]">
           <DialogHeader>
             <DialogTitle>{dialogState.mode === "create" ? "新建角色" : "编辑角色"}</DialogTitle>
             <DialogDescription>
@@ -292,6 +363,41 @@ export function RoleListPage() {
                 placeholder="可选，描述该角色的用途"
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">角色类型</label>
+              <Select
+                value={form.roleType}
+                onValueChange={(val) => setForm((prev) => ({ ...prev, roleType: val }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择角色类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isSuperAdmin && (
+                    <SelectItem value="SUPER_ADMIN">SUPER_ADMIN（超级管理员）</SelectItem>
+                  )}
+                  <SelectItem value="DEPT_ADMIN">DEPT_ADMIN（部门管理员）</SelectItem>
+                  <SelectItem value="USER">USER（普通用户）</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">最大密级</label>
+              <Select
+                value={String(form.maxSecurityLevel)}
+                onValueChange={(val) => setForm((prev) => ({ ...prev, maxSecurityLevel: Number(val) }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="选择最大密级" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">0 · 公开</SelectItem>
+                  <SelectItem value="1">1 · 内部</SelectItem>
+                  <SelectItem value="2">2 · 机密</SelectItem>
+                  <SelectItem value="3">3 · 绝密</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogState({ open: false, mode: "create", role: null })}>
@@ -310,11 +416,11 @@ export function RoleListPage() {
 
       {/* 知识库配置 Dialog */}
       <Dialog open={kbDialogState.open} onOpenChange={(open) => setKbDialogState((prev) => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[520px]">
           <DialogHeader>
             <DialogTitle>配置可见知识库</DialogTitle>
             <DialogDescription>
-              为角色"{kbDialogState.role?.name}"选择可访问的知识库
+              为角色"{kbDialogState.role?.name}"选择可访问的知识库及权限级别
             </DialogDescription>
           </DialogHeader>
           {kbLoading ? (
@@ -322,30 +428,66 @@ export function RoleListPage() {
           ) : allKnowledgeBases.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">暂无可用知识库</div>
           ) : (
-            <div className="max-h-[320px] overflow-y-auto space-y-1">
-              {allKnowledgeBases.map((kb) => (
-                <label
-                  key={kb.id}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedKbIds.has(kb.id)}
-                    onCheckedChange={() => toggleKb(kb.id)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm text-slate-900 truncate">{kb.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {kb.collectionName || kb.id}
+            <div className="max-h-[360px] overflow-y-auto space-y-1">
+              {allKnowledgeBases.map((kb) => {
+                const binding = kbBindings.find((b) => b.kbId === kb.id);
+                const checked = !!binding;
+                return (
+                  <div
+                    key={kb.id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleKb(kb.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-slate-900 truncate">{kb.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {kb.collectionName || kb.id}
+                      </div>
                     </div>
+                    {checked && binding && (
+                      <>
+                        <Select
+                          value={binding.permission}
+                          onValueChange={(val) => setKbPermission(kb.id, val as RoleKbBinding["permission"])}
+                        >
+                          <SelectTrigger className="w-[90px] h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="READ">{PERMISSION_LABELS.READ}</SelectItem>
+                            <SelectItem value="WRITE">{PERMISSION_LABELS.WRITE}</SelectItem>
+                            <SelectItem value="MANAGE">{PERMISSION_LABELS.MANAGE}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={String(binding.maxSecurityLevel ?? 0)}
+                          onValueChange={(v) => setKbSecurityLevel(kb.id, Number(v))}
+                        >
+                          <SelectTrigger className="w-24 h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[0, 1, 2, 3].map((lvl) => (
+                              <SelectItem key={lvl} value={String(lvl)}>
+                                Level {lvl}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
                   </div>
-                </label>
-              ))}
+                );
+              })}
             </div>
           )}
           <DialogFooter>
             <div className="flex items-center justify-between w-full">
               <span className="text-sm text-muted-foreground">
-                已选 {selectedKbIds.size} / {allKnowledgeBases.length} 个
+                已选 {kbBindings.length} / {allKnowledgeBases.length} 个
               </span>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setKbDialogState({ open: false, role: null })}>

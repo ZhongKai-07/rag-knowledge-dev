@@ -1,6 +1,3 @@
-// @ts-nocheck
-/* eslint-disable */
-
 import { create } from "zustand";
 import { toast } from "sonner";
 
@@ -29,18 +26,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (username, password) => {
     set({ isLoading: true });
     try {
-      const data = await loginRequest(username, password);
-      const user = {
+      const data = await loginRequest(username, password) as any;
+      const token = data.token;
+      const user: User = {
         userId: data.userId,
         username: data.username || username,
-        role: data.role,
-        token: data.token,
-        avatar: data.avatar
+        avatar: data.avatar,
+        deptId: data.deptId ?? null,
+        deptName: data.deptName ?? null,
+        roleTypes: data.roleTypes ?? [],
+        maxSecurityLevel: data.maxSecurityLevel ?? 0,
+        isSuperAdmin: data.isSuperAdmin ?? false,
+        isDeptAdmin: data.isDeptAdmin ?? false,
+        token,
       };
-      storage.setToken(user.token);
+      storage.setToken(token);
       storage.setUser(user);
-      setAuthToken(user.token);
-      set({ user, token: user.token, isAuthenticated: true });
+      setAuthToken(token);
+      set({ user, token, isAuthenticated: true });
       get().fetchCurrentUser().catch(() => null);
       useChatStore.getState().cancelGeneration();
       useChatStore.setState({
@@ -104,8 +107,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const token = get().token || storage.getToken();
     if (!token) return;
     try {
-      const data = await getCurrentUser();
-      const nextUser = { ...data, token };
+      const data = await getCurrentUser() as any;
+      const nextUser: User = {
+        userId: data.userId,
+        username: data.username,
+        avatar: data.avatar,
+        deptId: data.deptId ?? null,
+        deptName: data.deptName ?? null,
+        roleTypes: data.roleTypes ?? [],
+        maxSecurityLevel: data.maxSecurityLevel ?? 0,
+        isSuperAdmin: data.isSuperAdmin ?? false,
+        isDeptAdmin: data.isDeptAdmin ?? false,
+        token,
+      };
       storage.setUser(nextUser);
       set({ user: nextUser, token, isAuthenticated: true });
     } catch {

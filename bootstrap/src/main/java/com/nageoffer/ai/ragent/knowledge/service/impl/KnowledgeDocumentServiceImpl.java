@@ -75,10 +75,13 @@ import com.nageoffer.ai.ragent.rag.dto.StoredFileDTO;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nageoffer.ai.ragent.knowledge.mq.SecurityLevelRefreshEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -145,6 +148,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 .chunkStrategy(modeConfig.chunkingMode() != null ? modeConfig.chunkingMode().getValue() : null)
                 .chunkConfig(modeConfig.chunkConfig())
                 .pipelineId(modeConfig.pipelineId())
+                .securityLevel(requestParam.getSecurityLevel() != null ? requestParam.getSecurityLevel() : 0)
                 .createdBy(UserContext.getUsername())
                 .updatedBy(UserContext.getUsername())
                 .build();
@@ -533,6 +537,50 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateSecurityLevel(String docId, Integer newLevel) {
+        KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
+        Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
+
+        int oldLevel = documentDO.getSecurityLevel() == null ? 0 : documentDO.getSecurityLevel();
+        if (oldLevel == newLevel) {
+            return;
+        }
+
+        documentMapper.update(
+                Wrappers.lambdaUpdate(KnowledgeDocumentDO.class)
+                        .eq(KnowledgeDocumentDO::getId, docId)
+                        .set(KnowledgeDocumentDO::getSecurityLevel, newLevel)
+                        .set(KnowledgeDocumentDO::getUpdatedBy, UserContext.getUsername())
+        );
+
+        KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(documentDO.getKbId());
+        SecurityLevelRefreshEvent event = new SecurityLevelRefreshEvent(docId, kb.getCollectionName(), newLevel);
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    messageQueueProducer.send(
+                            "knowledge-document-security-level_topic${unique-name:}",
+                            docId,
+                            "security_level 刷新",
+                            event
+                    );
+                    log.info("security_level 刷新事件已发出: docId={}", event.getDocId());
+                }
+            });
+        } else {
+            messageQueueProducer.send(
+                    "knowledge-document-security-level_topic${unique-name:}",
+                    docId,
+                    "security_level 刷新",
+                    event
+            );
+        }
+        log.info("已提交 security_level 刷新事件: docId={}, newLevel={}", docId, newLevel);
+    }
+
+    @Override
     public IPage<KnowledgeDocumentVO> page(String kbId, KnowledgeDocumentPageRequest requestParam) {
         Page<KnowledgeDocumentDO> pageParam = new Page<>(requestParam.getCurrent(), requestParam.getSize());
         LambdaQueryWrapper<KnowledgeDocumentDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeDocumentDO.class)
@@ -551,13 +599,17 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         if (!StringUtils.hasText(keyword)) {
             return Collections.emptyList();
         }
+        // Fail-closed: non-admin user with empty accessible set → return empty list.
+        if (accessibleKbIds != null && accessibleKbIds.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         int size = Math.min(Math.max(limit, 1), 20);
         Page<KnowledgeDocumentDO> mpPage = new Page<>(1, size);
         LambdaQueryWrapper<KnowledgeDocumentDO> qw = new LambdaQueryWrapper<KnowledgeDocumentDO>()
                 .eq(KnowledgeDocumentDO::getDeleted, 0)
                 .like(KnowledgeDocumentDO::getDocName, keyword)
-                .in(accessibleKbIds != null && !accessibleKbIds.isEmpty(),
+                .in(accessibleKbIds != null,
                         KnowledgeDocumentDO::getKbId, accessibleKbIds)
                 .orderByDesc(KnowledgeDocumentDO::getUpdateTime);
 

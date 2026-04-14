@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>RAGent 数据库表关系图</title>
+<style>
+:root {
+  --bg: #fafaf8;
+  --card: #ffffff;
+  --border: #e2e0d8;
+  --border-active: #534AB7;
+  --text: #2c2c2a;
+  --text2: #5f5e5a;
+  --text3: #888780;
+  --purple-bg: #EEEDFE;
+  --purple: #534AB7;
+  --purple-dark: #3C3489;
+  --teal-bg: #E1F5EE;
+  --teal: #0F6E56;
+  --teal-dark: #085041;
+  --blue-bg: #E6F1FB;
+  --blue: #185FA5;
+  --blue-dark: #0C447C;
+  --coral-bg: #FAECE7;
+  --coral: #993C1D;
+  --coral-dark: #712B13;
+  --amber-bg: #FAEEDA;
+  --amber: #854F0B;
+  --amber-dark: #633806;
+  --gray-bg: #F1EFE8;
+  --gray: #5F5E5A;
+  --gray-dark: #444441;
+  --green-bg: #EAF3DE;
+  --green: #3B6D11;
+  --green-dark: #27500A;
+  --font: "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18;
+    --card: #2c2c2a;
+    --border: #444441;
+    --text: #e8e6de;
+    --text2: #b4b2a9;
+    --text3: #888780;
+    --purple-bg: #26215C;
+    --purple: #AFA9EC;
+    --purple-dark: #CECBF6;
+    --teal-bg: #04342C;
+    --teal: #5DCAA5;
+    --teal-dark: #9FE1CB;
+    --blue-bg: #042C53;
+    --blue: #85B7EB;
+    --blue-dark: #B5D4F4;
+    --coral-bg: #4A1B0C;
+    --coral: #F0997B;
+    --coral-dark: #F5C4B3;
+    --amber-bg: #412402;
+    --amber: #EF9F27;
+    --amber-dark: #FAC775;
+    --gray-bg: #444441;
+    --gray: #D3D1C7;
+    --gray-dark: #F1EFE8;
+    --green-bg: #173404;
+    --green: #97C459;
+    --green-dark: #C0DD97;
+  }
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); padding: 24px; }
+h1 { font-size: 20px; font-weight: 500; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: var(--text3); margin-bottom: 20px; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+.groups { display: flex; flex-direction: column; gap: 20px; }
+.group { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: var(--card); }
+.group-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; cursor: pointer; user-select: none; }
+.group-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.group-title { font-size: 14px; font-weight: 500; }
+.group-count { font-size: 11px; color: var(--text3); }
+.group-toggle { margin-left: auto; font-size: 11px; color: var(--text3); }
+.tables { display: flex; flex-wrap: wrap; gap: 10px; }
+.table-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; min-width: 200px; flex: 1; max-width: 320px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.table-card:hover { border-color: var(--border-active); box-shadow: 0 0 0 1px var(--border-active); }
+.table-card.active { border-color: var(--border-active); box-shadow: 0 0 0 2px var(--border-active); }
+.table-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+.table-desc { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.table-cols { font-size: 11px; color: var(--text2); line-height: 1.6; }
+.table-cols .pk { color: var(--purple); font-weight: 500; }
+.table-cols .fk { color: var(--teal); }
+.table-cols .new { color: var(--coral); font-weight: 500; }
+.rel-section { margin-top: 20px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
+.rel-title { font-size: 14px; font-weight: 500; margin-bottom: 12px; }
+.rel-list { font-size: 12px; color: var(--text2); line-height: 2; }
+.rel-arrow { color: var(--purple); font-weight: 500; }
+.rel-label { color: var(--text3); font-size: 11px; }
+svg.erd { width: 100%; max-width: 680px; margin: 0 auto; display: block; }
+</style>
+</head>
+<body>
+
+<h1>RAGent 数据库表关系图</h1>
+<p class="subtitle">共 22 张表，按业务域分组 · 点击表卡片查看字段详情 · <span style="color:var(--coral)">■</span> 标记为权限改造新增字段</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple-bg);border:1px solid var(--purple)"></div>权限管理 (RBAC)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--teal-bg);border:1px solid var(--teal)"></div>知识库核心</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue-bg);border:1px solid var(--blue)"></div>Ingestion Pipeline</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--amber-bg);border:1px solid var(--amber)"></div>会话与消息</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--gray-bg);border:1px solid var(--gray)"></div>系统辅助</div>
+</div>
+
+<div class="groups" id="groups"></div>
+
+<div class="rel-section">
+  <div class="rel-title">核心关系链路</div>
+  <div class="rel-list">
+    <b>RBAC 权限链路</b><br>
+    t_user <span class="rel-arrow">──M:N──▶</span> t_user_role <span class="rel-arrow">◀──M:N──</span> t_role <span class="rel-arrow">──M:N──▶</span> t_role_kb_relation <span class="rel-arrow">◀──M:N──</span> t_knowledge_base<br>
+    <span class="rel-label">用户通过角色获取知识库访问权，role.max_security_level 控制文档可见深度</span><br><br>
+
+    <b>知识库数据链路</b><br>
+    t_knowledge_base <span class="rel-arrow">──1:N──▶</span> t_knowledge_document <span class="rel-arrow">──1:N──▶</span> t_knowledge_chunk <span class="rel-arrow">──1:1──▶</span> t_knowledge_vector<br>
+    <span class="rel-label">知识库 → 文档(含 security_level) → 切片 → 向量(OpenSearch/PG)</span><br><br>
+
+    <b>Ingestion 链路</b><br>
+    t_ingestion_pipeline <span class="rel-arrow">──1:N──▶</span> t_ingestion_pipeline_node<br>
+    t_ingestion_task <span class="rel-arrow">──1:N──▶</span> t_ingestion_task_node<br>
+    <span class="rel-label">流水线定义节点序列，任务记录每次执行的节点状态</span><br><br>
+
+    <b>会话链路</b><br>
+    t_conversation <span class="rel-arrow">──1:N──▶</span> t_message <span class="rel-arrow">──1:1──▶</span> t_message_feedback<br>
+    t_conversation <span class="rel-arrow">──1:1──▶</span> t_conversation_summary<br>
+    <span class="rel-label">会话绑定 user_id + kb_id，消息支持反馈评价</span><br><br>
+
+    <b>部门归属</b><br>
+    t_user.dept_id <span class="rel-arrow">──▶</span> (sys_dept) &nbsp;&nbsp;|&nbsp;&nbsp; t_knowledge_base.dept_id <span class="rel-arrow">──▶</span> (sys_dept)<br>
+    <span class="rel-label">⚠ sys_dept 表未在当前 dump 中出现，需确认是否已建表</span>
+  </div>
+</div>
+
+<script>
+const data = [
+  {
+    name: "权限管理 (RBAC)", color: "purple",
+    tables: [
+      { name: "t_user", desc: "系统用户表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"username", t:"varchar(64)"},
+        {n:"password", t:"varchar(128)"},
+        {n:"role", t:"varchar(32)", note:"legacy 字段"},
+        {n:"avatar", t:"varchar(128)"},
+        {n:"dept_id", t:"varchar(20)", isNew:true, note:"所属部门ID"},
+      ]},
+      { name: "t_role", desc: "角色表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"name", t:"varchar(64)"},
+        {n:"description", t:"varchar(256)"},
+        {n:"role_type", t:"varchar(32)", isNew:true, note:"SUPER_ADMIN/DEPT_ADMIN/USER"},
+        {n:"max_security_level", t:"smallint", isNew:true, note:"可访问最高安全等级 0-3"},
+      ]},
+      { name: "t_user_role", desc: "用户-角色关联表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"user_id", t:"varchar(20)", fk:"t_user"},
+        {n:"role_id", t:"varchar(20)", fk:"t_role"},
+      ]},
+      { name: "t_role_kb_relation", desc: "角色-知识库关联表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"role_id", t:"varchar(20)", fk:"t_role"},
+        {n:"kb_id", t:"varchar(20)", fk:"t_knowledge_base"},
+        {n:"permission", t:"varchar(16)", isNew:true, note:"READ/WRITE/MANAGE"},
+      ]},
+    ]
+  },
+  {
+    name: "知识库核心", color: "teal",
+    tables: [
+      { name: "t_knowledge_base", desc: "知识库表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"name", t:"varchar(128)"},
+        {n:"embedding_model", t:"varchar(64)"},
+        {n:"collection_name", t:"varchar(64)", note:"OpenSearch 索引名"},
+        {n:"dept_id", t:"varchar(20)", isNew:true, note:"归属部门ID"},
+      ]},
+      { name: "t_knowledge_document", desc: "知识库文档表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"kb_id", t:"varchar(20)", fk:"t_knowledge_base"},
+        {n:"doc_name", t:"varchar(256)"},
+        {n:"file_url", t:"varchar(1024)"},
+        {n:"file_type / file_size", t:"varchar(16) / bigint"},
+        {n:"status", t:"varchar(16)", note:"pending/running/success/failed"},
+        {n:"security_level", t:"smallint", isNew:true, note:"0=PUBLIC ~ 3=RESTRICTED"},
+        {n:"pipeline_id", t:"varchar(20)", fk:"t_ingestion_pipeline"},
+      ]},
+      { name: "t_knowledge_chunk", desc: "文档切片表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"kb_id", t:"varchar(20)", fk:"t_knowledge_base"},
+        {n:"doc_id", t:"varchar(20)", fk:"t_knowledge_document"},
+        {n:"chunk_index", t:"integer"},
+        {n:"content", t:"text"},
+        {n:"content_hash", t:"varchar(64)"},
+      ]},
+      { name: "t_knowledge_vector", desc: "向量存储表 (PG)", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"content", t:"text"},
+        {n:"metadata", t:"jsonb"},
+        {n:"embedding", t:"vector"},
+      ]},
+      { name: "t_knowledge_document_schedule", desc: "文档定时刷新任务", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"doc_id / kb_id", t:"varchar(20)", fk:"t_knowledge_document"},
+        {n:"cron_expr", t:"varchar(64)"},
+        {n:"enabled / lock_owner / lock_until", t:""},
+      ]},
+      { name: "t_knowledge_document_schedule_exec", desc: "定时刷新执行记录", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"schedule_id", t:"varchar(20)", fk:"t_knowledge_document_schedule"},
+        {n:"doc_id / kb_id", t:"varchar(20)"},
+        {n:"status / content_hash / etag", t:""},
+      ]},
+      { name: "t_knowledge_document_chunk_log", desc: "分块日志表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"doc_id", t:"varchar(20)", fk:"t_knowledge_document"},
+        {n:"status / process_mode / chunk_strategy", t:""},
+        {n:"extract/chunk/embed/persist_duration", t:"bigint"},
+      ]},
+    ]
+  },
+  {
+    name: "Ingestion Pipeline", color: "blue",
+    tables: [
+      { name: "t_ingestion_pipeline", desc: "摄取流水线", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"name", t:"varchar(100)"},
+        {n:"description", t:"text"},
+      ]},
+      { name: "t_ingestion_pipeline_node", desc: "流水线节点", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"pipeline_id", t:"varchar(20)", fk:"t_ingestion_pipeline"},
+        {n:"node_id / node_type", t:"varchar(20/16)"},
+        {n:"next_node_id", t:"varchar(20)"},
+        {n:"settings_json / condition_json", t:"jsonb"},
+      ]},
+      { name: "t_ingestion_task", desc: "摄取任务", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"pipeline_id", t:"varchar(20)", fk:"t_ingestion_pipeline"},
+        {n:"source_type / source_location", t:""},
+        {n:"status / chunk_count / error_message", t:""},
+      ]},
+      { name: "t_ingestion_task_node", desc: "任务节点执行记录", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"task_id", t:"varchar(20)", fk:"t_ingestion_task"},
+        {n:"pipeline_id / node_id / node_type", t:""},
+        {n:"status / duration_ms / output_json", t:""},
+      ]},
+    ]
+  },
+  {
+    name: "会话与消息", color: "amber",
+    tables: [
+      { name: "t_conversation", desc: "会话列表", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"conversation_id", t:"varchar(20)"},
+        {n:"user_id", t:"varchar(20)", fk:"t_user"},
+        {n:"kb_id", t:"varchar(20)", fk:"t_knowledge_base"},
+        {n:"title", t:"varchar(128)"},
+      ]},
+      { name: "t_conversation_summary", desc: "会话摘要", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"conversation_id", t:"varchar(20)", fk:"t_conversation"},
+        {n:"user_id", t:"varchar(20)"},
+        {n:"last_message_id / content", t:""},
+      ]},
+      { name: "t_message", desc: "消息记录", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"conversation_id", t:"varchar(20)", fk:"t_conversation"},
+        {n:"user_id", t:"varchar(20)"},
+        {n:"role", t:"varchar(16)", note:"user/assistant"},
+        {n:"content", t:"text"},
+      ]},
+      { name: "t_message_feedback", desc: "消息反馈", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"message_id", t:"varchar(20)", fk:"t_message"},
+        {n:"conversation_id / user_id", t:"varchar(20)"},
+        {n:"vote", t:"smallint", note:"1:赞 -1:踩"},
+      ]},
+    ]
+  },
+  {
+    name: "系统辅助", color: "gray",
+    tables: [
+      { name: "t_intent_node", desc: "意图树节点", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"kb_id", t:"varchar(20)", fk:"t_knowledge_base"},
+        {n:"intent_code / name / level", t:""},
+        {n:"kind", t:"smallint", note:"0:RAG 1:SYSTEM"},
+        {n:"collection_name / top_k / mcp_tool_id", t:""},
+      ]},
+      { name: "t_query_term_mapping", desc: "关键词归一化映射", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"domain / source_term / target_term", t:""},
+        {n:"match_type / priority", t:""},
+      ]},
+      { name: "t_sample_question", desc: "示例问题", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"title / description / question", t:""},
+      ]},
+      { name: "t_rag_trace_run", desc: "Trace 运行记录", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"trace_id", t:"varchar(64)"},
+        {n:"conversation_id / task_id / user_id", t:""},
+        {n:"status / duration_ms", t:""},
+      ]},
+      { name: "t_rag_trace_node", desc: "Trace 节点记录", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"trace_id", t:"varchar(20)", fk:"t_rag_trace_run"},
+        {n:"node_id / parent_node_id / depth", t:""},
+        {n:"node_type / status / duration_ms", t:""},
+      ]},
+      { name: "t_rag_evaluation_record", desc: "RAG 评测记录", cols: [
+        {n:"id", t:"varchar(20)", pk:true},
+        {n:"trace_id / conversation_id / message_id", t:""},
+        {n:"original_query / rewritten_query", t:""},
+        {n:"eval_status / eval_metrics", t:""},
+      ]},
+    ]
+  },
+];
+
+const container = document.getElementById('groups');
+
+data.forEach((group, gi) => {
+  const div = document.createElement('div');
+  div.className = 'group';
+  div.innerHTML = `
+    <div class="group-header" onclick="toggleGroup(${gi})">
+      <div class="group-dot" style="background:var(--${group.color}-bg);border:1px solid var(--${group.color})"></div>
+      <span class="group-title" style="color:var(--${group.color}-dark)">${group.name}</span>
+      <span class="group-count">${group.tables.length} 张表</span>
+      <span class="group-toggle" id="toggle-${gi}">▼</span>
+    </div>
+    <div class="tables" id="tables-${gi}">
+      ${group.tables.map((t, ti) => `
+        <div class="table-card" id="card-${gi}-${ti}" onclick="toggleCard(${gi},${ti})" style="border-left:3px solid var(--${group.color})">
+          <div class="table-name">${t.name}</div>
+          <div class="table-desc">${t.desc}</div>
+          <div class="table-cols" id="cols-${gi}-${ti}" style="display:none">
+            ${t.cols.map(c => {
+              let cls = c.pk ? 'pk' : c.fk ? 'fk' : c.isNew ? 'new' : '';
+              let prefix = c.pk ? 'PK ' : c.fk ? `FK→${c.fk} ` : c.isNew ? '★ ' : '';
+              let suffix = c.note ? ` <span style="color:var(--text3)">(${c.note})</span>` : '';
+              return `<div><span class="${cls}">${prefix}${c.n}</span> <span style="color:var(--text3)">${c.t}</span>${suffix}</div>`;
+            }).join('')}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  container.appendChild(div);
+});
+
+function toggleGroup(gi) {
+  const el = document.getElementById(`tables-${gi}`);
+  const tog = document.getElementById(`toggle-${gi}`);
+  if (el.style.display === 'none') { el.style.display = 'flex'; tog.textContent = '▼'; }
+  else { el.style.display = 'flex'; }
+}
+
+function toggleCard(gi, ti) {
+  const cols = document.getElementById(`cols-${gi}-${ti}`);
+  const card = document.getElementById(`card-${gi}-${ti}`);
+  if (cols.style.display === 'none') {
+    cols.style.display = 'block';
+    card.classList.add('active');
+  } else {
+    cols.style.display = 'none';
+    card.classList.remove('active');
+  }
+}
+</script>
+</body>
+</html>
