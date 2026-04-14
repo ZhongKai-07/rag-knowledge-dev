@@ -53,3 +53,12 @@ infra-ai/.claude/
 hs_err_pid*.log
 replay_pid*.log
 .superpowers/
+
+### Tool / runtime artifacts ###
+.playwright-mcp/
+log/*.log
+log/error.log
+
+### Local screenshots / scratch images ###
+/*.png
+docs/dev/*.png

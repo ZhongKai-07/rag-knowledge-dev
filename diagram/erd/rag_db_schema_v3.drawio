@@ -1,0 +1,796 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="3ttwvy6jZ4fPjhUwp_oU" name="第 1 页">
+    <mxGraphModel dx="5172" dy="3354" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3508" pageHeight="2480" math="0" shadow="1">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="d1_bg" parent="1" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;align=left;spacingLeft=10;rounded=1;arcSize=2;opacity=40;" value="① 用户与权限域" vertex="1">
+          <mxGeometry height="500" width="820" x="-60" y="-100" as="geometry" />
+        </mxCell>
+        <mxCell id="d2_bg" parent="1" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;align=left;spacingLeft=10;rounded=1;arcSize=2;opacity=40;" value="② 会话与消息域" vertex="1">
+          <mxGeometry height="500" width="820" x="900" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d3_bg" parent="1" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13;align=left;spacingLeft=10;rounded=1;arcSize=2;opacity=40;" value="③ 知识库管理域" vertex="1">
+          <mxGeometry height="480" width="1680" x="40" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="d4_bg" parent="1" style="swimlane;startSize=30;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=13;align=left;spacingLeft=10;rounded=1;arcSize=2;opacity=40;" value="④ RAG 检索与追踪域" vertex="1">
+          <mxGeometry height="480" width="820" x="40" y="1110" as="geometry" />
+        </mxCell>
+        <mxCell id="d5_bg" parent="1" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=13;align=left;spacingLeft=10;rounded=1;arcSize=2;opacity=40;" value="⑤ RAG 评测域" vertex="1">
+          <mxGeometry height="280" width="820" x="900" y="1110" as="geometry" />
+        </mxCell>
+        <mxCell id="d6_bg" parent="1" style="swimlane;startSize=30;fillColor=#f0f0f0;strokeColor=#666666;fontStyle=1;fontSize=13;align=left;spacingLeft=10;rounded=1;arcSize=2;opacity=40;" value="⑥ Ingestion 流水线域" vertex="1">
+          <mxGeometry height="480" width="1680" x="40" y="1640" as="geometry" />
+        </mxCell>
+        <mxCell id="d7_bg" parent="1" style="swimlane;startSize=30;fillColor=#fce5cd;strokeColor=#e06a00;fontStyle=1;fontSize=13;align=left;spacingLeft=10;rounded=1;arcSize=2;opacity=40;" value="⑦ 向量存储（pgvector 模式）" vertex="1">
+          <mxGeometry height="160" width="820" x="900" y="1440" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_dept" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="150" width="240" x="-40" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_dept_title" parent="sys_dept" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#6c8ebf;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="sys_dept" vertex="1">
+          <mxGeometry height="30" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_dept_id" parent="sys_dept" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="240" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_dept_code" parent="sys_dept" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔐 dept_code  VARCHAR UK" vertex="1">
+          <mxGeometry height="25" width="240" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_dept_name" parent="sys_dept" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    dept_name  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="240" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="sys_dept_common" parent="sys_dept" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="15" width="240" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="210" width="260" x="240" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_title" parent="t_user" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#6c8ebf;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_user" vertex="1">
+          <mxGeometry height="30" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_id" parent="t_user" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_username" parent="t_user" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔐 username  VARCHAR UK" vertex="1">
+          <mxGeometry height="25" width="260" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_password" parent="t_user" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    password  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_role_legacy" parent="t_user" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    role  VARCHAR (遗留字段)" vertex="1">
+          <mxGeometry height="25" width="260" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_avatar" parent="t_user" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    avatar  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_deptid" parent="t_user" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 dept_id  FK → sys_dept.id" vertex="1">
+          <mxGeometry height="25" width="260" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="180" width="200" x="540" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_title" parent="t_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#6c8ebf;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_role" vertex="1">
+          <mxGeometry height="30" width="200" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_id" parent="t_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="200" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_name" parent="t_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔐 name  VARCHAR UK" vertex="1">
+          <mxGeometry height="25" width="200" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_type" parent="t_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    role_type  ENUM(3)" vertex="1">
+          <mxGeometry height="25" width="200" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_maxsec" parent="t_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    max_security_level  INT(0-3)" vertex="1">
+          <mxGeometry height="25" width="200" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_common" parent="t_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="20" width="200" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_role" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="160" width="260" x="240" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_role_title" parent="t_user_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#6c8ebf;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_user_role" vertex="1">
+          <mxGeometry height="30" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_role_id" parent="t_user_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_role_uid" parent="t_user_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 user_id  FK → t_user.id" vertex="1">
+          <mxGeometry height="25" width="260" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_role_rid" parent="t_user_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 role_id  FK → t_role.id" vertex="1">
+          <mxGeometry height="25" width="260" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="t_user_role_common" parent="t_user_role" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="260" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="" vertex="1">
+          <mxGeometry height="210" width="260" x="-40" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb_title" parent="t_role_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#6c8ebf;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_role_kb_relation" vertex="1">
+          <mxGeometry height="30" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb_id" parent="t_role_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb_roleid" parent="t_role_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 role_id  FK → t_role.id" vertex="1">
+          <mxGeometry height="25" width="260" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb_kbid" parent="t_role_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 kb_id  FK → t_knowledge_base.id" vertex="1">
+          <mxGeometry height="25" width="260" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb_perm" parent="t_role_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    permission  ENUM(READ/WRITE/MANAGE)" vertex="1">
+          <mxGeometry height="25" width="260" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb_maxsec" parent="t_role_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    max_security_level  INT(0-3)" vertex="1">
+          <mxGeometry height="25" width="260" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="t_role_kb_common" parent="t_role_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="260" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="200" width="260" x="920" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_title" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#82b366;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_conversation" vertex="1">
+          <mxGeometry height="30" width="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_id" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_cid" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    conversation_id  VARCHAR (业务ID)" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_uid" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 user_id  FK → t_user.id" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_kbid" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 kb_id  FK → t_knowledge_base.id" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_title2" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    title  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_last" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    last_time  DATETIME" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_common" parent="t_conv" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="20" width="260" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_msg" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="155" width="260" x="1210" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="t_msg_title" parent="t_msg" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#82b366;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_message" vertex="1">
+          <mxGeometry height="30" width="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t_msg_id" parent="t_msg" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_msg_cid" parent="t_msg" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    conversation_id  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_msg_uid" parent="t_msg" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 user_id  FK → t_user.id" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_msg_role" parent="t_msg" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    role  ENUM(user/assistant)" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_msg_content" parent="t_msg" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    content  TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="205" width="260" x="1210" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_title" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#82b366;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_message_feedback" vertex="1">
+          <mxGeometry height="30" width="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_id" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_mid" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 message_id  FK (UK + user_id)" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_cid" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    conversation_id  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_uid" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 user_id  FK → t_user.id" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_vote" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    vote  TINYINT (1=赞/-1=踩)" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_reason" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    reason / comment  TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_feedback_common" parent="t_feedback" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="260" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_sum" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="155" width="260" x="920" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_sum_title" parent="t_conv_sum" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#82b366;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_conversation_summary" vertex="1">
+          <mxGeometry height="30" width="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_sum_id" parent="t_conv_sum" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_sum_cid" parent="t_conv_sum" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    conversation_id  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_sum_uid" parent="t_conv_sum" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 user_id  FK → t_user.id" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_sum_lastmsg" parent="t_conv_sum" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    last_message_id  BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_conv_sum_content" parent="t_conv_sum" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    content  TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sample_q" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="" vertex="1">
+          <mxGeometry height="130" width="240" x="920" y="500" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sample_q_title" parent="t_sample_q" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#82b366;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_sample_question" vertex="1">
+          <mxGeometry height="30" width="240" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sample_q_id" parent="t_sample_q" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sample_q_title2" parent="t_sample_q" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    title  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="240" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sample_q_desc" parent="t_sample_q" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    description  TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_sample_q_q" parent="t_sample_q" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    question  TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="205" width="270" x="60" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_title" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#d6b656;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_knowledge_base" vertex="1">
+          <mxGeometry height="30" width="270" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_id" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="270" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_name" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    name  VARCHAR NOT NULL" vertex="1">
+          <mxGeometry height="25" width="270" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_embed" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    embedding_model  VARCHAR NOT NULL" vertex="1">
+          <mxGeometry height="25" width="270" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_col" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔐 collection_name  VARCHAR UK" vertex="1">
+          <mxGeometry height="25" width="270" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_createdby" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    created_by  BIGINT NOT NULL" vertex="1">
+          <mxGeometry height="25" width="270" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_deptid" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 dept_id  FK → sys_dept.id" vertex="1">
+          <mxGeometry height="25" width="270" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_kb_common" parent="t_kb" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="270" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="405" width="290" x="370" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_title" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#d6b656;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_knowledge_document" vertex="1">
+          <mxGeometry height="30" width="290" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_id" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="290" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_kbid" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 kb_id  FK → t_knowledge_base.id" vertex="1">
+          <mxGeometry height="25" width="290" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_name" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    doc_name  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="290" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_enabled" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    enabled / status  ENUM(pending...)" vertex="1">
+          <mxGeometry height="25" width="290" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_file" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    file_url / file_type / file_size" vertex="1">
+          <mxGeometry height="25" width="290" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_mode" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    process_mode  ENUM(chunk/pipeline)" vertex="1">
+          <mxGeometry height="25" width="290" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_src" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    source_type / source_location" vertex="1">
+          <mxGeometry height="25" width="290" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    schedule_enabled / schedule_cron" vertex="1">
+          <mxGeometry height="25" width="290" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_chunk" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    chunk_strategy / chunk_config JSONB" vertex="1">
+          <mxGeometry height="25" width="290" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_pipeid" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 pipeline_id  FK → t_ingestion_pipeline.id" vertex="1">
+          <mxGeometry height="25" width="290" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sec" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f8cecc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;" value="🔒 security_level  INT(0-3)" vertex="1">
+          <mxGeometry height="25" width="290" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_common" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="290" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_note" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffe6cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=9;fontStyle=2;fontColor=#b85450;" value="0=PUBLIC / 1=INTERNAL / 2=CONFIDENTIAL / 3=RESTRICTED" vertex="1">
+          <mxGeometry height="30" width="290" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_note2" parent="t_doc" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;" value="    (空)" vertex="1">
+          <mxGeometry height="45" width="290" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="205" width="280" x="700" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_title" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#d6b656;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_knowledge_chunk" vertex="1">
+          <mxGeometry height="30" width="280" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_id" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="280" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_kbid" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 kb_id  FK → t_knowledge_base.id" vertex="1">
+          <mxGeometry height="25" width="280" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_docid" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 doc_id  FK → t_knowledge_document.id" vertex="1">
+          <mxGeometry height="25" width="280" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_idx" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    chunk_index  INT" vertex="1">
+          <mxGeometry height="25" width="280" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_content" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    content  TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_hash" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    content_hash  VARCHAR (去重)" vertex="1">
+          <mxGeometry height="25" width="280" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_count" parent="t_chunk" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    char_count / token_count  INT" vertex="1">
+          <mxGeometry height="25" width="280" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="230" width="300" x="1010" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_title" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#d6b656;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;fontColor=#ffffff;align=center;" value="t_knowledge_document_chunk_log" vertex="1">
+          <mxGeometry height="30" width="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_id" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_docid" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 doc_id  FK → t_knowledge_document.id" vertex="1">
+          <mxGeometry height="25" width="300" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_status" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    status / process_mode / chunk_strategy" vertex="1">
+          <mxGeometry height="25" width="300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_pipeid" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 pipeline_id  FK" vertex="1">
+          <mxGeometry height="25" width="300" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_dur" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;" value="    extract/chunk/embed/persist_duration (ms)" vertex="1">
+          <mxGeometry height="25" width="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_total" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    total_duration / chunk_count  INT" vertex="1">
+          <mxGeometry height="25" width="300" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_err" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    error_message  TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_chunk_log_common" parent="t_chunk_log" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="300" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="" vertex="1">
+          <mxGeometry height="280" width="300" x="1340" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_title" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#d6b656;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;fontColor=#ffffff;align=center;" value="t_knowledge_document_schedule" vertex="1">
+          <mxGeometry height="30" width="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_id" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_docid" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 doc_id  FK UK → t_knowledge_document" vertex="1">
+          <mxGeometry height="25" width="300" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_kbid" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 kb_id  FK → t_knowledge_base.id" vertex="1">
+          <mxGeometry height="25" width="300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_cron" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    cron_expr / enabled  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="300" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_run" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    next_run_time / last_run_time  DATETIME" vertex="1">
+          <mxGeometry height="25" width="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_etag" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    last_etag / last_content_hash  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="300" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_lock" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    lock_owner / lock_until  VARCHAR/DATETIME" vertex="1">
+          <mxGeometry height="25" width="300" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_common" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="300" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_exec_note" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fffbe6;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=9;fontStyle=2;" value="    ↓ 执行记录见 t_knowledge_document_schedule_exec" vertex="1">
+          <mxGeometry height="25" width="300" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="t_doc_sched2_note2" parent="t_doc_sched2" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;" value="(空)" vertex="1">
+          <mxGeometry height="25" width="300" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
+          <mxGeometry height="360" width="300" x="60" y="1170" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_title" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#b85450;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_intent_node" vertex="1">
+          <mxGeometry height="30" width="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_id" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_kbid" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 kb_id  FK (NULL=全局)" vertex="1">
+          <mxGeometry height="25" width="300" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_code" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔐 intent_code  VARCHAR (业务唯一)" vertex="1">
+          <mxGeometry height="25" width="300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_name" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    name / level / parent_code" vertex="1">
+          <mxGeometry height="25" width="300" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_desc" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    description / examples  TEXT (Few-shot)" vertex="1">
+          <mxGeometry height="25" width="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_col" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    collection_name / top_k  (检索配置)" vertex="1">
+          <mxGeometry height="25" width="300" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_mcp" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    mcp_tool_id  VARCHAR (MCP意图)" vertex="1">
+          <mxGeometry height="25" width="300" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_kind" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    kind  TINYINT(0=KB/1=MCP/2=SYSTEM)" vertex="1">
+          <mxGeometry height="25" width="300" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_prompt" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    prompt_snippet / prompt_template  TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_pprompt" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    param_prompt_template  TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_note" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffe6cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=9;fontStyle=2;fontColor=#b85450;" value="Domain → Category → Topic 三级意图树" vertex="1">
+          <mxGeometry height="25" width="300" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_common" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="300" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="t_intent_filler" parent="t_intent" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;fontSize=10;" value=" " vertex="1">
+          <mxGeometry height="30" width="300" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
+          <mxGeometry height="180" width="260" x="400" y="1170" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm_title" parent="t_qtm" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#b85450;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_query_term_mapping" vertex="1">
+          <mxGeometry height="30" width="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm_id" parent="t_qtm" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm_domain" parent="t_qtm" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    domain  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm_src" parent="t_qtm" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    source_term → target_term  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm_match" parent="t_qtm" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    match_type  ENUM(精确/模糊)" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm_pri" parent="t_qtm" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    priority  INT" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_qtm_common" parent="t_qtm" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
+          <mxGeometry height="180" width="260" x="400" y="1380" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run_title" parent="t_trace_run" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#b85450;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_rag_trace_run" vertex="1">
+          <mxGeometry height="30" width="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run_id" parent="t_trace_run" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run_tid" parent="t_trace_run" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔐 trace_id  VARCHAR UK" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run_cid" parent="t_trace_run" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    conversation_id / task_id / user_id" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run_st" parent="t_trace_run" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    status / error_message  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run_dur" parent="t_trace_run" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    start_time / end_time / duration_ms" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_run_extra" parent="t_trace_run" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    extra_data  JSON (token/问题长度等)" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f8cecc;strokeColor=#b85450;" value="" vertex="1">
+          <mxGeometry height="230" width="300" x="60" y="1560" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_title" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#b85450;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_rag_trace_node" vertex="1">
+          <mxGeometry height="30" width="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_id" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_tid" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 trace_id  (UK联合 node_id)" vertex="1">
+          <mxGeometry height="25" width="300" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_nid" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    node_id  VARCHAR (UK联合 trace_id)" vertex="1">
+          <mxGeometry height="25" width="300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_par" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    parent_node_id / depth  (树形结构)" vertex="1">
+          <mxGeometry height="25" width="300" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_type" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    node_type / node_name / class_name" vertex="1">
+          <mxGeometry height="25" width="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_st" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    status / error_message  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="300" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_dur" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    start_time / end_time / duration_ms" vertex="1">
+          <mxGeometry height="25" width="300" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_trace_node_extra" parent="t_trace_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    extra_data  JSON" vertex="1">
+          <mxGeometry height="25" width="300" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="" vertex="1">
+          <mxGeometry height="255" width="300" x="920" y="1160" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_title" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#9673a6;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_rag_evaluation_record" vertex="1">
+          <mxGeometry height="30" width="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_id" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_ids" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;" value="    trace_id / conversation_id / message_id / user_id" vertex="1">
+          <mxGeometry height="25" width="300" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_q" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    original_query / rewritten_query  TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_sq" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    sub_questions  TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_chunks" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    retrieved_chunks / retrieval_top_k  TEXT/INT" vertex="1">
+          <mxGeometry height="25" width="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_ans" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    answer  TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_model" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    model_name / intent_results  VARCHAR/TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_status" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    eval_status  ENUM(PENDING/EVALUATED)" vertex="1">
+          <mxGeometry height="25" width="300" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_eval_metrics" parent="t_eval" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    eval_metrics  JSON (RAGAS评分)" vertex="1">
+          <mxGeometry height="25" width="300" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f0f0f0;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="130" width="260" x="60" y="1700" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_title" parent="t_pipe" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#666666;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_ingestion_pipeline" vertex="1">
+          <mxGeometry height="30" width="260" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_id" parent="t_pipe" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_name" parent="t_pipe" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔐 name  VARCHAR UK" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_desc" parent="t_pipe" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    description  TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_common" parent="t_pipe" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f0f0f0;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="230" width="310" x="360" y="1700" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_title" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#666666;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_ingestion_pipeline_node" vertex="1">
+          <mxGeometry height="30" width="310" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_id" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="310" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_pipeid" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 pipeline_id  FK (UK联合 node_id)" vertex="1">
+          <mxGeometry height="25" width="310" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_type" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    node_type  ENUM(FETCHER/PARSER/...)" vertex="1">
+          <mxGeometry height="25" width="310" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_next" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    next_node_id  VARCHAR (链表→下一节点)" vertex="1">
+          <mxGeometry height="25" width="310" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_settings" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    settings_json  JSONB (节点参数)" vertex="1">
+          <mxGeometry height="25" width="310" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_cond" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    condition_json  JSONB (条件跳转)" vertex="1">
+          <mxGeometry height="25" width="310" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_notetypes" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffe6cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=9;fontStyle=2;fontColor=#b85450;" value="    FETCHER/PARSER/ENHANCER/CHUNKER/ENRICHER/INDEXER" vertex="1">
+          <mxGeometry height="25" width="310" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_pipe_node_common" parent="t_pipe_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="310" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f0f0f0;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="230" width="290" x="710" y="1700" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_title" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#666666;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_ingestion_task" vertex="1">
+          <mxGeometry height="30" width="290" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_id" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="290" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_pipeid" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 pipeline_id  FK → t_ingestion_pipeline.id" vertex="1">
+          <mxGeometry height="25" width="290" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_src" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    source_type / source_location / file_name" vertex="1">
+          <mxGeometry height="25" width="290" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_st" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    status / chunk_count / error_message" vertex="1">
+          <mxGeometry height="25" width="290" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_logs" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    logs_json / metadata_json  JSONB" vertex="1">
+          <mxGeometry height="25" width="290" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_time" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    started_at / completed_at  DATETIME" vertex="1">
+          <mxGeometry height="25" width="290" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_common" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="290" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_f" parent="t_task" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;fontSize=10;" value=" " vertex="1">
+          <mxGeometry height="25" width="290" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#f0f0f0;strokeColor=#666666;" value="" vertex="1">
+          <mxGeometry height="230" width="290" x="1040" y="1700" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_title" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#666666;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;fontStyle=1;fontColor=#ffffff;align=center;" value="t_ingestion_task_node" vertex="1">
+          <mxGeometry height="30" width="290" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_id" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK BIGINT" vertex="1">
+          <mxGeometry height="25" width="290" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_taskid" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔗 task_id  FK → t_ingestion_task.id" vertex="1">
+          <mxGeometry height="25" width="290" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_pipeid" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    pipeline_id / node_id  VARCHAR" vertex="1">
+          <mxGeometry height="25" width="290" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_type" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    node_type / node_order  VARCHAR/INT" vertex="1">
+          <mxGeometry height="25" width="290" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_st" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    status / duration_ms  ENUM/INT" vertex="1">
+          <mxGeometry height="25" width="290" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_msg" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    message / error_message  TEXT" vertex="1">
+          <mxGeometry height="25" width="290" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_out" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    output_json  TEXT" vertex="1">
+          <mxGeometry height="25" width="290" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="t_task_node_common" parent="t_task_node" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#f5f5f5;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontColor=#888888;" value="    create_time / update_time / deleted" vertex="1">
+          <mxGeometry height="25" width="290" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="t_vec" parent="1" style="shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;fillColor=#fce5cd;strokeColor=#e06a00;" value="" vertex="1">
+          <mxGeometry height="155" width="300" x="920" y="1490" as="geometry" />
+        </mxCell>
+        <mxCell id="t_vec_title" parent="t_vec" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#e06a00;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;fontColor=#ffffff;align=center;" value="t_knowledge_vector  (pgvector专用)" vertex="1">
+          <mxGeometry height="30" width="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t_vec_id" parent="t_vec" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="🔑 id  PK  (= t_knowledge_chunk.id)" vertex="1">
+          <mxGeometry height="25" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t_vec_content" parent="t_vec" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffffff;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    content  TEXT" vertex="1">
+          <mxGeometry height="25" width="300" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="t_vec_meta" parent="t_vec" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fff2cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="    metadata  JSONB (kb_id/doc_id/security_level)" vertex="1">
+          <mxGeometry height="25" width="300" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="t_vec_emb" parent="t_vec" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#fce5cd;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontStyle=1;" value="🔢 embedding  vector(1536) HNSW余弦" vertex="1">
+          <mxGeometry height="25" width="300" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="t_vec_note" parent="t_vec" style="shape=tableRow;horizontal=0;startSize=0;swimlaneHead=0;swimlaneBody=0;fillColor=#ffe6cc;collapsible=0;dropTarget=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=10;fontStyle=2;fontColor=#e06a00;" value="⚠ OpenSearch/Milvus 模式下不使用此表" vertex="1">
+          <mxGeometry height="25" width="300" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" edge="1" parent="1" source="sys_dept_name" style="edgeStyle=orthogonalEdgeStyle;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_user_deptid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" edge="1" parent="1" source="t_user_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_user_role_uid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" edge="1" parent="1" source="t_role_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_user_role_rid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" edge="1" parent="1" source="t_role_name" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_role_kb_roleid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" edge="1" parent="1" source="t_kb_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_role_kb_kbid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" edge="1" parent="1" source="sys_dept_name" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6c8ebf;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_kb_deptid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" edge="1" parent="1" source="t_user_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_conv_uid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" edge="1" parent="1" source="t_kb_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_conv_kbid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" edge="1" parent="1" source="t_user_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_msg_uid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" edge="1" parent="1" source="t_msg_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_feedback_mid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" edge="1" parent="1" source="t_user_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#82b366;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_conv_sum_uid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" edge="1" parent="1" source="t_kb_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_doc_kbid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" edge="1" parent="1" source="t_kb_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_chunk_kbid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" edge="1" parent="1" source="t_doc_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_chunk_docid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" edge="1" parent="1" source="t_doc_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_chunk_log_docid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" edge="1" parent="1" source="t_doc_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERone;startArrow=ERone;endFill=0;startFill=0;" target="t_doc_sched2_docid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" edge="1" parent="1" source="t_pipe_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#666666;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_doc_pipeid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" edge="1" parent="1" source="t_pipe_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#666666;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_pipe_node_pipeid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" edge="1" parent="1" source="t_pipe_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#666666;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_task_pipeid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e20" edge="1" parent="1" source="t_task_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#666666;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_task_node_taskid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" edge="1" parent="1" source="t_kb_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#d6b656;strokeWidth=2;endArrow=ERmany;startArrow=ERone;endFill=0;startFill=0;" target="t_intent_kbid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" edge="1" parent="1" source="t_chunk_id" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#e06a00;strokeWidth=2;endArrow=ERone;startArrow=ERone;endFill=0;startFill=0;dashed=1;" target="t_vec_id">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_bg" parent="1" style="swimlane;startSize=25;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=12;align=center;rounded=1;arcSize=5;" value="图例 Legend" vertex="1">
+          <mxGeometry height="280" width="320" x="1760" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_pk" parent="legend_bg" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=5;fontSize=12;" value="🔑  PK  主键 Primary Key" vertex="1">
+          <mxGeometry height="25" width="300" x="10" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_uk" parent="legend_bg" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=5;fontSize=12;" value="🔐  UK  唯一键 Unique Key" vertex="1">
+          <mxGeometry height="25" width="300" x="10" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_fk" parent="legend_bg" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=5;fontSize=12;" value="🔗  FK  外键 Foreign Key (黄底)" vertex="1">
+          <mxGeometry height="25" width="300" x="10" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_sec" parent="legend_bg" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=5;fontSize=12;" value="🔒  安全等级字段 Security Level (红底)" vertex="1">
+          <mxGeometry height="25" width="300" x="10" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_vec" parent="legend_bg" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=5;fontSize=12;" value="🔢  向量字段 Vector Field (橙底)" vertex="1">
+          <mxGeometry height="25" width="300" x="10" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_soft" parent="legend_bg" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=5;fontSize=11;fontColor=#888888;" value="⚙  所有表含 create_time / update_time / deleted (软删除)" vertex="1">
+          <mxGeometry height="40" width="300" x="10" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_dashed" parent="legend_bg" style="text;html=1;align=left;verticalAlign=middle;spacingLeft=5;fontSize=11;fontStyle=2;" value="- - →  逻辑关联 / 共享ID (非严格FK)" vertex="1">
+          <mxGeometry height="25" width="300" x="10" y="225" as="geometry" />
+        </mxCell>
+        <mxCell id="rbac_label" parent="1" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontStyle=1;fontColor=#6c8ebf;strokeColor=#6c8ebf;fillColor=#EFF8FF;rounded=1;" value="RBAC 权限链路：t_user → t_user_role → t_role → t_role_kb_relation → t_knowledge_base" vertex="1">
+          <mxGeometry height="30" width="820" x="-60" y="370" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
