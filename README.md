@@ -18,10 +18,11 @@
 - **模型路由与容错**：多模型优先级调度、首包探测、健康检查、三态熔断、自动降级。
 - **MCP 工具集成**：意图非知识检索时自动提参调用业务工具，检索与工具调用无缝融合。
 - **文档入库 ETL**：节点编排 Pipeline（抓取→解析→增强→分块→向量化→写入），灵活配置可扩展。
-- **RBAC 权限控制**：基于角色的知识库访问控制，不同角色看到和检索的知识库不同。
+- **RBAC 权限控制**：三层角色（SUPER_ADMIN / DEPT_ADMIN / USER）+ 部门归属；KB 与角色绑定时可按 **per-KB `max_security_level`** 独立设置安全等级天花板，DEPT_ADMIN 仅管理本部门资源。
+- **文档安全等级过滤**：每篇文档/分块带 `security_level`（0-3），检索阶段 `LTE_OR_MISSING` 过滤，低级用户看不到高密文档。
 - **知识库空间隔离**：用户登录后进入 Spaces 入口页，按权限展示可访问的知识库卡片；点击进入后会话锁定在该知识库范围内，对话历史、检索、校验全链路按空间隔离。
 - **全链路追踪**：重写、意图、检索、生成每个环节均有 Trace 记录，排查与调优有据可依。
-- **管理后台**：React 管理界面，覆盖知识库管理、意图树编辑、入库监控、链路追踪、角色管理、系统设置。
+- **管理后台**：React 管理界面，覆盖知识库管理、意图树编辑、入库监控、链路追踪、部门/用户/角色管理、跨部门 KB 共享（KbSharingTab）、系统设置；DEPT_ADMIN 进入后自动裁剪为本部门可管理视图。
 
 ## 技术架构
 
@@ -247,6 +248,12 @@ cd frontend && npm install && npm run dev
 | `resources/database/upgrade_v1.1_to_v1.2.sql` | v1.1 → v1.2 增量升级（RBAC 表） |
 | `resources/database/upgrade_v1.2_to_v1.3.sql` | v1.2 → v1.3 增量升级（会话关联知识库，kb_id） |
 | `resources/database/fixture_pr3_demo.sql` | PR3 curl 矩阵演示数据（alice/bob/carol + 研发/法务 KB），仅 Mode B 使用 |
+
+> PR3 收尾引入的 `t_role_kb_relation.max_security_level` 列已直接合入 `schema_pg.sql` 和 `full_schema_pg.sql`，对于已在线的旧库需手动执行：
+> ```sql
+> ALTER TABLE t_role_kb_relation ADD COLUMN max_security_level SMALLINT NOT NULL DEFAULT 0;
+> COMMENT ON COLUMN t_role_kb_relation.max_security_level IS '该角色对该 KB 可访问的最高安全等级（0-3），检索时按此值过滤';
+> ```
 
 ## PR3 Demo
 
