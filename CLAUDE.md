@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Developer Docs — Read First If Relevant
+
+- **`docs/dev/entry-points.md`** — scenario-driven navigation ("I want to do X, where do I start?"). Check this before exploring the codebase blind.
+- **`docs/dev/follow-ups.md`** — deferred tech debt backlog (from the 2026-04-14 `/simplify` review). Consult when picking up related work so you don't reinvent known issues.
+- **`docs/dev/launch.md`** — full environment bring-up (Docker + DB init + backend/frontend start).
+- **`log/dev_log/dev_log.md`** — running development log, indexes detailed per-PR notes under `log/dev_log/YYYY-MM-DD-*.md`.
+- **`bootstrap/CLAUDE.md`, `frontend/CLAUDE.md`, `framework/CLAUDE.md`, `infra-ai/CLAUDE.md`** — module-specific "关键类" tables + gotchas.
+- **`AGENTS.md`** (root) — agent contract for this repo.
+
 ## Build & Run Commands
 
 ```bash
