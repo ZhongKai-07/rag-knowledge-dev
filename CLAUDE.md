@@ -90,6 +90,20 @@ Full environment setup guide (Docker containers + DB init + backend/frontend sta
 Upgrade scripts in `resources/database/`:
 - `upgrade_v1.2_to_v1.3.sql` — adds `kb_id` to `t_conversation` for knowledge space isolation
 
+Full dev-environment wipe + rebuild (**dev only — destroys all data**):
+```bash
+# PG: drop + recreate (kills active connections first, then re-inits schema)
+docker exec postgres psql -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='ragent' AND pid<>pg_backend_pid();"
+docker exec postgres psql -U postgres -c "DROP DATABASE IF EXISTS ragent;"
+docker exec postgres psql -U postgres -c "CREATE DATABASE ragent ENCODING 'UTF8';"
+docker exec -i postgres psql -U postgres -d ragent < resources/database/schema_pg.sql
+docker exec -i postgres psql -U postgres -d ragent < resources/database/init_data_pg.sql
+# OpenSearch: one index per KB, named after collectionName
+curl -X DELETE http://localhost:9201/<collection-name>
+# RustFS: bucket == collectionName, data mounted at container /data
+docker exec rustfs sh -c "rm -rf /data/<collection-name>"
+```
+
 ## Language
 
 Project documentation and comments are in Chinese. Code identifiers are in English.
@@ -108,7 +122,11 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - **PostgreSQL folds unquoted identifiers to lowercase**: `selectMaps` with `.select("kb_id AS kbId")` produces map key `kbid`, not `kbId`. Always use snake_case aliases (`AS kb_id`, `AS doc_count`) and `row.get("kb_id")` — never camelCase.
 - **Frontend HMR vs Backend restart**: Vite dev server hot-reloads frontend changes instantly. Spring Boot requires manual restart (`mvn -pl bootstrap spring-boot:run`) after any Java code change. Always confirm backend is restarted before verifying backend changes.
 - **`mvn spring-boot:run` does NOT recompile stale classes after branch switch**: After `git checkout`, old `.class` files in `target/` remain. Run `mvn clean -pl bootstrap spring-boot:run` on first run in a new branch or new machine to force full recompilation with `-parameters`.
-- **`-parameters` flag: IntelliJ vs Maven divergence**: IntelliJ adds `-parameters` automatically; Maven only does so if `maven-compiler-plugin` has `<parameters>true</parameters>`. Without it: (1) `@RequestParam`/`@PathVariable` without explicit `value=` throw `IllegalArgumentException` at runtime; (2) `@RequiredArgsConstructor` on a bean with multiple candidates of the same type fails to inject. **Rule**: always write explicit `value=` on all `@RequestParam`/`@PathVariable` annotations; use `@Qualifier` for ambiguous bean types.
+- **`-parameters` flag: IntelliJ vs Maven divergence**: IntelliJ adds `-parameters` automatically; Maven doesn't (compiler-plugin `<parameters>` isn't set). Without it, `@RequestParam`/`@PathVariable` without explicit `value=` throw `IllegalArgumentException` at runtime. **Rule**: always write explicit `value="..."` on all `@RequestParam`/`@PathVariable` annotations.
+- **Sweep for bare annotations** (run after adding any controller): `grep -rEn '@(RequestParam|PathVariable)\s+(required\s*=[^,)]+,\s*)?[A-Z]' --include="*Controller.java" bootstrap/src/main/java | grep -v 'value\s*='`
+- **`@RequiredArgsConstructor` + `@Qualifier` is SAFE**: `lombok.config` has `copyableAnnotations += org.springframework.beans.factory.annotation.Qualifier`, so field-level `@Qualifier("beanName")` IS copied to the Lombok-generated constructor parameter. Explicit constructors are NOT required for ambiguous bean types (supersedes previous guidance).
+- **Spotless runs on every `mvn compile`**, not just `mvn spotless:apply`: the `default` execution is wired to apply mode. A routine `mvn -pl bootstrap clean compile` can silently reformat unrelated files (e.g., collapsing an explicit constructor into `@RequiredArgsConstructor`). Always `git status` after compile and commit reformats separately.
+- **pgvector extension not installed on `postgres:16` image**: `schema_pg.sql` contains `embedding vector(1536)` for `t_knowledge_vector`. `CREATE EXTENSION vector` + subsequent CREATE TABLE will error during init — **expected and safe** when `rag.vector.type=opensearch` (or `milvus`). The table simply won't exist; all other tables create successfully.
 - **API signature changes require full-text search**: When backend adds/changes required parameters (e.g., adding `@RequestParam String kbId`), grep ALL frontend callers — not just the ones listed in the plan. Missing callers cause runtime 400 errors.
 - **Sa-Token auth header is raw token, no Bearer prefix**: `Authorization: <token>` (NOT `Authorization: Bearer <token>`). See `application.yaml` `sa-token.token-name: Authorization` and `api.ts:15`. All permission rejections (NotRoleException, ClientException) return **HTTP 200** with `code != "0"` in the `Result` body — NOT HTTP 403/409. Assert on `code` field, never on HTTP status code.
 - **Table naming convention is inconsistent**: Most tables use `t_` prefix (`t_user`, `t_role`, `t_knowledge_base`), but the department table is `sys_dept` (with entity `SysDeptDO`, mapper `SysDeptMapper`). When searching for department-related code, grep for `sys_dept` / `SysDept`, NOT `t_department` / `Dept`.

@@ -127,6 +127,8 @@ src/
 - **新增管理后台页面**：组件放 `pages/admin/{feature}/`，在 `App.tsx` 注册路由，在 `AdminLayout.tsx` 添加侧边栏菜单项和面包屑。
 - **表格**：用 `@tanstack/react-table` + `components/ui/table.tsx`。
 - **表单**：用 `react-hook-form` + `zod` schema 校验。
+- **安全等级徽章**：用 `components/common/SecurityLevelBadge`（props: `level: number`, `showLevel?: boolean`）。不要在页面里重写。
+- **日期格式化**：列表页 "yyyy/M/d HH:mm:ss" 用 `formatDateTime(value)` from `utils/helpers.ts`；简短格式 "MM月dd日 HH:mm" 用 `formatTimestamp`。
 
 ## Gotchas
 
