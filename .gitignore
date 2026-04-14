@@ -58,6 +58,8 @@ replay_pid*.log
 .playwright-mcp/
 log/*.log
 log/error.log
+.claude/ralph-loop.local.md
+.claude/.ralph-loop.local.md
 
 ### Local screenshots / scratch images ###
 /*.png
