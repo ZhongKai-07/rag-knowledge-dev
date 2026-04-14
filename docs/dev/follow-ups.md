@@ -91,9 +91,11 @@
 
 ## 🟢 小清理
 
-### CLEAN-1. 错误吞咽
+### ~~CLEAN-1. 错误吞咽~~ ✅ 已解决（2026-04-14, `feature/cleanup-error-swallows`）
 
-`UserListPage.tsx:128` / `SpacesPage.tsx:85` / `KbSharingTab.tsx:39` 多处 `catch { /* ignore */ }` 把网络错误当成权限拒绝处理。应该 `inspect err.code`，只在 RBAC 错误码下静默。
+~~`UserListPage.tsx:128` / `SpacesPage.tsx:85` / `KbSharingTab.tsx:39` 多处 `catch { /* ignore */ }` 把网络错误当成权限拒绝处理。应该 `inspect err.code`，只在 RBAC 错误码下静默。~~
+
+**处理**：抽 `isRbacRejection(err)` 到 `utils/error.ts`；3 处 catch 都改为"只在 RBAC 拒绝时静默，否则 toast + console.error"。`KbSharingTab` 的 `setNoAccess(true)` 副作用在 RBAC 分支保留。
 
 ### CLEAN-2. `authStore.checkAuth` 未节流
 

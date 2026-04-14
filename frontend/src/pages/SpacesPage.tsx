@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Database, FileText, LogOut, Settings } from "lucide-react";
+import { toast } from "sonner";
 
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissions } from "@/utils/permissions";
+import { getErrorMessage, isRbacRejection } from "@/utils/error";
 import { Avatar } from "@/components/common/Avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,9 +84,13 @@ export function SpacesPage() {
         if (!active) return;
         setKnowledgeBases(kbList || []);
         setStats(spacesStats);
-      } catch {
+      } catch (err) {
         if (active) {
           setKnowledgeBases([]);
+          if (!isRbacRejection(err)) {
+            toast.error(getErrorMessage(err, "加载知识库列表失败"));
+            console.error(err);
+          }
         }
       } finally {
         if (active) setLoading(false);

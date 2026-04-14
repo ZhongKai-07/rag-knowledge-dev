@@ -10,6 +10,7 @@ import {
   KbRoleBindingVO,
   KbRoleBindingRequest,
 } from "@/services/knowledgeService";
+import { getErrorMessage, isRbacRejection } from "@/utils/error";
 
 interface Props {
   kbId: string;
@@ -36,9 +37,14 @@ export default function KbSharingTab({ kbId }: Props) {
             maxSecurityLevel: b.maxSecurityLevel,
           }))
         );
-      } catch {
-        // 权限不足时静默隐藏，不弹错误
-        setNoAccess(true);
+      } catch (err) {
+        if (isRbacRejection(err)) {
+          // 权限不足时静默隐藏，不弹错误
+          setNoAccess(true);
+        } else {
+          toast.error(getErrorMessage(err, "加载 KB 共享配置失败"));
+          console.error(err);
+        }
       } finally {
         setLoading(false);
       }

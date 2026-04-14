@@ -16,7 +16,7 @@ import type { RoleItem } from "@/services/roleService";
 import { getRoles, getUserRoles, setUserRoles } from "@/services/roleService";
 import type { SysDept } from "@/services/sysDeptService";
 import { listDepartments } from "@/services/sysDeptService";
-import { getErrorMessage } from "@/utils/error";
+import { getErrorMessage, isRbacRejection } from "@/utils/error";
 import { formatDateTime } from "@/utils/helpers";
 import { usePermissions } from "@/utils/permissions";
 import { SecurityLevelBadge } from "@/components/common/SecurityLevelBadge";
@@ -110,7 +110,12 @@ export function UserListPage() {
       const [roles, depts] = await Promise.all([getRoles(), listDepartments()]);
       setAllRoles(roles);
       setAllDepts(depts);
-    } catch { /* ignore */ } finally {
+    } catch (err) {
+      if (!isRbacRejection(err)) {
+        toast.error(getErrorMessage(err, "加载角色或部门列表失败"));
+        console.error(err);
+      }
+    } finally {
       setDialogLoading(false);
     }
   };
