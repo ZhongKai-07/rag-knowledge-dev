@@ -9,6 +9,11 @@ export function formatTimestamp(value?: string) {
   }
 }
 
+export function formatDateTime(value?: string | null) {
+  if (!value) return "-";
+  return new Date(value).toLocaleString("zh-CN");
+}
+
 export function truncate(text: string, max = 36) {
   if (!text) return "";
   if (text.length <= max) return text;

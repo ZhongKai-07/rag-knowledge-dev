@@ -38,6 +38,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -45,8 +46,12 @@ import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -57,6 +62,7 @@ import java.util.stream.Collectors;
 public class KbAccessServiceImpl implements KbAccessService {
 
     private static final String CACHE_PREFIX = "kb_access:";
+    private static final String DEPT_ADMIN_CACHE_PREFIX = "kb_access:dept:";
     private static final String KB_SECURITY_LEVEL_CACHE_PREFIX = "kb_security_level:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
 
@@ -79,9 +85,22 @@ public class KbAccessServiceImpl implements KbAccessService {
             ).stream().map(KnowledgeBaseDO::getId).collect(Collectors.toSet());
         }
 
-        // DEPT_ADMIN bypass cache —— 每次 JOIN: RBAC 授权 KB ∪ 同部门 KB
+        // DEPT_ADMIN: RBAC 授权 KB ∪ 同部门 KB；READ 路径走缓存（kb_access:dept:{userId}）
         if (isDeptAdmin()) {
-            return computeDeptAdminAccessibleKbIds(userId, minPermission);
+            boolean cacheable = minPermission == Permission.READ;
+            String cacheKey = DEPT_ADMIN_CACHE_PREFIX + userId;
+            if (cacheable) {
+                RBucket<Set<String>> bucket = redissonClient.getBucket(cacheKey);
+                Set<String> cached = bucket.get();
+                if (cached != null) {
+                    return cached;
+                }
+            }
+            Set<String> result = computeDeptAdminAccessibleKbIds(userId, minPermission);
+            if (cacheable) {
+                redissonClient.getBucket(cacheKey).<Set<String>>set(result, CACHE_TTL);
+            }
+            return result;
         }
 
         // USER 走 PR1 原有缓存路径
@@ -119,7 +138,7 @@ public class KbAccessServiceImpl implements KbAccessService {
         return rbacKbs;
     }
 
-    /** 原 PR1 RBAC 路径抽成私有方法（user → roles → kb_relations → filter permission） */
+    /** RBAC 路径：user → roles → kb_relations → filter permission */
     private Set<String> computeRbacKbIds(String userId, Permission minPermission) {
         // user → roles
         List<UserRoleDO> userRoles = userRoleMapper.selectList(
@@ -164,30 +183,31 @@ public class KbAccessServiceImpl implements KbAccessService {
         }
     }
 
+    /** Null-safe dept equality. user==null or either deptId==null returns false. */
+    private static boolean sameDept(LoginUser user, String otherDeptId) {
+        return user != null && Objects.equals(user.getDeptId(), otherDeptId);
+    }
+
     @Override
     public void checkAccess(String kbId) {
         // 系统态（MQ 消费者、定时任务）—— 没有登录态，直接放行
         if (!UserContext.hasUser() || UserContext.getUserId() == null) {
             return;
         }
-        // SUPER_ADMIN 直接放行
         if (isSuperAdmin()) {
             return;
         }
         if (isDeptAdmin()) {
-            // DEPT_ADMIN 同部门 KB 直接放行（不走缓存）
             LoginUser user = UserContext.get();
             if (user.getDeptId() == null) {
                 log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", UserContext.getUserId());
             } else {
                 KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
-                if (kb != null && user.getDeptId().equals(kb.getDeptId())) {
+                if (kb != null && sameDept(user, kb.getDeptId())) {
                     return;
                 }
             }
-            // 否则退化到 RBAC 检查
         }
-        // 普通用户（或 DEPT_ADMIN 访问非本部门 KB）
         Set<String> accessible = getAccessibleKbIds(UserContext.getUserId(), Permission.READ);
         if (!accessible.contains(kbId)) {
             log.warn("权限拒绝: userId={}, kbId={}, action=READ", UserContext.getUserId(), kbId);
@@ -198,7 +218,6 @@ public class KbAccessServiceImpl implements KbAccessService {
     @Override
     public void checkManageAccess(String kbId) {
         if (!UserContext.hasUser() || UserContext.getUserId() == null) {
-            // 系统态允许通过（DEPT_ADMIN 不会在 MQ 消费者里触发写接口）
             return;
         }
         if (isSuperAdmin()) {
@@ -210,7 +229,7 @@ public class KbAccessServiceImpl implements KbAccessService {
             if (kb == null) {
                 throw new ClientException("知识库不存在: " + kbId);
             }
-            if (user.getDeptId() != null && user.getDeptId().equals(kb.getDeptId())) {
+            if (sameDept(user, kb.getDeptId())) {
                 return;
             }
             log.warn("权限拒绝: userId={}, kbId={}, action=MANAGE, reason=跨部门", UserContext.getUserId(), kbId);
@@ -232,6 +251,7 @@ public class KbAccessServiceImpl implements KbAccessService {
     @Override
     public void evictCache(String userId) {
         redissonClient.getBucket(CACHE_PREFIX + userId).delete();
+        redissonClient.getBucket(DEPT_ADMIN_CACHE_PREFIX + userId).delete();
         redissonClient.getBucket(KB_SECURITY_LEVEL_CACHE_PREFIX + userId).delete();
     }
 
@@ -252,16 +272,15 @@ public class KbAccessServiceImpl implements KbAccessService {
         if (current != null && current.getRoleTypes() != null
                 && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
             KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
-            if (kb != null && current.getDeptId() != null
-                    && current.getDeptId().equals(kb.getDeptId())) {
+            if (kb != null && sameDept(current, kb.getDeptId())) {
                 return current.getMaxSecurityLevel();
             }
         }
 
         // Regular path: check Redis Hash cache
         String cacheKey = KB_SECURITY_LEVEL_CACHE_PREFIX + userId;
-        RBucket<java.util.Map<String, Integer>> bucket = redissonClient.getBucket(cacheKey);
-        java.util.Map<String, Integer> cached = bucket.get();
+        RBucket<Map<String, Integer>> bucket = redissonClient.getBucket(cacheKey);
+        Map<String, Integer> cached = bucket.get();
         if (cached != null && cached.containsKey(kbId)) {
             return cached.get(kbId);
         }
@@ -286,12 +305,63 @@ public class KbAccessServiceImpl implements KbAccessService {
 
         // Write to cache (hash entry)
         if (cached == null) {
-            cached = new java.util.HashMap<>();
+            cached = new HashMap<>();
         }
         cached.put(kbId, level);
         bucket.set(cached, CACHE_TTL);
 
         return level;
+    }
+
+    @Override
+    public Map<String, Integer> getMaxSecurityLevelsForKbs(String userId, Collection<String> kbIds) {
+        if (userId == null || kbIds == null || kbIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        LoginUser current = UserContext.hasUser() ? UserContext.get() : null;
+
+        // SUPER_ADMIN: every requested KB → max ceiling 3
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
+            Map<String, Integer> result = new HashMap<>(kbIds.size() * 2);
+            for (String kbId : kbIds) {
+                if (kbId != null) result.put(kbId, 3);
+            }
+            return result;
+        }
+
+        Map<String, Integer> result = new HashMap<>();
+
+        // RBAC bindings: 2 queries (user→roles, roles+kbs→relations) for the whole batch
+        List<UserRoleDO> userRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
+        if (!userRoles.isEmpty()) {
+            List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
+            List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                    Wrappers.lambdaQuery(RoleKbRelationDO.class)
+                            .in(RoleKbRelationDO::getRoleId, roleIds)
+                            .in(RoleKbRelationDO::getKbId, kbIds));
+            for (RoleKbRelationDO rel : relations) {
+                Integer level = rel.getMaxSecurityLevel() == null ? 0 : rel.getMaxSecurityLevel();
+                result.merge(rel.getKbId(), level, Math::max);
+            }
+        }
+
+        // DEPT_ADMIN implicit access to same-dept KBs overrides RBAC ceiling
+        if (current != null && current.getRoleTypes() != null
+                && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)
+                && current.getDeptId() != null) {
+            int deptCeiling = current.getMaxSecurityLevel();
+            List<KnowledgeBaseDO> sameDeptKbs = knowledgeBaseMapper.selectList(
+                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+                            .in(KnowledgeBaseDO::getId, kbIds)
+                            .eq(KnowledgeBaseDO::getDeptId, current.getDeptId())
+                            .select(KnowledgeBaseDO::getId));
+            for (KnowledgeBaseDO kb : sameDeptKbs) {
+                result.merge(kb.getId(), deptCeiling, Math::max);
+            }
+        }
+        return result;
     }
 
     @Override
@@ -315,7 +385,7 @@ public class KbAccessServiceImpl implements KbAccessService {
     }
 
     @Override
-    public void checkCreateUserAccess(String targetDeptId, java.util.List<String> roleIds) {
+    public void checkCreateUserAccess(String targetDeptId, List<String> roleIds) {
         if (!UserContext.hasUser()) {
             throw new ClientException("未登录用户不可创建用户");
         }
@@ -327,7 +397,7 @@ public class KbAccessServiceImpl implements KbAccessService {
             log.warn("权限拒绝: userId={}, action=CREATE_USER, reason=非管理员", UserContext.getUserId());
             throw new ClientException("无权创建用户");
         }
-        if (user.getDeptId() == null || !user.getDeptId().equals(targetDeptId)) {
+        if (!sameDept(user, targetDeptId)) {
             log.warn("权限拒绝: userId={}, action=CREATE_USER, reason=跨部门, targetDept={}", UserContext.getUserId(), targetDeptId);
             throw new ClientException("DEPT_ADMIN 只能在本部门创建用户");
         }
@@ -351,14 +421,14 @@ public class KbAccessServiceImpl implements KbAccessService {
         if (target == null) {
             throw new ClientException("目标用户不存在");
         }
-        if (target.getDeptId() == null || !target.getDeptId().equals(current.getDeptId())) {
+        if (!sameDept(current, target.getDeptId())) {
             log.warn("权限拒绝: userId={}, targetUserId={}, action=MANAGE_USER, reason=跨部门", UserContext.getUserId(), targetUserId);
             throw new ClientException("DEPT_ADMIN 只能管理本部门用户");
         }
     }
 
     @Override
-    public void checkAssignRolesAccess(String targetUserId, java.util.List<String> newRoleIds) {
+    public void checkAssignRolesAccess(String targetUserId, List<String> newRoleIds) {
         // 先复用用户管理权校验
         checkUserManageAccess(targetUserId);
         if (isSuperAdmin()) {
@@ -435,14 +505,13 @@ public class KbAccessServiceImpl implements KbAccessService {
     @Override
     public void checkDocSecurityLevelAccess(String docId, int newLevel) {
         checkDocManageAccess(docId);
-        // 当前与 checkDocManageAccess 等价；未来可加 newLevel 相关的细粒度规则
     }
 
     // === Last SUPER_ADMIN 系统级硬不变量（Decision 3-M）===
 
     @Override
     public int countActiveSuperAdmins() {
-        return countSuperAdminsExcluding(java.util.Set.of(), java.util.Set.of(), java.util.Map.of());
+        return countSuperAdminsExcluding(Set.of(), Set.of(), Map.of());
     }
 
     @Override
@@ -464,24 +533,20 @@ public class KbAccessServiceImpl implements KbAccessService {
     }
 
     @Override
-    public int simulateActiveSuperAdminCountAfter(
-            com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent intent) {
-        if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.DeleteUser du) {
+    public int simulateActiveSuperAdminCountAfter(SuperAdminMutationIntent intent) {
+        if (intent instanceof SuperAdminMutationIntent.DeleteUser du) {
+            return countSuperAdminsExcluding(Set.of(du.userId()), Set.of(), Map.of());
+        } else if (intent instanceof SuperAdminMutationIntent.ReplaceUserRoles rur) {
             return countSuperAdminsExcluding(
-                    java.util.Set.of(du.userId()), java.util.Set.of(), java.util.Map.of());
-        } else if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.ReplaceUserRoles rur) {
-            return countSuperAdminsExcluding(
-                    java.util.Set.of(), java.util.Set.of(),
-                    java.util.Map.of(rur.userId(), new java.util.HashSet<>(rur.newRoleIds())));
-        } else if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.ChangeRoleType crt) {
+                    Set.of(), Set.of(),
+                    Map.of(rur.userId(), new HashSet<>(rur.newRoleIds())));
+        } else if (intent instanceof SuperAdminMutationIntent.ChangeRoleType crt) {
             if (!RoleType.SUPER_ADMIN.name().equals(crt.newRoleType())) {
-                return countSuperAdminsExcluding(
-                        java.util.Set.of(), java.util.Set.of(crt.roleId()), java.util.Map.of());
+                return countSuperAdminsExcluding(Set.of(), Set.of(crt.roleId()), Map.of());
             }
             return countActiveSuperAdmins();
-        } else if (intent instanceof com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent.DeleteRole dr) {
-            return countSuperAdminsExcluding(
-                    java.util.Set.of(), java.util.Set.of(dr.roleId()), java.util.Map.of());
+        } else if (intent instanceof SuperAdminMutationIntent.DeleteRole dr) {
+            return countSuperAdminsExcluding(Set.of(), Set.of(dr.roleId()), Map.of());
         }
         throw new IllegalArgumentException("Unknown SuperAdminMutationIntent type: " + intent.getClass());
     }
@@ -499,7 +564,7 @@ public class KbAccessServiceImpl implements KbAccessService {
             throw new ClientException("知识库不存在");
         }
         LoginUser current = UserContext.requireUser();
-        if (!Objects.equals(current.getDeptId(), kb.getDeptId())) {
+        if (!sameDept(current, kb.getDeptId())) {
             throw new ClientException("DEPT_ADMIN 只能管理本部门知识库的角色绑定");
         }
     }
@@ -514,7 +579,7 @@ public class KbAccessServiceImpl implements KbAccessService {
     private int countSuperAdminsExcluding(
             Set<String> excludedUserIds,
             Set<String> invalidatedRoleIds,
-            java.util.Map<String, Set<String>> userRoleOverrides) {
+            Map<String, Set<String>> userRoleOverrides) {
         // 1. 有效 SUPER_ADMIN role id 集合（剔除 invalidatedRoleIds）
         List<RoleDO> superRoles = roleMapper.selectList(
                 Wrappers.lambdaQuery(RoleDO.class)

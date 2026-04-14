@@ -105,7 +105,6 @@ public class RoleController {
     public static class RoleCreateRequest {
         private String name;
         private String description;
-        // PR3 新增
         private String roleType;
         private Integer maxSecurityLevel;
     }

@@ -19,6 +19,8 @@ package com.nageoffer.ai.ragent.user.service;
 
 import com.nageoffer.ai.ragent.framework.context.Permission;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -85,7 +87,14 @@ public interface KbAccessService {
      */
     Integer getMaxSecurityLevelForKb(String userId, String kbId);
 
-    // === PR3 新增：用户管理授权 ===
+    /**
+     * 批量解析当前用户对一组 KB 的最高安全等级。
+     * 用于检索热路径：单次 DB 查询替代 N 次 {@link #getMaxSecurityLevelForKb} 调用。
+     * 返回 map 仅包含 kbIds 中、用户实际拥有访问权的 KB；调用方未命中应当作 null/未授权处理。
+     */
+    Map<String, Integer> getMaxSecurityLevelsForKbs(String userId, Collection<String> kbIds);
+
+    // === 用户管理授权 ===
 
     /**
      * 创建用户授权。SUPER_ADMIN 任何 deptId；
@@ -120,7 +129,7 @@ public interface KbAccessService {
      */
     boolean isDeptAdmin();
 
-    // === PR3 新增：KB / 文档管理授权 ===
+    // === KB / 文档管理授权 ===
 
     /**
      * 创建 KB 时的权限解析器（Decision 3-H）。

@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { SysDept, SysDeptCreatePayload } from "@/services/sysDeptService";
 import { listDepartments, createDepartment, updateDepartment, deleteDepartment } from "@/services/sysDeptService";
 import { getErrorMessage } from "@/utils/error";
+import { formatDateTime } from "@/utils/helpers";
 
 const buildEmptyForm = (): SysDeptCreatePayload => ({
   deptCode: "",
@@ -112,11 +113,6 @@ export function DepartmentListPage() {
     }
   };
 
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleString("zh-CN");
-  };
-
   return (
     <div className="admin-page">
       <div className="admin-page-header">
@@ -193,7 +189,7 @@ export function DepartmentListPage() {
                     <TableCell>
                       <span className="text-sm font-medium text-indigo-600">{dept.kbCount ?? 0} 个</span>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(dept.createTime)}</TableCell>
+                    <TableCell className="text-muted-foreground">{formatDateTime(dept.createTime)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button

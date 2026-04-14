@@ -15,6 +15,7 @@ import { getRoles, createRole, updateRole, deleteRole, getRoleKnowledgeBases, se
 import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeService";
 import { usePermissions } from "@/utils/permissions";
 import { getErrorMessage } from "@/utils/error";
+import { SecurityLevelBadge } from "@/components/common/SecurityLevelBadge";
 
 // ---- Role type badge ----
 function RoleTypeBadge({ type }: { type: string }) {
@@ -26,23 +27,6 @@ function RoleTypeBadge({ type }: { type: string }) {
   return (
     <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[type] ?? colors.USER}`}>
       {type}
-    </span>
-  );
-}
-
-// ---- Security level badge ----
-const SECURITY_LEVEL_LABELS: Record<number, { label: string; color: string }> = {
-  0: { label: "公开", color: "bg-green-100 text-green-800" },
-  1: { label: "内部", color: "bg-yellow-100 text-yellow-800" },
-  2: { label: "机密", color: "bg-orange-100 text-orange-800" },
-  3: { label: "绝密", color: "bg-red-100 text-red-800" },
-};
-
-function SecurityLevelBadge({ level }: { level: number }) {
-  const info = SECURITY_LEVEL_LABELS[level] ?? SECURITY_LEVEL_LABELS[0];
-  return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${info.color}`}>
-      {level} · {info.label}
     </span>
   );
 }
@@ -240,11 +224,6 @@ export function RoleListPage() {
     }
   };
 
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleString("zh-CN");
-  };
-
   return (
     <div className="admin-page">
       <div className="admin-page-header">
@@ -297,7 +276,7 @@ export function RoleListPage() {
                       <RoleTypeBadge type={role.roleType || "USER"} />
                     </TableCell>
                     <TableCell>
-                      <SecurityLevelBadge level={role.maxSecurityLevel ?? 0} />
+                      <SecurityLevelBadge level={role.maxSecurityLevel ?? 0} showLevel />
                     </TableCell>
                     <TableCell className="text-muted-foreground">{role.description || "-"}</TableCell>
                     <TableCell>

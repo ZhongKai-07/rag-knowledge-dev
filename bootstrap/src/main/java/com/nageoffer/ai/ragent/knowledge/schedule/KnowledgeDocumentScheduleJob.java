@@ -21,8 +21,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nageoffer.ai.ragent.knowledge.config.KnowledgeScheduleProperties;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentScheduleDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentScheduleMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -36,29 +36,16 @@ import java.util.concurrent.RejectedExecutionException;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class KnowledgeDocumentScheduleJob {
 
     private final KnowledgeDocumentScheduleMapper scheduleMapper;
+    @org.springframework.beans.factory.annotation.Qualifier("knowledgeChunkExecutor")
     private final Executor knowledgeChunkExecutor;
     private final KnowledgeScheduleProperties scheduleProperties;
     private final ScheduleLockManager lockManager;
     private final ScheduleRefreshProcessor scheduleRefreshProcessor;
     private final DocumentStatusHelper documentStatusHelper;
-
-    public KnowledgeDocumentScheduleJob(
-            KnowledgeDocumentScheduleMapper scheduleMapper,
-            @Qualifier("knowledgeChunkExecutor") Executor knowledgeChunkExecutor,
-            KnowledgeScheduleProperties scheduleProperties,
-            ScheduleLockManager lockManager,
-            ScheduleRefreshProcessor scheduleRefreshProcessor,
-            DocumentStatusHelper documentStatusHelper) {
-        this.scheduleMapper = scheduleMapper;
-        this.knowledgeChunkExecutor = knowledgeChunkExecutor;
-        this.scheduleProperties = scheduleProperties;
-        this.lockManager = lockManager;
-        this.scheduleRefreshProcessor = scheduleRefreshProcessor;
-        this.documentStatusHelper = documentStatusHelper;
-    }
 
     /**
      * 恢复长时间卡在 RUNNING 状态的文档（进程崩溃等异常场景）

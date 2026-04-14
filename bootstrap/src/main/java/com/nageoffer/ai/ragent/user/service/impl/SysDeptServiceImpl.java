@@ -31,6 +31,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -68,6 +69,7 @@ public class SysDeptServiceImpl implements SysDeptService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public String create(SysDeptCreateRequest request) {
         validateFields(request.getDeptCode(), request.getDeptName());
         Long existing = sysDeptMapper.selectCount(
@@ -86,8 +88,9 @@ public class SysDeptServiceImpl implements SysDeptService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void update(String id, SysDeptUpdateRequest request) {
-        SysDeptDO dept = sysDeptMapper.selectById(id);
+        SysDeptDO dept = selectForUpdate(id);
         if (dept == null) {
             throw new ClientException("部门不存在: " + id);
         }
@@ -111,8 +114,9 @@ public class SysDeptServiceImpl implements SysDeptService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void delete(String id) {
-        SysDeptDO dept = sysDeptMapper.selectById(id);
+        SysDeptDO dept = selectForUpdate(id);
         if (dept == null) {
             throw new ClientException("部门不存在: " + id);
         }
@@ -130,6 +134,16 @@ public class SysDeptServiceImpl implements SysDeptService {
             throw new ClientException("部门下仍有 " + kbCount + " 个知识库，不可删除");
         }
         sysDeptMapper.deleteById(id);
+    }
+
+    // 行锁仅串行化 dept 自身的并发修改；user/kb 并发新增到该 dept 仍可绕过 count 校验。
+    // 完全防御需要 t_user.dept_id / t_knowledge_base.dept_id 上的 FK ON DELETE RESTRICT（待补 schema migration）。
+    private SysDeptDO selectForUpdate(String id) {
+        return sysDeptMapper.selectOne(
+                Wrappers.lambdaQuery(SysDeptDO.class)
+                        .eq(SysDeptDO::getId, id)
+                        .last("FOR UPDATE")
+        );
     }
 
     private void validateFields(String deptCode, String deptName) {

@@ -67,11 +67,11 @@ public class SearchContext {
     private Set<String> accessibleKbIds;
 
     /**
-     * 按 kbId 解析该用户对该 KB 的最高安全等级。
-     * 返回 null 表示不做安全等级过滤（如系统内部调用、未登录场景）。
-     * 返回 0 表示只看 level=0 的文档。
+     * 当前用户对每个可访问 KB 的最高安全等级（kbId → level）。
+     * 由 RBAC 解析后预填一次，下游通道 O(1) 查表。
+     * key 缺失表示该 KB 不做安全等级过滤（系统态/未登录），value=0 表示仅 level=0 的文档可见。
      */
-    private java.util.function.Function<String, Integer> kbSecurityLevelResolver;
+    private Map<String, Integer> kbSecurityLevels;
 
     /**
      * 扩展元数据

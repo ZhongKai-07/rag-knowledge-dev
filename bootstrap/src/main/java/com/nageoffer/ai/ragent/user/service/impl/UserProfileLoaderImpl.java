@@ -57,7 +57,6 @@ public class UserProfileLoaderImpl implements UserProfileLoader {
             return null;
         }
 
-        // dept
         String deptId = user.getDeptId();
         String deptName = null;
         if (deptId != null) {
@@ -67,12 +66,10 @@ public class UserProfileLoaderImpl implements UserProfileLoader {
             }
         }
 
-        // user → roleIds
         List<String> roleIds = userRoleMapper.selectList(
                 Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId)
         ).stream().map(UserRoleDO::getRoleId).collect(Collectors.toList());
 
-        // roleIds → roles
         Set<RoleType> roleTypes = EnumSet.noneOf(RoleType.class);
         int maxSecurityLevel = 0;
         if (!roleIds.isEmpty()) {
@@ -84,7 +81,7 @@ public class UserProfileLoaderImpl implements UserProfileLoader {
                     try {
                         roleTypes.add(RoleType.valueOf(role.getRoleType()));
                     } catch (IllegalArgumentException ignored) {
-                        // 未知 role_type，跳过
+                        // role_type DB 写入了枚举外字符串：忽略，避免登录路径整体失败
                     }
                 }
                 if (role.getMaxSecurityLevel() != null && role.getMaxSecurityLevel() > maxSecurityLevel) {

@@ -37,7 +37,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -247,11 +249,15 @@ public class MultiChannelRetrievalEngine {
     }
 
     /**
-     * 构建检索上下文
+     * 构建检索上下文。在此一次性预解析当前用户对所有可访问 KB 的安全等级 map，
+     * 后续 channel/postprocessor 直接 O(1) 查表，不再每次回调 {@link KbAccessService#getMaxSecurityLevelForKb}。
      */
     private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int topK,
                                               Set<String> accessibleKbIds) {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
+        Map<String, Integer> kbSecurityLevels = (UserContext.hasUser() && accessibleKbIds != null && !accessibleKbIds.isEmpty())
+                ? kbAccessService.getMaxSecurityLevelsForKbs(UserContext.getUserId(), accessibleKbIds)
+                : Collections.emptyMap();
 
         return SearchContext.builder()
                 .originalQuestion(question)
@@ -259,30 +265,24 @@ public class MultiChannelRetrievalEngine {
                 .intents(subIntents)
                 .topK(topK)
                 .accessibleKbIds(accessibleKbIds)
-                .kbSecurityLevelResolver(kbId -> {
-                    if (!UserContext.hasUser()) return null;
-                    return kbAccessService.getMaxSecurityLevelForKb(UserContext.getUserId(), kbId);
-                })
+                .kbSecurityLevels(kbSecurityLevels)
                 .build();
     }
 
     /**
-     * 构建元数据过滤条件（按 KB 解析安全等级）。
-     *
-     * @param ctx  检索上下文（包含 kbSecurityLevelResolver）
-     * @param kbId 当前检索的知识库 ID
-     * @return 过滤条件列表
+     * 构建元数据过滤条件（按 KB 查表得到安全等级）。
      */
     public static List<MetadataFilter> buildMetadataFilters(SearchContext ctx, String kbId) {
         List<MetadataFilter> filters = new ArrayList<>();
-        if (ctx.getKbSecurityLevelResolver() != null && kbId != null) {
-            Integer level = ctx.getKbSecurityLevelResolver().apply(kbId);
-            if (level != null) {
-                filters.add(new MetadataFilter(
-                        "security_level",
-                        MetadataFilter.FilterOp.LTE_OR_MISSING,
-                        level));
-            }
+        if (kbId == null || ctx.getKbSecurityLevels() == null) {
+            return filters;
+        }
+        Integer level = ctx.getKbSecurityLevels().get(kbId);
+        if (level != null) {
+            filters.add(new MetadataFilter(
+                    "security_level",
+                    MetadataFilter.FilterOp.LTE_OR_MISSING,
+                    level));
         }
         return filters;
     }

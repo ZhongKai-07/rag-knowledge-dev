@@ -31,20 +31,21 @@ export interface Permissions {
   canManageKb: (kb: { deptId: string }) => boolean;
   canManageUser: (targetUser: { deptId: string | null }) => boolean;
   canEditDocSecurityLevel: (doc: { kbDeptId: string }) => boolean;
-  canAssignRole: (role: { roleType: string }) => boolean;
+  canAssignRole: (role: { roleType: string; maxSecurityLevel?: number }) => boolean;
 }
 
 export function getPermissions(user: User | null): Permissions {
   const isSuperAdmin = user?.isSuperAdmin ?? false;
   const isDeptAdmin = user?.isDeptAdmin ?? false;
   const isAnyAdmin = isSuperAdmin || isDeptAdmin;
+  const callerCeiling = user?.maxSecurityLevel ?? 0;
   return {
     isSuperAdmin,
     isDeptAdmin,
     isAnyAdmin,
     deptId: user?.deptId ?? null,
     deptName: user?.deptName ?? null,
-    maxSecurityLevel: user?.maxSecurityLevel ?? 0,
+    maxSecurityLevel: callerCeiling,
     canSeeAdminMenu: isAnyAdmin,
     canSeeMenuItem: (id) => isSuperAdmin || (isDeptAdmin && DEPT_VISIBLE.includes(id)),
     canCreateKb: (targetDeptId) =>
@@ -57,8 +58,8 @@ export function getPermissions(user: User | null): Permissions {
       isSuperAdmin || (isDeptAdmin && doc.kbDeptId === user?.deptId),
     canAssignRole: (role) => {
       if (isSuperAdmin) return true;
-      // DEPT_ADMIN cannot assign SUPER_ADMIN or DEPT_ADMIN roles
-      return role.roleType !== "SUPER_ADMIN" && role.roleType !== "DEPT_ADMIN";
+      if (role.roleType === "SUPER_ADMIN" || role.roleType === "DEPT_ADMIN") return false;
+      return (role.maxSecurityLevel ?? 0) <= callerCeiling;
     },
   };
 }

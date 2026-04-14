@@ -17,26 +17,11 @@ import { getRoles, getUserRoles, setUserRoles } from "@/services/roleService";
 import type { SysDept } from "@/services/sysDeptService";
 import { listDepartments } from "@/services/sysDeptService";
 import { getErrorMessage } from "@/utils/error";
+import { formatDateTime } from "@/utils/helpers";
 import { usePermissions } from "@/utils/permissions";
+import { SecurityLevelBadge } from "@/components/common/SecurityLevelBadge";
 
 const PAGE_SIZE = 10;
-
-const SECURITY_LEVEL_LABELS = ["公开", "内部", "机密", "绝密"];
-
-function SecurityLevelBadge({ level }: { level: number }) {
-  const colors = [
-    "bg-green-100 text-green-800",
-    "bg-blue-100 text-blue-800",
-    "bg-orange-100 text-orange-800",
-    "bg-red-100 text-red-800",
-  ];
-  const label = SECURITY_LEVEL_LABELS[level] ?? String(level);
-  return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors[level] ?? colors[0]}`}>
-      {label}
-    </span>
-  );
-}
 
 const buildEmptyForm = (deptId = "") => ({
   username: "",
@@ -220,11 +205,6 @@ export function UserListPage() {
     }
   };
 
-  const formatDate = (dateStr?: string | null) => {
-    if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleString("zh-CN");
-  };
-
   const isProtectedAdmin = (user: UserItem) => user.username === "admin";
 
   // Only roles the current user can assign (DEPT_ADMIN cannot assign SUPER_ADMIN roles)
@@ -326,7 +306,7 @@ export function UserListPage() {
                       <TableCell>
                         <SecurityLevelBadge level={user.maxSecurityLevel ?? 0} />
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDate(user.createTime)}</TableCell>
+                      <TableCell className="text-muted-foreground">{formatDateTime(user.createTime)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {canManage && (
