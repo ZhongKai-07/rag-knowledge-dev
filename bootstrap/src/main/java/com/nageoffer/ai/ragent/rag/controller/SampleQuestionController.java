@@ -65,7 +65,7 @@ public class SampleQuestionController {
      * 查询示例问题详情
      */
     @GetMapping("/sample-questions/{id}")
-    public Result<SampleQuestionVO> queryById(@PathVariable String id) {
+    public Result<SampleQuestionVO> queryById(@PathVariable("id") String id) {
         return Results.success(sampleQuestionService.queryById(id));
     }
 
@@ -81,7 +81,7 @@ public class SampleQuestionController {
      * 更新示例问题
      */
     @PutMapping("/sample-questions/{id}")
-    public Result<Void> update(@PathVariable String id, @RequestBody SampleQuestionUpdateRequest requestParam) {
+    public Result<Void> update(@PathVariable("id") String id, @RequestBody SampleQuestionUpdateRequest requestParam) {
         sampleQuestionService.update(id, requestParam);
         return Results.success();
     }
@@ -90,7 +90,7 @@ public class SampleQuestionController {
      * 删除示例问题
      */
     @DeleteMapping("/sample-questions/{id}")
-    public Result<Void> delete(@PathVariable String id) {
+    public Result<Void> delete(@PathVariable("id") String id) {
         sampleQuestionService.delete(id);
         return Results.success();
     }

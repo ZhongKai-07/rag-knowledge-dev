@@ -73,7 +73,7 @@ public class IngestionTaskController {
      * 根据任务 ID 获取任务详情
      */
     @GetMapping("/ingestion/tasks/{id}")
-    public Result<IngestionTaskVO> get(@PathVariable String id) {
+    public Result<IngestionTaskVO> get(@PathVariable("id") String id) {
         return Results.success(taskService.get(id));
     }
 
@@ -81,7 +81,7 @@ public class IngestionTaskController {
      * 根据任务 ID 获取任务节点运行记录
      */
     @GetMapping("/ingestion/tasks/{id}/nodes")
-    public Result<List<IngestionTaskNodeVO>> nodes(@PathVariable String id) {
+    public Result<List<IngestionTaskNodeVO>> nodes(@PathVariable("id") String id) {
         return Results.success(taskService.listNodes(id));
     }
 

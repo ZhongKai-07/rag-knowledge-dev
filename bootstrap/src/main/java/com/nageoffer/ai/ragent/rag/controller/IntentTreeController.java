@@ -65,7 +65,7 @@ public class IntentTreeController {
      * 更新意图节点
      */
     @PutMapping("/intent-tree/{id}")
-    public void updateNode(@PathVariable String id, @RequestBody IntentNodeUpdateRequest requestParam) {
+    public void updateNode(@PathVariable("id") String id, @RequestBody IntentNodeUpdateRequest requestParam) {
         intentTreeService.updateNode(id, requestParam);
     }
 
@@ -73,7 +73,7 @@ public class IntentTreeController {
      * 删除意图节点
      */
     @DeleteMapping("/intent-tree/{id}")
-    public void deleteNode(@PathVariable String id) {
+    public void deleteNode(@PathVariable("id") String id) {
         intentTreeService.deleteNode(id);
     }
 
