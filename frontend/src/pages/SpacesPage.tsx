@@ -229,7 +229,11 @@ export function SpacesPage() {
 
         {/* Card grid */}
         {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            aria-busy="true"
+            aria-label="加载知识库中"
+          >
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
@@ -257,7 +261,7 @@ export function SpacesPage() {
                   key={kb.id}
                   type="button"
                   onClick={() => navigate(`/chat?kbId=${kb.id}`)}
-                  className="group flex flex-col rounded-2xl border border-white/70 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-md"
+                  className="group flex cursor-pointer flex-col rounded-2xl border border-white/70 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
                 >
                   <div className="flex items-start gap-3">
                     <div

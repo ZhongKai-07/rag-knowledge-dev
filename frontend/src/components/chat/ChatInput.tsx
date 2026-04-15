@@ -1,7 +1,13 @@
 import * as React from "react";
-import { BookOpen, Brain, Lightbulb, Send, Square } from "lucide-react";
+import { BookOpen, Brain, ChevronDown, Lightbulb, Send, Square } from "lucide-react";
 
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
 import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeService";
@@ -136,25 +142,44 @@ export function ChatInput() {
               {activeKbName || "知识库"}
             </span>
           ) : knowledgeBases.length > 0 ? (
-            <select
-              value={selectedKnowledgeBaseId || ""}
-              onChange={(e) => setSelectedKnowledgeBase(e.target.value || null)}
-              disabled={isStreaming}
-              className={cn(
-                "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all outline-none",
-                selectedKnowledgeBaseId
-                  ? "border-[#BFDBFE] bg-[#DBEAFE] text-[#2563EB]"
-                  : "border-transparent bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]",
-                isStreaming && "cursor-not-allowed opacity-60"
-              )}
-            >
-              <option value="">自动</option>
-              {knowledgeBases.map((kb) => (
-                <option key={kb.id} value={kb.id}>
-                  {kb.name}
-                </option>
-              ))}
-            </select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild disabled={isStreaming}>
+                <button
+                  type="button"
+                  className={cn(
+                    "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]",
+                    selectedKnowledgeBaseId
+                      ? "border-[#BFDBFE] bg-[#DBEAFE] text-[#2563EB]"
+                      : "border-transparent bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]",
+                    isStreaming && "cursor-not-allowed opacity-60"
+                  )}
+                  aria-label="选择知识库"
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  {selectedKnowledgeBaseId
+                    ? (knowledgeBases.find((kb) => kb.id === selectedKnowledgeBaseId)?.name ?? "知识库")
+                    : "自动"}
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[160px]">
+                <DropdownMenuItem
+                  onClick={() => setSelectedKnowledgeBase(null)}
+                  className={cn(!selectedKnowledgeBaseId && "font-medium text-[#2563EB]")}
+                >
+                  自动
+                </DropdownMenuItem>
+                {knowledgeBases.map((kb) => (
+                  <DropdownMenuItem
+                    key={kb.id}
+                    onClick={() => setSelectedKnowledgeBase(kb.id)}
+                    className={cn(selectedKnowledgeBaseId === kb.id && "font-medium text-[#2563EB]")}
+                  >
+                    {kb.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : null}
           <button
             type="button"

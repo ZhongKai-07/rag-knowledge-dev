@@ -275,8 +275,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 className="flex h-full flex-col items-center justify-center text-[#999999]"
                 style={{ fontFamily: sessionTitleFont }}
               >
-                <MessageSquare className="h-16 w-16" />
-                <p className="mt-2 text-[14px]">暂无对话记录</p>
+                <MessageSquare className="h-8 w-8 opacity-40" />
+                <p className="mt-2 text-[13px]">
+                  {query.trim() ? "没有匹配的对话" : "暂无对话记录"}
+                </p>
               </div>
             ) : (
               <div>
@@ -289,7 +291,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       <div
                         key={session.id}
                         className={cn(
-                          "group my-[1px] flex min-h-[40px] cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2 text-[14px] leading-[22px] transition-colors duration-200",
+                          "group my-[1px] flex min-h-[40px] cursor-pointer select-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-[14px] leading-[22px] transition-colors duration-200",
                           currentSessionId === session.id
                             ? "bg-[#DBEAFE] text-[#2563EB]"
                             : "text-[#333333] hover:bg-[#F5F5F5]"
