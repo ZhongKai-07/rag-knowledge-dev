@@ -194,8 +194,8 @@ export function SpacesPage() {
 
       {/* Main content */}
       <main className="relative mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
-        {/* Stats row */}
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 animate-fade-up" style={{ animationFillMode: "both" }}>
+        {/* Stats row — 限制最大宽度避免宽屏过度拉伸 */}
+        <div className="grid max-w-lg grid-cols-2 gap-4 animate-fade-up" style={{ animationFillMode: "both" }}>
           {statCards.map((card) => {
             const Icon = card.icon;
             return (
@@ -203,14 +203,14 @@ export function SpacesPage() {
                 key={card.label}
                 className="flex items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-faint hover:shadow-md"
               >
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ${card.bg}`}>
+                <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl shadow-sm ${card.bg}`}>
                   <Icon className={`h-5 w-5 ${card.color}`} />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-ink">
+                  <p className="text-2xl font-semibold tabular-nums text-ink">
                     {loading ? "-" : card.value.toLocaleString()}
                   </p>
-                  <p className="text-sm text-ink-3">{card.label}</p>
+                  <p className="text-xs text-ink-3">{card.label}</p>
                 </div>
               </div>
             );

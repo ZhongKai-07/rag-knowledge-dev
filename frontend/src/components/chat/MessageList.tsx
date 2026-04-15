@@ -173,7 +173,8 @@ export function MessageList({ messages, isLoading, isStreaming, sessionKey }: Me
   }, []);
 
   const Footer = React.useMemo(() => {
-    const Comp = () => <div aria-hidden="true" className="h-8" />;
+    // h-24 确保最后一条消息不被底部 ChatInput 区域遮挡
+    const Comp = () => <div aria-hidden="true" className="h-24" />;
     Comp.displayName = "MessageListFooter";
     return Comp;
   }, []);

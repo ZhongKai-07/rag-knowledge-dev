@@ -134,8 +134,8 @@ export function ChatPage() {
           />
         </div>
         {showWelcome ? null : (
-          <div className="relative z-20 bg-white">
-            <div className="mx-auto max-w-[800px] px-6 pt-1 pb-4">
+          <div className="relative z-20 border-t border-line/50 bg-surface shadow-[0_-1px_8px_rgba(0,0,0,0.04)]">
+            <div className="mx-auto max-w-[800px] px-6 pt-3 pb-4">
               <ChatInput />
             </div>
           </div>

@@ -151,7 +151,7 @@ export function WelcomeScreen() {
         className="pointer-events-none absolute -bottom-36 left-[-80px] h-80 w-80 rounded-full bg-gradient-radial from-[#FDE68A]/40 via-transparent to-transparent blur-3xl animate-float"
       />
 
-      <div className="relative w-full max-w-[860px]">
+      <div className="relative w-full max-w-[800px]">
         <div
           className="text-center opacity-0 animate-fade-up"
           style={{ animationFillMode: "both" }}
