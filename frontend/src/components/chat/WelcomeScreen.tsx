@@ -259,7 +259,7 @@ export function WelcomeScreen() {
               </span>
             </p>
           ) : null}
-          <p className="mt-3 text-center text-xs text-ink-3">
+          <p className="mt-3 hidden text-center text-xs text-ink-3 md:block">
             <kbd className="rounded bg-white/80 px-1.5 py-0.5 text-ink-3 shadow-sm">
               Enter
             </kbd>{" "}
