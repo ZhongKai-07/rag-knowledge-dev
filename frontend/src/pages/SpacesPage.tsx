@@ -134,19 +134,19 @@ export function SpacesPage() {
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
       {/* Decorative background layers */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#F8FAFC] via-white to-[#EFF6FF]" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#F8FAFC] via-white to-brand-lighter" />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-40 [background-size:40px_40px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute -top-32 right-[-40px] h-72 w-72 rounded-full bg-gradient-radial from-[#BFDBFE]/60 via-transparent to-transparent blur-3xl animate-float" />
+      <div aria-hidden="true" className="pointer-events-none absolute -top-32 right-[-40px] h-72 w-72 rounded-full bg-gradient-radial from-brand-faint/60 via-transparent to-transparent blur-3xl animate-float" />
       <div aria-hidden="true" className="pointer-events-none absolute -bottom-36 left-[-80px] h-80 w-80 rounded-full bg-gradient-radial from-[#FDE68A]/40 via-transparent to-transparent blur-3xl animate-float" />
 
       {/* Top bar */}
-      <header className="relative sticky top-0 z-30 border-b border-slate-200/60 bg-white/80 backdrop-blur-md">
+      <header className="relative sticky top-0 z-30 border-b border-line/60 bg-surface/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-bold text-brand-fg shadow-sm">
               HT
             </div>
-            <span className="text-base font-semibold text-slate-800">HT KnowledgeBase</span>
+            <span className="text-base font-semibold text-ink">HT KnowledgeBase</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -166,19 +166,19 @@ export function SpacesPage() {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                  className="flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1.5 text-sm text-ink-3 shadow-sm transition-colors hover:bg-surface-2"
                   aria-label="用户菜单"
                 >
                   <Avatar
                     name={user?.username || "用户"}
                     src={showAvatar ? avatarUrl : undefined}
-                    className="h-7 w-7 border-slate-200 bg-indigo-50 text-xs font-semibold text-indigo-600"
+                    className="h-7 w-7 border-line bg-brand-lighter text-xs font-semibold text-brand"
                   />
                   <span className="hidden sm:inline">{user?.username || "用户"}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={8} className="w-40">
-                <div className="px-3 py-2 text-xs text-slate-500">
+                <div className="px-3 py-2 text-xs text-ink-3">
                   {user?.username || "用户"} · {permissions.isSuperAdmin ? "超级管理员" : permissions.isDeptAdmin ? "部门管理员" : "成员"}
                 </div>
                 <DropdownMenuSeparator />
@@ -201,16 +201,16 @@ export function SpacesPage() {
             return (
               <div
                 key={card.label}
-                className="flex items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:shadow-md"
+                className="flex items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-faint hover:shadow-md"
               >
                 <div className={`flex h-12 w-12 items-center justify-center rounded-xl shadow-sm ${card.bg}`}>
                   <Icon className={`h-5 w-5 ${card.color}`} />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-slate-800">
+                  <p className="text-2xl font-semibold text-ink">
                     {loading ? "-" : card.value.toLocaleString()}
                   </p>
-                  <p className="text-sm text-slate-500">{card.label}</p>
+                  <p className="text-sm text-ink-3">{card.label}</p>
                 </div>
               </div>
             );
@@ -219,12 +219,12 @@ export function SpacesPage() {
 
         {/* Section header */}
         <div className="mt-10 mb-5 flex items-center gap-3 animate-fade-up" style={{ animationDelay: "80ms", animationFillMode: "both" }}>
-          <h2 className="text-lg font-semibold text-slate-800">我的知识库</h2>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70 px-2.5 py-0.5 text-xs font-medium text-[#2563EB] shadow-sm">
+          <h2 className="text-lg font-semibold text-ink">我的知识库</h2>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70 px-2.5 py-0.5 text-xs font-medium text-brand shadow-sm">
             <Database className="h-3 w-3" />
             {loading ? "..." : knowledgeBases.length}
           </span>
-          <span className="h-px flex-1 bg-[#E5E7EB]" />
+          <span className="h-px flex-1 bg-line" />
         </div>
 
         {/* Card grid */}
@@ -244,10 +244,10 @@ export function SpacesPage() {
         ) : knowledgeBases.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/70 bg-white/70 shadow-sm backdrop-blur-xl">
-              <Database className="h-8 w-8 text-slate-400" />
+              <Database className="h-8 w-8 text-ink-4" />
             </div>
-            <p className="mt-4 text-base font-medium text-slate-600">暂无可访问的知识库</p>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-4 text-base font-medium text-ink-3">暂无可访问的知识库</p>
+            <p className="mt-1 text-sm text-ink-4">
               请联系管理员为你分配知识库访问权限
             </p>
           </div>
@@ -261,7 +261,7 @@ export function SpacesPage() {
                   key={kb.id}
                   type="button"
                   onClick={() => navigate(`/chat?kbId=${kb.id}`)}
-                  className="group flex cursor-pointer flex-col rounded-2xl border border-white/70 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-[#BFDBFE] hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#93C5FD]"
+                  className="group flex cursor-pointer flex-col rounded-2xl border border-white/70 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-faint hover:bg-surface hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ring"
                 >
                   <div className="flex items-start gap-3">
                     <div
@@ -270,15 +270,15 @@ export function SpacesPage() {
                       {initial}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-800 group-hover:text-blue-700">
+                      <p className="truncate text-sm font-semibold text-ink group-hover:text-brand">
                         {kb.name}
                       </p>
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-1 text-xs text-ink-4">
                         {kb.documentCount ?? 0} 篇文档
                       </p>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100/60 pt-3 text-xs text-slate-400">
+                  <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-3 text-xs text-ink-4">
                     <span>创建于 {formatDate(kb.createTime)}</span>
                   </div>
                 </button>

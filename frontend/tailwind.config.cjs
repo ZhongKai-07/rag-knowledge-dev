@@ -25,7 +25,40 @@ module.exports = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         "chat-user": "hsl(var(--chat-user))",
-        "chat-assistant": "hsl(var(--chat-assistant))"
+        "chat-assistant": "hsl(var(--chat-assistant))",
+        // ── Design Tokens ──────────────────────────────
+        brand: {
+          DEFAULT:  "var(--brand)",
+          muted:    "var(--brand-muted)",
+          subtle:   "var(--brand-subtle)",
+          faint:    "var(--brand-faint)",
+          lighter:  "var(--brand-lighter)",
+          ring:     "var(--brand-ring)",
+          fg:       "var(--brand-fg)",
+        },
+        surface: {
+          DEFAULT: "var(--surface)",
+          2: "var(--surface-2)",
+          3: "var(--surface-3)",
+          4: "var(--surface-4)",
+        },
+        ink: {
+          DEFAULT: "var(--ink)",
+          2: "var(--ink-2)",
+          3: "var(--ink-3)",
+          4: "var(--ink-4)",
+          5: "var(--ink-5)",
+        },
+        line: {
+          DEFAULT: "var(--line)",
+          2: "var(--line-2)",
+          3: "var(--line-3)",
+        },
+        danger: {
+          DEFAULT: "var(--danger)",
+          subtle:  "var(--danger-subtle)",
+          border:  "var(--danger-border)",
+        },
       },
       fontFamily: {
         display: ["'Space Grotesk'", "ui-sans-serif", "system-ui"],
