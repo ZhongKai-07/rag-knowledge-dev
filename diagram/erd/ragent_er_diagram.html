@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ragent — Entity Relationship Diagram</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #FAFAF8;
+    --bg-card: #FFFFFF;
+    --text-primary: #1A1A1A;
+    --text-secondary: #5C5C5C;
+    --text-tertiary: #8A8A8A;
+    --border: #E4E4E0;
+    --border-light: #F0F0EC;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    padding: 40px 32px;
+    min-height: 100vh;
+  }
+
+  .header { max-width: 1400px; margin: 0 auto 32px; }
+  .header h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: var(--text-tertiary); }
+
+  .legend-bar { max-width: 1400px; margin: 0 auto 24px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .legend-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 12px 5px 10px; border-radius: 6px;
+    font-size: 12px; font-weight: 500; color: var(--text-secondary);
+    background: var(--bg-card); border: 1px solid var(--border-light);
+  }
+  .legend-chip .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  .diagram-container {
+    max-width: 1400px; margin: 0 auto;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 32px; overflow-x: auto;
+  }
+
+  #erd { display: flex; justify-content: center; }
+  #erd svg { max-width: 100%; height: auto; }
+
+  .footer {
+    max-width: 1400px; margin: 20px auto 0;
+    font-size: 11px; color: var(--text-tertiary);
+    display: flex; justify-content: space-between;
+  }
+
+  #loading {
+    text-align: center; padding: 60px 0;
+    color: var(--text-tertiary); font-size: 14px;
+  }
+  #loading .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border); border-top-color: var(--text-tertiary);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Ragent — Entity Relationship Diagram</h1>
+  <p>PostgreSQL schema · 26 tables · 5 domains · pgvector enabled</p>
+</div>
+
+<div class="legend-bar">
+  <div class="legend-chip"><div class="dot" style="background:#8B83D6"></div>RBAC & access control</div>
+  <div class="legend-chip"><div class="dot" style="background:#3BAE84"></div>Knowledge base & documents</div>
+  <div class="legend-chip"><div class="dot" style="background:#5196D8"></div>Conversation & messaging</div>
+  <div class="legend-chip"><div class="dot" style="background:#CC6E42"></div>Ingestion pipeline</div>
+  <div class="legend-chip"><div class="dot" style="background:#908E86"></div>Observability & evaluation</div>
+</div>
+
+<div class="diagram-container">
+  <div id="erd">
+    <div id="loading"><div class="spinner"></div>Loading mermaid.js ...</div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Auto-generated from schema_pg.sql</span>
+  <span>Ragent RAG Knowledge Base Platform</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    er: { layoutDirection: 'TB', minEntityWidth: 200, entityPadding: 14, fontSize: 12 },
+    themeVariables: {
+      darkMode: false,
+      fontSize: '12px',
+      fontFamily: '"IBM Plex Sans", sans-serif',
+      lineColor: '#B0AEA6',
+      textColor: '#1A1A1A',
+      primaryColor: '#F0EFFC',
+      primaryBorderColor: '#C4C0F0',
+      primaryTextColor: '#3D3580',
+    },
+  });
+
+  var diagram = [
+    'erDiagram',
+    '',
+    '  sys_dept {',
+    '    varchar id PK "主键ID"',
+    '    varchar dept_code UK "部门编码"',
+    '    varchar dept_name "部门名称"',
+    '  }',
+    '',
+    '  t_user {',
+    '    varchar id PK "主键ID"',
+    '    varchar username UK "用户名"',
+    '    varchar password "密码"',
+    '    varchar role "admin or user"',
+    '    varchar dept_id FK "所属部门ID"',
+    '  }',
+    '',
+    '  t_role {',
+    '    varchar id PK "主键ID"',
+    '    varchar name UK "角色名称"',
+    '    varchar role_type "SUPER DEPT USER"',
+    '    smallint max_security_level "安全等级 0-3"',
+    '  }',
+    '',
+    '  t_user_role {',
+    '    varchar id PK "主键ID"',
+    '    varchar user_id FK "用户ID"',
+    '    varchar role_id FK "角色ID"',
+    '  }',
+    '',
+    '  t_role_kb_relation {',
+    '    varchar id PK "主键ID"',
+    '    varchar role_id FK "角色ID"',
+    '    varchar kb_id FK "知识库ID"',
+    '    varchar permission "READ WRITE MANAGE"',
+    '    smallint max_security_level "可访问安全等级"',
+    '  }',
+    '',
+    '  t_knowledge_base {',
+    '    varchar id PK "主键ID"',
+    '    varchar name "知识库名称"',
+    '    varchar embedding_model "嵌入模型"',
+    '    varchar collection_name UK "Collection名称"',
+    '    varchar dept_id FK "归属部门ID"',
+    '  }',
+    '',
+    '  t_knowledge_document {',
+    '    varchar id PK "主键ID"',
+    '    varchar kb_id FK "知识库ID"',
+    '    varchar doc_name "文档名称"',
+    '    varchar file_type "文件类型"',
+    '    varchar status "pending running done fail"',
+    '    smallint security_level "安全等级 0-3"',
+    '    varchar pipeline_id FK "Pipeline ID"',
+    '  }',
+    '',
+    '  t_knowledge_chunk {',
+    '    varchar id PK "主键ID"',
+    '    varchar kb_id FK "知识库ID"',
+    '    varchar doc_id FK "文档ID"',
+    '    integer chunk_index "分块序号"',
+    '    text content "分块内容"',
+    '  }',
+    '',
+    '  t_knowledge_vector {',
+    '    varchar id PK "分块ID"',
+    '    text content "分块文本"',
+    '    jsonb metadata "元数据"',
+    '    vector embedding "向量 dim-1536"',
+    '  }',
+    '',
+    '  t_knowledge_document_chunk_log {',
+    '    varchar id PK "主键ID"',
+    '    varchar doc_id FK "文档ID"',
+    '    varchar status "状态"',
+    '    bigint total_duration "总耗时ms"',
+    '  }',
+    '',
+    '  t_knowledge_document_schedule {',
+    '    varchar id PK "主键ID"',
+    '    varchar doc_id FK "文档ID"',
+    '    varchar kb_id FK "知识库ID"',
+    '    varchar cron_expr "Cron表达式"',
+    '    smallint enabled "是否启用"',
+    '  }',
+    '',
+    '  t_knowledge_document_schedule_exec {',
+    '    varchar id PK "主键ID"',
+    '    varchar schedule_id FK "调度ID"',
+    '    varchar doc_id FK "文档ID"',
+    '    varchar kb_id FK "知识库ID"',
+    '    varchar status "状态"',
+    '  }',
+    '',
+    '  t_conversation {',
+    '    varchar id PK "主键ID"',
+    '    varchar conversation_id "会话ID"',
+    '    varchar user_id FK "用户ID"',
+    '    varchar kb_id FK "关联知识库ID"',
+    '    varchar title "会话名称"',
+    '  }',
+    '',
+    '  t_conversation_summary {',
+    '    varchar id PK "主键ID"',
+    '    varchar conversation_id FK "会话ID"',
+    '    varchar user_id FK "用户ID"',
+    '    varchar last_message_id FK "最后消息ID"',
+    '    text content "摘要内容"',
+    '  }',
+    '',
+    '  t_message {',
+    '    varchar id PK "主键ID"',
+    '    varchar conversation_id FK "会话ID"',
+    '    varchar user_id FK "用户ID"',
+    '    varchar role "user or assistant"',
+    '    text content "消息内容"',
+    '  }',
+    '',
+    '  t_message_feedback {',
+    '    varchar id PK "主键ID"',
+    '    varchar message_id FK "消息ID"',
+    '    varchar conversation_id FK "会话ID"',
+    '    varchar user_id FK "用户ID"',
+    '    smallint vote "1赞 -1踩"',
+    '  }',
+    '',
+    '  t_sample_question {',
+    '    varchar id PK "主键ID"',
+    '    varchar title "展示标题"',
+    '    varchar question "示例问题"',
+    '  }',
+    '',
+    '  t_intent_node {',
+    '    varchar id PK "主键ID"',
+    '    varchar kb_id FK "知识库ID"',
+    '    varchar intent_code "业务唯一标识"',
+    '    smallint level "层级 0-2"',
+    '    varchar parent_code "父节点标识"',
+    '    smallint kind "0-RAG 1-SYSTEM"',
+    '  }',
+    '',
+    '  t_query_term_mapping {',
+    '    varchar id PK "主键ID"',
+    '    varchar domain "领域"',
+    '    varchar source_term "源词"',
+    '    varchar target_term "目标词"',
+    '    smallint match_type "1精确 2模糊"',
+    '  }',
+    '',
+    '  t_rag_trace_run {',
+    '    varchar id PK "主键ID"',
+    '    varchar trace_id UK "全局链路ID"',
+    '    varchar conversation_id FK "会话ID"',
+    '    varchar user_id FK "用户ID"',
+    '    varchar status "RUNNING SUCCESS ERROR"',
+    '  }',
+    '',
+    '  t_rag_trace_node {',
+    '    varchar id PK "主键ID"',
+    '    varchar trace_id FK "所属链路ID"',
+    '    varchar node_id "节点ID"',
+    '    varchar parent_node_id "父节点ID"',
+    '    varchar status "RUNNING SUCCESS ERROR"',
+    '  }',
+    '',
+    '  t_rag_evaluation_record {',
+    '    varchar id PK "主键ID"',
+    '    varchar trace_id FK "链路ID"',
+    '    varchar conversation_id FK "会话ID"',
+    '    varchar message_id FK "消息ID"',
+    '    varchar eval_status "PENDING or DONE"',
+    '  }',
+    '',
+    '  t_ingestion_pipeline {',
+    '    varchar id PK "主键ID"',
+    '    varchar name UK "流水线名称"',
+    '    text description "描述"',
+    '  }',
+    '',
+    '  t_ingestion_pipeline_node {',
+    '    varchar id PK "主键ID"',
+    '    varchar pipeline_id FK "流水线ID"',
+    '    varchar node_id "节点标识"',
+    '    varchar node_type "节点类型"',
+    '    varchar next_node_id "下一节点ID"',
+    '  }',
+    '',
+    '  t_ingestion_task {',
+    '    varchar id PK "主键ID"',
+    '    varchar pipeline_id FK "流水线ID"',
+    '    varchar source_type "来源类型"',
+    '    varchar status "任务状态"',
+    '  }',
+    '',
+    '  t_ingestion_task_node {',
+    '    varchar id PK "主键ID"',
+    '    varchar task_id FK "任务ID"',
+    '    varchar pipeline_id FK "流水线ID"',
+    '    varchar node_id "节点标识"',
+    '    varchar status "节点状态"',
+    '  }',
+    '',
+    '  sys_dept ||--o{ t_user : "has members"',
+    '  sys_dept ||--o{ t_knowledge_base : "owns"',
+    '  t_user ||--o{ t_user_role : "assigned"',
+    '  t_role ||--o{ t_user_role : "granted to"',
+    '  t_role ||--o{ t_role_kb_relation : "accesses"',
+    '  t_knowledge_base ||--o{ t_role_kb_relation : "governed by"',
+    '  t_knowledge_base ||--o{ t_knowledge_document : "contains"',
+    '  t_knowledge_base ||--o{ t_intent_node : "routes"',
+    '  t_knowledge_base ||--o{ t_conversation : "bound to"',
+    '  t_knowledge_document ||--o{ t_knowledge_chunk : "split into"',
+    '  t_knowledge_document ||--o{ t_knowledge_document_chunk_log : "logged"',
+    '  t_knowledge_document ||--|| t_knowledge_document_schedule : "scheduled"',
+    '  t_knowledge_document_schedule ||--o{ t_knowledge_document_schedule_exec : "executes"',
+    '  t_knowledge_chunk ||--|| t_knowledge_vector : "embedded as"',
+    '  t_user ||--o{ t_conversation : "initiates"',
+    '  t_conversation ||--o{ t_message : "contains"',
+    '  t_conversation ||--o{ t_conversation_summary : "summarized"',
+    '  t_message ||--o{ t_message_feedback : "rated"',
+    '  t_user ||--o{ t_rag_trace_run : "triggers"',
+    '  t_rag_trace_run ||--o{ t_rag_trace_node : "spans"',
+    '  t_rag_trace_run ||--o{ t_rag_evaluation_record : "evaluated"',
+    '  t_ingestion_pipeline ||--o{ t_ingestion_pipeline_node : "composed of"',
+    '  t_ingestion_pipeline ||--o{ t_ingestion_task : "runs"',
+    '  t_ingestion_pipeline ||--o{ t_knowledge_document : "processes"',
+    '  t_ingestion_task ||--o{ t_ingestion_task_node : "tracks"',
+  ].join('\n');
+
+  mermaid.render('erd-svg', diagram).then(function(result) {
+    document.getElementById('erd').innerHTML = result.svg;
+
+    var svgEl = document.querySelector('#erd svg');
+    if (svgEl) {
+      svgEl.style.maxWidth = '100%';
+      svgEl.style.height = 'auto';
+    }
+
+    // Round outer entity box corners
+    document.querySelectorAll('#erd svg .node').forEach(function(node) {
+      var firstPath = node.querySelector('path[d]');
+      if (!firstPath) return;
+      var d = firstPath.getAttribute('d');
+      var nums = d.match(/-?[\d.]+/g);
+      if (!nums || nums.length < 8) return;
+      nums = nums.map(Number);
+      var xs = [nums[0], nums[2], nums[4], nums[6]];
+      var ys = [nums[1], nums[3], nums[5], nums[7]];
+      var x = Math.min.apply(null, xs), y = Math.min.apply(null, ys);
+      var w = Math.max.apply(null, xs) - x, h = Math.max.apply(null, ys) - y;
+      var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('x', x);
+      rect.setAttribute('y', y);
+      rect.setAttribute('width', w);
+      rect.setAttribute('height', h);
+      rect.setAttribute('rx', '8');
+      ['fill', 'stroke', 'stroke-width', 'class', 'style'].forEach(function(a) {
+        if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+      });
+      firstPath.replaceWith(rect);
+    });
+
+    // Soften attribute row borders
+    document.querySelectorAll('#erd svg .row-rect-odd path, #erd svg .row-rect-even path').forEach(function(p) {
+      p.setAttribute('stroke', 'none');
+    });
+
+    // Soften divider lines
+    document.querySelectorAll('#erd svg .divider path').forEach(function(p) {
+      p.setAttribute('stroke-opacity', '0.35');
+    });
+
+  }).catch(function(err) {
+    document.getElementById('erd').innerHTML =
+      '<p style="color:#a33;padding:20px;">Mermaid rendering failed: ' + err.message + '</p>';
+  });
+
+});
+</script>
+</body>
+</html>
