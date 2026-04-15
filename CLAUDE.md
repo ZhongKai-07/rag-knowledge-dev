@@ -96,8 +96,11 @@ Docker Compose files in `resources/docker/` for Milvus and RocketMQ. Database in
 
 Full environment setup guide (Docker containers + DB init + backend/frontend start): `docs/dev/launch.md`
 
+Upstream open-source repo: `git remote upstream` → `https://github.com/nageoffer/ragent.git` (added 2026-04-15). Use `git fetch upstream` to compare.
+
 Upgrade scripts in `resources/database/`:
 - `upgrade_v1.2_to_v1.3.sql` — adds `kb_id` to `t_conversation` for knowledge space isolation
+- `upgrade_v1.3_to_v1.4.sql` — adds `thinking_content`/`thinking_duration` to `t_message` for deep-thinking chain persistence
 
 Full dev-environment wipe + rebuild (**dev only — destroys all data**):
 ```bash
@@ -131,6 +134,8 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - **PostgreSQL folds unquoted identifiers to lowercase**: `selectMaps` with `.select("kb_id AS kbId")` produces map key `kbid`, not `kbId`. Always use snake_case aliases (`AS kb_id`, `AS doc_count`) and `row.get("kb_id")` — never camelCase.
 - **Frontend HMR vs Backend restart**: Vite dev server hot-reloads frontend changes instantly. Spring Boot requires manual restart (`mvn -pl bootstrap spring-boot:run`) after any Java code change. Always confirm backend is restarted before verifying backend changes.
 - **`mvn spring-boot:run` does NOT recompile stale classes after branch switch**: After `git checkout`, old `.class` files in `target/` remain. Run `mvn clean -pl bootstrap spring-boot:run` on first run in a new branch or new machine to force full recompilation with `-parameters`.
+- **Cross-module source changes require `mvn install`**: Editing `framework` or `infra-ai` source then running `mvn -pl bootstrap spring-boot:run` fails — bootstrap resolves these modules from the local Maven repo, not from source. Run `mvn clean install -DskipTests` from root first. This is distinct from the branch-switch stale-class issue.
+- **Entity column additions require DB migration before startup**: Adding fields to MyBatis Plus `@TableName` entities without running the corresponding `upgrade_*.sql` script causes `PSQLException: column does not exist` at runtime. Always pair entity field additions with a migration script in `resources/database/` and remind to execute it.
 - **`-parameters` flag: IntelliJ vs Maven divergence**: IntelliJ adds `-parameters` automatically; Maven doesn't (compiler-plugin `<parameters>` isn't set). Without it, `@RequestParam`/`@PathVariable` without explicit `value=` throw `IllegalArgumentException` at runtime. **Rule**: always write explicit `value="..."` on all `@RequestParam`/`@PathVariable` annotations.
 - **Sweep for bare annotations** (run after adding any controller): `grep -rEn '@(RequestParam|PathVariable)\s+(required\s*=[^,)]+,\s*)?[A-Z]' --include="*Controller.java" bootstrap/src/main/java | grep -v 'value\s*='`
 - **`@RequiredArgsConstructor` + `@Qualifier` is SAFE**: `lombok.config` has `copyableAnnotations += org.springframework.beans.factory.annotation.Qualifier`, so field-level `@Qualifier("beanName")` IS copied to the Lombok-generated constructor parameter. Explicit constructors are NOT required for ambiguous bean types (supersedes previous guidance).

@@ -30,8 +30,8 @@ import com.nageoffer.ai.ragent.infra.model.ModelTarget;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -89,6 +89,27 @@ public class RoutingLLMService implements LLMService {
     }
 
     @Override
+    public String chat(ChatRequest request, String modelId) {
+        if (!StringUtils.hasText(modelId)) {
+            return chat(request);
+        }
+        List<ModelTarget> allTargets = selector.selectChatCandidates(
+                Boolean.TRUE.equals(request.getThinking()));
+        List<ModelTarget> filtered = allTargets.stream()
+                .filter(t -> modelId.equals(t.id()))
+                .toList();
+        if (filtered.isEmpty()) {
+            return chat(request);
+        }
+        return executor.executeWithFallback(
+                ModelCapability.CHAT,
+                filtered,
+                target -> clientsByProvider.get(target.candidate().getProvider()),
+                (client, target) -> client.chat(request, target)
+        );
+    }
+
+    @Override
     @RagTraceNode(name = "llm-stream-routing", type = "LLM_ROUTING")
     public StreamCancellationHandle streamChat(ChatRequest request, StreamCallback callback) {
         List<ModelTarget> targets = selector.selectChatCandidates(request.getThinking());
@@ -105,12 +126,14 @@ public class RoutingLLMService implements LLMService {
                 continue;
             }
 
-            FirstPacketAwaiter awaiter = new FirstPacketAwaiter();
-            ProbeBufferingCallback wrapper = new ProbeBufferingCallback(callback, awaiter);
+            if (!healthStore.allowCall(target.id())) {
+                continue;
+            }
+            ProbeStreamBridge bridge = new ProbeStreamBridge(callback);
 
             StreamCancellationHandle handle;
             try {
-                handle = client.streamChat(request, wrapper, target);
+                handle = client.streamChat(request, bridge, target);
             } catch (Exception e) {
                 healthStore.markFailure(target.id());
                 lastError = e;
@@ -126,11 +149,10 @@ public class RoutingLLMService implements LLMService {
                 continue;
             }
 
-            FirstPacketAwaiter.Result result = awaitFirstPacket(awaiter, handle, callback);
+            ProbeStreamBridge.ProbeResult result = awaitFirstPacket(bridge, handle, callback);
 
             // 判断结果
             if (result.isSuccess()) {
-                wrapper.commit();
                 healthStore.markSuccess(target.id());
                 return handle;
             }
@@ -155,11 +177,11 @@ public class RoutingLLMService implements LLMService {
         return client;
     }
 
-    private FirstPacketAwaiter.Result awaitFirstPacket(FirstPacketAwaiter awaiter,
-                                                       StreamCancellationHandle handle,
-                                                       StreamCallback callback) {
+    private ProbeStreamBridge.ProbeResult awaitFirstPacket(ProbeStreamBridge bridge,
+                                                           StreamCancellationHandle handle,
+                                                           StreamCallback callback) {
         try {
-            return awaiter.await(FIRST_PACKET_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            return bridge.awaitFirstPacket(FIRST_PACKET_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             handle.cancel();
@@ -169,7 +191,7 @@ public class RoutingLLMService implements LLMService {
         }
     }
 
-    private Throwable buildLastErrorAndLog(FirstPacketAwaiter.Result result, ModelTarget target, String label) {
+    private Throwable buildLastErrorAndLog(ProbeStreamBridge.ProbeResult result, ModelTarget target, String label) {
         switch (result.getType()) {
             case ERROR -> {
                 Throwable error = result.getError() != null
@@ -210,135 +232,4 @@ public class RoutingLLMService implements LLMService {
         return finalException;
     }
 
-    /**
-     * 流式首包探测回调：
-     * - 探测阶段先缓存事件，避免失败模型的内容污染下游输出
-     * - 首包成功后 commit，按原始顺序回放缓存并转实时转发
-     */
-    private static final class ProbeBufferingCallback implements StreamCallback {
-
-        private final StreamCallback downstream;
-        private final FirstPacketAwaiter awaiter;
-        private final Object lock = new Object();
-        private final List<BufferedEvent> bufferedEvents = new ArrayList<>();
-        private volatile boolean committed;
-
-        private ProbeBufferingCallback(StreamCallback downstream, FirstPacketAwaiter awaiter) {
-            this.downstream = downstream;
-            this.awaiter = awaiter;
-            this.committed = false;
-        }
-
-        @Override
-        public void onContent(String content) {
-            awaiter.markContent();
-            bufferOrDispatch(BufferedEvent.content(content));
-        }
-
-        @Override
-        public void onThinking(String content) {
-            awaiter.markContent();
-            bufferOrDispatch(BufferedEvent.thinking(content));
-        }
-
-        @Override
-        public void onTokenUsage(TokenUsage usage) {
-            bufferOrDispatch(BufferedEvent.tokenUsage(usage));
-        }
-
-        @Override
-        public void onComplete() {
-            awaiter.markComplete();
-            bufferOrDispatch(BufferedEvent.complete());
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            awaiter.markError(t);
-            bufferOrDispatch(BufferedEvent.error(t));
-        }
-
-        /**
-         * 首包探测成功后提交：
-         * 1. 原子切换为 committed
-         * 2. 按事件顺序回放缓存，保证时序一致
-         */
-        private void commit() {
-            List<BufferedEvent> snapshot;
-            synchronized (lock) {
-                if (committed) {
-                    return;
-                }
-                committed = true;
-                if (bufferedEvents.isEmpty()) {
-                    return;
-                }
-                snapshot = new ArrayList<>(bufferedEvents);
-                bufferedEvents.clear();
-            }
-            for (BufferedEvent event : snapshot) {
-                dispatch(event);
-            }
-        }
-
-        private void bufferOrDispatch(BufferedEvent event) {
-            boolean dispatchNow;
-            synchronized (lock) {
-                dispatchNow = committed;
-                if (!dispatchNow) {
-                    bufferedEvents.add(event);
-                }
-            }
-            if (dispatchNow) {
-                dispatch(event);
-            }
-        }
-
-        private void dispatch(BufferedEvent event) {
-            switch (event.type()) {
-                case CONTENT -> downstream.onContent(event.content());
-                case THINKING -> downstream.onThinking(event.content());
-                case TOKEN_USAGE -> {
-                    if (event.usage() != null) {
-                        downstream.onTokenUsage(event.usage());
-                    }
-                }
-                case COMPLETE -> downstream.onComplete();
-                case ERROR -> downstream.onError(event.error() != null
-                        ? event.error()
-                        : new RemoteException("流式请求失败", BaseErrorCode.REMOTE_ERROR));
-            }
-        }
-
-        private record BufferedEvent(EventType type, String content, Throwable error, TokenUsage usage) {
-
-            private static BufferedEvent content(String content) {
-                return new BufferedEvent(EventType.CONTENT, content, null, null);
-            }
-
-            private static BufferedEvent thinking(String content) {
-                return new BufferedEvent(EventType.THINKING, content, null, null);
-            }
-
-            private static BufferedEvent tokenUsage(TokenUsage usage) {
-                return new BufferedEvent(EventType.TOKEN_USAGE, null, null, usage);
-            }
-
-            private static BufferedEvent complete() {
-                return new BufferedEvent(EventType.COMPLETE, null, null, null);
-            }
-
-            private static BufferedEvent error(Throwable error) {
-                return new BufferedEvent(EventType.ERROR, null, error, null);
-            }
-        }
-
-        private enum EventType {
-            CONTENT,
-            THINKING,
-            TOKEN_USAGE,
-            COMPLETE,
-            ERROR
-        }
-    }
 }

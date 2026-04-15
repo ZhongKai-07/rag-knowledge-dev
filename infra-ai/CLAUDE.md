@@ -44,13 +44,14 @@ Service 接口（业务调用入口）
 
 | 类 | 说明 |
 |----|------|
-| `LLMService` | 统一 LLM 接口：`chat()`（同步）、`streamChat()`（流式） |
+| `LLMService` | 统一 LLM 接口：`chat()`、`chat(request, modelId)`（指定模型）、`streamChat()`（流式） |
 | `RoutingLLMService` | `@Primary` 实现，调用 `ModelSelector` 选模型，通过 `ModelRoutingExecutor` 执行并支持降级 |
 | `ChatClient` | 单个模型提供商的聊天客户端接口 |
 | `BaiLianChatClient` | 阿里百炼（qwen 系列）实现 |
 | `OllamaChatClient` | Ollama 本地模型实现 |
 | `SiliconFlowChatClient` | 硅基流动实现 |
-| `StreamCallback` | 流式响应回调接口（`onMessage`、`onThinking`、`onFinish`、`onError`） |
+| `StreamCallback` | 流式响应回调接口（`onContent`、`onThinking`、`onTokenUsage`、`onComplete`、`onError`） |
+| `ProbeStreamBridge` | 流式首包探测桥接器，缓冲回调事件直到首包成功后回放 |
 | `OpenAIStyleSseParser` | 解析 OpenAI 格式的 SSE 流（含 `[DONE]`、usage frame） |
 | `StreamAsyncExecutor` | 在独立线程池中执行流式请求，`streamChat()` 调用后立即返回 |
 | `TokenUsage` | 封装 prompt_tokens、completion_tokens、total_tokens |
@@ -110,3 +111,4 @@ ai:
 - **`NoopRerankClient`**：如果重排模型未配置或不可用，系统默认使用 `NoopRerankClient`（返回原始顺序），不会报错。这是有意设计的降级行为。
 - **模型健康检测**：`ModelHealthStore` 记录每个模型的连续失败次数。`ModelRoutingExecutor` 在选择候选时会跳过处于熔断状态的模型。新增模型提供商时需注册对应的 Client Bean。
 - **深度思考模式**：`ModelSelector` 会检查请求中的 `deepThinking` 标志，从 `ai.chat.deep-thinking-model` 对应的候选列表中选择模型（而非默认候选列表）。
+- **Buffer replay must happen outside the lock**：`ProbeStreamBridge.commit()` must snapshot+clear the buffer inside `synchronized(lock)`, then replay the snapshot outside. Holding the lock during `downstream.onContent()` etc. blocks the stream callback thread delivering concurrent events.

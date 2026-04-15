@@ -135,6 +135,21 @@ curl -X PUT http://localhost:9201/_search/pipeline/ragent-hybrid-search-pipeline
 
 ---
 
+## 2026-04-15 | Upstream 选择性融合
+
+详情：[`2026-04-15-upstream-selective-merge.md`](./2026-04-15-upstream-selective-merge.md)
+
+**核心改动**：
+- 对比上游 `nageoffer/ragent` 20 个新 commit，评估 4 个方向后选择性合并高价值低冲突改动。
+- `t_message` 新增 `thinking_content`/`thinking_duration` 列，ChatMessage 全链路贯通（存储层就绪，写入端待后续接入）。
+- `LLMService.chat(request, modelId)` 重载 + `RoutingLLMService` 路由实现，支持调用方指定模型。
+- `ProbeStreamBridge` 替换 `FirstPacketAwaiter` + `ProbeBufferingCallback`（修复上游已知回调乱序 bug + /simplify 发现锁内回放回归并修复）。
+- `EnhancerNode`/`EnricherNode`/`ChunkEmbeddingService` 从依赖 infra-ai 内部类改为依赖公开接口（9 处内部依赖 → 0）。
+- `RoutingEmbeddingService` 统一用 `executor.executeWithFallback`，移除冗余手动健康检查。
+- 17 文件，+320/-423 行（净减 103 行），RBAC/Spaces/OpenSearch/security_level 零改动。
+
+---
+
 ## 2026-04-14 | /simplify 审查 + controller 参数名扫雷
 
 详情：本次会话直接在 `main` 合并（PR #3）；审查报告 agent 生成，未单独落文档。
