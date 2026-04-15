@@ -95,7 +95,7 @@ public class EnricherNode implements IngestionNode {
                                 ChatMessage.user(userPrompt)
                         ))
                         .build();
-                String response = chat(request, settings.getModelId());
+                String response = llmService.chat(request, settings.getModelId());
                 applyResult(chunk, type, response);
             }
         }
@@ -132,9 +132,5 @@ public class EnricherNode implements IngestionNode {
             default -> {
             }
         }
-    }
-
-    private String chat(ChatRequest request, String modelId) {
-        return llmService.chat(request, modelId);
     }
 }

@@ -88,7 +88,7 @@ public class EnhancerNode implements IngestionNode {
                             ChatMessage.user(userPrompt)
                     ))
                     .build();
-            String response = chat(request, settings.getModelId());
+            String response = llmService.chat(request, settings.getModelId());
             applyTaskResult(context, type, response);
         }
 
@@ -123,10 +123,6 @@ public class EnhancerNode implements IngestionNode {
         vars.put("taskId", context.getTaskId());
         vars.put("pipelineId", context.getPipelineId());
         return PromptTemplateRenderer.render(template, vars);
-    }
-
-    private String chat(ChatRequest request, String modelId) {
-        return llmService.chat(request, modelId);
     }
 
     private void applyTaskResult(IngestionContext context, EnhanceType type, String response) {

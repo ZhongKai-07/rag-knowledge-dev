@@ -93,13 +93,16 @@ final class ProbeStreamBridge implements StreamCallback {
     }
 
     private void commit() {
+        List<Runnable> snapshot;
         synchronized (lock) {
             if (committed) {
                 return;
             }
             committed = true;
-            buffer.forEach(Runnable::run);
+            snapshot = new ArrayList<>(buffer);
+            buffer.clear();
         }
+        snapshot.forEach(Runnable::run);
     }
 
     private void bufferOrDispatch(Runnable action) {
