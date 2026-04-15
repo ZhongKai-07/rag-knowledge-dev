@@ -30,6 +30,7 @@ import com.nageoffer.ai.ragent.infra.model.ModelTarget;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,6 +84,27 @@ public class RoutingLLMService implements LLMService {
         return executor.executeWithFallback(
                 ModelCapability.CHAT,
                 selector.selectChatCandidates(request.getThinking()),
+                target -> clientsByProvider.get(target.candidate().getProvider()),
+                (client, target) -> client.chat(request, target)
+        );
+    }
+
+    @Override
+    public String chat(ChatRequest request, String modelId) {
+        if (!StringUtils.hasText(modelId)) {
+            return chat(request);
+        }
+        List<ModelTarget> allTargets = selector.selectChatCandidates(
+                Boolean.TRUE.equals(request.getThinking()));
+        List<ModelTarget> filtered = allTargets.stream()
+                .filter(t -> modelId.equals(t.id()))
+                .toList();
+        if (filtered.isEmpty()) {
+            return chat(request);
+        }
+        return executor.executeWithFallback(
+                ModelCapability.CHAT,
+                filtered,
                 target -> clientsByProvider.get(target.candidate().getProvider()),
                 (client, target) -> client.chat(request, target)
         );
