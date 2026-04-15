@@ -704,6 +704,8 @@ CREATE TABLE public.t_message (
     user_id character varying(20) NOT NULL,
     role character varying(16) NOT NULL,
     content text NOT NULL,
+    thinking_content text,
+    thinking_duration bigint,
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted smallint DEFAULT 0
@@ -750,6 +752,20 @@ COMMENT ON COLUMN public.t_message.role IS '角色：user/assistant';
 --
 
 COMMENT ON COLUMN public.t_message.content IS '消息内容';
+
+
+--
+-- Name: COLUMN t_message.thinking_content; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_message.thinking_content IS '深度思考内容（模型推理链）';
+
+
+--
+-- Name: COLUMN t_message.thinking_duration; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_message.thinking_duration IS '深度思考耗时（毫秒）';
 
 
 --

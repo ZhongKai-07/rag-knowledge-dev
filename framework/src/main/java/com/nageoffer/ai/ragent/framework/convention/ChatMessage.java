@@ -86,6 +86,27 @@ public class ChatMessage {
     private String content;
 
     /**
+     * 深度思考内容（模型推理链），仅深度思考模型返回
+     */
+    private String thinkingContent;
+
+    /**
+     * 深度思考耗时（毫秒），仅深度思考模型返回
+     */
+    private Long thinkingDuration;
+
+    /**
+     * 兼容旧代码的 2-arg 构造器（role + content），不填充思考字段
+     *
+     * @param role    消息角色
+     * @param content 消息内容
+     */
+    public ChatMessage(Role role, String content) {
+        this.role = role;
+        this.content = content;
+    }
+
+    /**
      * 创建一条系统消息
      *
      * @param content 系统提示词内容

@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -68,6 +69,18 @@ public class ConversationMessageDO {
      * 消息内容，存储实际的消息文本
      */
     private String content;
+
+    /**
+     * 深度思考内容（模型推理链），仅深度思考模型返回
+     */
+    @TableField(updateStrategy = FieldStrategy.NOT_NULL)
+    private String thinkingContent;
+
+    /**
+     * 深度思考耗时（毫秒），仅深度思考模型返回
+     */
+    @TableField(updateStrategy = FieldStrategy.NOT_NULL)
+    private Long thinkingDuration;
 
     /**
      * 创建时间，自动填充

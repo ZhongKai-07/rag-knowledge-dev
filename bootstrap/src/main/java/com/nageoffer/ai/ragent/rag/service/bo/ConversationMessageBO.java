@@ -50,4 +50,14 @@ public class ConversationMessageBO {
      * 消息内容
      */
     private String content;
+
+    /**
+     * 深度思考内容（模型推理链），仅深度思考模型返回
+     */
+    private String thinkingContent;
+
+    /**
+     * 深度思考耗时（毫秒），仅深度思考模型返回
+     */
+    private Long thinkingDuration;
 }
