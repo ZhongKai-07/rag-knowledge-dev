@@ -34,7 +34,7 @@ com.nageoffer.ai.ragent.framework/
 |----|------|
 | `Result<T>` | 所有 API 响应的包装类，含 `code`、`data`、`message` |
 | `ChatRequest` | 调用大模型的统一请求对象 |
-| `ChatMessage` | 聊天消息对象（role + content） |
+| `ChatMessage` | 聊天消息对象（role + content + thinkingContent + thinkingDuration） |
 | `RetrievedChunk` | 检索结果分块对象 |
 
 ### 异常体系（exception/）
