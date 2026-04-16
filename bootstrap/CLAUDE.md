@@ -44,6 +44,7 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `RetrievalEngine` | 多通道检索引擎（并行执行各检索通道） |
 | `MultiChannelRetrievalEngine` | 意图导向 + 全局向量检索并行去重重排 |
 | `RAGPromptService` | 根据检索结果和场景构建结构化 Prompt |
+| `PromptTemplateUtils.fillSlots(template, Map)` | `{slot}` 模板填充工具（不要手写 `.replace()` 链） |
 | `VectorStoreService` | 向量存储接口（Milvus/OpenSearch/pgvector 三种实现） |
 | `DefaultIntentClassifier` | LLM 驱动的意图分类（Domain→Category→Topic 树） |
 | `ConversationMemoryService` | 会话记忆加载、追加、摘要（JDBC 持久化） |
