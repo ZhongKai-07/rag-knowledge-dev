@@ -21,6 +21,7 @@ import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
 
 import java.util.Date;
+import java.util.Map;
 
 /**
  * RAG Trace 记录服务
@@ -38,4 +39,15 @@ public interface RagTraceRecordService {
     void finishNode(String traceId, String nodeId, String status, String errorMessage, Date endTime, long durationMs);
 
     void updateRunExtraData(String traceId, String extraData);
+
+    /**
+     * 合并字段到 run 的 extra_data JSON
+     *
+     * <p>读取现有 extraData（可能为 null/空/合法 JSON），
+     * 把 additions 里的键合并进去（覆盖同名键），然后写回。</p>
+     *
+     * @param traceId   run 对应的 traceId
+     * @param additions 需要合并的键值对
+     */
+    void mergeRunExtraData(String traceId, Map<String, Object> additions);
 }

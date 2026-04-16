@@ -17,20 +17,26 @@
 
 package com.nageoffer.ai.ragent.rag.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.google.gson.Gson;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceNodeMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceRunMapper;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * RAG Trace 记录服务实现
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RagTraceRecordServiceImpl implements RagTraceRecordService {
@@ -65,6 +71,34 @@ public class RagTraceRecordServiceImpl implements RagTraceRecordService {
     public void updateRunExtraData(String traceId, String extraData) {
         RagTraceRunDO update = RagTraceRunDO.builder()
                 .extraData(extraData)
+                .build();
+        runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
+                .eq(RagTraceRunDO::getTraceId, traceId));
+    }
+
+    @Override
+    public void mergeRunExtraData(String traceId, Map<String, Object> additions) {
+        RagTraceRunDO existing = runMapper.selectOne(
+                Wrappers.lambdaQuery(RagTraceRunDO.class)
+                        .eq(RagTraceRunDO::getTraceId, traceId));
+
+        Gson gson = new Gson();
+        Map<String, Object> merged = new LinkedHashMap<>();
+        if (existing != null && StrUtil.isNotBlank(existing.getExtraData())) {
+            try {
+                Map<String, Object> parsed = gson.fromJson(existing.getExtraData(), Map.class);
+                if (parsed != null) {
+                    merged.putAll(parsed);
+                }
+            } catch (Exception e) {
+                log.warn("解析 extra_data 失败，将丢弃并覆盖，traceId={}", traceId, e);
+            }
+        }
+        merged.putAll(additions);
+        String written = gson.toJson(merged);
+
+        RagTraceRunDO update = RagTraceRunDO.builder()
+                .extraData(written)
                 .build();
         runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
                 .eq(RagTraceRunDO::getTraceId, traceId));
