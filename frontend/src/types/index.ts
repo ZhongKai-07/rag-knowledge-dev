@@ -52,3 +52,8 @@ export interface CompletionPayload {
   messageId?: string | null;
   title?: string | null;
 }
+
+export interface SuggestionsPayload {
+  messageId: string;
+  questions: string[];
+}

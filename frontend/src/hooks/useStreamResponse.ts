@@ -1,10 +1,11 @@
-import type { CompletionPayload, MessageDeltaPayload, StreamMetaPayload } from "@/types";
+import type { CompletionPayload, MessageDeltaPayload, StreamMetaPayload, SuggestionsPayload } from "@/types";
 
 export interface StreamHandlers {
   onMeta?: (payload: StreamMetaPayload) => void;
   onMessage?: (payload: MessageDeltaPayload) => void;
   onThinking?: (payload: MessageDeltaPayload) => void;
   onFinish?: (payload: CompletionPayload) => void;
+  onSuggestions?: (payload: SuggestionsPayload) => void;
   onDone?: () => void;
   onCancel?: (payload: CompletionPayload) => void;
   onReject?: (payload: MessageDeltaPayload) => void;
@@ -65,6 +66,9 @@ async function readSseStream(response: Response, handlers: StreamHandlers, signa
         break;
       case "finish":
         handlers.onFinish?.(payload as CompletionPayload);
+        break;
+      case "suggestions":
+        handlers.onSuggestions?.(payload as SuggestionsPayload);
         break;
       case "done":
         handlers.onDone?.();
