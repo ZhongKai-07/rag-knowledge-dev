@@ -60,4 +60,28 @@ public class RAGConfigProperties {
      */
     @Value("${rag.query-rewrite.max-history-chars:500}")
     private Integer queryRewriteMaxHistoryChars;
+
+    /**
+     * 推荐问题功能总开关
+     */
+    @Value("${rag.suggestions.enabled:true}")
+    private Boolean suggestionsEnabled;
+
+    /**
+     * 推荐问题独立调用使用的小模型 ID，留空则走 ai.chat.default-model
+     */
+    @Value("${rag.suggestions.model-id:}")
+    private String suggestionsModelId;
+
+    /**
+     * 推荐问题输出 token 上限
+     */
+    @Value("${rag.suggestions.max-output-tokens:150}")
+    private Integer suggestionsMaxOutputTokens;
+
+    /**
+     * 推荐问题异步生成超时兜底（毫秒）
+     */
+    @Value("${rag.suggestions.timeout-ms:5000}")
+    private Long suggestionsTimeoutMs;
 }
