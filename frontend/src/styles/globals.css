@@ -120,6 +120,40 @@
   --content-max-width: 800px;
   --header-height: 60px;
 
+  /* ===== Design Tokens ===== */
+
+  /* Brand — 蓝色主品牌 */
+  --brand:         #2563EB;   /* blue-600: 主交互色、按钮、选中 */
+  --brand-muted:   #3B82F6;   /* blue-500: 渐变浅端、图标 */
+  --brand-subtle:  #DBEAFE;   /* blue-100: 选中背景、badge */
+  --brand-faint:   #BFDBFE;   /* blue-200: 聚焦边框、hover 高亮 */
+  --brand-lighter: #EFF6FF;   /* blue-50 : 图标底色、最浅强调 */
+  --brand-ring:    #93C5FD;   /* blue-300: focus-visible 环 */
+  --brand-fg:      #FFFFFF;   /* 品牌色上的文字 */
+
+  /* Surface — 背景层级 */
+  --surface:   #FFFFFF;       /* 卡片、弹窗、输入框 */
+  --surface-2: #FAFAFA;       /* 侧边栏、页面底色 */
+  --surface-3: #F5F5F5;       /* 按钮默认、列表悬停 */
+  --surface-4: #EEEEEE;       /* 深悬停、下拉菜单打开态 */
+
+  /* Ink — 文字层级 */
+  --ink:   #1A1A1A;            /* 主标题、品牌名 */
+  --ink-2: #333333;            /* 正文、输入内容 */
+  --ink-3: #6B7280;            /* 次级文字、标签 */
+  --ink-4: #999999;            /* 占位符、禁用文字 */
+  --ink-5: #CCCCCC;            /* 最弱、骨架文字 */
+
+  /* Line — 边框层级 */
+  --line:   #E5E5E5;           /* 默认边框 */
+  --line-2: #F0F0F0;           /* 浅分隔线 */
+  --line-3: #D4D4D4;           /* 聚焦边框 */
+
+  /* Danger — 错误 / 删除 */
+  --danger:        #EF4444;
+  --danger-subtle: #FEE2E2;
+  --danger-border: #FECACA;
+
   /* ===== 旧变量保留（兼容性）===== */
   --sidebar-bg: #fafafa;
   --sidebar-item-active: #dbeafe;
@@ -2224,4 +2258,16 @@ textarea {
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+}
+
+/* ===== prefers-reduced-motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -18,22 +18,22 @@ export function Header({ onToggleSidebar }: HeaderProps) {
   );
 
   return (
-    <header className="sticky top-0 z-20 bg-white">
-      <div className="flex h-16 items-center justify-between px-6">
+    <header className="sticky top-0 z-20 border-b border-line/50 bg-surface">
+      <div className="flex h-14 items-center justify-between px-6">
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleSidebar}
             aria-label="切换侧边栏"
-            className="text-gray-500 hover:bg-gray-100 lg:hidden"
+            className="text-ink-3 hover:bg-surface-3 lg:hidden"
           >
             <Menu className="h-5 w-5" />
           </Button>
           <button
             type="button"
             onClick={() => navigate("/spaces")}
-            className="hidden items-center gap-1 rounded-md px-2 py-1 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 lg:inline-flex"
+            className="hidden items-center gap-1 rounded-md px-2 py-1 text-sm text-ink-3 transition-colors hover:bg-surface-3 hover:text-ink lg:inline-flex"
             aria-label="返回空间列表"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -41,14 +41,14 @@ export function Header({ onToggleSidebar }: HeaderProps) {
           </button>
           {activeKbName ? (
             <>
-              <span className="hidden text-gray-300 lg:inline">/</span>
-              <span className="hidden text-sm font-medium text-[#2563EB] lg:inline">
+              <span className="hidden text-ink-5 lg:inline">/</span>
+              <span className="hidden text-sm font-medium text-brand lg:inline">
                 {activeKbName}
               </span>
             </>
           ) : null}
-          <span className="text-gray-300">&middot;</span>
-          <p className="text-base font-medium text-gray-900">
+          <span className="text-ink-5">&middot;</span>
+          <p className="text-sm font-medium text-ink">
             {currentSession?.title || "新对话"}
           </p>
         </div>

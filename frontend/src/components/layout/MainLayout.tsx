@@ -11,9 +11,9 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#FAFAFA]">
+    <div className="flex min-h-screen bg-surface-2">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex min-h-screen flex-1 flex-col bg-white">
+      <div className="flex min-h-screen flex-1 flex-col bg-surface">
         <Header onToggleSidebar={() => setSidebarOpen((prev) => !prev)} />
         <main className="flex-1 min-h-0 overflow-hidden bg-white">
           {children}
