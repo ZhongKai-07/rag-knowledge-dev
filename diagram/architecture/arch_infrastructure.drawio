@@ -1,0 +1,112 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="arch-infrastructure" name="Infrastructure 层详细">
+    <mxGraphModel dx="1500" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="t1" value="Infrastructure Layer — 中间件 + 外部服务" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1420" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="t2" value="所有持久化资源与外部 API · 本地通过 docker-compose 编排（resources/docker/）" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontStyle=2;fontColor=#666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="54" width="1420" height="22" as="geometry"/>
+        </mxCell>
+
+        <!-- Consumer -->
+        <mxCell id="bs" value="Bootstrap（业务层）+ infra-ai（AI 抽象层）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="1380" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 1: Persistence -->
+        <mxCell id="r1" value="持久化数据" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="180" width="200" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="pg" value="PostgreSQL 16&#xa;━━━━━━━━━━━━━━━&#xa;业务数据：t_user · t_role · t_knowledge_base · t_knowledge_document · t_knowledge_chunk · t_conversation · t_message&#xa;追踪数据：t_rag_trace_run · t_rag_trace_node（extra_data TEXT JSON）&#xa;评估数据：t_rag_evaluation_record&#xa;流水线：t_ingestion_pipeline · t_ingestion_task&#xa;━━━━━━━━━━━━━━━&#xa;Docker 用户：postgres（不是 ragent）&#xa;db 名：ragent" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="210" width="450" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rds" value="Redis + Redisson&#xa;━━━━━━━━━━━━━━━&#xa;RBAC 缓存：kb_access:{userId} · kb_access:dept:{userId} · kb_security_level:{userId} Hash&#xa;幂等：@IdempotentSubmit Token · @IdempotentConsume 消息 key&#xa;限流：ChatRateLimitAspect 令牌&#xa;分布式锁：Redisson（URL 源重分块、Last-SUPER_ADMIN 检测）&#xa;模型健康：model_health:{modelId} 熔断计数" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="530" y="210" width="450" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="rust" value="RustFS (S3 兼容) 对象存储&#xa;━━━━━━━━━━━━━━━&#xa;用户上传的原始文档&#xa;bucket 名 = KB.collectionName&#xa;FetcherStrategy.S3Fetcher 读取路径&#xa;━━━━━━━━━━━━━━━&#xa;⚠️ 所有模式都需要 RustFS（不只 S3Fetcher）&#xa;⚠️ 启动必须 NO_PROXY=localhost,127.0.0.1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="210" width="440" height="220" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 2: Vector + Messaging -->
+        <mxCell id="r2" value="向量检索 + 消息中间件" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="460" width="300" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="vec" value="向量存储（三选一） — rag.vector.type 切换&#xa;━━━━━━━━━━━━━━━&#xa;通过 VectorStoreService / VectorStoreAdmin 接口抽象&#xa;一个 KB 对应一个独立索引/集合（命名 = collectionName）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=11;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="490" width="920" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1" value="OpenSearch 2.18&#xa;━━━━━━━━━━━━&#xa;✓ 向量 + 全文混合检索&#xa;✓ metadataFilters（security_level）&#xa;✓ 当前推荐默认&#xa;HTTP :9201 · kNN 插件" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="80" y="550" width="280" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="v2" value="Milvus 2.6&#xa;━━━━━━━━━━━━&#xa;✓ 专用向量库&#xa;⚠️ metadataFilters 未实现&#xa;gRPC :19530 · Docker compose" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="380" y="550" width="280" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="v3" value="pgvector&#xa;━━━━━━━━━━━━&#xa;✓ 与业务库同实例&#xa;⚠️ metadataFilters 未实现&#xa;⚠️ 默认 postgres:16 镜像无 extension&#xa;向量维度：1536" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#FFFFFF;strokeColor=#2E7D32;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="680" y="550" width="280" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mq" value="RocketMQ 5.x&#xa;━━━━━━━━━━━━&#xa;文档分块事务消息&#xa;(KnowledgeDocumentChunkConsumer)&#xa;━━━━━━━━━━━━&#xa;@IdempotentConsume 去重&#xa;事务回调更新 t_knowledge_document.status&#xa;nameserver :9876 · broker :10911" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="490" width="440" height="220" as="geometry"/>
+        </mxCell>
+
+        <!-- Row 3: External services -->
+        <mxCell id="r3" value="外部服务" style="text;html=1;strokeColor=none;fillColor=none;align=left;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="740" width="200" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="llm" value="外部 LLM 提供商（HTTPS / OpenAI-compatible SSE）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=11;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="770" width="920" height="200" as="geometry"/>
+        </mxCell>
+        <mxCell id="llm-b" value="阿里百炼 (BaiLian)&#xa;qwen3-max · qwen-emb-8b · qwen3-rerank&#xa;公有云 API Key 鉴权" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85450;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="80" y="820" width="280" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="llm-o" value="Ollama（本地部署）&#xa;本地 llama / qwen 系列&#xa;开发环境默认 · 无外网依赖" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85450;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="380" y="820" width="280" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="llm-s" value="SiliconFlow（硅基流动）&#xa;兼容 OpenAI 协议&#xa;作为 BaiLian 降级备选" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B85450;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="680" y="820" width="280" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="mcp" value="mcp-server（独立进程）&#xa;━━━━━━━━━━━━&#xa;Model Context Protocol 服务&#xa;工具扩展：查询外部系统/API&#xa;由 Bootstrap MCPToolExecutor 通过 MCP 协议调用&#xa;━━━━━━━━━━━━&#xa;加新工具：`@Component` 实现 MCPToolExecutor + 意图树 NodeType=MCP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=10;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="770" width="440" height="200" as="geometry"/>
+        </mxCell>
+
+        <!-- Connections -->
+        <mxCell id="e-pg" style="endArrow=classic;html=1;strokeColor=#2E7D32;" edge="1" parent="1" source="bs" target="pg">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-rds" style="endArrow=classic;html=1;strokeColor=#2E7D32;" edge="1" parent="1" source="bs" target="rds">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-rust" style="endArrow=classic;html=1;strokeColor=#455A64;" edge="1" parent="1" source="bs" target="rust">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-vec" style="endArrow=classic;html=1;strokeColor=#2E7D32;" edge="1" parent="1" source="bs" target="vec">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-mq" style="endArrow=classic;html=1;strokeColor=#2E7D32;" edge="1" parent="1" source="bs" target="mq">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-llm" style="endArrow=classic;html=1;strokeColor=#B85450;" edge="1" parent="1" source="bs" target="llm">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-mcp" style="endArrow=classic;html=1;strokeColor=#6A1B9A;" edge="1" parent="1" source="bs" target="mcp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- footer note -->
+        <mxCell id="fn" value="本地：所有组件在 resources/docker/ 下 compose 编排 · 启动指南见 docs/dev/launch.md" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=11;fontStyle=2;fontColor=#666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="1000" width="1380" height="20" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

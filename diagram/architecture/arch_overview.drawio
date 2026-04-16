@@ -1,0 +1,175 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="arch-overview" name="总览 · 四层分层">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="HT KnowledgeBase — 系统总览（四层分层架构）" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1320" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Frontend (SPA)  →  Bootstrap (业务域)  →  framework + infra-ai (跨切面基础设施)  →  Infrastructure (中间件 + 外部 LLM)" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontStyle=2;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="54" width="1320" height="22" as="geometry"/>
+        </mxCell>
+
+        <!-- Frontend Layer -->
+        <mxCell id="fe-box" value="Frontend Layer — React 18 + Vite + TypeScript" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="1240" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="fe-pages" value="pages/&#xa;（SpacesPage · ChatPage · admin/*）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="110" y="140" width="230" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="fe-components" value="components/&#xa;（ui/shadcn · chat · layout · admin）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="360" y="140" width="230" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="fe-stores" value="stores/ (Zustand)&#xa;chatStore · authStore" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="610" y="140" width="230" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="fe-services" value="services/ (Axios)&#xa;统一 {code, data, message} 拦截" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="860" y="140" width="230" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="fe-guards" value="router/guards + utils/permissions&#xa;Sa-Token Bearer-less Header" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="140" width="190" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Edge: FE → Bootstrap -->
+        <mxCell id="e1" style="endArrow=classic;html=1;strokeColor=#444;strokeWidth=2;" edge="1" parent="1" source="fe-box" target="bs-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e1-label" value="HTTPS REST + SSE&#xa;(/api/ragent/*)" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="600" y="238" width="200" height="32" as="geometry"/>
+        </mxCell>
+
+        <!-- Bootstrap Layer -->
+        <mxCell id="bs-box" value="Bootstrap Layer — Spring Boot 3.5.7 · 端口 9090 · /api/ragent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="280" width="1240" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="bs-rag" value="rag/ (194 文件)&#xa;问答编排 · 检索 · 记忆 · Prompt&#xa;意图树 · 链路追踪 · MCP" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="320" width="220" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="bs-ingestion" value="ingestion/ (64 文件)&#xa;节点链流水线&#xa;Fetcher→Parser→Chunker→Indexer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="340" y="320" width="220" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="bs-knowledge" value="knowledge/ (61 文件)&#xa;KB/文档 CRUD&#xa;RocketMQ 异步分块" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="580" y="320" width="200" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="bs-user" value="user/ (31 文件)&#xa;Sa-Token 认证&#xa;RBAC · 部门 · security_level" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="800" y="320" width="210" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="bs-admin" value="admin/ (10) · core/ (17)&#xa;Dashboard KPI · Tika 解析&#xa;ChunkingStrategy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="320" width="270" height="95" as="geometry"/>
+        </mxCell>
+
+        <!-- Cross-cutting row -->
+        <!-- framework -->
+        <mxCell id="fw-box" value="framework — 跨切面基础设施（纯基础，无业务）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="490" width="600" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="fw-convention" value="convention/&#xa;Result · ChatRequest · ChatMessage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="530" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="fw-context" value="context/&#xa;UserContext · LoginUser · RoleType" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="300" y="530" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="fw-trace" value="trace/&#xa;RagTraceContext (TTL)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="490" y="530" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="fw-ex" value="exception/&#xa;Client/Service/RemoteException" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="585" width="180" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="fw-idem" value="idempotent/&#xa;@IdempotentSubmit/Consume" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="290" y="585" width="190" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="fw-web" value="web/&#xa;GlobalExceptionHandler · SseEmitterSender" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="490" y="585" width="170" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- infra-ai -->
+        <mxCell id="ai-box" value="infra-ai — AI 能力抽象层（屏蔽多供应商差异）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="720" y="490" width="600" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="ai-chat" value="chat/&#xa;LLMService → RoutingLLMService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="740" y="530" width="200" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ai-emb" value="embedding/&#xa;EmbeddingService → Routing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="950" y="530" width="180" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ai-rerank" value="rerank/&#xa;RerankService → Routing/Noop" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="530" width="170" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="ai-model" value="model/&#xa;ModelSelector · Health · Routing 降级" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="740" y="585" width="260" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="ai-stream" value="StreamAsyncExecutor · OpenAIStyleSseParser&#xa;ProbeStreamBridge · TokenUsage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="585" width="300" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- Edges: Bootstrap → framework / infra-ai -->
+        <mxCell id="e2" style="endArrow=classic;html=1;strokeColor=#6C8EBF;strokeWidth=2;dashed=1;" edge="1" parent="1" source="bs-box" target="fw-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2-label" value="依赖共享基础能力" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;fontColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="250" y="450" width="170" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="endArrow=classic;html=1;strokeColor=#82B366;strokeWidth=2;dashed=1;" edge="1" parent="1" source="bs-box" target="ai-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3-label" value="依赖 AI 能力接口" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;fontColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="970" y="450" width="160" height="24" as="geometry"/>
+        </mxCell>
+
+        <!-- Infrastructure layer -->
+        <mxCell id="infra-box" value="Infrastructure Layer — 中间件 + 外部 LLM 提供商" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2F1;strokeColor=#00695C;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="710" width="1240" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="infra-pg" value="PostgreSQL&#xa;业务数据 + 向量 (pgvector 可选)&#xa;t_conversation · t_rag_trace_*" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="100" y="750" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="infra-redis" value="Redis + Redisson&#xa;kb_access 缓存&#xa;限流令牌 · 分布式锁" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="300" y="750" width="170" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="infra-mq" value="RocketMQ 5.x&#xa;文档分块事务消息&#xa;@IdempotentConsume" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="480" y="750" width="170" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="infra-vector" value="向量库（三选一）&#xa;OpenSearch 2.18 · Milvus 2.6&#xa;pgvector&#xa;rag.vector.type 切换" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="660" y="750" width="210" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="infra-rustfs" value="RustFS (S3 兼容)&#xa;原始文档存储&#xa;bucket = collectionName" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="880" y="750" width="190" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="infra-llm" value="外部 LLM 提供商&#xa;百炼 (qwen) · Ollama&#xa;SiliconFlow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="750" width="220" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- Edge: Bootstrap → Infra (mid via framework zone) -->
+        <mxCell id="e4" style="endArrow=classic;html=1;strokeColor=#00695C;strokeWidth=2;" edge="1" parent="1" source="fw-box" target="infra-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" style="endArrow=classic;html=1;strokeColor=#00695C;strokeWidth=2;" edge="1" parent="1" source="ai-box" target="infra-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5-label" value="外部 API（HTTPS / OpenAI-compatible SSE）" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;fontColor=#B85450;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="670" width="310" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Legend -->
+        <mxCell id="legend-title" value="图例" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="920" width="60" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="lg1" value="实线 = 请求/调用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#444;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="140" y="918" width="150" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="lg2" value="虚线 = 库依赖（Maven）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=10;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="918" width="180" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="lg3" value="圆柱 = 数据/存储" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="490" y="918" width="140" height="22" as="geometry"/>
+        </mxCell>
+        <mxCell id="lg4" value="红框 = 外部服务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8CECC;strokeColor=#B85450;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="640" y="918" width="140" height="22" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

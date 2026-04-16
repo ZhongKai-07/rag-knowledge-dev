@@ -1,0 +1,130 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="arch-frontend" name="Frontend 层详细">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="t1" value="Frontend Layer — React 18 + Vite + TS + Zustand + Axios" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1320" height="32" as="geometry"/>
+        </mxCell>
+        <mxCell id="t2" value="单页应用 · Vite dev server 代理到后端 9090 · HMR · shadcn/ui + Tailwind" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontSize=12;fontStyle=2;fontColor=#666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="54" width="1320" height="22" as="geometry"/>
+        </mxCell>
+
+        <!-- Entry / Router -->
+        <mxCell id="entry-box" value="入口 + 路由" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="420" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-main" value="main.tsx&#xa;→ 挂载 React + QueryClient + Router" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="140" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-app" value="App.tsx / router.tsx&#xa;React Router v6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="140" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-guards" value="router/guards.tsx&#xa;RequireAuth · RequireAnyAdmin&#xa;RequireSuperAdmin · RequireMenuAccess" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D6B656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="220" width="380" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Pages -->
+        <mxCell id="pages-box" value="Pages（页面组件）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="510" y="100" width="830" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="p-login" value="LoginPage&#xa;Sa-Token 登录" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="530" y="140" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p-spaces" value="SpacesPage&#xa;登录默认页，KB 空间入口" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="700" y="140" width="200" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p-chat" value="ChatPage&#xa;主聊天（URL ?kbId= 锁空间）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="920" y="140" width="200" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p-admin" value="pages/admin/*&#xa;AdminLayout 嵌套路由" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#6C8EBF;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="140" width="180" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="p-admin-list" value="admin 子页：dashboard · knowledge · ingestion · intent-tree · traces · evaluations · roles · users · settings" style="text;html=1;fontSize=11;align=left;fillColor=#F5F5F5;strokeColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="530" y="220" width="790" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Components -->
+        <mxCell id="comp-box" value="Components（可复用 UI）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="360" width="620" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="c-ui" value="ui/ (shadcn/ui)&#xa;Button · Dialog · Table · Form&#xa;基于 Radix UI 二次封装" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="400" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="c-chat" value="chat/&#xa;ChatInput · MessageItem&#xa;MarkdownRenderer · TaskStatus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="400" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="c-layout" value="layout/&#xa;Sidebar · Header · MainLayout&#xa;AdminLayout 带面包屑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="480" y="400" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="c-session" value="session/&#xa;SessionList · SessionItem" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="80" y="495" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="c-admin" value="admin/&#xa;CreateKnowledgeBaseDialog&#xa;SimpleLineChart · 表单" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="280" y="495" width="180" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="c-common" value="common/&#xa;SecurityLevelBadge · ErrorBoundary&#xa;Loading · Toast · Avatar" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#82B366;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="480" y="495" width="180" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- State & Hooks -->
+        <mxCell id="state-box" value="State + Hooks + Permissions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="710" y="360" width="630" height="220" as="geometry"/>
+        </mxCell>
+        <mxCell id="s-chat" value="stores/chatStore.ts (Zustand)&#xa;━━━━━━━━━━━━&#xa;sessions · currentSessionId · messages&#xa;activeKbId (派生缓存) · isStreaming&#xa;streamTaskId · deepThinkingEnabled&#xa;━━━━━━━━━━━━&#xa;sendMessage() · cancelGeneration()&#xa;resetForNewSpace() · fetchSessions(kbId)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="730" y="400" width="290" height="170" as="geometry"/>
+        </mxCell>
+        <mxCell id="s-auth" value="stores/authStore.ts&#xa;━━━━━━━━━━━━&#xa;user · token (localStorage)&#xa;login / logout / checkAuth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="400" width="280" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="s-perm" value="utils/permissions.ts&#xa;━━━━━━━━━━━━&#xa;getPermissions(user) 纯函数&#xa;usePermissions() hook&#xa;canSeeMenuItem · canManageKb · canManageUser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D79B00;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="490" width="280" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- Services -->
+        <mxCell id="svc-box" value="Services（Axios HTTP 层）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5E1D3;strokeColor=#AE7A4F;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="620" width="1280" height="150" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc-api" value="api.ts&#xa;Axios 实例 · Authorization 原 token 头（无 Bearer）&#xa;响应拦截器：自动解包 {code, data, message}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AE7A4F;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="80" y="660" width="320" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="svc-list" value="按域拆分：&#xa;authService · sessionService · knowledgeService · spacesService · dashboardService&#xa;ragTraceService · ragEvaluationService · intentTreeService · roleService · userService · ingestionService · sysDeptService" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AE7A4F;fontSize=11;align=left;verticalAlign=top;spacingLeft=6;spacingTop=4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="660" width="900" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Backend arrow -->
+        <mxCell id="be" value="Backend — Bootstrap :9090  (/api/ragent/*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;fontSize=12;fontStyle=1;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="810" width="1280" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="be-e1" style="endArrow=classic;html=1;strokeColor=#444;strokeWidth=2;" edge="1" parent="1" source="svc-box" target="be">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="be-e1-lbl" value="Axios JSON + SSE (EventSource/fetch stream)" style="text;html=1;strokeColor=none;fillColor=none;fontSize=10;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="510" y="778" width="380" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Cross arrows -->
+        <mxCell id="x1" style="endArrow=classic;html=1;strokeColor=#6C8EBF;strokeWidth=2;" edge="1" parent="1" source="pages-box" target="comp-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="x2" style="endArrow=classic;html=1;strokeColor=#D79B00;strokeWidth=2;" edge="1" parent="1" source="pages-box" target="state-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="x3" style="endArrow=classic;html=1;strokeColor=#AE7A4F;strokeWidth=2;" edge="1" parent="1" source="state-box" target="svc-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="x4" style="endArrow=classic;html=1;strokeColor=#D6B656;strokeWidth=2;" edge="1" parent="1" source="entry-box" target="pages-box">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Sidenote -->
+        <mxCell id="note" value="⚠️ kbId 是 URL 参数（?kbId=xxx），是 KB 锁定唯一来源。activeKbId 只是缓存。&#xa;⚠️ 切换空间必须调 chatStore.resetForNewSpace()，否则旧会话残留。&#xa;⚠️ 权限被拒：HTTP=200，看 Result.code 而非 status；组件应优雅 return null 而不是报错 toast。" style="text;html=1;fillColor=#FFF5CE;strokeColor=#C9A227;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="890" width="1280" height="70" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
