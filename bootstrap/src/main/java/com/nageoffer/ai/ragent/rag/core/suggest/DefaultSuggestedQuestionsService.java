@@ -121,10 +121,15 @@ public class DefaultSuggestedQuestionsService implements SuggestedQuestionsServi
         String cleaned = LLMResponseCleaner.stripMarkdownCodeFence(raw);
         JsonElement root = JsonParser.parseString(cleaned);
         JsonObject obj = root.getAsJsonObject();
+        if (!obj.has("questions") || !obj.get("questions").isJsonArray()) {
+            return List.of();
+        }
         JsonArray arr = obj.getAsJsonArray("questions");
         List<String> out = new ArrayList<>();
         for (JsonElement el : arr) {
-            out.add(el.getAsString());
+            if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+                out.add(el.getAsString());
+            }
         }
         return out;
     }

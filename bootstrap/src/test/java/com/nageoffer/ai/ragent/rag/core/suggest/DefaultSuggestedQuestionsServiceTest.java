@@ -92,4 +92,26 @@ class DefaultSuggestedQuestionsServiceTest {
 
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void returns_empty_when_llm_returns_garbage() {
+        when(llmService.chat(any(ChatRequest.class), anyString()))
+                .thenReturn("抱歉，我无法帮你生成推荐问题。");
+
+        SuggestionContext ctx = new SuggestionContext("q", List.of(), List.of(), true);
+        List<String> result = service.generate(ctx, "answer");
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void returns_empty_when_questions_field_missing() {
+        when(llmService.chat(any(ChatRequest.class), anyString()))
+                .thenReturn("{\"answer\":\"not what we asked for\"}");
+
+        SuggestionContext ctx = new SuggestionContext("q", List.of(), List.of(), true);
+        List<String> result = service.generate(ctx, "answer");
+
+        assertTrue(result.isEmpty());
+    }
 }
