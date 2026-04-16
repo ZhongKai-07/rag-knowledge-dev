@@ -26,9 +26,7 @@ import java.util.Date;
 
 public interface RagTraceRunMapper extends BaseMapper<RagTraceRunDO> {
 
-    // NOTE: NUMERIC -> BIGINT 两次 CAST 是为了兼容历史上写成 "5228.0" 的值
-    // （Gson round-trip 会把整数变 Double）。新代码走 Jackson，不会再写 ".0"，
-    // 但旧行保留，所以保持这个兜底 CAST。
+    // NUMERIC -> BIGINT 兼容历史上写成 "5228.0" 的 extra_data 行。
     @Select("SELECT COALESCE(SUM(CAST(CAST(extra_data::json->>'totalTokens' AS NUMERIC) AS BIGINT)), 0) " +
             "FROM t_rag_trace_run " +
             "WHERE deleted = 0 AND extra_data IS NOT NULL AND extra_data LIKE '%totalTokens%' " +

@@ -490,7 +490,6 @@ export function RagTraceDetailPage() {
           )}
         </div>
 
-        {/* 推荐问题（本轮异步生成的 chip，来自 extra_data.suggestedQuestions） */}
         {selectedRun.suggestedQuestions && selectedRun.suggestedQuestions.length > 0 && (
           <Card>
             <CardHeader className="py-3 px-4">
@@ -501,12 +500,9 @@ export function RagTraceDetailPage() {
             <CardContent className="p-4 pt-0">
               <div className="flex flex-wrap gap-2">
                 {selectedRun.suggestedQuestions.map((q, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-700"
-                  >
+                  <Badge key={idx} variant="outline" className="font-normal">
                     {q}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             </CardContent>

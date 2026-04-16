@@ -34,10 +34,12 @@ import com.nageoffer.ai.ragent.rag.service.RagTraceQueryService;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -141,8 +143,8 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
                 builder.totalTokens(json.get("totalTokens").getAsInt());
             }
             if (json.has("suggestedQuestions") && json.get("suggestedQuestions").isJsonArray()) {
-                java.util.List<String> questions = new java.util.ArrayList<>();
-                for (com.google.gson.JsonElement el : json.getAsJsonArray("suggestedQuestions")) {
+                List<String> questions = new ArrayList<>();
+                for (JsonElement el : json.getAsJsonArray("suggestedQuestions")) {
                     if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
                         questions.add(el.getAsString());
                     }

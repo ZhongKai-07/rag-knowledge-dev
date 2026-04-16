@@ -194,7 +194,7 @@ public class StreamChatEventHandler implements StreamCallback {
 
         SuggestionContext ctx = this.suggestionContext;
         boolean enabled = Boolean.TRUE.equals(ragConfigProperties.getSuggestionsEnabled());
-        boolean shouldGenerate = enabled && ctx != null && ctx.shouldGenerate();
+        boolean shouldGenerate = enabled && ctx.shouldGenerate();
 
         if (!shouldGenerate) {
             sendDoneAndClose();

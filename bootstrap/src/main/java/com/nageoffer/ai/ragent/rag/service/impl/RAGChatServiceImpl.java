@@ -181,35 +181,33 @@ public class RAGChatServiceImpl implements RAGChatService {
             return;
         }
 
-        // 装配推荐问题上下文：扁平化取 top-3 chunks、检查是否含 MCP 意图
-        List<RetrievedChunk> topChunks = ctx.getIntentChunks() == null
+        List<RetrievedChunk> distinctChunks = ctx.getIntentChunks() == null
                 ? List.of()
                 : ctx.getIntentChunks().values().stream()
                         .flatMap(List::stream)
                         .distinct()
-                        .sorted(Comparator.comparing(
-                                RetrievedChunk::getScore,
-                                Comparator.nullsLast(Comparator.reverseOrder())))
-                        .limit(3)
                         .toList();
+
+        List<RetrievedChunk> topChunks = distinctChunks.stream()
+                .sorted(Comparator.comparing(
+                        RetrievedChunk::getScore,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(3)
+                .toList();
 
         boolean hasMcp = subIntents.stream()
                 .flatMap(si -> si.nodeScores().stream())
                 .anyMatch(ns -> ns.getNode() != null && ns.getNode().isMCP());
 
-        boolean shouldGenerate = !hasMcp && !topChunks.isEmpty();
         callback.updateSuggestionContext(new SuggestionContext(
                 rewriteResult.rewrittenQuestion(),
                 history,
                 topChunks,
-                shouldGenerate
+                !hasMcp && !topChunks.isEmpty()
         ));
 
-        // 采集检索数据
         evalCollector.setTopK(DEFAULT_TOP_K);
-        evalCollector.setChunks(ctx.getIntentChunks().values().stream()
-                .flatMap(List::stream)
-                .distinct()
+        evalCollector.setChunks(distinctChunks.stream()
                 .map(EvaluationCollector.RetrievedChunkSnapshot::from)
                 .toList());
 

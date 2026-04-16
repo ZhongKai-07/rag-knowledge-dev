@@ -38,8 +38,7 @@ public record SuggestionContext(
 ) {
 
     /**
-     * 生成一个 shouldGenerate=false 的占位上下文，
-     * handler 在未被 orchestrator 更新时使用。
+     * 占位实例：shouldGenerate=false，表示本轮不生成推荐。
      */
     public static SuggestionContext skip() {
         return new SuggestionContext(null, List.of(), List.of(), false);

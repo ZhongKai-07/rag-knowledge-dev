@@ -31,12 +31,14 @@ import com.nageoffer.ai.ragent.infra.chat.LLMService;
 import com.nageoffer.ai.ragent.infra.util.LLMResponseCleaner;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
+import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.SUGGESTED_QUESTIONS_PROMPT_PATH;
 
@@ -78,11 +80,12 @@ public class DefaultSuggestedQuestionsService implements SuggestedQuestionsServi
     }
 
     private String renderPrompt(String template, SuggestionContext ctx, String answer) {
-        return template
-                .replace("{question}", StrUtil.nullToEmpty(ctx.question()))
-                .replace("{history}", renderHistory(ctx.history()))
-                .replace("{chunks}", renderChunks(ctx.topChunks()))
-                .replace("{answer}", truncateTail(answer, ANSWER_TAIL_LIMIT));
+        return PromptTemplateUtils.fillSlots(template, Map.of(
+                "question", StrUtil.nullToEmpty(ctx.question()),
+                "history", renderHistory(ctx.history()),
+                "chunks", renderChunks(ctx.topChunks()),
+                "answer", truncateTail(answer, ANSWER_TAIL_LIMIT)
+        ));
     }
 
     private String renderHistory(List<ChatMessage> history) {

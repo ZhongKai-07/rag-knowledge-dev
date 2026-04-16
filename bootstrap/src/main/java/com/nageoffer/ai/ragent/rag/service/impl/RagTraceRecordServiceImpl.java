@@ -42,9 +42,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class RagTraceRecordServiceImpl implements RagTraceRecordService {
 
-    // Jackson 保留整数类型：Integer/Long 不会被 round-trip 成 Double。
-    // 这很重要，extra_data 里的 totalTokens 会被 Dashboard SQL 的 CAST(... AS INTEGER) 使用，
-    // 若写成 "5228.0" 会导致 PSQLException。
     private static final ObjectMapper EXTRA_DATA_MAPPER = new ObjectMapper();
     private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
     };
