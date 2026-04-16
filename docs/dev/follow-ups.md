@@ -51,6 +51,31 @@
 **症状**：对每个角色发一次 HTTP 只为拿 KB 数量（30 角色 = 30 round-trip，每次都走一遍 Sa-Token + RBAC）。
 **修复**：后端 `GET /role` 响应直接带 `kbCount` 字段，或加 `GET /role/kb-counts` 批量接口。
 
+### OBS-1. Suggested Questions 挂 RagTrace 节点
+
+**位置**：`StreamChatEventHandler.generateAndFinish()` / `DefaultSuggestedQuestionsService.generate()`
+**背景**：2026-04-16 `feature/suggested-questions` 落地时已实现 "Option A"（读 `extra_data.suggestedQuestions` 在 trace 详情页展示 chip，commit `a309650`），但**没有挂正式的 `@RagTraceNode`**。目前只能看到最终产物，看不到耗时 / LLM 请求/响应 / 是否走了降级路径。
+**症状**：当推荐质量差、耗时异常、或静默降级时，排查只能翻业务日志 + 粗看 extra_data，不能像主检索链路那样下钻查 node。
+**修复**：
+1. 给 `DefaultSuggestedQuestionsService.generate` 挂 `@RagTraceNode(name="suggestion-generate", type="SUGGESTION")`。
+2. 因为推荐在独立 `suggestedQuestionsExecutor` 上异步跑、且该线程池**未包 TTL**，`RagTraceContext` 的 TTL 快照跨不过去 — 要在 submit 前**显式捕获** traceId/userId 传参，或把 `SuggestedQuestionsExecutorConfig` 换成项目里其他 bean 用的 `TtlExecutors.getTtlExecutor(...)` 风格（与 OBS-2 一起做）。
+3. 可选：把 LLM request/response 快照写到 node 的 `inputData`/`outputData` 便于复现。
+**优先级低**：推荐是辅助 UX，质量问题可容忍。只在真的遇到 "为什么这次推荐这么差/这么慢" 的排查痛点时再做。
+
+### OBS-2. `suggestedQuestionsExecutor` 未使用 TTL 包装
+
+**位置**：`bootstrap/.../rag/config/SuggestedQuestionsExecutorConfig.java`
+**症状**：项目里其他所有 RAG 线程池（`ThreadPoolExecutorConfig` 里 9 个）都走 `TtlExecutors.getTtlExecutor(...)`，独此一家用裸 `ThreadPoolTaskExecutor`。当前是"凑巧能工作"：`traceId` / `userId` 在 `StreamChatEventHandler` 构造期被捕获到 final 字段，异步任务靠闭包拿，不走 ThreadLocal。但 `llmService.chat(...)` 内部若读 `RagTraceContext` / `UserContext` 则会拿到空值，未来新增依赖 TTL 的代码会悄悄失效。
+**修复**：改为与 `ThreadPoolExecutorConfig` 一致的 `ThreadPoolExecutor` + Hutool `ThreadFactoryBuilder` + `TtlExecutors.getTtlExecutor(...)` 模式；同步修改 `StreamChatHandlerParams` 字段类型为 `Executor` 并调整 Task 17 集成测试（`awaitTermination` 改走 shutdown hook 或用 `Thread.yield()` 等待）。
+**优先级低**：与 OBS-1 捆绑做成本最低。
+
+### OBS-3. `sender.sendEvent(FINISH, ...)` 未包 try/catch 导致 taskManager 泄漏
+
+**位置**：`StreamChatEventHandler.onComplete()`
+**症状**：`sendEvent(FINISH, payload)` 若抛（客户端已断、SSE 已关），控制流直接逃离 `onComplete`，`taskManager.unregister(taskId)` 不会被调用，条目残留在 `StreamTaskManager`。这是 2026-04-16 feature/suggested-questions 引入前就存在的行为，但由于新增了 `shouldGenerate` 分支，FINISH 之后要做的事更多，泄漏窗口被放大。
+**修复**：把 `sendEvent(FINISH, ...)` 包进 try/catch，失败时短路到 `sendDoneAndClose()`（保证 unregister + complete）。
+**优先级低**：只有客户端主动断连才会触发，生产上偶发。
+
 ---
 
 ## 🟡 架构 / 类型安全
