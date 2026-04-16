@@ -36,6 +36,7 @@ export interface Message {
   createdAt?: string;
   feedback?: FeedbackValue;
   status?: MessageStatus;
+  suggestedQuestions?: string[];
 }
 
 export interface StreamMetaPayload {

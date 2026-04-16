@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import { toast } from "sonner";
 
-import type { CompletionPayload, FeedbackValue, Message, MessageDeltaPayload, Session } from "@/types";
+import type {
+  CompletionPayload,
+  FeedbackValue,
+  Message,
+  MessageDeltaPayload,
+  Session,
+  SuggestionsPayload
+} from "@/types";
 import {
   listMessages,
   listSessions,
@@ -374,6 +381,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
             )
           }));
         }
+      },
+      onSuggestions: (payload: SuggestionsPayload) => {
+        if (!payload || !payload.messageId || !Array.isArray(payload.questions)) return;
+        set((state) => ({
+          messages: state.messages.map((message) =>
+            message.id === payload.messageId
+              ? { ...message, suggestedQuestions: payload.questions }
+              : message
+          )
+        }));
       },
       onCancel: (payload: CompletionPayload) => {
         if (get().streamingMessageId !== assistantId) return;
