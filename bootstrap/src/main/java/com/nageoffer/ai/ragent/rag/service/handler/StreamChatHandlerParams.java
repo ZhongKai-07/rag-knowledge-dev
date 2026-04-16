@@ -18,12 +18,15 @@
 package com.nageoffer.ai.ragent.rag.service.handler;
 
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
+import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.Builder;
 import lombok.Getter;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
@@ -78,4 +81,19 @@ public class StreamChatHandlerParams {
      * Trace 记录服务（用于在流完成后更新 token 用量）
      */
     private final RagTraceRecordService traceRecordService;
+
+    /**
+     * 推荐问题服务
+     */
+    private final SuggestedQuestionsService suggestedQuestionsService;
+
+    /**
+     * 推荐问题专用线程池
+     */
+    private final ThreadPoolTaskExecutor suggestedQuestionsExecutor;
+
+    /**
+     * RAG 功能配置属性
+     */
+    private final RAGConfigProperties ragConfigProperties;
 }
