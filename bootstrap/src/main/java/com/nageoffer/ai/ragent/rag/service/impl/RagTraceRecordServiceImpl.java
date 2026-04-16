@@ -19,7 +19,8 @@ package com.nageoffer.ai.ragent.rag.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceNodeMapper;
@@ -40,6 +41,13 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class RagTraceRecordServiceImpl implements RagTraceRecordService {
+
+    // Jackson 保留整数类型：Integer/Long 不会被 round-trip 成 Double。
+    // 这很重要，extra_data 里的 totalTokens 会被 Dashboard SQL 的 CAST(... AS INTEGER) 使用，
+    // 若写成 "5228.0" 会导致 PSQLException。
+    private static final ObjectMapper EXTRA_DATA_MAPPER = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
+    };
 
     private final RagTraceRunMapper runMapper;
     private final RagTraceNodeMapper nodeMapper;
@@ -82,11 +90,10 @@ public class RagTraceRecordServiceImpl implements RagTraceRecordService {
                 Wrappers.lambdaQuery(RagTraceRunDO.class)
                         .eq(RagTraceRunDO::getTraceId, traceId));
 
-        Gson gson = new Gson();
         Map<String, Object> merged = new LinkedHashMap<>();
         if (existing != null && StrUtil.isNotBlank(existing.getExtraData())) {
             try {
-                Map<String, Object> parsed = gson.fromJson(existing.getExtraData(), Map.class);
+                Map<String, Object> parsed = EXTRA_DATA_MAPPER.readValue(existing.getExtraData(), MAP_TYPE);
                 if (parsed != null) {
                     merged.putAll(parsed);
                 }
@@ -95,7 +102,14 @@ public class RagTraceRecordServiceImpl implements RagTraceRecordService {
             }
         }
         merged.putAll(additions);
-        String written = gson.toJson(merged);
+
+        String written;
+        try {
+            written = EXTRA_DATA_MAPPER.writeValueAsString(merged);
+        } catch (Exception e) {
+            log.warn("序列化 extra_data 失败，放弃合并，traceId={}", traceId, e);
+            return;
+        }
 
         RagTraceRunDO update = RagTraceRunDO.builder()
                 .extraData(written)
