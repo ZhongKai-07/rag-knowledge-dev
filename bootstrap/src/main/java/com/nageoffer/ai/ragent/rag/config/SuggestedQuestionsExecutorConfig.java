@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.rag.config;
 
+import com.alibaba.ttl.TtlRunnable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -29,6 +30,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  * 设计要点：
  * - 与 modelStreamExecutor 隔离，避免故障扩散到主流式回调
  * - AbortPolicy：推荐是辅助 UX，队列满时应丢弃而不是拖慢 done 事件
+ * - TaskDecorator 包 TtlRunnable：让 RagTraceContext 等 TTL 上下文跨线程传递，
+ *   确保 @RagTraceNode("suggested-chat") 子节点能正确落库
  */
 @Configuration
 public class SuggestedQuestionsExecutorConfig {
@@ -43,6 +46,7 @@ public class SuggestedQuestionsExecutorConfig {
         ex.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
         ex.setWaitForTasksToCompleteOnShutdown(true);
         ex.setAwaitTerminationSeconds(10);
+        ex.setTaskDecorator(runnable -> TtlRunnable.get(runnable));
         ex.initialize();
         return ex;
     }
