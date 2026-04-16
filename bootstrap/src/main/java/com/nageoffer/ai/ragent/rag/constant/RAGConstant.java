@@ -111,6 +111,11 @@ public class RAGConstant {
     public static final String QUERY_REWRITE_AND_SPLIT_PROMPT_PATH = "prompt/user-question-rewrite.st";
 
     /**
+     * 推荐问题生成 prompt 路径
+     */
+    public static final String SUGGESTED_QUESTIONS_PROMPT_PATH = "prompt/suggested-questions.st";
+
+    /**
      * 对话记忆压缩提示词模板路径
      * 通过 {@code {summary_max_chars}} 控制摘要长度上限
      */
