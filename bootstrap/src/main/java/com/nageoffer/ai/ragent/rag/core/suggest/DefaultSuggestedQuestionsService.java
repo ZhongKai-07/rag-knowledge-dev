@@ -27,6 +27,7 @@ import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.infra.chat.LLMService;
+import com.nageoffer.ai.ragent.infra.util.LLMResponseCleaner;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
 import lombok.RequiredArgsConstructor;
@@ -112,7 +113,8 @@ public class DefaultSuggestedQuestionsService implements SuggestedQuestionsServi
     }
 
     private List<String> parseQuestions(String raw) {
-        JsonElement root = JsonParser.parseString(raw);
+        String cleaned = LLMResponseCleaner.stripMarkdownCodeFence(raw);
+        JsonElement root = JsonParser.parseString(cleaned);
         JsonObject obj = root.getAsJsonObject();
         JsonArray arr = obj.getAsJsonArray("questions");
         List<String> out = new ArrayList<>();

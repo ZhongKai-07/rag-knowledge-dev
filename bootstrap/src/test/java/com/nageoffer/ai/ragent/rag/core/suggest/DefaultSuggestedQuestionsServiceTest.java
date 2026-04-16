@@ -69,4 +69,16 @@ class DefaultSuggestedQuestionsServiceTest {
         assertEquals("Java 和 Python 比较", result.get(1));
         assertEquals("如何优化 GC？", result.get(2));
     }
+
+    @Test
+    void tolerates_markdown_code_fence_wrapping_json() {
+        when(llmService.chat(any(ChatRequest.class), anyString()))
+                .thenReturn("```json\n{\"questions\":[\"a\",\"b\",\"c\"]}\n```");
+
+        SuggestionContext ctx = new SuggestionContext("q", List.of(), List.of(), true);
+        List<String> result = service.generate(ctx, "answer");
+
+        assertEquals(3, result.size());
+        assertEquals("a", result.get(0));
+    }
 }
