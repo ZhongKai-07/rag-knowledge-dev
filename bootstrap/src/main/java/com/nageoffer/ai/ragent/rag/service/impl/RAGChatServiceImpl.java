@@ -42,12 +42,14 @@ import com.nageoffer.ai.ragent.rag.core.prompt.RAGPromptService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
+import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
 import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
 import com.nageoffer.ai.ragent.rag.dto.IntentGroup;
 import com.nageoffer.ai.ragent.rag.dto.RetrievalContext;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
 import com.nageoffer.ai.ragent.rag.service.RAGChatService;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
+import com.nageoffer.ai.ragent.rag.service.handler.StreamChatEventHandler;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +60,7 @@ import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -100,7 +103,7 @@ public class RAGChatServiceImpl implements RAGChatService {
         log.info("开始流式对话，会话ID：{}，任务ID：{}", actualConversationId, taskId);
         boolean thinkingEnabled = Boolean.TRUE.equals(deepThinking);
 
-        StreamCallback callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
+        StreamChatEventHandler callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
 
         // 初始化评测数据采集器
         EvaluationCollector evalCollector = new EvaluationCollector();
@@ -178,11 +181,33 @@ public class RAGChatServiceImpl implements RAGChatService {
             return;
         }
 
-        // 采集检索数据
+        List<RetrievedChunk> distinctChunks = ctx.getIntentChunks() == null
+                ? List.of()
+                : ctx.getIntentChunks().values().stream()
+                        .flatMap(List::stream)
+                        .distinct()
+                        .toList();
+
+        List<RetrievedChunk> topChunks = distinctChunks.stream()
+                .sorted(Comparator.comparing(
+                        RetrievedChunk::getScore,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(3)
+                .toList();
+
+        boolean hasMcp = subIntents.stream()
+                .flatMap(si -> si.nodeScores().stream())
+                .anyMatch(ns -> ns.getNode() != null && ns.getNode().isMCP());
+
+        callback.updateSuggestionContext(new SuggestionContext(
+                rewriteResult.rewrittenQuestion(),
+                history,
+                topChunks,
+                !hasMcp && !topChunks.isEmpty()
+        ));
+
         evalCollector.setTopK(DEFAULT_TOP_K);
-        evalCollector.setChunks(ctx.getIntentChunks().values().stream()
-                .flatMap(List::stream)
-                .distinct()
+        evalCollector.setChunks(distinctChunks.stream()
                 .map(EvaluationCollector.RetrievedChunkSnapshot::from)
                 .toList());
 

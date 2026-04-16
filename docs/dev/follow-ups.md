@@ -51,6 +51,29 @@
 **症状**：对每个角色发一次 HTTP 只为拿 KB 数量（30 角色 = 30 round-trip，每次都走一遍 Sa-Token + RBAC）。
 **修复**：后端 `GET /role` 响应直接带 `kbCount` 字段，或加 `GET /role/kb-counts` 批量接口。
 
+### ~~OBS-1. Suggested Questions 挂 RagTrace 节点（部分）~~ ✅ 核心已解决（2026-04-16）
+
+**进展**：commit 已给 `DefaultSuggestedQuestionsService.generate` 挂上 `@RagTraceNode(name="suggested-chat", type="SUGGESTION")`。Trace 详情页现在能看到独立的 "suggested-chat" 节点 + 耗时 + 状态，配合 Option A 的 chip 展示（commit `a309650`）已能覆盖 90% 排查需求。
+**TTL 前置问题未出现**：执行时实测 `RagTraceContext` 能跨过 `suggestedQuestionsExecutor` 传递（机制未完全探明，可能是 `TransmittableThreadLocal` 在 submit 时自动 capture；OBS-2 也因此降级为纯一致性问题）。
+**剩余可选**：把 LLM request/response 快照写到 node 的 `inputData`/`outputData` 便于复现 prompt。非阻塞，真需要深度排查再做。
+
+### OBS-2. `suggestedQuestionsExecutor` 与项目其他线程池不一致
+
+**位置**：`bootstrap/.../rag/config/SuggestedQuestionsExecutorConfig.java`
+**背景**：项目里其他所有 RAG 线程池（`ThreadPoolExecutorConfig` 里 9 个）都走 `ThreadPoolExecutor` + Hutool `ThreadFactoryBuilder` + `TtlExecutors.getTtlExecutor(...)`，独此一家用裸 `ThreadPoolTaskExecutor`。
+**症状**：实测 TTL 传递是 OK 的（OBS-1 挂节点后 trace 能正常嵌套），所以**不影响功能**。但：
+- 新人看到会困惑"为啥这个特殊"
+- 未来若某处显式依赖 `TtlExecutors` 包装过的 `Executor`（比如监控、装饰器链）会绕开此 bean
+**修复**：改为与 `ThreadPoolExecutorConfig` 一致的模式；同步修改 `StreamChatHandlerParams` 字段类型为 `Executor` 并调整 Task 17 集成测试。
+**优先级低**：纯代码一致性，无功能风险。
+
+### OBS-3. `sender.sendEvent(FINISH, ...)` 未包 try/catch 导致 taskManager 泄漏
+
+**位置**：`StreamChatEventHandler.onComplete()`
+**症状**：`sendEvent(FINISH, payload)` 若抛（客户端已断、SSE 已关），控制流直接逃离 `onComplete`，`taskManager.unregister(taskId)` 不会被调用，条目残留在 `StreamTaskManager`。这是 2026-04-16 feature/suggested-questions 引入前就存在的行为，但由于新增了 `shouldGenerate` 分支，FINISH 之后要做的事更多，泄漏窗口被放大。
+**修复**：把 `sendEvent(FINISH, ...)` 包进 try/catch，失败时短路到 `sendDoneAndClose()`（保证 unregister + complete）。
+**优先级低**：只有客户端主动断连才会触发，生产上偶发。
+
 ---
 
 ## 🟡 架构 / 类型安全

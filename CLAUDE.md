@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`docs/dev/follow-ups.md`** — deferred tech debt backlog (from the 2026-04-14 `/simplify` review). Consult when picking up related work so you don't reinvent known issues.
 - **`docs/dev/launch.md`** — full environment bring-up (Docker + DB init + backend/frontend start).
 - **`log/dev_log/dev_log.md`** — running development log, indexes detailed per-PR notes under `log/dev_log/YYYY-MM-DD-*.md`.
-- **`bootstrap/CLAUDE.md`, `frontend/CLAUDE.md`, `framework/CLAUDE.md`, `infra-ai/CLAUDE.md`** — module-specific "关键类" tables + gotchas.
+- **`bootstrap/CLAUDE.md`,** **`frontend/CLAUDE.md`,** **`framework/CLAUDE.md`,** **`infra-ai/CLAUDE.md`** — module-specific "关键类" tables + gotchas.
 - **`AGENTS.md`** (root) — agent contract for this repo.
 
 ## Build & Run Commands
@@ -69,20 +69,20 @@ Within each domain, code follows a standard layered pattern: `controller/` → `
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| JDK | Java 17 |
-| Framework | Spring Boot 3.5.7 |
-| Database | PostgreSQL |
-| Vector DB | OpenSearch 2.18 / Milvus 2.6 / pgvector（三选一，`rag.vector.type` 切换） |
-| ORM | MyBatis Plus 3.5.14 |
-| Cache | Redis + Redisson |
-| Message Queue | RocketMQ 5.x |
-| Object Storage | S3-compatible (RustFS) |
-| Doc Parsing | Apache Tika 3.2 |
-| Auth | Sa-Token 1.43 |
-| Code Format | Spotless (enforced in build) |
-| Frontend | React 18 + Vite + TypeScript + TailwindCSS |
+| Layer          | Technology                                                        |
+| -------------- | ----------------------------------------------------------------- |
+| JDK            | Java 17                                                           |
+| Framework      | Spring Boot 3.5.7                                                 |
+| Database       | PostgreSQL                                                        |
+| Vector DB      | OpenSearch 2.18 / Milvus 2.6 / pgvector（三选一，`rag.vector.type` 切换） |
+| ORM            | MyBatis Plus 3.5.14                                               |
+| Cache          | Redis + Redisson                                                  |
+| Message Queue  | RocketMQ 5.x                                                      |
+| Object Storage | S3-compatible (RustFS)                                            |
+| Doc Parsing    | Apache Tika 3.2                                                   |
+| Auth           | Sa-Token 1.43                                                     |
+| Code Format    | Spotless (enforced in build)                                      |
+| Frontend       | React 18 + Vite + TypeScript + TailwindCSS                        |
 
 ## Configuration
 
@@ -99,10 +99,12 @@ Full environment setup guide (Docker containers + DB init + backend/frontend sta
 Upstream open-source repo: `git remote upstream` → `https://github.com/nageoffer/ragent.git` (added 2026-04-15). Use `git fetch upstream` to compare.
 
 Upgrade scripts in `resources/database/`:
+
 - `upgrade_v1.2_to_v1.3.sql` — adds `kb_id` to `t_conversation` for knowledge space isolation
 - `upgrade_v1.3_to_v1.4.sql` — adds `thinking_content`/`thinking_duration` to `t_message` for deep-thinking chain persistence
 
 Full dev-environment wipe + rebuild (**dev only — destroys all data**):
+
 ```bash
 # PG: drop + recreate (kills active connections first, then re-inits schema)
 docker exec postgres psql -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='ragent' AND pid<>pg_backend_pid();"
@@ -125,32 +127,33 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - **SSE streaming is async**: `ChatClient.streamChat()` returns immediately via `StreamAsyncExecutor`; `StreamCallback` methods run on `modelStreamExecutor` thread pool. Do NOT read ThreadLocal values set by streaming callbacks from the calling thread — they won't be there yet.
 - **OpenAI SSE usage frame order**: `finish_reason` frame → usage frame (empty choices) → `[DONE]`. Loop must break on `[DONE]` (`streamEnded`), not on `finish_reason` (`finished`), otherwise usage data is missed.
 - **RagTraceContext ThreadLocal cleared early**: `ChatRateLimitAspect.finally` clears context before streaming completes. Capture `traceId` etc. in handler constructor, not at callback time.
-- **`extra_data TEXT` JSON pattern**: Used in `t_rag_trace_run` and `t_rag_trace_node` for extensible metrics (token usage, question length) without schema migration. Parse with Gson in query service.
+- **`extra_data TEXT`** **JSON pattern**: Used in `t_rag_trace_run` and `t_rag_trace_node` for extensible metrics without schema migration. Query path uses Gson (`getAsInt()` coerces both `5228` and `5228.0`). **Merge/write path MUST use Jackson** — `gson.fromJson(.., Map.class)` parses all numbers as `Double`, so round-tripping `{"totalTokens":5228}` emits `"5228.0"`, which breaks the Dashboard's `CAST(... AS INTEGER)` SQL. `sumTokensInWindow` defensively does `CAST(CAST(... AS NUMERIC) AS BIGINT)` for legacy rows.
+- **`@Data @Builder`** **alone breaks Jackson deserialization**: Lombok's interaction between `@RequiredArgsConstructor` (from `@Data`) and `@Builder`'s all-args constructor doesn't reliably expose a public no-arg constructor. Any class going through Jackson (`ObjectMapper.readValue`, Redis cache via `GenericJackson2`, `@RequestBody`, MQ events) must add explicit **`@NoArgsConstructor @AllArgsConstructor`**. `IntentNode` hit this — every request logged `Cannot construct instance of IntentNode` and fell back to `IntentTreeFactory` rebuild. DO classes using MyBatis Plus are exempt (MP uses its own reflection path).
 - **Database access via Docker**: `docker exec postgres psql -U postgres -d ragent -c "SQL"`. User is `postgres`, not `ragent`.
-- **Two schema files maintained independently**: `schema_pg.sql` (clean DDL) and `full_schema_pg.sql` (pg_dump style) must BOTH be updated when changing table schemas. Forgetting one causes init/upgrade divergence.
-- **`full_schema_pg.sql` COMMENT placement**: COMMENTs are in separate blocks (not inline after CREATE TABLE). Each has its own `-- Name: COLUMN ...; Type: COMMENT` header block. When adding columns, add the COMMENT in a new block near existing comments for the same table.
+- **Two schema files maintained independently**: `schema_pg.sql` (clean DDL) and `full_schema_pg.sql` (pg\_dump style) must BOTH be updated when changing table schemas. Forgetting one causes init/upgrade divergence.
+- **`full_schema_pg.sql`** **COMMENT placement**: COMMENTs are in separate blocks (not inline after CREATE TABLE). Each has its own `-- Name: COLUMN ...; Type: COMMENT` header block. When adding columns, add the COMMENT in a new block near existing comments for the same table.
 - **Admin RBAC special case**: `KbAccessService.getAccessibleKbIds()` for `SUPER_ADMIN` returns all KBs (enforced inside the service, not at controller layer). Use `kbAccessService.isSuperAdmin()` to check admin status — do NOT use `"admin".equals(UserContext.getRole())` (that string is gone since PR1). `@SaCheckRole` annotations use `"SUPER_ADMIN"` not `"admin"`.
 - **@TableLogic auto-filter**: MyBatis Plus entities with `@TableLogic` on `deleted` field automatically append `WHERE deleted=0`. Do NOT add redundant `.eq(::getDeleted, 0)` conditions in queries.
-- **PostgreSQL folds unquoted identifiers to lowercase**: `selectMaps` with `.select("kb_id AS kbId")` produces map key `kbid`, not `kbId`. Always use snake_case aliases (`AS kb_id`, `AS doc_count`) and `row.get("kb_id")` — never camelCase.
+- **PostgreSQL folds unquoted identifiers to lowercase**: `selectMaps` with `.select("kb_id AS kbId")` produces map key `kbid`, not `kbId`. Always use snake\_case aliases (`AS kb_id`, `AS doc_count`) and `row.get("kb_id")` — never camelCase.
 - **Frontend HMR vs Backend restart**: Vite dev server hot-reloads frontend changes instantly. Spring Boot requires manual restart (`mvn -pl bootstrap spring-boot:run`) after any Java code change. Always confirm backend is restarted before verifying backend changes.
-- **`mvn spring-boot:run` does NOT recompile stale classes after branch switch**: After `git checkout`, old `.class` files in `target/` remain. Run `mvn clean -pl bootstrap spring-boot:run` on first run in a new branch or new machine to force full recompilation with `-parameters`.
-- **Cross-module source changes require `mvn install`**: Editing `framework` or `infra-ai` source then running `mvn -pl bootstrap spring-boot:run` fails — bootstrap resolves these modules from the local Maven repo, not from source. Run `mvn clean install -DskipTests` from root first. This is distinct from the branch-switch stale-class issue.
+- **`mvn spring-boot:run`** **does NOT recompile stale classes after branch switch**: After `git checkout`, old `.class` files in `target/` remain. Run `mvn clean -pl bootstrap spring-boot:run` on first run in a new branch or new machine to force full recompilation with `-parameters`.
+- **Cross-module source changes require** **`mvn install`**: Editing `framework` or `infra-ai` source then running `mvn -pl bootstrap spring-boot:run` fails — bootstrap resolves these modules from the local Maven repo, not from source. Run `mvn clean install -DskipTests` from root first. This is distinct from the branch-switch stale-class issue.
 - **Entity column additions require DB migration before startup**: Adding fields to MyBatis Plus `@TableName` entities without running the corresponding `upgrade_*.sql` script causes `PSQLException: column does not exist` at runtime. Always pair entity field additions with a migration script in `resources/database/` and remind to execute it.
-- **`-parameters` flag: IntelliJ vs Maven divergence**: IntelliJ adds `-parameters` automatically; Maven doesn't (compiler-plugin `<parameters>` isn't set). Without it, `@RequestParam`/`@PathVariable` without explicit `value=` throw `IllegalArgumentException` at runtime. **Rule**: always write explicit `value="..."` on all `@RequestParam`/`@PathVariable` annotations.
+- **`-parameters`** **flag: IntelliJ vs Maven divergence**: IntelliJ adds `-parameters` automatically; Maven doesn't (compiler-plugin `<parameters>` isn't set). Without it, `@RequestParam`/`@PathVariable` without explicit `value=` throw `IllegalArgumentException` at runtime. **Rule**: always write explicit `value="..."` on all `@RequestParam`/`@PathVariable` annotations.
 - **Sweep for bare annotations** (run after adding any controller): `grep -rEn '@(RequestParam|PathVariable)\s+(required\s*=[^,)]+,\s*)?[A-Z]' --include="*Controller.java" bootstrap/src/main/java | grep -v 'value\s*='`
-- **`@RequiredArgsConstructor` + `@Qualifier` is SAFE**: `lombok.config` has `copyableAnnotations += org.springframework.beans.factory.annotation.Qualifier`, so field-level `@Qualifier("beanName")` IS copied to the Lombok-generated constructor parameter. Explicit constructors are NOT required for ambiguous bean types (supersedes previous guidance).
-- **Spotless runs on every `mvn compile`**, not just `mvn spotless:apply`: the `default` execution is wired to apply mode. A routine `mvn -pl bootstrap clean compile` can silently reformat unrelated files (e.g., collapsing an explicit constructor into `@RequiredArgsConstructor`). Always `git status` after compile and commit reformats separately.
-- **pgvector extension not installed on `postgres:16` image**: `schema_pg.sql` contains `embedding vector(1536)` for `t_knowledge_vector`. `CREATE EXTENSION vector` + subsequent CREATE TABLE will error during init — **expected and safe** when `rag.vector.type=opensearch` (or `milvus`). The table simply won't exist; all other tables create successfully.
+- **`@RequiredArgsConstructor`** **+** **`@Qualifier`** **is SAFE**: `lombok.config` has `copyableAnnotations += org.springframework.beans.factory.annotation.Qualifier`, so field-level `@Qualifier("beanName")` IS copied to the Lombok-generated constructor parameter. Explicit constructors are NOT required for ambiguous bean types (supersedes previous guidance).
+- **Spotless runs on every** **`mvn compile`**, not just `mvn spotless:apply`: the `default` execution is wired to apply mode. A routine `mvn -pl bootstrap clean compile` can silently reformat unrelated files (e.g., collapsing an explicit constructor into `@RequiredArgsConstructor`). Always `git status` after compile and commit reformats separately.
+- **pgvector extension not installed on** **`postgres:16`** **image**: `schema_pg.sql` contains `embedding vector(1536)` for `t_knowledge_vector`. `CREATE EXTENSION vector` + subsequent CREATE TABLE will error during init — **expected and safe** when `rag.vector.type=opensearch` (or `milvus`). The table simply won't exist; all other tables create successfully.
 - **API signature changes require full-text search**: When backend adds/changes required parameters (e.g., adding `@RequestParam String kbId`), grep ALL frontend callers — not just the ones listed in the plan. Missing callers cause runtime 400 errors.
 - **Sa-Token auth header is raw token, no Bearer prefix**: `Authorization: <token>` (NOT `Authorization: Bearer <token>`). See `application.yaml` `sa-token.token-name: Authorization` and `api.ts:15`. All permission rejections (NotRoleException, ClientException) return **HTTP 200** with `code != "0"` in the `Result` body — NOT HTTP 403/409. Assert on `code` field, never on HTTP status code.
 - **Table naming convention is inconsistent**: Most tables use `t_` prefix (`t_user`, `t_role`, `t_knowledge_base`), but the department table is `sys_dept` (with entity `SysDeptDO`, mapper `SysDeptMapper`). When searching for department-related code, grep for `sys_dept` / `SysDept`, NOT `t_department` / `Dept`.
 - **Seed data is not blank**: `init_data_pg.sql` wires admin user with `dept_id='1'` (GLOBAL), role `超级管理员` (`role_type=SUPER_ADMIN`, `max_security_level=3`), and `t_user_role` linking them. A fresh DB with `schema_pg.sql + init_data_pg.sql` already has a fully-privileged admin — not a "no dept / no role / max=0" user.
-- **security_level filter only implemented in OpenSearch**: `MilvusRetrieverService` and `PgRetrieverService` accept `metadataFilters` parameter but silently ignore it. Switching `rag.vector.type` to `milvus` or `pg` disables document security_level enforcement at retrieval time. Fix these implementations before using non-OpenSearch backends in production.
+- **security\_level filter only implemented in OpenSearch**: `MilvusRetrieverService` and `PgRetrieverService` accept `metadataFilters` parameter but silently ignore it. Switching `rag.vector.type` to `milvus` or `pg` disables document security\_level enforcement at retrieval time. Fix these implementations before using non-OpenSearch backends in production.
 - **Every controller needs explicit authorization**: `SaInterceptor` only enforces `StpUtil.checkLogin()` (login check), NOT role checks. New controllers must add their own `@SaCheckRole` or programmatic `kbAccessService` checks. `DashboardController` was audited and fixed for this in PR3.
-- **Per-KB security_level filtering**: `t_role_kb_relation.max_security_level` (SMALLINT, 0-3) controls per-KB retrieval filtering. `KbAccessService.getMaxSecurityLevelForKb(userId, kbId)` resolves it (SUPER_ADMIN=3, DEPT_ADMIN same-dept=role ceiling, others=MAX from relation). Cached in Redis Hash `kb_security_level:{userId}`, evicted alongside `kb_access:` cache.
-- **KB-centric sharing API**: `GET/PUT /knowledge-base/{kb-id}/role-bindings` (note: hyphenated `kb-id` in path, not `kbId`). SUPER_ADMIN any KB, DEPT_ADMIN own-dept only. Uses `checkKbRoleBindingAccess()`.
-- **DEPT_ADMIN implicit MANAGE on same-dept KBs**: `checkManageAccess()` and `checkAccess()` both pass for `kb.dept_id == self.dept_id` without needing `role_kb_relation` entries. Cross-dept access requires explicit binding.
-- **Frontend permission-gated components must handle backend rejection**: Components rendered for `isAnyAdmin` that call DEPT_ADMIN-restricted endpoints should catch errors and hide gracefully (e.g., `KbSharingTab` sets `noAccess=true` and returns `null`), not show error toasts. The backend is the authorization boundary; the frontend optimistically renders and fails gracefully.
+- **Per-KB security\_level filtering**: `t_role_kb_relation.max_security_level` (SMALLINT, 0-3) controls per-KB retrieval filtering. `KbAccessService.getMaxSecurityLevelForKb(userId, kbId)` resolves it (SUPER\_ADMIN=3, DEPT\_ADMIN same-dept=role ceiling, others=MAX from relation). Cached in Redis Hash `kb_security_level:{userId}`, evicted alongside `kb_access:` cache.
+- **KB-centric sharing API**: `GET/PUT /knowledge-base/{kb-id}/role-bindings` (note: hyphenated `kb-id` in path, not `kbId`). SUPER\_ADMIN any KB, DEPT\_ADMIN own-dept only. Uses `checkKbRoleBindingAccess()`.
+- **DEPT\_ADMIN implicit MANAGE on same-dept KBs**: `checkManageAccess()` and `checkAccess()` both pass for `kb.dept_id == self.dept_id` without needing `role_kb_relation` entries. Cross-dept access requires explicit binding.
+- **Frontend permission-gated components must handle backend rejection**: Components rendered for `isAnyAdmin` that call DEPT\_ADMIN-restricted endpoints should catch errors and hide gracefully (e.g., `KbSharingTab` sets `noAccess=true` and returns `null`), not show error toasts. The backend is the authorization boundary; the frontend optimistically renders and fails gracefully.
 
 ## RAG Evaluation (RAGAS)
 
@@ -354,3 +357,4 @@ KB 共享管理（AnyAdmin）:
   - 知识库列表: KnowledgeBaseController 过滤可见 KB
   - 文档操作: KnowledgeDocumentController 校验文档所属 KB 的访问权限
 ```
+

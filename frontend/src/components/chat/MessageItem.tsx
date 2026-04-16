@@ -5,6 +5,7 @@ import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
 import { ThinkingIndicator } from "@/components/chat/ThinkingIndicator";
 import { cn } from "@/lib/utils";
+import { useChatStore } from "@/stores/chatStore";
 import type { Message } from "@/types";
 
 interface MessageItemProps {
@@ -21,6 +22,7 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
     !message.id.startsWith("assistant-");
   const isThinking = Boolean(message.isThinking);
   const [thinkingExpanded, setThinkingExpanded] = React.useState(false);
+  const sendMessage = useChatStore((s) => s.sendMessage);
   const hasThinking = Boolean(message.thinking && message.thinking.trim().length > 0);
   const hasContent = message.content.trim().length > 0;
   const isWaiting = message.status === "streaming" && !isThinking && !hasContent;
@@ -98,6 +100,23 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
               alwaysVisible={Boolean(isLast)}
             />
           ) : null}
+          {message.role === "assistant" &&
+            message.suggestedQuestions &&
+            message.suggestedQuestions.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">可能想问：</span>
+                {message.suggestedQuestions.map((q, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => sendMessage(q)}
+                    className="rounded-full border border-border bg-background px-3 py-1 text-xs transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
         </div>
       </div>
     </div>

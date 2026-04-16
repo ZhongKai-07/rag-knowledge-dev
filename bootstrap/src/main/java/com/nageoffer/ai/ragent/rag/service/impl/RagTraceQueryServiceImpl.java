@@ -34,10 +34,12 @@ import com.nageoffer.ai.ragent.rag.service.RagTraceQueryService;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -139,6 +141,17 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
             }
             if (json.has("totalTokens") && !json.get("totalTokens").isJsonNull()) {
                 builder.totalTokens(json.get("totalTokens").getAsInt());
+            }
+            if (json.has("suggestedQuestions") && json.get("suggestedQuestions").isJsonArray()) {
+                List<String> questions = new ArrayList<>();
+                for (JsonElement el : json.getAsJsonArray("suggestedQuestions")) {
+                    if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+                        questions.add(el.getAsString());
+                    }
+                }
+                if (!questions.isEmpty()) {
+                    builder.suggestedQuestions(questions);
+                }
             }
         } catch (Exception e) {
             // extraData 解析失败不影响主流程

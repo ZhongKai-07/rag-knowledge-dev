@@ -30,15 +30,23 @@ import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.infra.chat.TokenUsage;
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
+import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
 import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
+import com.nageoffer.ai.ragent.rag.dto.SuggestionsPayload;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.RejectedExecutionException;
 
 @Slf4j
 public class StreamChatEventHandler implements StreamCallback {
@@ -60,6 +68,10 @@ public class StreamChatEventHandler implements StreamCallback {
     private final boolean sendTitleOnComplete;
     private final StringBuilder answer = new StringBuilder();
     private volatile TokenUsage tokenUsage;
+    private final SuggestedQuestionsService suggestedQuestionsService;
+    private final ThreadPoolTaskExecutor suggestedQuestionsExecutor;
+    private final RAGConfigProperties ragConfigProperties;
+    private volatile SuggestionContext suggestionContext = SuggestionContext.skip();
 
     /**
      * 使用参数对象构造（推荐）
@@ -77,6 +89,9 @@ public class StreamChatEventHandler implements StreamCallback {
         this.traceRecordService = params.getTraceRecordService();
         this.traceId = RagTraceContext.getTraceId();
         this.userId = UserContext.getUserId();
+        this.suggestedQuestionsService = params.getSuggestedQuestionsService();
+        this.suggestedQuestionsExecutor = params.getSuggestedQuestionsExecutor();
+        this.ragConfigProperties = params.getRagConfigProperties();
 
         // 计算配置
         this.messageChunkSize = resolveMessageChunkSize(params.getModelProperties());
@@ -172,11 +187,69 @@ public class StreamChatEventHandler implements StreamCallback {
         saveEvaluationRecord(messageId);
 
         String title = resolveTitleForEvent();
-        String messageIdText = StrUtil.isBlank(messageId)? null : messageId;
+        String messageIdText = StrUtil.isBlank(messageId) ? null : messageId;
+
+        // 立即发 FINISH，让前端进入"完成"状态
         sender.sendEvent(SSEEventType.FINISH.value(), new CompletionPayload(messageIdText, title));
-        sender.sendEvent(SSEEventType.DONE.value(), "[DONE]");
+
+        SuggestionContext ctx = this.suggestionContext;
+        boolean enabled = Boolean.TRUE.equals(ragConfigProperties.getSuggestionsEnabled());
+        boolean shouldGenerate = enabled && ctx.shouldGenerate();
+
+        if (!shouldGenerate) {
+            sendDoneAndClose();
+            return;
+        }
+
+        final String finalMessageId = messageIdText;
+        final String answerSnapshot = answer.toString();
+        try {
+            suggestedQuestionsExecutor.submit(() -> generateAndFinish(ctx, answerSnapshot, finalMessageId));
+        } catch (RejectedExecutionException rex) {
+            log.warn("推荐生成线程池拒绝提交，直接结束 SSE", rex);
+            sendDoneAndClose();
+        }
+    }
+
+    private void generateAndFinish(SuggestionContext ctx, String answerSnapshot, String messageIdText) {
+        List<String> questions = List.of();
+        try {
+            if (taskManager.isCancelled(taskId)) {
+                return;
+            }
+            questions = suggestedQuestionsService.generate(ctx, answerSnapshot);
+            if (!taskManager.isCancelled(taskId) && !questions.isEmpty()) {
+                sender.sendEvent(SSEEventType.SUGGESTIONS.value(),
+                        new SuggestionsPayload(messageIdText, questions));
+            }
+        } catch (Exception e) {
+            log.warn("推荐问题生成失败", e);
+        } finally {
+            mergeSuggestionsIntoTrace(questions);
+            sendDoneAndClose();
+        }
+    }
+
+    private void sendDoneAndClose() {
+        try {
+            sender.sendEvent(SSEEventType.DONE.value(), "[DONE]");
+        } catch (Exception e) {
+            log.warn("发送 DONE 失败", e);
+        }
         taskManager.unregister(taskId);
         sender.complete();
+    }
+
+    private void mergeSuggestionsIntoTrace(List<String> questions) {
+        if (traceRecordService == null || StrUtil.isBlank(traceId)) {
+            return;
+        }
+        try {
+            traceRecordService.mergeRunExtraData(traceId,
+                    Map.of("suggestedQuestions", questions));
+        } catch (Exception e) {
+            log.warn("合并推荐问题到 trace.extra_data 失败", e);
+        }
     }
 
     private void updateTraceTokenUsage() {
@@ -251,5 +324,14 @@ public class StreamChatEventHandler implements StreamCallback {
             return conversation.getTitle();
         }
         return "新对话";
+    }
+
+    /**
+     * orchestrator 走完检索后，调用此方法更新上下文以触发推荐生成
+     */
+    public void updateSuggestionContext(SuggestionContext ctx) {
+        if (ctx != null) {
+            this.suggestionContext = ctx;
+        }
     }
 }

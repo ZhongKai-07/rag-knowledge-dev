@@ -15,53 +15,18 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.controller.vo;
+package com.nageoffer.ai.ragent.rag.dto;
 
-import lombok.Builder;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.Date;
 import java.util.List;
 
 /**
- * RAG Trace 运行记录
+ * SSE suggestions 事件载荷
+ *
+ * @param messageId 对应的 assistant 消息 ID（与 FINISH 事件的 messageId 一致）
+ * @param questions 推荐问题列表（固定 3 条，允许更少）
  */
-@Data
-@Builder
-public class RagTraceRunVO {
-
-    private String traceId;
-
-    private String traceName;
-
-    private String entryMethod;
-
-    private String conversationId;
-
-    private String taskId;
-
-    private String userId;
-
-    private String username;
-
-    private String status;
-
-    private String errorMessage;
-
-    private Long durationMs;
-
-    private Date startTime;
-
-    private Date endTime;
-
-    private Integer promptTokens;
-
-    private Integer completionTokens;
-
-    private Integer totalTokens;
-
-    /**
-     * 本轮生成的推荐问题（chip），来自 extra_data.suggestedQuestions
-     */
-    private List<String> suggestedQuestions;
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record SuggestionsPayload(String messageId, List<String> questions) {
 }

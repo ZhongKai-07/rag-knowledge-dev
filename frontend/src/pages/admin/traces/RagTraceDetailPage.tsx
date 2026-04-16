@@ -490,6 +490,25 @@ export function RagTraceDetailPage() {
           )}
         </div>
 
+        {selectedRun.suggestedQuestions && selectedRun.suggestedQuestions.length > 0 && (
+          <Card>
+            <CardHeader className="py-3 px-4">
+              <CardTitle className="text-sm font-medium text-slate-700">
+                推荐问题
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+              <div className="flex flex-wrap gap-2">
+                {selectedRun.suggestedQuestions.map((q, idx) => (
+                  <Badge key={idx} variant="outline" className="font-normal">
+                    {q}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* 瀑布图 */}
         <Card>
           <CardHeader className="py-3 px-4">

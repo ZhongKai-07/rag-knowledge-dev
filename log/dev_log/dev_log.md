@@ -160,3 +160,20 @@ curl -X PUT http://localhost:9201/_search/pipeline/ragent-hybrid-search-pipeline
 - `chore`：设计文档/图表 + `.gitignore` 过滤 `.playwright-mcp/`、`log/*.log`、根目录 `*.png`。
 
 **CLAUDE.md 更新**：记录 DB 全清重建命令、pgvector 缺失误报、Spotless 在 `mvn compile` 自动 apply、`@RequiredArgsConstructor + @Qualifier` 安全性（lombok.config 已配 `copyableAnnotations`）、裸标注扫描一行命令。
+
+---
+
+## 2026-04-16 | Suggested Questions + 联调修复 + 链路追踪曝光
+
+详情：[`2026-04-16-suggested-questions.md`](./2026-04-16-suggested-questions.md)
+
+**核心改动**：
+- 追问预测功能：每次 RAG 回答完成后独立调 `qwen-turbo` 生成 3 个后续追问，走新 SSE `suggestions` 事件推送，前端渲染为可点击 chip；专用线程池 `suggestedQuestionsExecutor` 隔离主流，失败不影响 `done`。22 Task + TDD（11 单测），覆盖 JSON/markdown/异常/空返回全路径。
+- 审计通道：推荐结果合并进 `t_rag_trace_run.extra_data`（新增 `mergeRunExtraData`）；Trace 详情页展示 chip + 挂 `@RagTraceNode("suggested-chat")` 包装节点，瀑布图可识别推荐 LLM 调用。
+- 联调修复 3 个 bug：(1) IntentNode `@Data @Builder` 缺 `@NoArgsConstructor` 导致 Redis Jackson 反序列化永远失败，每请求 fallback 重建意图树；(2) `mergeRunExtraData` 用 Gson 导致整数 round-trip 成 `"5228.0"`，Dashboard `CAST(... AS INTEGER)` 炸 —— 换 Jackson + SQL 改 `CAST AS NUMERIC AS BIGINT` 双保险；(3) `bootstrap/pom.xml` 缺 surefire 3.2.5 override（parent pom `@{argLine}` 依赖未装 JaCoCo），TDD 循环才能跑。
+- `/simplify` 三 agent 清理 8 条（dedup flatMap、复用 `PromptTemplateUtils.fillSlots` / `<Badge>`、压缩冗长注释、删不可达 `ctx != null` 守护等），净减 7 行。
+- 29 文件 +3718/-16（含 spec+plan 2590 行文档），净代码改动约 +1110 行。
+
+**CLAUDE.md 更新**：`extra_data` 读写路径分工（query Gson / merge-write MUST Jackson）、`@Data @Builder` 对 Jackson 需 `@NoArgsConstructor @AllArgsConstructor`、`PromptTemplateUtils.fillSlots` 工具链入 rag 域表。
+
+**follow-ups 新增**：OBS-1（✅ 已完成核心）/ OBS-2（TTL 实测已传，降为一致性）/ OBS-3（`sendEvent(FINISH)` 未包 try/catch 的 taskManager 泄漏窗口，pre-existing 本 PR 放大）。

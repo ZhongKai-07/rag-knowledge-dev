@@ -17,19 +17,25 @@
 
 package com.nageoffer.ai.ragent.rag.service.handler;
 
-import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
+import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * StreamCallback 工厂
  * 负责创建各种类型的 StreamCallback 实例
+ *
+ * 注意：返回具体类型 StreamChatEventHandler（而非 StreamCallback 接口），
+ * 以便调用方（RAGChatServiceImpl）调用 updateSuggestionContext。
  */
 @Component
 @RequiredArgsConstructor
@@ -41,18 +47,18 @@ public class StreamCallbackFactory {
     private final StreamTaskManager taskManager;
     private final RagEvaluationService evaluationService;
     private final RagTraceRecordService traceRecordService;
+    private final SuggestedQuestionsService suggestedQuestionsService;
+    private final RAGConfigProperties ragConfigProperties;
+
+    @Qualifier("suggestedQuestionsExecutor")
+    private final ThreadPoolTaskExecutor suggestedQuestionsExecutor;
 
     /**
      * 创建聊天事件处理器
-     *
-     * @param emitter        SSE 发射器
-     * @param conversationId 会话ID
-     * @param taskId         任务ID
-     * @return StreamCallback 实例
      */
-    public StreamCallback createChatEventHandler(SseEmitter emitter,
-                                                 String conversationId,
-                                                 String taskId) {
+    public StreamChatEventHandler createChatEventHandler(SseEmitter emitter,
+                                                         String conversationId,
+                                                         String taskId) {
         StreamChatHandlerParams params = StreamChatHandlerParams.builder()
                 .emitter(emitter)
                 .conversationId(conversationId)
@@ -63,6 +69,9 @@ public class StreamCallbackFactory {
                 .taskManager(taskManager)
                 .evaluationService(evaluationService)
                 .traceRecordService(traceRecordService)
+                .suggestedQuestionsService(suggestedQuestionsService)
+                .suggestedQuestionsExecutor(suggestedQuestionsExecutor)
+                .ragConfigProperties(ragConfigProperties)
                 .build();
 
         return new StreamChatEventHandler(params);

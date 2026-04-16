@@ -26,7 +26,8 @@ import java.util.Date;
 
 public interface RagTraceRunMapper extends BaseMapper<RagTraceRunDO> {
 
-    @Select("SELECT COALESCE(SUM(CAST(extra_data::json->>'totalTokens' AS INTEGER)), 0) " +
+    // NUMERIC -> BIGINT 兼容历史上写成 "5228.0" 的 extra_data 行。
+    @Select("SELECT COALESCE(SUM(CAST(CAST(extra_data::json->>'totalTokens' AS NUMERIC) AS BIGINT)), 0) " +
             "FROM t_rag_trace_run " +
             "WHERE deleted = 0 AND extra_data IS NOT NULL AND extra_data LIKE '%totalTokens%' " +
             "AND start_time >= #{startTime} AND start_time < #{endTime}")

@@ -17,23 +17,34 @@
 
 package com.nageoffer.ai.ragent.rag.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceNodeDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceNodeMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceRunMapper;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * RAG Trace 记录服务实现
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RagTraceRecordServiceImpl implements RagTraceRecordService {
+
+    private static final ObjectMapper EXTRA_DATA_MAPPER = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
+    };
 
     private final RagTraceRunMapper runMapper;
     private final RagTraceNodeMapper nodeMapper;
@@ -65,6 +76,40 @@ public class RagTraceRecordServiceImpl implements RagTraceRecordService {
     public void updateRunExtraData(String traceId, String extraData) {
         RagTraceRunDO update = RagTraceRunDO.builder()
                 .extraData(extraData)
+                .build();
+        runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
+                .eq(RagTraceRunDO::getTraceId, traceId));
+    }
+
+    @Override
+    public void mergeRunExtraData(String traceId, Map<String, Object> additions) {
+        RagTraceRunDO existing = runMapper.selectOne(
+                Wrappers.lambdaQuery(RagTraceRunDO.class)
+                        .eq(RagTraceRunDO::getTraceId, traceId));
+
+        Map<String, Object> merged = new LinkedHashMap<>();
+        if (existing != null && StrUtil.isNotBlank(existing.getExtraData())) {
+            try {
+                Map<String, Object> parsed = EXTRA_DATA_MAPPER.readValue(existing.getExtraData(), MAP_TYPE);
+                if (parsed != null) {
+                    merged.putAll(parsed);
+                }
+            } catch (Exception e) {
+                log.warn("解析 extra_data 失败，将丢弃并覆盖，traceId={}", traceId, e);
+            }
+        }
+        merged.putAll(additions);
+
+        String written;
+        try {
+            written = EXTRA_DATA_MAPPER.writeValueAsString(merged);
+        } catch (Exception e) {
+            log.warn("序列化 extra_data 失败，放弃合并，traceId={}", traceId, e);
+            return;
+        }
+
+        RagTraceRunDO update = RagTraceRunDO.builder()
+                .extraData(written)
                 .build();
         runMapper.update(update, Wrappers.lambdaUpdate(RagTraceRunDO.class)
                 .eq(RagTraceRunDO::getTraceId, traceId));

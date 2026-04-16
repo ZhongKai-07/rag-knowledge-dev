@@ -15,53 +15,25 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.controller.vo;
+package com.nageoffer.ai.ragent.rag.core.suggest;
 
-import lombok.Builder;
-import lombok.Data;
-
-import java.util.Date;
 import java.util.List;
 
 /**
- * RAG Trace 运行记录
+ * 推荐问题生成服务
+ *
+ * 约定：
+ * - 任何异常（LLM 失败 / 解析失败 / 超时）都返回空 List，绝不向上抛
+ * - 返回 List 可能少于 3 条，调用方按实际长度处理
  */
-@Data
-@Builder
-public class RagTraceRunVO {
-
-    private String traceId;
-
-    private String traceName;
-
-    private String entryMethod;
-
-    private String conversationId;
-
-    private String taskId;
-
-    private String userId;
-
-    private String username;
-
-    private String status;
-
-    private String errorMessage;
-
-    private Long durationMs;
-
-    private Date startTime;
-
-    private Date endTime;
-
-    private Integer promptTokens;
-
-    private Integer completionTokens;
-
-    private Integer totalTokens;
+public interface SuggestedQuestionsService {
 
     /**
-     * 本轮生成的推荐问题（chip），来自 extra_data.suggestedQuestions
+     * 基于本轮问答和检索片段生成后续问题
+     *
+     * @param context 输入上下文（调用方保证 shouldGenerate=true）
+     * @param answer  本轮 assistant 回答全文
+     * @return 推荐问题列表（0-3 条）
      */
-    private List<String> suggestedQuestions;
+    List<String> generate(SuggestionContext context, String answer);
 }

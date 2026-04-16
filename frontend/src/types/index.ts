@@ -36,6 +36,7 @@ export interface Message {
   createdAt?: string;
   feedback?: FeedbackValue;
   status?: MessageStatus;
+  suggestedQuestions?: string[];
 }
 
 export interface StreamMetaPayload {
@@ -51,4 +52,9 @@ export interface MessageDeltaPayload {
 export interface CompletionPayload {
   messageId?: string | null;
   title?: string | null;
+}
+
+export interface SuggestionsPayload {
+  messageId: string;
+  questions: string[];
 }
