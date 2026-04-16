@@ -53,21 +53,26 @@ public class DefaultSuggestedQuestionsService implements SuggestedQuestionsServi
 
     @Override
     public List<String> generate(SuggestionContext context, String answer) {
-        String template = promptTemplateLoader.load(SUGGESTED_QUESTIONS_PROMPT_PATH);
-        String rendered = renderPrompt(template, context, answer);
+        try {
+            String template = promptTemplateLoader.load(SUGGESTED_QUESTIONS_PROMPT_PATH);
+            String rendered = renderPrompt(template, context, answer);
 
-        ChatRequest req = ChatRequest.builder()
-                .messages(List.of(ChatMessage.user(rendered)))
-                .temperature(0.1D)
-                .topP(0.3D)
-                .thinking(false)
-                .maxTokens(ragConfigProperties.getSuggestionsMaxOutputTokens())
-                .build();
+            ChatRequest req = ChatRequest.builder()
+                    .messages(List.of(ChatMessage.user(rendered)))
+                    .temperature(0.1D)
+                    .topP(0.3D)
+                    .thinking(false)
+                    .maxTokens(ragConfigProperties.getSuggestionsMaxOutputTokens())
+                    .build();
 
-        String modelId = ragConfigProperties.getSuggestionsModelId();
-        String raw = llmService.chat(req, StrUtil.isBlank(modelId) ? null : modelId);
+            String modelId = ragConfigProperties.getSuggestionsModelId();
+            String raw = llmService.chat(req, StrUtil.isBlank(modelId) ? null : modelId);
 
-        return parseQuestions(raw);
+            return parseQuestions(raw);
+        } catch (Exception e) {
+            log.warn("生成推荐问题失败", e);
+            return List.of();
+        }
     }
 
     private String renderPrompt(String template, SuggestionContext ctx, String answer) {

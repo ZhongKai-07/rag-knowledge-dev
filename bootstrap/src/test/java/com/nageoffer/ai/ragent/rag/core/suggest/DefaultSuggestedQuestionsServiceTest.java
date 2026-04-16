@@ -81,4 +81,15 @@ class DefaultSuggestedQuestionsServiceTest {
         assertEquals(3, result.size());
         assertEquals("a", result.get(0));
     }
+
+    @Test
+    void returns_empty_when_llm_throws() {
+        when(llmService.chat(any(ChatRequest.class), anyString()))
+                .thenThrow(new RuntimeException("boom"));
+
+        SuggestionContext ctx = new SuggestionContext("q", List.of(), List.of(), true);
+        List<String> result = service.generate(ctx, "answer");
+
+        assertTrue(result.isEmpty());
+    }
 }
