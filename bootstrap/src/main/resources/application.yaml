@@ -55,6 +55,12 @@ rag:
     max-history-messages: 4
     max-history-chars: 500
 
+  suggestions:
+    enabled: true
+    model-id: qwen-turbo
+    max-output-tokens: 150
+    timeout-ms: 5000
+
   rate-limit:
     global:
       enabled: true
