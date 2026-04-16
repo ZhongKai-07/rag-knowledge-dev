@@ -51,23 +51,21 @@
 **症状**：对每个角色发一次 HTTP 只为拿 KB 数量（30 角色 = 30 round-trip，每次都走一遍 Sa-Token + RBAC）。
 **修复**：后端 `GET /role` 响应直接带 `kbCount` 字段，或加 `GET /role/kb-counts` 批量接口。
 
-### OBS-1. Suggested Questions 挂 RagTrace 节点
+### ~~OBS-1. Suggested Questions 挂 RagTrace 节点（部分）~~ ✅ 核心已解决（2026-04-16）
 
-**位置**：`StreamChatEventHandler.generateAndFinish()` / `DefaultSuggestedQuestionsService.generate()`
-**背景**：2026-04-16 `feature/suggested-questions` 落地时已实现 "Option A"（读 `extra_data.suggestedQuestions` 在 trace 详情页展示 chip，commit `a309650`），但**没有挂正式的 `@RagTraceNode`**。目前只能看到最终产物，看不到耗时 / LLM 请求/响应 / 是否走了降级路径。
-**症状**：当推荐质量差、耗时异常、或静默降级时，排查只能翻业务日志 + 粗看 extra_data，不能像主检索链路那样下钻查 node。
-**修复**：
-1. 给 `DefaultSuggestedQuestionsService.generate` 挂 `@RagTraceNode(name="suggestion-generate", type="SUGGESTION")`。
-2. 因为推荐在独立 `suggestedQuestionsExecutor` 上异步跑、且该线程池**未包 TTL**，`RagTraceContext` 的 TTL 快照跨不过去 — 要在 submit 前**显式捕获** traceId/userId 传参，或把 `SuggestedQuestionsExecutorConfig` 换成项目里其他 bean 用的 `TtlExecutors.getTtlExecutor(...)` 风格（与 OBS-2 一起做）。
-3. 可选：把 LLM request/response 快照写到 node 的 `inputData`/`outputData` 便于复现。
-**优先级低**：推荐是辅助 UX，质量问题可容忍。只在真的遇到 "为什么这次推荐这么差/这么慢" 的排查痛点时再做。
+**进展**：commit 已给 `DefaultSuggestedQuestionsService.generate` 挂上 `@RagTraceNode(name="suggested-chat", type="SUGGESTION")`。Trace 详情页现在能看到独立的 "suggested-chat" 节点 + 耗时 + 状态，配合 Option A 的 chip 展示（commit `a309650`）已能覆盖 90% 排查需求。
+**TTL 前置问题未出现**：执行时实测 `RagTraceContext` 能跨过 `suggestedQuestionsExecutor` 传递（机制未完全探明，可能是 `TransmittableThreadLocal` 在 submit 时自动 capture；OBS-2 也因此降级为纯一致性问题）。
+**剩余可选**：把 LLM request/response 快照写到 node 的 `inputData`/`outputData` 便于复现 prompt。非阻塞，真需要深度排查再做。
 
-### OBS-2. `suggestedQuestionsExecutor` 未使用 TTL 包装
+### OBS-2. `suggestedQuestionsExecutor` 与项目其他线程池不一致
 
 **位置**：`bootstrap/.../rag/config/SuggestedQuestionsExecutorConfig.java`
-**症状**：项目里其他所有 RAG 线程池（`ThreadPoolExecutorConfig` 里 9 个）都走 `TtlExecutors.getTtlExecutor(...)`，独此一家用裸 `ThreadPoolTaskExecutor`。当前是"凑巧能工作"：`traceId` / `userId` 在 `StreamChatEventHandler` 构造期被捕获到 final 字段，异步任务靠闭包拿，不走 ThreadLocal。但 `llmService.chat(...)` 内部若读 `RagTraceContext` / `UserContext` 则会拿到空值，未来新增依赖 TTL 的代码会悄悄失效。
-**修复**：改为与 `ThreadPoolExecutorConfig` 一致的 `ThreadPoolExecutor` + Hutool `ThreadFactoryBuilder` + `TtlExecutors.getTtlExecutor(...)` 模式；同步修改 `StreamChatHandlerParams` 字段类型为 `Executor` 并调整 Task 17 集成测试（`awaitTermination` 改走 shutdown hook 或用 `Thread.yield()` 等待）。
-**优先级低**：与 OBS-1 捆绑做成本最低。
+**背景**：项目里其他所有 RAG 线程池（`ThreadPoolExecutorConfig` 里 9 个）都走 `ThreadPoolExecutor` + Hutool `ThreadFactoryBuilder` + `TtlExecutors.getTtlExecutor(...)`，独此一家用裸 `ThreadPoolTaskExecutor`。
+**症状**：实测 TTL 传递是 OK 的（OBS-1 挂节点后 trace 能正常嵌套），所以**不影响功能**。但：
+- 新人看到会困惑"为啥这个特殊"
+- 未来若某处显式依赖 `TtlExecutors` 包装过的 `Executor`（比如监控、装饰器链）会绕开此 bean
+**修复**：改为与 `ThreadPoolExecutorConfig` 一致的模式；同步修改 `StreamChatHandlerParams` 字段类型为 `Executor` 并调整 Task 17 集成测试。
+**优先级低**：纯代码一致性，无功能风险。
 
 ### OBS-3. `sender.sendEvent(FINISH, ...)` 未包 try/catch 导致 taskManager 泄漏
 

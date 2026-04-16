@@ -26,6 +26,7 @@ import com.google.gson.JsonParser;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.framework.trace.RagTraceNode;
 import com.nageoffer.ai.ragent.infra.chat.LLMService;
 import com.nageoffer.ai.ragent.infra.util.LLMResponseCleaner;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
@@ -52,6 +53,7 @@ public class DefaultSuggestedQuestionsService implements SuggestedQuestionsServi
     private final RAGConfigProperties ragConfigProperties;
 
     @Override
+    @RagTraceNode(name = "suggested-chat", type = "SUGGESTION")
     public List<String> generate(SuggestionContext context, String answer) {
         try {
             String template = promptTemplateLoader.load(SUGGESTED_QUESTIONS_PROMPT_PATH);
