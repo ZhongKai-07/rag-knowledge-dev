@@ -17,6 +17,7 @@ export interface RagTraceRun {
   promptTokens?: number | null;
   completionTokens?: number | null;
   totalTokens?: number | null;
+  suggestedQuestions?: string[] | null;
 }
 
 export interface RagTraceNode {

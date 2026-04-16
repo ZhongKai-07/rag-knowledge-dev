@@ -21,6 +21,7 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * RAG Trace 运行记录
@@ -58,4 +59,9 @@ public class RagTraceRunVO {
     private Integer completionTokens;
 
     private Integer totalTokens;
+
+    /**
+     * 本轮生成的推荐问题（chip），来自 extra_data.suggestedQuestions
+     */
+    private List<String> suggestedQuestions;
 }

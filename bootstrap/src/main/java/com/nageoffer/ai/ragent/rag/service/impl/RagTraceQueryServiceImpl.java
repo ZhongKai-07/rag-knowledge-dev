@@ -140,6 +140,17 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
             if (json.has("totalTokens") && !json.get("totalTokens").isJsonNull()) {
                 builder.totalTokens(json.get("totalTokens").getAsInt());
             }
+            if (json.has("suggestedQuestions") && json.get("suggestedQuestions").isJsonArray()) {
+                java.util.List<String> questions = new java.util.ArrayList<>();
+                for (com.google.gson.JsonElement el : json.getAsJsonArray("suggestedQuestions")) {
+                    if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString()) {
+                        questions.add(el.getAsString());
+                    }
+                }
+                if (!questions.isEmpty()) {
+                    builder.suggestedQuestions(questions);
+                }
+            }
         } catch (Exception e) {
             // extraData 解析失败不影响主流程
         }
