@@ -23,19 +23,25 @@ import com.nageoffer.ai.ragent.framework.context.Permission;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
-import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -56,7 +62,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KbAccessServiceImpl implements KbAccessService {
+public class KbAccessServiceImpl implements KbAccessService,
+        CurrentUserProbe, KbReadAccessPort, KbManageAccessPort,
+        UserAdminGuard, SuperAdminInvariantGuard, KbAccessCacheAdmin {
 
     private static final String CACHE_PREFIX = "kb_access:";
     private static final String DEPT_ADMIN_CACHE_PREFIX = "kb_access:dept:";
@@ -111,6 +119,26 @@ public class KbAccessServiceImpl implements KbAccessService {
             redissonClient.getBucket(cacheKey).<Set<String>>set(result, CACHE_TTL);
         }
         return result;
+    }
+
+    @Override
+    public Set<String> getAccessibleKbIds(String userId) {
+        // 消除 KbAccessService 和 KbReadAccessPort 两个父接口 default 方法的 diamond 冲突。
+        // 保留旧语义（READ 权限），KbReadAccessPort 的 deprecated default 仅作为迁移期标记。
+        return getAccessibleKbIds(userId, Permission.READ);
+    }
+
+    @Override
+    public AccessScope getAccessScope(String userId, Permission minPermission) {
+        if (isSuperAdmin()) {
+            return AccessScope.all();
+        }
+        return AccessScope.ids(getAccessibleKbIds(userId, minPermission));
+    }
+
+    @Override
+    public void checkReadAccess(String kbId) {
+        checkAccess(kbId);
     }
 
     /** DEPT_ADMIN 的可见 KB = RBAC 授权 KB ∪ 本部门所有 KB */
