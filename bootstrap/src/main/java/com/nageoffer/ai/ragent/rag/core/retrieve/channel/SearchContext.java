@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.rag.core.retrieve.channel;
 
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +25,6 @@ import lombok.Data;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 检索上下文
@@ -61,10 +61,11 @@ public class SearchContext {
     private int topK;
 
     /**
-     * 当前用户可访问的知识库 ID 集合（RBAC 安全约束）。
-     * null 表示不限（admin 或系统态），非 null 时检索通道必须过滤。
+     * 当前用户的检索访问范围（RBAC 单一状态源）。
+     * {@link AccessScope.All} = 全量放行（SUPER_ADMIN 或系统态），
+     * {@link AccessScope.Ids} = 仅该集合内的 KB 可见（空集 = fail-closed）。
      */
-    private Set<String> accessibleKbIds;
+    private AccessScope accessScope;
 
     /**
      * 当前用户对每个可访问 KB 的最高安全等级（kbId → level）。

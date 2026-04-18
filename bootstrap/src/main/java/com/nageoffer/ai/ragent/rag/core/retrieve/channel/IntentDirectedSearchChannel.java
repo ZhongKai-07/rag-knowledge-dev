@@ -19,6 +19,7 @@ package com.nageoffer.ai.ragent.rag.core.retrieve.channel;
 
 import cn.hutool.core.collection.CollUtil;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.rag.config.SearchChannelProperties;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
 
@@ -160,12 +161,13 @@ public class IntentDirectedSearchChannel implements SearchChannel {
                 .filter(ns -> ns.getNode() != null && ns.getNode().isKB())
                 .filter(ns -> ns.getScore() >= minScore)
                 .toList();
-        // RBAC filter: skip intents for KBs the user cannot access
-        if (context.getAccessibleKbIds() != null) {
+        // RBAC filter: AccessScope.All 全量放行; Ids 场景仅保留 kbId 在集合内的意图
+        AccessScope scope = context.getAccessScope();
+        if (scope instanceof AccessScope.Ids ids) {
             kbIntents = kbIntents.stream()
                     .filter(ns -> {
                         String kbId = ns.getNode().getKbId();
-                        return kbId == null || context.getAccessibleKbIds().contains(kbId);
+                        return kbId == null || ids.kbIds().contains(kbId);
                     })
                     .toList();
         }

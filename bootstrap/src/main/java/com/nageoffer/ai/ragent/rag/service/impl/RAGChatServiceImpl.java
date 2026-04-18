@@ -21,10 +21,13 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.framework.context.Permission;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.infra.chat.LLMService;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
@@ -63,7 +66,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.CHAT_SYSTEM_PROMPT_PATH;
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.DEFAULT_TOP_K;
@@ -90,6 +92,7 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final IntentResolver intentResolver;
     private final RetrievalEngine retrievalEngine;
     private final KbAccessService kbAccessService;
+    private final KbReadAccessPort kbReadAccess;
     private final ConversationMapper conversationMapper;
 
     @Override
@@ -112,10 +115,13 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         String userId = UserContext.getUserId();
 
-        // RBAC: resolve accessible KB IDs
-        Set<String> accessibleKbIds = null;
-        if (UserContext.hasUser() && userId != null && !kbAccessService.isSuperAdmin()) {
-            accessibleKbIds = kbAccessService.getAccessibleKbIds(userId);
+        // RBAC: resolve access scope (single source of truth for retrieval).
+        // 未登录 → AccessScope.empty() (fail-closed), 不再复用 null 语义。
+        AccessScope accessScope;
+        if (UserContext.hasUser() && userId != null) {
+            accessScope = kbReadAccess.getAccessScope(userId, Permission.READ);
+        } else {
+            accessScope = AccessScope.empty();
         }
 
         // If knowledgeBaseId specified, verify access
@@ -173,7 +179,7 @@ public class RAGChatServiceImpl implements RAGChatService {
             return;
         }
 
-        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K, accessibleKbIds, knowledgeBaseId);
+        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K, accessScope, knowledgeBaseId);
         if (ctx.isEmpty()) {
             String emptyReply = "未检索到���问题相关的文档��容。";
             callback.onContent(emptyReply);

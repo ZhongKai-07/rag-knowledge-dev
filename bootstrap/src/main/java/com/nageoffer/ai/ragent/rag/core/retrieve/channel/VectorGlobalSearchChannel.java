@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.rag.core.retrieve.channel;
 import cn.hutool.core.collection.CollUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.rag.config.SearchChannelProperties;
@@ -161,11 +162,14 @@ public class VectorGlobalSearchChannel implements SearchChannel {
     private List<KnowledgeBaseDO> getAccessibleKBs(SearchContext context) {
         List<KnowledgeBaseDO> kbs = knowledgeBaseMapper.selectList(
                 Wrappers.lambdaQuery(KnowledgeBaseDO.class));
-        if (context.getAccessibleKbIds() != null && !context.getAccessibleKbIds().isEmpty()) {
+        AccessScope scope = context.getAccessScope();
+        if (scope instanceof AccessScope.Ids ids) {
+            // 空集 = fail-closed; 非空则仅保留集合内的 KB
             kbs = kbs.stream()
-                    .filter(kb -> context.getAccessibleKbIds().contains(kb.getId()))
+                    .filter(kb -> ids.kbIds().contains(kb.getId()))
                     .toList();
         }
+        // AccessScope.All 不过滤
         return kbs.stream()
                 .filter(kb -> kb.getCollectionName() != null && !kb.getCollectionName().isBlank())
                 .toList();
