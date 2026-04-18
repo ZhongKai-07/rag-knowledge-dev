@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service;
+package com.nageoffer.ai.ragent.framework.security.port;
 
 import java.util.List;
 
 /**
  * Last SUPER_ADMIN invariant 模拟器的输入语义（Decision 3-M）。
+ * 从 bootstrap/user/service/ 迁至 framework，供所有模块引用。
  * 4 种 mutation 各对应一个 record。
  */
 public sealed interface SuperAdminMutationIntent
@@ -29,15 +30,15 @@ public sealed interface SuperAdminMutationIntent
                 SuperAdminMutationIntent.ChangeRoleType,
                 SuperAdminMutationIntent.DeleteRole {
 
-    /** 删除某个用户，该用户的所有 user-role 关联作废 */
+    /** 删除某个用户，该用户的所有 user-role 关联作废。*/
     record DeleteUser(String userId) implements SuperAdminMutationIntent {}
 
-    /** 用 newRoleIds 替换 userId 的角色集（对应 setUserRoles） */
+    /** 用 newRoleIds 替换 userId 的角色集（对应 setUserRoles）。*/
     record ReplaceUserRoles(String userId, List<String> newRoleIds) implements SuperAdminMutationIntent {}
 
-    /** 改变某角色的 role_type */
+    /** 改变某角色的 role_type。*/
     record ChangeRoleType(String roleId, String newRoleType) implements SuperAdminMutationIntent {}
 
-    /** 删除某角色，所有用到它的 user-role 关联作废 */
+    /** 删除某角色，所有用到它的 user-role 关联作废。*/
     record DeleteRole(String roleId) implements SuperAdminMutationIntent {}
 }

@@ -70,6 +70,8 @@ import com.nageoffer.ai.ragent.knowledge.service.KnowledgeChunkService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentScheduleService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.rag.dto.StoredFileDTO;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
@@ -105,6 +107,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final ChunkingStrategyFactory chunkingStrategyFactory;
     private final FileStorageService fileStorageService;
     private final VectorStoreService vectorStoreService;
+    private final VectorStoreAdmin vectorStoreAdmin;
     private final KnowledgeChunkService knowledgeChunkService;
     private final ObjectMapper objectMapper;
     private final KnowledgeDocumentScheduleService scheduleService;
@@ -236,7 +239,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
             long persistStart = System.currentTimeMillis();
             String collectionName = resolveCollectionName(documentDO.getKbId());
-            int savedCount = persistChunksAndVectorsAtomically(collectionName, docId, chunkResults);
+            int savedCount = persistChunksAndVectorsAtomically(
+                    collectionName,
+                    docId,
+                    documentDO.getKbId(),
+                    documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                    chunkResults);
             persistDuration = System.currentTimeMillis() - persistStart;
 
             long totalDuration = System.currentTimeMillis() - totalStartTime;
@@ -255,7 +263,17 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         }
     }
 
-    private int persistChunksAndVectorsAtomically(String collectionName, String docId, List<VectorChunk> chunkResults) {
+    private int persistChunksAndVectorsAtomically(String collectionName, String docId,
+                                                   String kbId, Integer securityLevel,
+                                                   List<VectorChunk> chunkResults) {
+        // 确保 OpenSearch 索引存在且 mapping 正确（幂等）。
+        // CHUNK mode 不经 IndexerNode → 索引可能因 KB 创建后被外部删除 / 首次写入未声明 mapping 导致 auto-create 用 dynamic schema。
+        // 放在事务外：ensure 是 OS 侧副作用，本来就不归 DB tx 管；失败时应直接终止，不污染 DB。
+        vectorStoreAdmin.ensureVectorSpace(VectorSpaceSpec.builder()
+                .spaceId(VectorSpaceId.builder().logicalName(collectionName).build())
+                .remark("RAG向量存储空间")
+                .build());
+
         List<KnowledgeChunkCreateRequest> chunks = chunkResults.stream()
                 .map(vc -> {
                     KnowledgeChunkCreateRequest req = new KnowledgeChunkCreateRequest();
@@ -269,7 +287,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             knowledgeChunkService.deleteByDocId(docId);
             knowledgeChunkService.batchCreate(docId, chunks);
             vectorStoreService.deleteDocumentVectors(collectionName, docId);
-            vectorStoreService.indexDocumentChunks(collectionName, docId, chunkResults);
+            vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, chunkResults);
             KnowledgeDocumentDO updateDocumentDO = KnowledgeDocumentDO.builder()
                     .id(docId)
                     .chunkCount(chunks.size())
@@ -367,6 +385,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 .vectorSpaceId(VectorSpaceId.builder()
                         .logicalName(kbDO.getCollectionName())
                         .build())
+                .kbId(documentDO.getKbId())
+                .securityLevel(documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0)
                 .skipIndexerWrite(true)
                 .build();
 
@@ -450,22 +470,29 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             throw new ClientException("文档名称不能为空");
         }
 
-        LambdaUpdateWrapper<KnowledgeDocumentDO> updateWrapper = Wrappers.lambdaUpdate(KnowledgeDocumentDO.class)
-                .eq(KnowledgeDocumentDO::getId, documentDO.getId())
-                .set(KnowledgeDocumentDO::getDocName, docName.trim())
-                .set(KnowledgeDocumentDO::getUpdatedBy, UserContext.getUsername());
+        // chunk_config 是 PG jsonb 列，@TableField(typeHandler = JsonbTypeHandler) 只在 entity-based CRUD 生效。
+        // LambdaUpdateWrapper.set(col, val) 会绕开 handler，非 null String 按 varchar 绑定 → PG 拒绝 jsonb 转换。
+        // Hybrid：非 null 字段走 updateById（entityUpdate）；需要清空的字段用 nullClear wrapper（NULL 绑定不触发类型问题）。
+        KnowledgeDocumentDO entityUpdate = new KnowledgeDocumentDO();
+        entityUpdate.setId(documentDO.getId());
+        entityUpdate.setDocName(docName.trim());
+        entityUpdate.setUpdatedBy(UserContext.getUsername());
+
+        LambdaUpdateWrapper<KnowledgeDocumentDO> nullClear = null;
 
         // 如果传了 processMode，校验并更新处理配置
         if (StringUtils.hasText(requestParam.getProcessMode())) {
             ProcessMode processMode = ProcessMode.normalize(requestParam.getProcessMode());
-            updateWrapper.set(KnowledgeDocumentDO::getProcessMode, processMode.getValue());
+            entityUpdate.setProcessMode(processMode.getValue());
 
             if (ProcessMode.CHUNK == processMode) {
                 ChunkingMode chunkingMode = ChunkingMode.fromValue(requestParam.getChunkStrategy());
                 String chunkConfig = validateAndNormalizeChunkConfig(chunkingMode, requestParam.getChunkConfig());
-                updateWrapper.set(KnowledgeDocumentDO::getChunkStrategy, chunkingMode.getValue());
-                updateWrapper.set(KnowledgeDocumentDO::getChunkConfig, chunkConfig);
-                updateWrapper.set(KnowledgeDocumentDO::getPipelineId, null);
+                entityUpdate.setChunkStrategy(chunkingMode.getValue());
+                entityUpdate.setChunkConfig(chunkConfig);
+                nullClear = Wrappers.lambdaUpdate(KnowledgeDocumentDO.class)
+                        .eq(KnowledgeDocumentDO::getId, documentDO.getId())
+                        .set(KnowledgeDocumentDO::getPipelineId, null);
             } else {
                 if (!StringUtils.hasText(requestParam.getPipelineId())) {
                     throw new ClientException("使用Pipeline模式时，必须指定Pipeline ID");
@@ -475,9 +502,11 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 } catch (Exception e) {
                     throw new ClientException("指定的Pipeline不存在: " + requestParam.getPipelineId());
                 }
-                updateWrapper.set(KnowledgeDocumentDO::getPipelineId, requestParam.getPipelineId());
-                updateWrapper.set(KnowledgeDocumentDO::getChunkStrategy, null);
-                updateWrapper.set(KnowledgeDocumentDO::getChunkConfig, null);
+                entityUpdate.setPipelineId(requestParam.getPipelineId());
+                nullClear = Wrappers.lambdaUpdate(KnowledgeDocumentDO.class)
+                        .eq(KnowledgeDocumentDO::getId, documentDO.getId())
+                        .set(KnowledgeDocumentDO::getChunkStrategy, null)
+                        .set(KnowledgeDocumentDO::getChunkConfig, null);
             }
         }
 
@@ -489,11 +518,11 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             String newScheduleCron = requestParam.getScheduleCron();
 
             if (StringUtils.hasText(newSourceLocation)) {
-                updateWrapper.set(KnowledgeDocumentDO::getSourceLocation, newSourceLocation.trim());
+                entityUpdate.setSourceLocation(newSourceLocation.trim());
                 scheduleChanged = true;
             }
             if (newScheduleEnabled != null) {
-                updateWrapper.set(KnowledgeDocumentDO::getScheduleEnabled, newScheduleEnabled);
+                entityUpdate.setScheduleEnabled(newScheduleEnabled);
                 scheduleChanged = true;
             }
             if (StringUtils.hasText(newScheduleCron)) {
@@ -506,7 +535,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 } catch (IllegalArgumentException e) {
                     throw new ClientException("定时表达式不合法: " + e.getMessage());
                 }
-                updateWrapper.set(KnowledgeDocumentDO::getScheduleCron, newScheduleCron.trim());
+                entityUpdate.setScheduleCron(newScheduleCron.trim());
                 scheduleChanged = true;
             }
 
@@ -528,7 +557,10 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             }
         }
 
-        documentMapper.update(updateWrapper);
+        documentMapper.updateById(entityUpdate);
+        if (nullClear != null) {
+            documentMapper.update(nullClear);
+        }
 
         if (scheduleChanged) {
             KnowledgeDocumentDO updated = documentMapper.selectById(docId);
@@ -693,7 +725,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             if (!enabled) {
                 vectorStoreService.deleteDocumentVectors(collectionName, docId);
             } else {
-                vectorStoreService.indexDocumentChunks(collectionName, docId, finalVectorChunks);
+                vectorStoreService.indexDocumentChunks(
+                        collectionName,
+                        docId,
+                        documentDO.getKbId(),
+                        documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                        finalVectorChunks);
             }
         });
     }

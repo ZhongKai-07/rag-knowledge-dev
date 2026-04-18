@@ -99,6 +99,19 @@ public class IngestionContext {
     private Map<String, Object> metadata;
 
     /**
+     * 本次 ingestion 对应的知识库 ID。
+     * 独立字段，用于 IndexerNode 透传给 VectorStoreService.indexDocumentChunks 写入 metadata.kb_id，
+     * 不依赖 metadata Map，避免 round-trip 丢失。
+     */
+    private String kbId;
+
+    /**
+     * 文档安全等级（0=PUBLIC, 1=INTERNAL, 2=CONFIDENTIAL, 3=RESTRICTED）。
+     * 独立字段，透传给 VectorStoreService 写入 metadata.security_level。null 时下游兜底为 0。
+     */
+    private Integer securityLevel;
+
+    /**
      * 向量空间ID，指定向量数据写入的目标集合
      * 如果不指定，则使用默认的向量空间
      */

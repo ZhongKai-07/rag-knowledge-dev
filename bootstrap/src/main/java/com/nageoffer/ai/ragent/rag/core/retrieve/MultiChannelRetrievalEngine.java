@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.rag.core.retrieve;
 import cn.hutool.core.collection.CollUtil;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceNode;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannel;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
@@ -27,6 +28,7 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
@@ -35,13 +37,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -64,6 +64,7 @@ public class MultiChannelRetrievalEngine {
     private final RetrieverService retrieverService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KbAccessService kbAccessService;
+    private final MetadataFilterBuilder metadataFilterBuilder;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
 
@@ -76,9 +77,9 @@ public class MultiChannelRetrievalEngine {
      */
     @RagTraceNode(name = "multi-channel-retrieval", type = "RETRIEVE_CHANNEL")
     public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents, int topK,
-                                                           Set<String> accessibleKbIds, String knowledgeBaseId) {
+                                                           AccessScope accessScope, String knowledgeBaseId) {
         // 构建检索上下文
-        SearchContext context = buildSearchContext(subIntents, topK, accessibleKbIds);
+        SearchContext context = buildSearchContext(subIntents, topK, accessScope);
 
         // 单知识库定向检索路径
         if (knowledgeBaseId != null) {
@@ -90,7 +91,7 @@ public class MultiChannelRetrievalEngine {
                     .query(context.getMainQuestion())
                     .topK(topK)
                     .collectionName(kb.getCollectionName())
-                    .metadataFilters(buildMetadataFilters(context, knowledgeBaseId))
+                    .metadataFilters(metadataFilterBuilder.build(context, knowledgeBaseId))
                     .build();
             List<RetrievedChunk> chunks = retrieverService.retrieve(req);
 
@@ -249,41 +250,28 @@ public class MultiChannelRetrievalEngine {
     }
 
     /**
-     * 构建检索上下文。在此一次性预解析当前用户对所有可访问 KB 的安全等级 map，
-     * 后续 channel/postprocessor 直接 O(1) 查表，不再每次回调 {@link KbAccessService#getMaxSecurityLevelForKb}。
+     * 构建检索上下文。对 {@link AccessScope.Ids} 场景一次性预解析安全等级 map,
+     * 下游 channel/postprocessor 直接 O(1) 查表；{@link AccessScope.All} 场景
+     * (SUPER_ADMIN) 无需预解析, 由检索层全量放行。
      */
     private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int topK,
-                                              Set<String> accessibleKbIds) {
+                                              AccessScope accessScope) {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
-        Map<String, Integer> kbSecurityLevels = (UserContext.hasUser() && accessibleKbIds != null && !accessibleKbIds.isEmpty())
-                ? kbAccessService.getMaxSecurityLevelsForKbs(UserContext.getUserId(), accessibleKbIds)
-                : Collections.emptyMap();
+        Map<String, Integer> kbSecurityLevels;
+        if (accessScope instanceof AccessScope.Ids ids && !ids.kbIds().isEmpty() && UserContext.hasUser()) {
+            kbSecurityLevels = kbAccessService.getMaxSecurityLevelsForKbs(UserContext.getUserId(), ids.kbIds());
+        } else {
+            kbSecurityLevels = Collections.emptyMap();
+        }
 
         return SearchContext.builder()
                 .originalQuestion(question)
                 .rewrittenQuestion(question)
                 .intents(subIntents)
                 .topK(topK)
-                .accessibleKbIds(accessibleKbIds)
+                .accessScope(accessScope)
                 .kbSecurityLevels(kbSecurityLevels)
                 .build();
     }
 
-    /**
-     * 构建元数据过滤条件（按 KB 查表得到安全等级）。
-     */
-    public static List<MetadataFilter> buildMetadataFilters(SearchContext ctx, String kbId) {
-        List<MetadataFilter> filters = new ArrayList<>();
-        if (kbId == null || ctx.getKbSecurityLevels() == null) {
-            return filters;
-        }
-        Integer level = ctx.getKbSecurityLevels().get(kbId);
-        if (level != null) {
-            filters.add(new MetadataFilter(
-                    "security_level",
-                    MetadataFilter.FilterOp.LTE_OR_MISSING,
-                    level));
-        }
-        return filters;
-    }
 }

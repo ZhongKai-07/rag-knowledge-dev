@@ -39,7 +39,11 @@ public class PgVectorStoreService implements VectorStoreService {
     private final ObjectMapper objectMapper;
 
     @Override
-    public void indexDocumentChunks(String collectionName, String docId, List<VectorChunk> chunks) {
+    public void indexDocumentChunks(String collectionName, String docId,
+                                    String kbId, Integer securityLevel,
+                                    List<VectorChunk> chunks) {
+        // TODO kbId/securityLevel ignored – pgvector is non-OpenSearch backend, dev-only.
+        //      AuthzPostProcessor fail-closes chunks with kbId==null in authenticated sessions.
         if (chunks == null || chunks.isEmpty()) {
             return;
         }
@@ -84,7 +88,10 @@ public class PgVectorStoreService implements VectorStoreService {
     }
 
     @Override
-    public void updateChunk(String collectionName, String docId, VectorChunk chunk) {
+    public void updateChunk(String collectionName, String docId,
+                            String kbId, Integer securityLevel,
+                            VectorChunk chunk) {
+        // TODO kbId/securityLevel ignored – pgvector is non-OpenSearch backend, dev-only.
         // noinspection SqlDialectInspection,SqlNoDataSourceInspection
         jdbcTemplate.update(
                 "INSERT INTO t_knowledge_vector (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?::vector) " +

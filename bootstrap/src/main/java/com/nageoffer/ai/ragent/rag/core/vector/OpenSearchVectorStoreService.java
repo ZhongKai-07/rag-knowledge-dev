@@ -40,7 +40,9 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
     private final OpenSearchClient client;
 
     @Override
-    public void indexDocumentChunks(String collectionName, String docId, List<VectorChunk> chunks) {
+    public void indexDocumentChunks(String collectionName, String docId,
+                                    String kbId, Integer securityLevel,
+                                    List<VectorChunk> chunks) {
         if (chunks == null || chunks.isEmpty()) {
             return;
         }
@@ -50,7 +52,7 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
 
             for (VectorChunk chunk : chunks) {
                 String chunkId = chunk.getChunkId();
-                Map<String, Object> doc = buildDocument(collectionName, docId, chunk);
+                Map<String, Object> doc = buildDocument(collectionName, docId, kbId, securityLevel, chunk);
 
                 bulkBuilder.operations(op -> op
                         .index(idx -> idx
@@ -75,9 +77,11 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
     }
 
     @Override
-    public void updateChunk(String collectionName, String docId, VectorChunk chunk) {
+    public void updateChunk(String collectionName, String docId,
+                            String kbId, Integer securityLevel,
+                            VectorChunk chunk) {
         try {
-            Map<String, Object> doc = buildDocument(collectionName, docId, chunk);
+            Map<String, Object> doc = buildDocument(collectionName, docId, kbId, securityLevel, chunk);
             client.index(i -> i
                     .index(collectionName)
                     .id(chunk.getChunkId())
@@ -99,8 +103,26 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
                                     .value(FieldValue.of(docId)))));
             log.info("Deleted vectors for doc {} from index {}", docId, collectionName);
         } catch (Exception e) {
+            // 幂等语义：索引不存在视为删除成功（无事可删）。
+            // 触发场景：手工清索引后重跑 ingestion；新 KB 首次写入前（chunk mode 不走 ensureVectorSpace）。
+            if (isIndexNotFound(e)) {
+                log.info("Skip delete vectors for doc {}: index {} does not exist yet (idempotent)", docId, collectionName);
+                return;
+            }
             throw new RuntimeException("Failed to delete vectors for doc: " + docId, e);
         }
+    }
+
+    /** 判断异常链中是否含 OpenSearch 的 index_not_found_exception。*/
+    private static boolean isIndexNotFound(Throwable t) {
+        while (t != null) {
+            String msg = t.getMessage();
+            if (msg != null && msg.contains("index_not_found")) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 
     @Override
@@ -196,7 +218,9 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
         return sb.toString();
     }
 
-    private Map<String, Object> buildDocument(String collectionName, String docId, VectorChunk chunk) {
+    private Map<String, Object> buildDocument(String collectionName, String docId,
+                                               String kbId, Integer securityLevel,
+                                               VectorChunk chunk) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("collection_name", collectionName);
         metadata.put("doc_id", docId);
@@ -209,6 +233,10 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
                 }
             });
         }
+
+        // 授权关键字段以入参为准，显式覆盖，防止 chunk.metadata 里的同名值误传
+        metadata.put(VectorMetadataFields.KB_ID, kbId != null ? kbId : "");
+        metadata.put(VectorMetadataFields.SECURITY_LEVEL, securityLevel != null ? securityLevel : 0);
 
         Map<String, Object> doc = new LinkedHashMap<>();
         doc.put("id", chunk.getChunkId());

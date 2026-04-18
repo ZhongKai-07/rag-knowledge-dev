@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.user.service;
 
 import com.nageoffer.ai.ragent.framework.context.Permission;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 
 import java.util.Collection;
 import java.util.Map;

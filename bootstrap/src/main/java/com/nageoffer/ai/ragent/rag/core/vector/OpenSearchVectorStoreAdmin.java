@@ -243,6 +243,7 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
                         "source_type": { "type": "keyword" },
                         "source_location": { "type": "keyword", "index": false },
                         "security_level": { "type": "integer" },
+                        "kb_id": { "type": "keyword" },
                         "keywords": {
                           "type": "text",
                           "analyzer": "%s",

@@ -19,11 +19,13 @@ package com.nageoffer.ai.ragent.rag.core.retrieve.channel;
 
 import cn.hutool.core.collection.CollUtil;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.rag.config.SearchChannelProperties;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
 
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy.IntentParallelRetriever;
+import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -47,9 +49,11 @@ public class IntentDirectedSearchChannel implements SearchChannel {
 
     public IntentDirectedSearchChannel(RetrieverService retrieverService,
                                        SearchChannelProperties properties,
+                                       MetadataFilterBuilder metadataFilterBuilder,
                                        @Qualifier("ragInnerRetrievalThreadPoolExecutor") Executor ragInnerRetrievalExecutor) {
         this.properties = properties;
-        this.parallelRetriever = new IntentParallelRetriever(retrieverService, ragInnerRetrievalExecutor);
+        this.parallelRetriever = new IntentParallelRetriever(
+                retrieverService, metadataFilterBuilder, ragInnerRetrievalExecutor);
     }
 
     @Override
@@ -157,16 +161,12 @@ public class IntentDirectedSearchChannel implements SearchChannel {
                 .filter(ns -> ns.getNode() != null && ns.getNode().isKB())
                 .filter(ns -> ns.getScore() >= minScore)
                 .toList();
-        // RBAC filter: skip intents for KBs the user cannot access
-        if (context.getAccessibleKbIds() != null) {
-            kbIntents = kbIntents.stream()
-                    .filter(ns -> {
-                        String kbId = ns.getNode().getKbId();
-                        return kbId == null || context.getAccessibleKbIds().contains(kbId);
-                    })
-                    .toList();
-        }
-        return kbIntents;
+        // RBAC filter: 仅保留 scope 放行的 kbId. null kbId 的 KB 意图视为配置错误并剔除,
+        // 避免对用户无权限的 collection 发起检索(query-level 信息泄漏).
+        AccessScope scope = context.getAccessScope();
+        return kbIntents.stream()
+                .filter(ns -> scope.allows(ns.getNode().getKbId()))
+                .toList();
     }
 
     /**

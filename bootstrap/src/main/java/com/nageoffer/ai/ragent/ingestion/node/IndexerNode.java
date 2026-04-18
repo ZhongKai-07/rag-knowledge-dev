@@ -32,6 +32,7 @@ import com.nageoffer.ai.ragent.ingestion.domain.context.IngestionContext;
 import com.nageoffer.ai.ragent.ingestion.domain.enums.IngestionNodeType;
 import com.nageoffer.ai.ragent.ingestion.domain.pipeline.NodeConfig;
 import com.nageoffer.ai.ragent.ingestion.domain.result.NodeResult;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorMetadataFields;
 import com.nageoffer.ai.ragent.ingestion.domain.settings.IndexerSettings;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
@@ -107,8 +108,44 @@ public class IndexerNode implements IngestionNode {
             return NodeResult.ok("已准备 " + rows.size() + " 个分块（向量写入由调用方统一完成）");
         }
 
-        insertRows(collectionName, context.getTaskId(), rows);
-        return NodeResult.ok("已写入 " + rows.size() + " 个分块到集合 " + collectionName);
+        // 非 skip 模式：跳过 JsonObject round-trip（会丢 metadata），直接用 chunks 调新签名。
+        // task_id / pipeline_id / source_type / source_location 通过 chunk.metadata 传入；
+        // kb_id / security_level 通过方法参数强制覆盖写入（OpenSearchVectorStoreService.buildDocument）。
+        populateIngestionMetadata(context, chunks);
+        vectorStoreService.indexDocumentChunks(
+                collectionName,
+                context.getTaskId(),
+                context.getKbId(),
+                context.getSecurityLevel(),
+                chunks);
+        log.info("向量写入成功，集合={}，行数={}", collectionName, chunks.size());
+        return NodeResult.ok("已写入 " + chunks.size() + " 个分块到集合 " + collectionName);
+    }
+
+    /**
+     * 把 ingestion 上下文里的元信息注入每个 chunk.metadata，供 VectorStoreService.buildDocument merge。
+     * 只写"非授权字段"（task_id、pipeline_id、source_type、source_location）；
+     * kb_id 和 security_level 由方法参数显式传入，避免被 chunk.metadata 误覆盖。
+     */
+    private void populateIngestionMetadata(IngestionContext context, List<VectorChunk> chunks) {
+        String taskId = context.getTaskId();
+        String pipelineId = context.getPipelineId();
+        DocumentSource source = context.getSource();
+        for (VectorChunk chunk : chunks) {
+            Map<String, Object> meta = chunk.getMetadata();
+            if (meta == null) {
+                meta = new HashMap<>();
+                chunk.setMetadata(meta);
+            }
+            if (taskId != null) meta.put("task_id", taskId);
+            if (pipelineId != null) meta.put("pipeline_id", pipelineId);
+            if (source != null && source.getType() != null) {
+                meta.put("source_type", source.getType().getValue());
+            }
+            if (source != null && StringUtils.hasText(source.getLocation())) {
+                meta.put("source_location", source.getLocation());
+            }
+        }
     }
 
     private IndexerSettings parseSettings(JsonNode node) {
@@ -142,41 +179,6 @@ public class IndexerNode implements IngestionNode {
         vectorStoreAdmin.ensureVectorSpace(spaceSpec);
     }
 
-    private void insertRows(String collectionName, String docId, List<JsonObject> rows) {
-        if (rows == null || rows.isEmpty()) {
-            return;
-        }
-
-        // 将 JsonObject 转换为 VectorChunk 列表
-        List<VectorChunk> chunks = rows.stream().map(row -> {
-            String chunkId = row.get("id").getAsString();
-            String content = row.get("content").getAsString();
-            JsonArray embeddingArray = row.getAsJsonArray("embedding");
-            float[] embedding = new float[embeddingArray.size()];
-            for (int i = 0; i < embeddingArray.size(); i++) {
-                embedding[i] = embeddingArray.get(i).getAsFloat();
-            }
-
-            Integer chunkIndex = null;
-            if (row.has("metadata") && row.get("metadata").isJsonObject()) {
-                JsonObject metadata = row.getAsJsonObject("metadata");
-                if (metadata.has("chunk_index")) {
-                    chunkIndex = metadata.get("chunk_index").getAsInt();
-                }
-            }
-
-            return VectorChunk.builder()
-                    .chunkId(chunkId)
-                    .content(content)
-                    .index(chunkIndex)
-                    .embedding(embedding)
-                    .build();
-        }).toList();
-
-        vectorStoreService.indexDocumentChunks(collectionName, docId, chunks);
-
-        log.info("向量写入成功，集合={}，行数={}", collectionName, chunks.size());
-    }
 
     private int resolveDimension(List<VectorChunk> chunks) {
         Integer configured = ragDefaultProperties.getDimension();
@@ -237,9 +239,9 @@ public class IndexerNode implements IngestionNode {
             }
 
             // 写入 security_level（从 context.metadata 读取，缺省为 0 = PUBLIC）
-            Object rawSecurityLevel = mergedMetadata.get("security_level");
+            Object rawSecurityLevel = mergedMetadata.get(VectorMetadataFields.SECURITY_LEVEL);
             int securityLevel = (rawSecurityLevel instanceof Number num) ? num.intValue() : 0;
-            metadata.addProperty("security_level", securityLevel);
+            metadata.addProperty(VectorMetadataFields.SECURITY_LEVEL, securityLevel);
 
             if (metadataFields != null && !metadataFields.isEmpty()) {
                 Map<String, Object> combined = new HashMap<>(mergedMetadata);

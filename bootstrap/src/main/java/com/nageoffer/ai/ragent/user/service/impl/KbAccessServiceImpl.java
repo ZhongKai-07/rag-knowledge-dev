@@ -23,22 +23,25 @@ import com.nageoffer.ai.ragent.framework.context.Permission;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
-import com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -59,7 +62,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class KbAccessServiceImpl implements KbAccessService {
+public class KbAccessServiceImpl implements KbAccessService,
+        CurrentUserProbe, KbReadAccessPort, KbManageAccessPort,
+        UserAdminGuard, SuperAdminInvariantGuard, KbAccessCacheAdmin {
 
     private static final String CACHE_PREFIX = "kb_access:";
     private static final String DEPT_ADMIN_CACHE_PREFIX = "kb_access:dept:";
@@ -68,21 +73,17 @@ public class KbAccessServiceImpl implements KbAccessService {
 
     private final UserRoleMapper userRoleMapper;
     private final RoleKbRelationMapper roleKbRelationMapper;
-    private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final RedissonClient redissonClient;
     private final UserMapper userMapper;
     private final RoleMapper roleMapper;
-    private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final SysDeptMapper sysDeptMapper;
+    private final KbMetadataReader kbMetadataReader;
 
     @Override
     public Set<String> getAccessibleKbIds(String userId, Permission minPermission) {
         // SUPER_ADMIN 全量，不走缓存
         if (isSuperAdmin()) {
-            return knowledgeBaseMapper.selectList(
-                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                            .select(KnowledgeBaseDO::getId)
-            ).stream().map(KnowledgeBaseDO::getId).collect(Collectors.toSet());
+            return kbMetadataReader.listAllKbIds();
         }
 
         // DEPT_ADMIN: RBAC 授权 KB ∪ 同部门 KB；READ 路径走缓存（kb_access:dept:{userId}）
@@ -120,6 +121,26 @@ public class KbAccessServiceImpl implements KbAccessService {
         return result;
     }
 
+    @Override
+    public Set<String> getAccessibleKbIds(String userId) {
+        // 消除 KbAccessService 和 KbReadAccessPort 两个父接口 default 方法的 diamond 冲突。
+        // 保留旧语义（READ 权限），KbReadAccessPort 的 deprecated default 仅作为迁移期标记。
+        return getAccessibleKbIds(userId, Permission.READ);
+    }
+
+    @Override
+    public AccessScope getAccessScope(String userId, Permission minPermission) {
+        if (isSuperAdmin()) {
+            return AccessScope.all();
+        }
+        return AccessScope.ids(getAccessibleKbIds(userId, minPermission));
+    }
+
+    @Override
+    public void checkReadAccess(String kbId) {
+        checkAccess(kbId);
+    }
+
     /** DEPT_ADMIN 的可见 KB = RBAC 授权 KB ∪ 本部门所有 KB */
     private Set<String> computeDeptAdminAccessibleKbIds(String userId, Permission minPermission) {
         Set<String> rbacKbs = computeRbacKbIds(userId, minPermission);
@@ -129,12 +150,7 @@ public class KbAccessServiceImpl implements KbAccessService {
             log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", userId);
             return rbacKbs;
         }
-        List<KnowledgeBaseDO> deptKbs = knowledgeBaseMapper.selectList(
-                Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                        .eq(KnowledgeBaseDO::getDeptId, deptId)
-                        .select(KnowledgeBaseDO::getId)
-        );
-        deptKbs.stream().map(KnowledgeBaseDO::getId).forEach(rbacKbs::add);
+        rbacKbs.addAll(kbMetadataReader.listKbIdsByDeptId(deptId));
         return rbacKbs;
     }
 
@@ -161,13 +177,7 @@ public class KbAccessServiceImpl implements KbAccessService {
 
         // 过滤已删除的 KB
         if (!kbIds.isEmpty()) {
-            List<KnowledgeBaseDO> validKbs = knowledgeBaseMapper.selectList(
-                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                            .in(KnowledgeBaseDO::getId, kbIds)
-                            .select(KnowledgeBaseDO::getId));
-            kbIds = validKbs.stream()
-                    .map(KnowledgeBaseDO::getId)
-                    .collect(Collectors.toCollection(HashSet::new));
+            kbIds = new HashSet<>(kbMetadataReader.filterExistingKbIds(kbIds));
         }
 
         return kbIds;
@@ -202,8 +212,8 @@ public class KbAccessServiceImpl implements KbAccessService {
             if (user.getDeptId() == null) {
                 log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", UserContext.getUserId());
             } else {
-                KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
-                if (kb != null && sameDept(user, kb.getDeptId())) {
+                String kbDeptId = kbMetadataReader.getKbDeptId(kbId);
+                if (kbDeptId != null && sameDept(user, kbDeptId)) {
                     return;
                 }
             }
@@ -225,11 +235,12 @@ public class KbAccessServiceImpl implements KbAccessService {
         }
         LoginUser user = UserContext.get();
         if (user.getRoleTypes() != null && user.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
-            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
-            if (kb == null) {
+            String kbDeptId = kbMetadataReader.getKbDeptId(kbId);
+            // Schema: t_knowledge_base.dept_id NOT NULL → null 等于不存在
+            if (kbDeptId == null) {
                 throw new ClientException("知识库不存在: " + kbId);
             }
-            if (sameDept(user, kb.getDeptId())) {
+            if (sameDept(user, kbDeptId)) {
                 return;
             }
             log.warn("权限拒绝: userId={}, kbId={}, action=MANAGE, reason=跨部门", UserContext.getUserId(), kbId);
@@ -271,8 +282,8 @@ public class KbAccessServiceImpl implements KbAccessService {
         // DEPT_ADMIN implicit access to same-dept KBs: use role ceiling
         if (current != null && current.getRoleTypes() != null
                 && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
-            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
-            if (kb != null && sameDept(current, kb.getDeptId())) {
+            String kbDeptId = kbMetadataReader.getKbDeptId(kbId);
+            if (kbDeptId != null && sameDept(current, kbDeptId)) {
                 return current.getMaxSecurityLevel();
             }
         }
@@ -352,13 +363,9 @@ public class KbAccessServiceImpl implements KbAccessService {
                 && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)
                 && current.getDeptId() != null) {
             int deptCeiling = current.getMaxSecurityLevel();
-            List<KnowledgeBaseDO> sameDeptKbs = knowledgeBaseMapper.selectList(
-                    Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                            .in(KnowledgeBaseDO::getId, kbIds)
-                            .eq(KnowledgeBaseDO::getDeptId, current.getDeptId())
-                            .select(KnowledgeBaseDO::getId));
-            for (KnowledgeBaseDO kb : sameDeptKbs) {
-                result.merge(kb.getId(), deptCeiling, Math::max);
+            Set<String> sameDeptKbIds = kbMetadataReader.filterKbIdsByDept(kbIds, current.getDeptId());
+            for (String kbId : sameDeptKbIds) {
+                result.merge(kbId, deptCeiling, Math::max);
             }
         }
         return result;
@@ -495,11 +502,11 @@ public class KbAccessServiceImpl implements KbAccessService {
         if (isSuperAdmin()) {
             return;
         }
-        KnowledgeDocumentDO doc = knowledgeDocumentMapper.selectById(docId);
-        if (doc == null) {
+        String docKbId = kbMetadataReader.getKbIdOfDoc(docId);
+        if (docKbId == null) {
             throw new ClientException("文档不存在: " + docId);
         }
-        checkManageAccess(doc.getKbId());
+        checkManageAccess(docKbId);
     }
 
     @Override
@@ -559,12 +566,12 @@ public class KbAccessServiceImpl implements KbAccessService {
         if (!isDeptAdmin()) {
             throw new ClientException("需要管理员权限");
         }
-        KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
-        if (kb == null) {
+        String kbDeptId = kbMetadataReader.getKbDeptId(kbId);
+        if (kbDeptId == null) {
             throw new ClientException("知识库不存在");
         }
         LoginUser current = UserContext.requireUser();
-        if (!sameDept(current, kb.getDeptId())) {
+        if (!sameDept(current, kbDeptId)) {
             throw new ClientException("DEPT_ADMIN 只能管理本部门知识库的角色绑定");
         }
     }

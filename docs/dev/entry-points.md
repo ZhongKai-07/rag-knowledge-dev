@@ -198,6 +198,7 @@
 - **入库时序**：`diagram/sequence/kb_ingestion_sequence.drawio`
 - **系统架构**：`diagram/architecture/系统架构.drawio`
 - **RBAC 设计**：`docs/dev/design/rag-permission-design.md`、`rbac-and-security-level-implementation.md`
+- **权限审计基线**：`docs/dev/security/2026-04-18-authorization-baseline.md` — 端点级矩阵，RBAC/ACL 重构前后对比依据
 - **PR 规划 / 验收日志**：`docs/superpowers/plans/*.md`、`docs/dev/pr3-*`
 
 ---
