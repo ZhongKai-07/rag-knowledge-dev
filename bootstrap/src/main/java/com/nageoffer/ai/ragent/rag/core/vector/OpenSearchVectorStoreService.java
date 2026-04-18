@@ -103,8 +103,26 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
                                     .value(FieldValue.of(docId)))));
             log.info("Deleted vectors for doc {} from index {}", docId, collectionName);
         } catch (Exception e) {
+            // 幂等语义：索引不存在视为删除成功（无事可删）。
+            // 触发场景：手工清索引后重跑 ingestion；新 KB 首次写入前（chunk mode 不走 ensureVectorSpace）。
+            if (isIndexNotFound(e)) {
+                log.info("Skip delete vectors for doc {}: index {} does not exist yet (idempotent)", docId, collectionName);
+                return;
+            }
             throw new RuntimeException("Failed to delete vectors for doc: " + docId, e);
         }
+    }
+
+    /** 判断异常链中是否含 OpenSearch 的 index_not_found_exception。*/
+    private static boolean isIndexNotFound(Throwable t) {
+        while (t != null) {
+            String msg = t.getMessage();
+            if (msg != null && msg.contains("index_not_found")) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 
     @Override
