@@ -177,3 +177,28 @@ curl -X PUT http://localhost:9201/_search/pipeline/ragent-hybrid-search-pipeline
 **CLAUDE.md 更新**：`extra_data` 读写路径分工（query Gson / merge-write MUST Jackson）、`@Data @Builder` 对 Jackson 需 `@NoArgsConstructor @AllArgsConstructor`、`PromptTemplateUtils.fillSlots` 工具链入 rag 域表。
 
 **follow-ups 新增**：OBS-1（✅ 已完成核心）/ OBS-2（TTL 实测已传，降为一致性）/ OBS-3（`sendEvent(FINISH)` 未包 try/catch 的 taskManager 泄漏窗口，pre-existing 本 PR 放大）。
+
+---
+
+## 2026-04-18 | RBAC 解耦 + 检索侧授权加固（10 PR + 3 hotfix）
+
+详情：[`2026-04-18-rbac-decoupling-authz-hardening.md`](./2026-04-18-rbac-decoupling-authz-hardening.md)
+团队回顾：[`../../docs/dev/follow-up/2026-04-18-rbac-refactor-retrospective.md`](../../docs/dev/follow-up/2026-04-18-rbac-refactor-retrospective.md)
+
+**核心改动**：
+- **接口隔离**：`KbAccessService` 22 方法上帝对象拆为 7 个 framework port（`AccessScope` / `CurrentUserProbe` / `KbReadAccessPort` / `KbManageAccessPort` / `UserAdminGuard` / `SuperAdminInvariantGuard` / `KbAccessCacheAdmin` + `KbMetadataReader` / `SuperAdminMutationIntent`），同一 impl 实现多端口；老接口 `@Deprecated` 保留（47 调用点延后分批迁移）。
+- **反向依赖消灭**：`KbMetadataReader` port 放 framework，impl 放 knowledge 域，`KbAccessServiceImpl` 删 `KnowledgeBaseMapper` / `KnowledgeDocumentMapper` 两字段；9 处跨域查询收敛到 port（含 `listAllKbIds` / `listKbIdsByDeptId` / `filterExistingKbIds` / `filterKbIdsByDept` 等集合能力）。
+- **写路径签名加固**：`VectorStoreService.indexDocumentChunks` / `updateChunk` 新增 `kbId + securityLevel` 参数，7 处调用点同批改；OpenSearch mapping 声明 `kb_id: keyword`；`IngestionContext` 扩同名字段；`IndexerNode.insertRows` 的 JsonObject round-trip 丢 metadata 问题消除。
+- **检索侧单一真相源**：`AccessScope` 从 `RAGChatServiceImpl` 入口贯通到 channels；`SearchContext.accessibleKbIds` 字段一次性删除，顺手修未登录态 `null ≡ SUPER_ADMIN` 老 bug。
+- **纵深防御**：`AuthzPostProcessor(order=0)` 按 kbId 白名单 + `security_level` ceiling + `kbId==null` 三重 fail-closed；ERROR 日志触发即意味着 retriever 过滤失效。
+- **`MetadataFilterBuilder` 抽 bean**：`MultiChannelRetrievalEngine.buildMetadataFilters` static 方法销毁，3 处调用迁到注入 bean。
+- **3 个 hotfix**：(1) `deleteDocumentVectors` 对 `index_not_found` 幂等；(2) CHUNK-mode 补 `ensureVectorSpace`（原只在 PIPELINE + KB 创建调）；(3) `KnowledgeDocumentServiceImpl.update` 的 `chunk_config` jsonb typeHandler 绕过修复（hybrid updateById + wrapper 清 null）。
+- 14 commit，~1900 insertions / ~340 deletions（含 plan + 执行笔记 ~1500 行文档）。
+
+**用户感知**：🟢 编辑文档元数据不再 500（hotfix #3）；🔴 部署前 OpenSearch 索引必须清库重建（老 chunk 缺 `kb_id` 会被 AuthzPostProcessor 全丢）；⚪ 有权问答 chunk 集合完全一致。
+
+**Plan 缺口**：实际 7 处写路径调用（plan 说 6）、`syncChunkToVector` 2 个调用者（plan 说 1）、`VectorChunk.metadata` 字段已存在（plan step 0.5a 空操作）、`MultiChannelRetrievalEngine` `KbAccessService` 注入不能删（plan 过简），全部记入执行笔记。
+
+**CLAUDE.md 建议增补**：`VectorStoreService` 签名约定；`@TableField(typeHandler)` 仅 entity-based CRUD 生效的 jsonb 更新风险；清 OS 索引后的恢复契约（幂等 delete + auto ensureVectorSpace + 老 chunk fail-closed）；`AuthzPostProcessor` ERROR 日志意味着索引漂移。
+
+**遗留 follow-ups**：FU-1 调用点迁移 47 点（P1）/ FU-2 密级强一致补偿（P1）/ FU-3 缓存失效事件化（P2）/ FU-4 非 OpenSearch 后端硬拒（P2）/ FU-5 opscobtest1 的 3 文档重分块（P0 运维）。
