@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "rag.vector.type", havingValue = "milvus", matchIfMissing = true)
+@ConditionalOnProperty(name = "rag.vector.type", havingValue = "milvus", matchIfMissing = false)
 public class MilvusRetrieverService implements RetrieverService {
 
     private final EmbeddingService embeddingService;
