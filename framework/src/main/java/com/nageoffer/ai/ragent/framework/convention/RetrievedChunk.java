@@ -51,4 +51,17 @@ public class RetrievedChunk {
      * 数值越大表示与查询的相关性越高
      */
     private Float score;
+
+    /**
+     * 所属知识库 ID（从 OpenSearch metadata.kb_id 回填）。
+     * 授权后置处理器 {@code AuthzPostProcessor} 使用，null 视为 fail-closed。
+     * 非 OpenSearch 后端（Milvus/Pg）当前不回填，由下游 fail-close 兜底。
+     */
+    private String kbId;
+
+    /**
+     * 文档安全等级（从 OpenSearch metadata.security_level 回填）。
+     * 授权后置处理器使用；null 表示不做等级过滤（系统态/老数据）。
+     */
+    private Integer securityLevel;
 }

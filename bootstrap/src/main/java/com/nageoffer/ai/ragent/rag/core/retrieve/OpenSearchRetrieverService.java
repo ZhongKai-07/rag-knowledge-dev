@@ -260,10 +260,28 @@ public class OpenSearchRetrieverService implements RetrieverService {
                 ? Math.min(((Number) rawScore).floatValue(), 1.0f)
                 : 0f;
 
+        String kbId = null;
+        Integer securityLevel = null;
+        if (source != null) {
+            Object meta = source.get("metadata");
+            if (meta instanceof Map<?, ?> metaMap) {
+                Object kb = metaMap.get("kb_id");
+                if (kb != null && !kb.toString().isBlank()) {
+                    kbId = kb.toString();
+                }
+                Object sl = metaMap.get("security_level");
+                if (sl instanceof Number n) {
+                    securityLevel = n.intValue();
+                }
+            }
+        }
+
         return RetrievedChunk.builder()
                 .id(id)
                 .text(content)
                 .score(score)
+                .kbId(kbId)
+                .securityLevel(securityLevel)
                 .build();
     }
 

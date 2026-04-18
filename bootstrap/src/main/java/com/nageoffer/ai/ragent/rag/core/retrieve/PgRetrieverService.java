@@ -50,6 +50,7 @@ public class PgRetrieverService implements RetrieverService {
         jdbcTemplate.execute("SET hnsw.ef_search = 200");
 
         String vectorLiteral = toVectorLiteral(vector);
+        // Pg dev-only: kbId/securityLevel 不回填, AuthzPostProcessor 会在认证会话中 fail-close。
         // noinspection SqlDialectInspection,SqlNoDataSourceInspection
         return jdbcTemplate.query("SELECT id, content, 1 - ((embedding <=> ?::vector) / 2) AS score FROM t_knowledge_vector WHERE metadata->>'collection_name' = ? ORDER BY embedding <=> ?::vector LIMIT ?",
                 (rs, rowNum) -> RetrievedChunk.builder()
