@@ -38,7 +38,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
-import com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
