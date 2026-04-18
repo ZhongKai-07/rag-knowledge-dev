@@ -160,19 +160,7 @@ public class BaiLianRerankClient implements RerankClient {
                 score = item.get("relevance_score").getAsFloat();
             }
 
-            RetrievedChunk hit;
-            if (score != null) {
-                // 保留 src 的 kbId/securityLevel, 以免 rerank 后 AuthzPostProcessor 兜底失去授权字段
-                hit = RetrievedChunk.builder()
-                        .id(src.getId())
-                        .text(src.getText())
-                        .score(score)
-                        .kbId(src.getKbId())
-                        .securityLevel(src.getSecurityLevel())
-                        .build();
-            } else {
-                hit = src;
-            }
+            RetrievedChunk hit = (score != null) ? src.toBuilder().score(score).build() : src;
 
             reranked.add(hit);
 
