@@ -32,14 +32,29 @@ import java.util.Set;
 public sealed interface AccessScope
         permits AccessScope.All, AccessScope.Ids {
 
+    /**
+     * 指定 kbId 是否在当前访问范围内。{@code null} 视为无效 KB, 一律 fail-closed。
+     */
+    boolean allows(String kbId);
+
     /** 全量放行（SUPER_ADMIN 或系统态）。*/
-    record All() implements AccessScope {}
+    record All() implements AccessScope {
+        @Override
+        public boolean allows(String kbId) {
+            return kbId != null;
+        }
+    }
 
     /**
      * 仅允许指定 KB ID 集合。
      * 空集表示无权限（未登录 / 无任何授权 KB）。
      */
-    record Ids(Set<String> kbIds) implements AccessScope {}
+    record Ids(Set<String> kbIds) implements AccessScope {
+        @Override
+        public boolean allows(String kbId) {
+            return kbId != null && kbIds.contains(kbId);
+        }
+    }
 
     static AccessScope all() {
         return new All();

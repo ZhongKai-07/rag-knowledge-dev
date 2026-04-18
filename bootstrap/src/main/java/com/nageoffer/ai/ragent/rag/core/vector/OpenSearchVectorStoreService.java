@@ -235,8 +235,8 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
         }
 
         // 授权关键字段以入参为准，显式覆盖，防止 chunk.metadata 里的同名值误传
-        metadata.put("kb_id", kbId != null ? kbId : "");
-        metadata.put("security_level", securityLevel != null ? securityLevel : 0);
+        metadata.put(VectorMetadataFields.KB_ID, kbId != null ? kbId : "");
+        metadata.put(VectorMetadataFields.SECURITY_LEVEL, securityLevel != null ? securityLevel : 0);
 
         Map<String, Object> doc = new LinkedHashMap<>();
         doc.put("id", chunk.getChunkId());

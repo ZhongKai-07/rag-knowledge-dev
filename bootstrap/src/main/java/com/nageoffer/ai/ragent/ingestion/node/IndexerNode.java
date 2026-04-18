@@ -32,6 +32,7 @@ import com.nageoffer.ai.ragent.ingestion.domain.context.IngestionContext;
 import com.nageoffer.ai.ragent.ingestion.domain.enums.IngestionNodeType;
 import com.nageoffer.ai.ragent.ingestion.domain.pipeline.NodeConfig;
 import com.nageoffer.ai.ragent.ingestion.domain.result.NodeResult;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorMetadataFields;
 import com.nageoffer.ai.ragent.ingestion.domain.settings.IndexerSettings;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
@@ -238,9 +239,9 @@ public class IndexerNode implements IngestionNode {
             }
 
             // 写入 security_level（从 context.metadata 读取，缺省为 0 = PUBLIC）
-            Object rawSecurityLevel = mergedMetadata.get("security_level");
+            Object rawSecurityLevel = mergedMetadata.get(VectorMetadataFields.SECURITY_LEVEL);
             int securityLevel = (rawSecurityLevel instanceof Number num) ? num.intValue() : 0;
-            metadata.addProperty("security_level", securityLevel);
+            metadata.addProperty(VectorMetadataFields.SECURITY_LEVEL, securityLevel);
 
             if (metadataFields != null && !metadataFields.isEmpty()) {
                 Map<String, Object> combined = new HashMap<>(mergedMetadata);

@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.rag.core.retrieve;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
 import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorMetadataFields;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -265,11 +266,11 @@ public class OpenSearchRetrieverService implements RetrieverService {
         if (source != null) {
             Object meta = source.get("metadata");
             if (meta instanceof Map<?, ?> metaMap) {
-                Object kb = metaMap.get("kb_id");
+                Object kb = metaMap.get(VectorMetadataFields.KB_ID);
                 if (kb != null && !kb.toString().isBlank()) {
                     kbId = kb.toString();
                 }
-                Object sl = metaMap.get("security_level");
+                Object sl = metaMap.get(VectorMetadataFields.SECURITY_LEVEL);
                 if (sl instanceof Number n) {
                     securityLevel = n.intValue();
                 }

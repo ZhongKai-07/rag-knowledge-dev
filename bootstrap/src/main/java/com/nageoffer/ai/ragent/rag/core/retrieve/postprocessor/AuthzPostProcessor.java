@@ -64,19 +64,19 @@ public class AuthzPostProcessor implements SearchResultPostProcessor {
                                         List<SearchChannelResult> results,
                                         SearchContext context) {
         AccessScope scope = context.getAccessScope();
-        int before = chunks.size();
-
         List<RetrievedChunk> filtered = chunks.stream()
                 .filter(chunk -> isAllowed(chunk, scope, context))
                 .collect(Collectors.toList());
 
-        int dropped = before - filtered.size();
-        if (dropped > 0) {
-            log.error("AuthzPostProcessor dropped {} chunks – retriever filter failure detected. " +
-                            "Scope type: {}",
-                    dropped,
-                    scope == null ? "null" : scope.getClass().getSimpleName());
+        int dropped = chunks.size() - filtered.size();
+        if (dropped == 0) {
+            // 正常路径: retriever 已过滤干净, 避免返回新 list 拷贝
+            return chunks;
         }
+        log.error("AuthzPostProcessor dropped {} chunks – retriever filter failure detected. " +
+                        "Scope type: {}",
+                dropped,
+                scope == null ? "null" : scope.getClass().getSimpleName());
         return filtered;
     }
 
@@ -90,11 +90,9 @@ public class AuthzPostProcessor implements SearchResultPostProcessor {
             return false;
         }
 
-        // Rule 2: Ids scope 白名单检查 (All scope 全量放行)
-        if (scope instanceof AccessScope.Ids ids) {
-            if (!ids.kbIds().contains(kbId)) {
-                return false;
-            }
+        // Rule 2: 白名单检查 (All scope 对非空 kbId 全放行, Ids 查集合)
+        if (scope == null || !scope.allows(kbId)) {
+            return false;
         }
 
         // Rule 3: security_level 天花板检查

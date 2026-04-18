@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.knowledge.mq;
 
 import com.nageoffer.ai.ragent.framework.mq.MessageWrapper;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorMetadataFields;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,7 @@ public class KnowledgeDocumentSecurityLevelRefreshConsumer
         vectorStoreService.updateChunksMetadata(
                 event.getCollectionName(),
                 event.getDocId(),
-                Map.of("security_level", event.getNewSecurityLevel())
+                Map.of(VectorMetadataFields.SECURITY_LEVEL, event.getNewSecurityLevel())
         );
         log.info("[消费者] security_level 刷新完成: docId={}", event.getDocId());
     }

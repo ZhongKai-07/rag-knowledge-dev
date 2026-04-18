@@ -161,17 +161,12 @@ public class IntentDirectedSearchChannel implements SearchChannel {
                 .filter(ns -> ns.getNode() != null && ns.getNode().isKB())
                 .filter(ns -> ns.getScore() >= minScore)
                 .toList();
-        // RBAC filter: AccessScope.All 全量放行; Ids 场景仅保留 kbId 在集合内的意图
+        // RBAC filter: 仅保留 scope 放行的 kbId. null kbId 的 KB 意图视为配置错误并剔除,
+        // 避免对用户无权限的 collection 发起检索(query-level 信息泄漏).
         AccessScope scope = context.getAccessScope();
-        if (scope instanceof AccessScope.Ids ids) {
-            kbIntents = kbIntents.stream()
-                    .filter(ns -> {
-                        String kbId = ns.getNode().getKbId();
-                        return kbId == null || ids.kbIds().contains(kbId);
-                    })
-                    .toList();
-        }
-        return kbIntents;
+        return kbIntents.stream()
+                .filter(ns -> scope.allows(ns.getNode().getKbId()))
+                .toList();
     }
 
     /**

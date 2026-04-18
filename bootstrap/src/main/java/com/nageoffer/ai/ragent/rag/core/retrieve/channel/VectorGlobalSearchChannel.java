@@ -160,17 +160,9 @@ public class VectorGlobalSearchChannel implements SearchChannel {
      * 获取所有可访问的 KB（受 RBAC 约束）
      */
     private List<KnowledgeBaseDO> getAccessibleKBs(SearchContext context) {
-        List<KnowledgeBaseDO> kbs = knowledgeBaseMapper.selectList(
-                Wrappers.lambdaQuery(KnowledgeBaseDO.class));
         AccessScope scope = context.getAccessScope();
-        if (scope instanceof AccessScope.Ids ids) {
-            // 空集 = fail-closed; 非空则仅保留集合内的 KB
-            kbs = kbs.stream()
-                    .filter(kb -> ids.kbIds().contains(kb.getId()))
-                    .toList();
-        }
-        // AccessScope.All 不过滤
-        return kbs.stream()
+        return knowledgeBaseMapper.selectList(Wrappers.lambdaQuery(KnowledgeBaseDO.class)).stream()
+                .filter(kb -> scope.allows(kb.getId()))
                 .filter(kb -> kb.getCollectionName() != null && !kb.getCollectionName().isBlank())
                 .toList();
     }

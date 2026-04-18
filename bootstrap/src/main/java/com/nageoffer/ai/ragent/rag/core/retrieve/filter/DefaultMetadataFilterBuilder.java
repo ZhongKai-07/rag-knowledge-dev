@@ -19,33 +19,30 @@ package com.nageoffer.ai.ragent.rag.core.retrieve.filter;
 
 import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorMetadataFields;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
  * 默认实现：按 kb 查表 security_level，生成 LTE_OR_MISSING 过滤条件。
- * 迁自 MultiChannelRetrievalEngine.buildMetadataFilters（static 方法）。
  */
 @Component
 public class DefaultMetadataFilterBuilder implements MetadataFilterBuilder {
 
-    private static final String SECURITY_LEVEL_FIELD = "security_level";
-
     @Override
     public List<MetadataFilter> build(SearchContext ctx, String kbId) {
-        List<MetadataFilter> filters = new ArrayList<>();
         if (kbId == null || ctx.getKbSecurityLevels() == null) {
-            return filters;
+            return Collections.emptyList();
         }
         Integer level = ctx.getKbSecurityLevels().get(kbId);
-        if (level != null) {
-            filters.add(new MetadataFilter(
-                    SECURITY_LEVEL_FIELD,
-                    MetadataFilter.FilterOp.LTE_OR_MISSING,
-                    level));
+        if (level == null) {
+            return Collections.emptyList();
         }
-        return filters;
+        return List.of(new MetadataFilter(
+                VectorMetadataFields.SECURITY_LEVEL,
+                MetadataFilter.FilterOp.LTE_OR_MISSING,
+                level));
     }
 }
