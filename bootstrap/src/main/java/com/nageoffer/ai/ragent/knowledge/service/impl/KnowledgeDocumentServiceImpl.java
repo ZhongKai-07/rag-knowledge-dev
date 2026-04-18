@@ -70,6 +70,8 @@ import com.nageoffer.ai.ragent.knowledge.service.KnowledgeChunkService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentScheduleService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.rag.dto.StoredFileDTO;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
@@ -105,6 +107,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final ChunkingStrategyFactory chunkingStrategyFactory;
     private final FileStorageService fileStorageService;
     private final VectorStoreService vectorStoreService;
+    private final VectorStoreAdmin vectorStoreAdmin;
     private final KnowledgeChunkService knowledgeChunkService;
     private final ObjectMapper objectMapper;
     private final KnowledgeDocumentScheduleService scheduleService;
@@ -263,6 +266,14 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private int persistChunksAndVectorsAtomically(String collectionName, String docId,
                                                    String kbId, Integer securityLevel,
                                                    List<VectorChunk> chunkResults) {
+        // 确保 OpenSearch 索引存在且 mapping 正确（幂等）。
+        // CHUNK mode 不经 IndexerNode → 索引可能因 KB 创建后被外部删除 / 首次写入未声明 mapping 导致 auto-create 用 dynamic schema。
+        // 放在事务外：ensure 是 OS 侧副作用，本来就不归 DB tx 管；失败时应直接终止，不污染 DB。
+        vectorStoreAdmin.ensureVectorSpace(VectorSpaceSpec.builder()
+                .spaceId(VectorSpaceId.builder().logicalName(collectionName).build())
+                .remark("RAG向量存储空间")
+                .build());
+
         List<KnowledgeChunkCreateRequest> chunks = chunkResults.stream()
                 .map(vc -> {
                     KnowledgeChunkCreateRequest req = new KnowledgeChunkCreateRequest();
