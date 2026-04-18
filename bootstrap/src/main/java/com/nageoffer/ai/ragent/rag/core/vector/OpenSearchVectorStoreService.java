@@ -40,7 +40,9 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
     private final OpenSearchClient client;
 
     @Override
-    public void indexDocumentChunks(String collectionName, String docId, List<VectorChunk> chunks) {
+    public void indexDocumentChunks(String collectionName, String docId,
+                                    String kbId, Integer securityLevel,
+                                    List<VectorChunk> chunks) {
         if (chunks == null || chunks.isEmpty()) {
             return;
         }
@@ -50,7 +52,7 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
 
             for (VectorChunk chunk : chunks) {
                 String chunkId = chunk.getChunkId();
-                Map<String, Object> doc = buildDocument(collectionName, docId, chunk);
+                Map<String, Object> doc = buildDocument(collectionName, docId, kbId, securityLevel, chunk);
 
                 bulkBuilder.operations(op -> op
                         .index(idx -> idx
@@ -75,9 +77,11 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
     }
 
     @Override
-    public void updateChunk(String collectionName, String docId, VectorChunk chunk) {
+    public void updateChunk(String collectionName, String docId,
+                            String kbId, Integer securityLevel,
+                            VectorChunk chunk) {
         try {
-            Map<String, Object> doc = buildDocument(collectionName, docId, chunk);
+            Map<String, Object> doc = buildDocument(collectionName, docId, kbId, securityLevel, chunk);
             client.index(i -> i
                     .index(collectionName)
                     .id(chunk.getChunkId())
@@ -196,7 +200,9 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
         return sb.toString();
     }
 
-    private Map<String, Object> buildDocument(String collectionName, String docId, VectorChunk chunk) {
+    private Map<String, Object> buildDocument(String collectionName, String docId,
+                                               String kbId, Integer securityLevel,
+                                               VectorChunk chunk) {
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("collection_name", collectionName);
         metadata.put("doc_id", docId);
@@ -209,6 +215,10 @@ public class OpenSearchVectorStoreService implements VectorStoreService {
                 }
             });
         }
+
+        // 授权关键字段以入参为准，显式覆盖，防止 chunk.metadata 里的同名值误传
+        metadata.put("kb_id", kbId != null ? kbId : "");
+        metadata.put("security_level", securityLevel != null ? securityLevel : 0);
 
         Map<String, Object> doc = new LinkedHashMap<>();
         doc.put("id", chunk.getChunkId());

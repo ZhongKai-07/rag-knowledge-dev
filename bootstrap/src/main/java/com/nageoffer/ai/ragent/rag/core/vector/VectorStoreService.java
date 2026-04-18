@@ -32,18 +32,26 @@ public interface VectorStoreService {
      *
      * @param collectionName 向量空间名称（知识库 collectionName）
      * @param docId          文档唯一标识
+     * @param kbId           所属知识库 ID（写入 metadata.kb_id；null 时写入空字符串，AuthzPostProcessor 会 fail-closed drop）
+     * @param securityLevel  文档安全等级 0-3（写入 metadata.security_level；null 时兜底为 0）
      * @param chunks         文档切片列表，须包含已计算好的 embedding
      */
-    void indexDocumentChunks(String collectionName, String docId, List<VectorChunk> chunks);
+    void indexDocumentChunks(String collectionName, String docId,
+                             String kbId, Integer securityLevel,
+                             List<VectorChunk> chunks);
 
     /**
      * 更新单个 chunk 的向量索引
      *
      * @param collectionName 向量空间名称（知识库 collectionName）
      * @param docId          文档唯一标识
+     * @param kbId           所属知识库 ID（写入 metadata.kb_id）
+     * @param securityLevel  文档安全等级 0-3（写入 metadata.security_level；null 时兜底为 0）
      * @param chunk          待更新的文档切片，须包含最新的 embedding
      */
-    void updateChunk(String collectionName, String docId, VectorChunk chunk);
+    void updateChunk(String collectionName, String docId,
+                     String kbId, Integer securityLevel,
+                     VectorChunk chunk);
 
     /**
      * 删除文档的所有向量索引

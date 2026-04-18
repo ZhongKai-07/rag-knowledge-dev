@@ -143,7 +143,13 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                 .setSql("chunk_count = chunk_count + 1"));
 
         // 同步写入向量库
-        syncChunkToVector(collectionName, docId, chunkDO, embeddingModel);
+        syncChunkToVector(
+                collectionName,
+                docId,
+                documentDO.getKbId(),
+                documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                chunkDO,
+                embeddingModel);
 
         return BeanUtil.toBean(chunkDO, KnowledgeChunkVO.class);
     }
@@ -230,7 +236,12 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                     .toList();
             if (CollUtil.isNotEmpty(vectorChunks)) {
                 attachEmbeddings(vectorChunks, embeddingModel);
-                vectorStoreService.indexDocumentChunks(collectionName, docId, vectorChunks);
+                vectorStoreService.indexDocumentChunks(
+                        collectionName,
+                        docId,
+                        kbId,
+                        documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                        vectorChunks);
             }
         }
     }
@@ -272,6 +283,8 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         vectorStoreService.updateChunk(
                 collectionName,
                 docId,
+                documentDO.getKbId(),
+                documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
                 VectorChunk.builder()
                         .chunkId(chunkId)
                         .content(newContent)
@@ -339,7 +352,13 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
 
         if (enabled) {
             String embeddingModel = kbDO.getEmbeddingModel();
-            syncChunkToVector(collectionName, docId, chunkDO, embeddingModel);
+            syncChunkToVector(
+                    collectionName,
+                    docId,
+                    documentDO.getKbId(),
+                    documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                    chunkDO,
+                    embeddingModel);
         } else {
             deleteChunkFromVector(collectionName, chunkId);
         }
@@ -409,7 +428,12 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                                 .set(KnowledgeChunkDO::getEnabled, 1)
                                 .set(KnowledgeChunkDO::getUpdatedBy, UserContext.getUsername())
                 );
-                vectorStoreService.indexDocumentChunks(collectionName, docId, vectorChunks);
+                vectorStoreService.indexDocumentChunks(
+                        collectionName,
+                        docId,
+                        documentDO.getKbId(),
+                        documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                        vectorChunks);
             });
         } else {
             transactionOperations.executeWithoutResult(status -> {
@@ -480,9 +504,12 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     }
 
     /**
-     * 将单个 chunk 同步到向量库
+     * 将单个 chunk 同步到向量库。
+     * kbId 和 securityLevel 必须由调用方从 documentDO 解析后传入，不在此处兜底。
      */
-    private void syncChunkToVector(String collectionName, String docId, KnowledgeChunkDO chunkDO, String embeddingModel) {
+    private void syncChunkToVector(String collectionName, String docId,
+                                    String kbId, Integer securityLevel,
+                                    KnowledgeChunkDO chunkDO, String embeddingModel) {
         List<Float> embedding = embedContent(chunkDO.getContent(), embeddingModel);
         float[] vector = toArray(embedding);
 
@@ -492,7 +519,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                 .chunkId(String.valueOf(chunkDO.getId()))
                 .embedding(vector)
                 .build();
-        vectorStoreService.indexDocumentChunks(collectionName, docId, List.of(chunk));
+        vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, List.of(chunk));
 
         log.debug("同步 Chunk 到向量库成功, collectionName={}, docId={}, chunkId={}", collectionName, docId, chunkDO.getId());
     }

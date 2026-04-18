@@ -159,6 +159,8 @@ public class IngestionTaskServiceImpl implements IngestionTaskService {
                 .build();
         taskMapper.insert(task);
 
+        // 独立 ingestion 任务不与 KB 文档关联，kbId 为 null → AuthzPostProcessor 在 authenticated session 下 fail-closed。
+        // securityLevel 默认 0（PUBLIC）。如后续需要让独立任务的 chunk 对某 KB 可见，应在 API 层接收 kbId 参数。
         IngestionContext context = IngestionContext.builder()
                 .taskId(String.valueOf(task.getId()))
                 .pipelineId(resolvedPipelineId)
@@ -166,6 +168,8 @@ public class IngestionTaskServiceImpl implements IngestionTaskService {
                 .rawBytes(rawBytes)
                 .mimeType(mimeType)
                 .vectorSpaceId(vectorSpaceId)
+                .kbId(null)
+                .securityLevel(0)
                 .logs(new ArrayList<>())
                 .build();
 

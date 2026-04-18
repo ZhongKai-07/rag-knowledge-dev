@@ -53,7 +53,11 @@ public class MilvusVectorStoreService implements VectorStoreService {
     private final RAGDefaultProperties ragDefaultProperties;
 
     @Override
-    public void indexDocumentChunks(String collectionName, String docId, List<VectorChunk> chunks) {
+    public void indexDocumentChunks(String collectionName, String docId,
+                                    String kbId, Integer securityLevel,
+                                    List<VectorChunk> chunks) {
+        // TODO kbId/securityLevel ignored – Milvus is non-OpenSearch backend, dev-only.
+        //      AuthzPostProcessor fail-closes chunks with kbId==null in authenticated sessions.
         Assert.isFalse(chunks == null || chunks.isEmpty(), () -> new ClientException("文档分块不允许为空"));
 
         final int dim = ragDefaultProperties.getDimension();
@@ -89,7 +93,10 @@ public class MilvusVectorStoreService implements VectorStoreService {
     }
 
     @Override
-    public void updateChunk(String collectionName, String docId, VectorChunk chunk) {
+    public void updateChunk(String collectionName, String docId,
+                            String kbId, Integer securityLevel,
+                            VectorChunk chunk) {
+        // TODO kbId/securityLevel ignored – Milvus is non-OpenSearch backend, dev-only.
         Assert.isFalse(chunk == null, () -> new ClientException("Chunk 对象不能为空"));
 
         final int dim = ragDefaultProperties.getDimension();

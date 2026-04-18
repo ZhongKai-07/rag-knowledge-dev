@@ -236,7 +236,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
             long persistStart = System.currentTimeMillis();
             String collectionName = resolveCollectionName(documentDO.getKbId());
-            int savedCount = persistChunksAndVectorsAtomically(collectionName, docId, chunkResults);
+            int savedCount = persistChunksAndVectorsAtomically(
+                    collectionName,
+                    docId,
+                    documentDO.getKbId(),
+                    documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                    chunkResults);
             persistDuration = System.currentTimeMillis() - persistStart;
 
             long totalDuration = System.currentTimeMillis() - totalStartTime;
@@ -255,7 +260,9 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         }
     }
 
-    private int persistChunksAndVectorsAtomically(String collectionName, String docId, List<VectorChunk> chunkResults) {
+    private int persistChunksAndVectorsAtomically(String collectionName, String docId,
+                                                   String kbId, Integer securityLevel,
+                                                   List<VectorChunk> chunkResults) {
         List<KnowledgeChunkCreateRequest> chunks = chunkResults.stream()
                 .map(vc -> {
                     KnowledgeChunkCreateRequest req = new KnowledgeChunkCreateRequest();
@@ -269,7 +276,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             knowledgeChunkService.deleteByDocId(docId);
             knowledgeChunkService.batchCreate(docId, chunks);
             vectorStoreService.deleteDocumentVectors(collectionName, docId);
-            vectorStoreService.indexDocumentChunks(collectionName, docId, chunkResults);
+            vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, chunkResults);
             KnowledgeDocumentDO updateDocumentDO = KnowledgeDocumentDO.builder()
                     .id(docId)
                     .chunkCount(chunks.size())
@@ -367,6 +374,8 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 .vectorSpaceId(VectorSpaceId.builder()
                         .logicalName(kbDO.getCollectionName())
                         .build())
+                .kbId(documentDO.getKbId())
+                .securityLevel(documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0)
                 .skipIndexerWrite(true)
                 .build();
 
@@ -693,7 +702,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             if (!enabled) {
                 vectorStoreService.deleteDocumentVectors(collectionName, docId);
             } else {
-                vectorStoreService.indexDocumentChunks(collectionName, docId, finalVectorChunks);
+                vectorStoreService.indexDocumentChunks(
+                        collectionName,
+                        docId,
+                        documentDO.getKbId(),
+                        documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
+                        finalVectorChunks);
             }
         });
     }
