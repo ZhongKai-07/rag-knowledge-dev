@@ -21,11 +21,11 @@ import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.core.intent.IntentNode;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
 import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;
-import com.nageoffer.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieveRequest;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.AbstractParallelRetriever;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -39,14 +39,17 @@ import java.util.concurrent.Executor;
 public class IntentParallelRetriever extends AbstractParallelRetriever<IntentParallelRetriever.IntentTask> {
 
     private final RetrieverService retrieverService;
+    private final MetadataFilterBuilder metadataFilterBuilder;
 
     public record IntentTask(NodeScore nodeScore, int intentTopK, List<MetadataFilter> metadataFilters) {
     }
 
     public IntentParallelRetriever(RetrieverService retrieverService,
+                                   MetadataFilterBuilder metadataFilterBuilder,
                                    Executor executor) {
         super(executor);
         this.retrieverService = retrieverService;
+        this.metadataFilterBuilder = metadataFilterBuilder;
     }
 
     /**
@@ -61,7 +64,7 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
                 .map(nodeScore -> new IntentTask(
                         nodeScore,
                         resolveIntentTopK(nodeScore, fallbackTopK, topKMultiplier),
-                        MultiChannelRetrievalEngine.buildMetadataFilters(
+                        metadataFilterBuilder.build(
                                 context, nodeScore.getNode().getKbId())))
                 .toList();
         return super.executeParallelRetrieval(question, intentTasks, fallbackTopK);

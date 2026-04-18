@@ -24,6 +24,7 @@ import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
 
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy.IntentParallelRetriever;
+import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -47,9 +48,11 @@ public class IntentDirectedSearchChannel implements SearchChannel {
 
     public IntentDirectedSearchChannel(RetrieverService retrieverService,
                                        SearchChannelProperties properties,
+                                       MetadataFilterBuilder metadataFilterBuilder,
                                        @Qualifier("ragInnerRetrievalThreadPoolExecutor") Executor ragInnerRetrievalExecutor) {
         this.properties = properties;
-        this.parallelRetriever = new IntentParallelRetriever(retrieverService, ragInnerRetrievalExecutor);
+        this.parallelRetriever = new IntentParallelRetriever(
+                retrieverService, metadataFilterBuilder, ragInnerRetrievalExecutor);
     }
 
     @Override

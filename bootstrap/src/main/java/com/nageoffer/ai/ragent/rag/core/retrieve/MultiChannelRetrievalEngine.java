@@ -27,6 +27,7 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
@@ -35,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Collections;
 import java.util.List;
@@ -64,6 +64,7 @@ public class MultiChannelRetrievalEngine {
     private final RetrieverService retrieverService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KbAccessService kbAccessService;
+    private final MetadataFilterBuilder metadataFilterBuilder;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
 
@@ -90,7 +91,7 @@ public class MultiChannelRetrievalEngine {
                     .query(context.getMainQuestion())
                     .topK(topK)
                     .collectionName(kb.getCollectionName())
-                    .metadataFilters(buildMetadataFilters(context, knowledgeBaseId))
+                    .metadataFilters(metadataFilterBuilder.build(context, knowledgeBaseId))
                     .build();
             List<RetrievedChunk> chunks = retrieverService.retrieve(req);
 
@@ -269,21 +270,4 @@ public class MultiChannelRetrievalEngine {
                 .build();
     }
 
-    /**
-     * 构建元数据过滤条件（按 KB 查表得到安全等级）。
-     */
-    public static List<MetadataFilter> buildMetadataFilters(SearchContext ctx, String kbId) {
-        List<MetadataFilter> filters = new ArrayList<>();
-        if (kbId == null || ctx.getKbSecurityLevels() == null) {
-            return filters;
-        }
-        Integer level = ctx.getKbSecurityLevels().get(kbId);
-        if (level != null) {
-            filters.add(new MetadataFilter(
-                    "security_level",
-                    MetadataFilter.FilterOp.LTE_OR_MISSING,
-                    level));
-        }
-        return filters;
-    }
 }

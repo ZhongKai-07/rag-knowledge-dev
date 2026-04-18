@@ -24,9 +24,9 @@ import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.rag.config.SearchChannelProperties;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
-import com.nageoffer.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.strategy.CollectionParallelRetriever;
+import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -47,13 +47,16 @@ public class VectorGlobalSearchChannel implements SearchChannel {
     private final SearchChannelProperties properties;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final CollectionParallelRetriever parallelRetriever;
+    private final MetadataFilterBuilder metadataFilterBuilder;
 
     public VectorGlobalSearchChannel(RetrieverService retrieverService,
                                      SearchChannelProperties properties,
                                      KnowledgeBaseMapper knowledgeBaseMapper,
+                                     MetadataFilterBuilder metadataFilterBuilder,
                                      @Qualifier("ragInnerRetrievalThreadPoolExecutor") Executor innerRetrievalExecutor) {
         this.properties = properties;
         this.knowledgeBaseMapper = knowledgeBaseMapper;
+        this.metadataFilterBuilder = metadataFilterBuilder;
         this.parallelRetriever = new CollectionParallelRetriever(retrieverService, innerRetrievalExecutor);
     }
 
@@ -178,7 +181,7 @@ public class VectorGlobalSearchChannel implements SearchChannel {
         List<CollectionParallelRetriever.CollectionTask> tasks = kbs.stream()
                 .map(kb -> new CollectionParallelRetriever.CollectionTask(
                         kb.getCollectionName(),
-                        MultiChannelRetrievalEngine.buildMetadataFilters(context, kb.getId())))
+                        metadataFilterBuilder.build(context, kb.getId())))
                 .toList();
         return parallelRetriever.executeParallelRetrieval(question, tasks, topK);
     }
