@@ -48,9 +48,9 @@ const buildEmptyForm = (): SysDeptCreatePayload => ({
 });
 
 /**
- * P2.1: 权限中心 Tab 4 「部门组织」（仅 SUPER；可见性由 AccessCenterPage superOnly 过滤）。
- * 数据源：/access/departments/tree —— 一次调用获得 userCount + kbCount + roleCount 三项。
- * CRUD 继续走现有 /sys-dept 接口（GLOBAL / 引用计数校验由后端硬保护）。
+ * 权限中心 Tab 4 「部门组织」（仅 SUPER；可见性由 AccessCenterPage 上游过滤）。
+ * 数据源：/access/departments/tree —— 一次调用获得 userCount/kbCount/roleCount。
+ * CRUD 继续走现有 /sys-dept 接口（GLOBAL 硬保护 + 引用计数 409 由后端承担）。
  */
 export function DepartmentsTab() {
   const [depts, setDepts] = useState<AccessDeptNode[]>([]);

@@ -21,10 +21,7 @@ interface Props {
   onConfirm: () => Promise<void> | void;
 }
 
-/**
- * P1.5d: 删除角色前显示影响面预览（设计文档 §5.3）。
- * preview 来自 GET /role/{id}/delete-preview (P0.2)。
- */
+/** 删除角色前显示影响面预览（GET /role/{id}/delete-preview）。 */
 export function RoleDeleteConfirmDialog({ roleId, roleName, onOpenChange, onConfirm }: Props) {
   const open = roleId !== null;
   const [loading, setLoading] = useState(false);

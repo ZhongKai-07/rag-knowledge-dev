@@ -44,25 +44,15 @@ export function SharingPage() {
     (async () => {
       setLoading(true);
       try {
-        // Tab 2 规则（设计 §4.2）：共享下拉范围 = 全部角色（含其他部门），
-        // 由 KB 所属部门 admin 决策。走 /access/roles 拿到 deptId/deptName 以便 ⚡ 徽章使用。
+        // Sharing 下拉范围 = 全部角色（含跨部门）；由 KB 所属部门 admin 决策。
+        // /access/roles 携带 deptId/deptName，供 ⚡ 跨部门徽章使用。
         const [kbList, accessRoles] = await Promise.all([
           getKnowledgeBases(1, 200),
           listAccessRoles({ includeGlobal: true }),
         ]);
         if (cancelled) return;
         setKbs(kbList);
-        // 复用 RoleItem 形状（deptId/deptName 已在类型中可选）
-        const roles: RoleItem[] = accessRoles.map((r) => ({
-          id: r.id,
-          name: r.name,
-          description: r.description ?? null,
-          roleType: r.roleType,
-          maxSecurityLevel: r.maxSecurityLevel,
-          deptId: r.deptId ?? null,
-          deptName: r.deptName ?? null,
-        }));
-        setAllRoles(roles);
+        setAllRoles(accessRoles);
         const bindingsEntries = await Promise.all(
           kbList.map(async (kb) => {
             try {

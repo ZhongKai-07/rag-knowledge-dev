@@ -47,6 +47,19 @@ import { useAccessScope } from "../hooks/useAccessScope";
 import { OrgTree } from "../components/OrgTree";
 import { RoleDeleteConfirmDialog } from "../components/RoleDeleteConfirmDialog";
 
+/**
+ * 权限中心 Tab 3 「角色管理」
+ * 左 30%：OrgTree（部门树 + roleCount）
+ * 右 70%：所选部门下的角色列表 + 选中角色详情（users / kbs usage）
+ *
+ * 写权限矩阵：
+ * - SUPER 全部可 CRUD（含 GLOBAL 节点）；SUPER_ADMIN 行永久禁止 edit/delete。
+ * - DEPT_ADMIN：仅本部门节点可 CRUD；GLOBAL / 其他部门只读。
+ */
+
+// Mirrors backend SysDeptServiceImpl.GLOBAL_DEPT_ID. Same value is hard-coded
+// in init_data_pg.sql for the 全局部门 row; changing one without the others
+// silently breaks role visibility.
 const GLOBAL_DEPT_ID = "1";
 const ROLE_TYPE_OPTIONS = [
   { value: "DEPT_ADMIN", label: "DEPT_ADMIN（部门管理员）" },
@@ -60,16 +73,6 @@ const emptyForm = (): RoleCreatePayload => ({
   maxSecurityLevel: 0,
   deptId: null,
 });
-
-/**
- * P1.5d: 权限中心 Tab 3 「角色管理」
- * 左 30%：OrgTree（部门树 + roleCount）
- * 右 70%：所选部门下的角色列表 + 选中角色详情（users / kbs usage）
- *
- * 写权限（设计文档 §5.3）：
- *  - SUPER 全部可 CRUD；包括 GLOBAL 节点
- *  - DEPT_ADMIN：仅本部门节点可 CRUD；GLOBAL + 其他部门只读
- */
 export function RolesTab() {
   const scope = useAccessScope();
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(

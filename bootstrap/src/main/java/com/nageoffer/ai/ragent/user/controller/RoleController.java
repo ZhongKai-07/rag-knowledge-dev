@@ -81,8 +81,6 @@ public class RoleController {
         return Results.success(roleService.getRoleDeletePreview(roleId));
     }
 
-    // P2.2: GET /role 已删除（30 天观察期满）。新代码一律走 GET /access/roles。
-
     @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}/knowledge-bases")
     public Result<Void> setRoleKnowledgeBases(

@@ -58,12 +58,12 @@ public class KnowledgeBaseVO {
     private String createdBy;
 
     /**
-     * 所属部门 ID（sys_dept.id；@Data 的 BeanUtil.toBean 会从 DO 拷贝同名字段）
+     * 所属部门 ID（sys_dept.id）
      */
     private String deptId;
 
     /**
-     * 所属部门名称（服务层 enrich，需额外查 sys_dept）
+     * 所属部门名称
      */
     private String deptName;
 

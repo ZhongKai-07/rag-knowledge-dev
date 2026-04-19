@@ -1,10 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import { useAccessScope } from "../hooks/useAccessScope";
 
-/**
- * P1.5a: 权限中心顶部公用 Banner（4 Tab 共享）。
- * 设计文档 §3.1。
- */
+/** 权限中心顶部公用 Banner（4 Tab 共享）：当前身份 + 管理范围。 */
 export function AccessBanner() {
   const scope = useAccessScope();
   return (

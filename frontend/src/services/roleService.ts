@@ -6,7 +6,6 @@ export interface RoleItem {
   roleType: string;
   maxSecurityLevel: number;
   deptId?: string | null;
-  /** 仅 /access/roles 返回体会填；旧 /role 只返回 deptId */
   deptName?: string | null;
   description?: string | null;
   createTime?: string | null;
@@ -27,7 +26,7 @@ export interface RoleKbBinding {
   maxSecurityLevel?: number;
 }
 
-// 角色 CRUD（GET /role 已于 P2.2 删除，列表一律走 /access/roles）
+// 角色列表走 /access/roles；此处只保留写操作与关联 CRUD。
 export async function createRole(payload: RoleCreatePayload): Promise<string> {
   return api.post<string, string>("/role", payload);
 }

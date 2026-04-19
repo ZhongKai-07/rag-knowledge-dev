@@ -3,10 +3,9 @@ import { createElement } from "react";
 import { usePermissions } from "@/utils/permissions";
 
 /**
- * P1.5a: 权限中心的 scope 上下文。
- * <p>
- * 决议 D10：不调 {@code /access/scope} 接口，直接从 {@code authStore.user}（经
- * {@code usePermissions}）派生。未来 P3 上"SUPER 代入部门视角"时再重新评估。
+ * 权限中心的 scope 上下文。
+ * 直接从 authStore.user 派生（经 usePermissions），不引入独立的 /access/scope
+ * 接口；若日后上线"SUPER 代入部门视角"功能，再替换此 Provider 的数据源。
  */
 export interface AccessScope {
   isSuperAdmin: boolean;

@@ -61,11 +61,12 @@ import { OrgTree } from "../components/OrgTree";
 const PAGE_SIZE = 50;
 
 /**
- * P1.5b: 权限中心 Tab 1 「团队成员」
+ * 权限中心 Tab 1 「团队成员」
  * - 左 30%：OrgTree（部门树）+ 部门下成员列表
  * - 右 70%：选中成员详情 + 已分配角色 + 因角色可访问的 KB
  *
- * 设计文档 §5.1；D5 不对称规则由 listAccessRoles(deptId, includeGlobal=true) 自然满足。
+ * 不对称规则：Tab 1 分配角色下拉 = 本部门 + GLOBAL（由 listAccessRoles 的 deptId
+ * 参数驱动）。共享（Tab 2）则取全部角色。
  */
 export function MembersTab() {
   const scope = useAccessScope();
@@ -112,9 +113,25 @@ export function MembersTab() {
   );
 
   useEffect(() => {
-    loadUsers(selectedDeptId, keyword);
+    let cancelled = false;
+    setUsersLoading(true);
+    getUsersPage(1, PAGE_SIZE, keyword || undefined, selectedDeptId ?? undefined)
+      .then((page) => {
+        if (!cancelled) setUsers(page.records || []);
+      })
+      .catch((err) => {
+        if (!cancelled) toast.error(getErrorMessage(err, "加载成员失败"));
+      })
+      .finally(() => {
+        if (!cancelled) setUsersLoading(false);
+      });
     setSelectedUserId(null);
-  }, [selectedDeptId, loadUsers]);
+    return () => {
+      cancelled = true;
+    };
+    // keyword changes are handled by handleSearch() calling loadUsers directly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDeptId]);
 
   const loadDetail = useCallback(async (userId: string) => {
     try {
@@ -138,13 +155,38 @@ export function MembersTab() {
   }, []);
 
   useEffect(() => {
-    if (selectedUserId) {
-      loadDetail(selectedUserId);
-    } else {
+    if (!selectedUserId) {
       setUserRolesState([]);
       setUserKbGrants([]);
+      return;
     }
-  }, [selectedUserId, loadDetail]);
+    let cancelled = false;
+    setDetailLoading(true);
+    Promise.all([
+      getUserRoles(selectedUserId),
+      getUserKbGrants(selectedUserId).catch((err) => {
+        if (isRbacRejection(err)) return [] as UserKbGrant[];
+        throw err;
+      }),
+    ])
+      .then(([roles, grants]) => {
+        if (cancelled) return;
+        setUserRolesState(roles);
+        setUserKbGrants(grants);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        toast.error(getErrorMessage(err, "加载成员详情失败"));
+        setUserRolesState([]);
+        setUserKbGrants([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDetailLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedUserId]);
 
   const handleSearch = () => loadUsers(selectedDeptId, keyword);
 
@@ -310,7 +352,7 @@ export function MembersTab() {
                 </div>
                 <div className="flex gap-2">
                   {canManageSelected && (
-                    <Button variant="outline" size="sm" disabled title="P1.5b 暂不开放；请至用户管理页">
+                    <Button variant="outline" size="sm" disabled title="暂不开放">
                       <Key className="mr-1.5 h-3.5 w-3.5" />
                       重置密码
                     </Button>
@@ -542,20 +584,29 @@ function AssignRolesDialog({
 
   useEffect(() => {
     if (!open) return;
+    let cancelled = false;
     setLoading(true);
-    // D5 不对称规则：Tab 1 分配的角色范围 = 本部门 + GLOBAL
-    // DEPT_ADMIN 分配时只看本部门；SUPER 分配时传用户所属部门（派生）
+    // Seed selection on rising edge only; later re-renders of the parent must
+    // not overwrite in-progress checkbox edits.
+    setSelected(new Set(currentRoles.map((r) => r.id)));
     const targetDeptId = scope.isSuperAdmin ? user.deptId : scope.deptId;
     listAccessRoles({ deptId: targetDeptId, includeGlobal: true })
       .then((rs) => {
-        setCandidates(rs);
-        setSelected(new Set(currentRoles.map((r) => r.id)));
+        if (!cancelled) setCandidates(rs);
       })
       .catch((err) => {
-        toast.error(getErrorMessage(err, "加载角色失败"));
+        if (!cancelled) toast.error(getErrorMessage(err, "加载角色失败"));
       })
-      .finally(() => setLoading(false));
-  }, [open, user.deptId, scope.isSuperAdmin, scope.deptId, currentRoles]);
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally omit currentRoles: it's a parent-owned array whose reference
+    // changes on every render and would both refetch roles and stomp selections.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user.deptId, scope.isSuperAdmin, scope.deptId]);
 
   const toggle = (id: string) => {
     const next = new Set(selected);

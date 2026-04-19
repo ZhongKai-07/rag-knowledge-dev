@@ -1,6 +1,6 @@
 import { api } from "./api";
 
-/** P1.3a: /access/roles 返回体 */
+/** GET /access/roles 返回体 */
 export interface AccessRole {
   id: string;
   name: string;
@@ -11,7 +11,7 @@ export interface AccessRole {
   deptName?: string | null;
 }
 
-/** P1.3b: /access/users/{id}/kb-grants 返回体 */
+/** GET /access/users/{id}/kb-grants 返回体 */
 export interface UserKbGrant {
   kbId: string;
   kbName: string;
@@ -26,7 +26,7 @@ export interface UserKbGrant {
   implicit: boolean;
 }
 
-/** P1.3c: /access/roles/{id}/usage 返回体 */
+/** GET /access/roles/{id}/usage 返回体 */
 export interface RoleUsage {
   roleId: string;
   roleName: string;
@@ -49,7 +49,7 @@ export interface RoleUsage {
   }>;
 }
 
-/** P1.3d: /access/departments/tree 返回体（复用 SysDeptVO，带三项 count） */
+/** GET /access/departments/tree 返回体（复用 SysDeptVO + 三项 count） */
 export interface AccessDeptNode {
   id: string;
   deptCode: string;
@@ -88,7 +88,7 @@ export async function getDepartmentsTree(): Promise<AccessDeptNode[]> {
   return api.get<AccessDeptNode[], AccessDeptNode[]>("/access/departments/tree");
 }
 
-/** P0.2 /role/{id}/delete-preview 返回体 */
+/** GET /role/{id}/delete-preview 返回体 */
 export interface RoleDeletePreview {
   roleId: string;
   roleName: string;
