@@ -141,6 +141,8 @@ src/
 - **品牌名**：应用名称是 "HT KnowledgeBase"（不是 "Ragent"），影响 `index.html` title、`.env` 中 `VITE_APP_NAME`、`Sidebar.tsx`、`AdminLayout.tsx`。
 - **`KnowledgeChunksPage.tsx` 实际是文档详情页**：路由 `knowledge/:kbId/docs/:docId` 指向它（`router.tsx:124-125`），不是分块管理页。`KnowledgeDocumentsPage.tsx` 才是按 KB 分组的文档列表页。写涉及"文档详情"的改动时，改 `KnowledgeChunksPage.tsx`。
 - **Sidebar 在 `components/layout/Sidebar.tsx`**：不是 `components/chat/Sidebar.tsx`（后者不存在）。管理后台入口按钮（"管理后台"）用 `permissions.canSeeAdminMenu` 判断（约第 429 行）。
+- **chrome-devtools MCP "browser already running"**：上一次会话 Chrome 没干净退出（残留进程锁着 `~/.cache/chrome-devtools-mcp/chrome-profile`），`new_page` / `list_pages` 都会报错。修复：`powershell Stop-Process -Name chrome -Force` 后重试；会话被硬中断后几乎每次都会遇到。
+- **`tsc` 本地运行优先走 `node_modules/.bin/tsc --noEmit`**：`npx tsc` 在这个仓库偶尔会落到全局版 tsc 并报 "This is not the tsc command you are looking for" 同时 exit 0，看起来通过实际没跑。`npm run build`（走 vite）或 `.bin/tsc` 直调都能稳定检出类型错误。
 
 ## 权限层（PR3 新增）
 
