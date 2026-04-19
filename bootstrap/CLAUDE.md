@@ -106,6 +106,7 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 - **`t_knowledge_base` 没有 `description` 列**：schema_pg.sql 里只有 `id / name / embedding_model / collection_name / created_by / updated_by / dept_id`。`embedding_model` 和 `created_by` 是 NOT NULL 无默认。写 INSERT 或 fixture 时必须提供这两个字段，且不要尝试插入 `description`。
 - **`t_user_role.id` 和 `t_role_kb_relation.id` 是显式主键**：`VARCHAR(20) NOT NULL PRIMARY KEY`，无自动生成（不同于 `@TableId(type=ASSIGN_ID)` 的 Java 层雪花 ID）。手写 SQL INSERT 时必须显式提供 `id` 值，否则 NOT NULL 违反。
 - **Controller 参数注解必须写显式名称**：`@RequestParam("name") String name`、`@PathVariable("id") String id` — 禁止省略名称依赖参数名推断（IntelliJ 本地跑正常，`mvn` 命令行会报 `IllegalArgumentException`）。同类型多 Bean 时构造函数参数必须加 `@Qualifier("beanName")`，不能依赖 Lombok `@RequiredArgsConstructor` 自动推断。
+- **测试里给 `@Value` 字段注值用 `ReflectionTestUtils.setField`**：`spring-boot-starter-test` 已带 `spring-test`，直接 `import org.springframework.test.util.ReflectionTestUtils`，不要手写 `field.setAccessible(true)` + `throws Exception`。
 
 ## 数据库访问
 
