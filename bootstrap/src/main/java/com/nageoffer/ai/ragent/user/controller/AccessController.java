@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.user.controller;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
+import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 import com.nageoffer.ai.ragent.user.service.AccessService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
@@ -70,5 +71,15 @@ public class AccessController {
         kbAccessService.checkAnyAdminAccess();
         kbAccessService.checkUserManageAccess(userId);
         return Results.success(accessService.listUserKbGrants(userId));
+    }
+
+    /**
+     * P1.3c: 角色使用情况 — 该角色挂载了哪些用户 + 共享给了哪些 KB。供 Tab 3 角色详情面板 +
+     * 删除确认对话框用。任何 admin 均可查看。
+     */
+    @GetMapping("/roles/{roleId}/usage")
+    public Result<RoleUsageVO> getRoleUsage(@PathVariable("roleId") String roleId) {
+        kbAccessService.checkAnyAdminAccess();
+        return Results.success(accessService.getRoleUsage(roleId));
     }
 }

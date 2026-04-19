@@ -22,7 +22,9 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nageoffer.ai.ragent.framework.context.Permission;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
+import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
@@ -46,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -268,6 +271,44 @@ class AccessServiceImplTest {
         assertEquals("MANAGE", out.get(0).getPermission());
         assertEquals("MANAGE", out.get(0).getExplicitPermission());
         assertEquals(2, out.get(0).getSourceRoleIds().size());
+    }
+
+    // ---------- P1.3c: getRoleUsage ----------
+
+    @Test
+    void getRoleUsage_returnsUsersAndKbsWithDeptNames() {
+        String roleId = "r1";
+        when(roleMapper.selectById(roleId)).thenReturn(
+                RoleDO.builder().id(roleId).name("OPS admin").roleType("DEPT_ADMIN").deptId("dept-ops").build());
+        when(sysDeptMapper.selectById("dept-ops")).thenReturn(
+                SysDeptDO.builder().id("dept-ops").deptName("Operation").build());
+        when(userRoleMapper.selectList(any())).thenReturn(List.of(
+                UserRoleDO.builder().userId("u1").roleId(roleId).build()));
+        when(userMapper.selectList(any())).thenReturn(List.of(
+                UserDO.builder().id("u1").username("opsadmin").deptId("dept-ops").build()));
+        when(roleKbRelationMapper.selectList(any())).thenReturn(List.of(
+                RoleKbRelationDO.builder().roleId(roleId).kbId("kb1").permission("MANAGE").maxSecurityLevel(3).build()));
+        when(knowledgeBaseMapper.selectList(any())).thenReturn(List.of(
+                KnowledgeBaseDO.builder().id("kb1").name("OPS-COB").deptId("dept-ops").build()));
+        when(sysDeptMapper.selectList(any())).thenReturn(List.of(
+                SysDeptDO.builder().id("dept-ops").deptName("Operation").build()));
+
+        RoleUsageVO out = service.getRoleUsage(roleId);
+
+        assertEquals("OPS admin", out.getRoleName());
+        assertEquals("Operation", out.getDeptName());
+        assertEquals(1, out.getUsers().size());
+        assertEquals("opsadmin", out.getUsers().get(0).getUsername());
+        assertEquals("Operation", out.getUsers().get(0).getDeptName());
+        assertEquals(1, out.getKbs().size());
+        assertEquals("MANAGE", out.getKbs().get(0).getPermission());
+        assertEquals(3, out.getKbs().get(0).getMaxSecurityLevel());
+    }
+
+    @Test
+    void getRoleUsage_missingRoleThrows() {
+        when(roleMapper.selectById("nope")).thenReturn(null);
+        assertThrows(ClientException.class, () -> service.getRoleUsage("nope"));
     }
 
     private static void initTableInfo(Class<?> entityClass) {

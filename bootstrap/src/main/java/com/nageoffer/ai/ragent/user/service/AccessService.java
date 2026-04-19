@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.user.service;
 
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
+import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 
 import java.util.List;
@@ -52,4 +53,7 @@ public interface AccessService {
      * </ol>
      */
     List<UserKbGrantVO> listUserKbGrants(String userId);
+
+    /** P1.3c: 角色使用情况 —— 挂载该角色的用户 + 共享给该角色的 KB */
+    RoleUsageVO getRoleUsage(String roleId);
 }

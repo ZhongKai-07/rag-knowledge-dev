@@ -24,6 +24,7 @@ import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
+import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
@@ -188,6 +189,87 @@ public class AccessServiceImpl implements AccessService {
                     .build());
         }
         return out;
+    }
+
+    @Override
+    public RoleUsageVO getRoleUsage(String roleId) {
+        RoleDO role = roleMapper.selectById(roleId);
+        if (role == null) {
+            throw new ClientException("角色不存在");
+        }
+
+        String roleDeptName = null;
+        if (role.getDeptId() != null && !role.getDeptId().isBlank()) {
+            SysDeptDO dept = sysDeptMapper.selectById(role.getDeptId());
+            if (dept != null) roleDeptName = dept.getDeptName();
+        }
+
+        // 持有该角色的用户
+        List<UserRoleDO> userRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getRoleId, roleId));
+        Set<String> userIds = userRoles.stream().map(UserRoleDO::getUserId).collect(Collectors.toSet());
+        List<UserDO> users = userIds.isEmpty()
+                ? Collections.emptyList()
+                : userMapper.selectList(Wrappers.lambdaQuery(UserDO.class).in(UserDO::getId, userIds));
+
+        Set<String> userDeptIds = users.stream()
+                .map(UserDO::getDeptId).filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toSet());
+
+        // 共享到的 KB
+        List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
+        Set<String> kbIds = relations.stream().map(RoleKbRelationDO::getKbId).collect(Collectors.toSet());
+        List<KnowledgeBaseDO> kbs = kbIds.isEmpty()
+                ? Collections.emptyList()
+                : knowledgeBaseMapper.selectList(Wrappers.lambdaQuery(KnowledgeBaseDO.class).in(KnowledgeBaseDO::getId, kbIds));
+        Set<String> kbDeptIds = kbs.stream()
+                .map(KnowledgeBaseDO::getDeptId).filter(id -> id != null && !id.isBlank())
+                .collect(Collectors.toSet());
+
+        // 一次性拿所有相关部门名
+        Set<String> allDeptIds = new HashSet<>();
+        allDeptIds.addAll(userDeptIds);
+        allDeptIds.addAll(kbDeptIds);
+        Map<String, String> deptNameById = allDeptIds.isEmpty()
+                ? Collections.emptyMap()
+                : sysDeptMapper.selectList(Wrappers.lambdaQuery(SysDeptDO.class).in(SysDeptDO::getId, allDeptIds))
+                        .stream().collect(Collectors.toMap(SysDeptDO::getId, SysDeptDO::getDeptName));
+
+        List<RoleUsageVO.UserRef> userRefs = users.stream()
+                .map(u -> RoleUsageVO.UserRef.builder()
+                        .userId(u.getId())
+                        .username(u.getUsername())
+                        .deptId(u.getDeptId())
+                        .deptName(deptNameById.get(u.getDeptId()))
+                        .build())
+                .toList();
+
+        Map<String, RoleKbRelationDO> relationByKb = relations.stream()
+                .collect(Collectors.toMap(RoleKbRelationDO::getKbId, r -> r));
+        List<RoleUsageVO.KbRef> kbRefs = kbs.stream()
+                .map(kb -> {
+                    RoleKbRelationDO rel = relationByKb.get(kb.getId());
+                    return RoleUsageVO.KbRef.builder()
+                            .kbId(kb.getId())
+                            .kbName(kb.getName())
+                            .deptId(kb.getDeptId())
+                            .deptName(deptNameById.get(kb.getDeptId()))
+                            .permission(rel != null ? rel.getPermission() : null)
+                            .maxSecurityLevel(rel != null ? rel.getMaxSecurityLevel() : null)
+                            .build();
+                })
+                .toList();
+
+        return RoleUsageVO.builder()
+                .roleId(role.getId())
+                .roleName(role.getName())
+                .roleType(role.getRoleType())
+                .deptId(role.getDeptId())
+                .deptName(roleDeptName)
+                .users(userRefs)
+                .kbs(kbRefs)
+                .build();
     }
 
     /** READ &lt; WRITE &lt; MANAGE — 取更高权限（null 兜底成 READ） */
