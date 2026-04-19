@@ -202,3 +202,14 @@ curl -X PUT http://localhost:9201/_search/pipeline/ragent-hybrid-search-pipeline
 **CLAUDE.md 建议增补**：`VectorStoreService` 签名约定；`@TableField(typeHandler)` 仅 entity-based CRUD 生效的 jsonb 更新风险；清 OS 索引后的恢复契约（幂等 delete + auto ensureVectorSpace + 老 chunk fail-closed）；`AuthzPostProcessor` ERROR 日志意味着索引漂移。
 
 **遗留 follow-ups**：FU-1 调用点迁移 47 点（P1）/ FU-2 密级强一致补偿（P1）/ FU-3 缓存失效事件化（P2）/ FU-4 非 OpenSearch 后端硬拒（P2）/ FU-5 opscobtest1 的 3 文档重分块（P0 运维）。
+
+---
+
+## 2026-04-19 | KB 删除级联回收
+
+详情：[`2026-04-19-kb-delete-cascade.md`](./2026-04-19-kb-delete-cascade.md)
+
+**核心改动**：
+- `FileStorageService` 增加 `ensureBucket` / `deleteBucket`，`S3FileStorageService` 收拢 bucket 生命周期管理。
+- `VectorStoreAdmin` 增加 `dropVectorSpace`，OpenSearch 支持幂等删除，Milvus/Pg 明确标记不支持生产删除。
+- `KnowledgeBaseServiceImpl.delete()` 增加 role-KB 解绑、事务后回收 OpenSearch index / S3 bucket，并补齐删除单测与缓存失效测试。

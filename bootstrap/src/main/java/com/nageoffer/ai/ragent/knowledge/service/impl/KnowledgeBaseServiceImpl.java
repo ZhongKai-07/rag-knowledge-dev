@@ -37,16 +37,16 @@ import com.nageoffer.ai.ragent.framework.exception.ServiceException;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
+import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
-import software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException;
 
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +63,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final VectorStoreAdmin vectorStoreAdmin;
-    private final S3Client s3Client;
+    private final FileStorageService fileStorageService;
     private final KbAccessService kbAccessService;
 
     @Transactional
@@ -106,17 +106,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         knowledgeBaseMapper.insert(kbDO);
 
         String bucketName = requestParam.getCollectionName();
-        try {
-            s3Client.createBucket(builder -> builder.bucket(bucketName));
-            log.info("成功创建RestFS存储桶，Bucket名称: {}", bucketName);
-        } catch (BucketAlreadyOwnedByYouException | BucketAlreadyExistsException e) {
-            if (e instanceof BucketAlreadyOwnedByYouException) {
-                log.error("RestFS存储桶已存在，Bucket名称: {}", bucketName, e);
-            } else {
-                log.error("RestFS存储桶已存在但由其他账户拥有，Bucket名称: {}", bucketName, e);
-            }
-            throw new ServiceException("存储桶名称已被占用：" + bucketName);
-        }
+        fileStorageService.ensureBucket(bucketName);
 
         VectorSpaceSpec spaceSpec = VectorSpaceSpec.builder()
                 .spaceId(VectorSpaceId.builder()
@@ -210,6 +200,36 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         kbDO.setDeleted(1);
         kbDO.setUpdatedBy(UserContext.getUsername());
         knowledgeBaseMapper.deleteById(kbDO);
+        int unbound = kbAccessService.unbindAllRolesFromKb(kbId);
+        log.info("KB 软删 + role-KB 解绑完成, kbId={}, unbound={}", kbId, unbound);
+
+        String collectionName = kbDO.getCollectionName();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    cleanupExternalResources(kbId, collectionName);
+                }
+            });
+            return;
+        }
+        cleanupExternalResources(kbId, collectionName);
+    }
+
+    private void cleanupExternalResources(String kbId, String collectionName) {
+        try {
+            vectorStoreAdmin.dropVectorSpace(
+                    VectorSpaceId.builder().logicalName(collectionName).build());
+            log.info("KB 向量空间已删除, kbId={}, collection={}", kbId, collectionName);
+        } catch (Exception ex) {
+            log.error("KB 向量空间删除失败（需运维介入）, kbId={}, collection={}", kbId, collectionName, ex);
+        }
+        try {
+            fileStorageService.deleteBucket(collectionName);
+            log.info("KB 存储桶已删除, kbId={}, bucket={}", kbId, collectionName);
+        } catch (Exception ex) {
+            log.error("KB 存储桶删除失败（需运维介入）, kbId={}, bucket={}", kbId, collectionName, ex);
+        }
     }
 
     @Override

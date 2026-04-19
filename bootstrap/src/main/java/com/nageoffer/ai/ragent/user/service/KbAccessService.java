@@ -78,6 +78,12 @@ public interface KbAccessService {
     void evictCache(String userId);
 
     /**
+     * 删除 t_role_kb_relation 里所有 kb_id=? 的行，并失效涉及的缓存。
+     * 返回删除的绑定数。不存在绑定视为成功（返回 0）。
+     */
+    int unbindAllRolesFromKb(String kbId);
+
+    /**
      * 获取用户对指定 KB 的最高安全等级。
      * <ul>
      *   <li>SUPER_ADMIN → 3</li>
