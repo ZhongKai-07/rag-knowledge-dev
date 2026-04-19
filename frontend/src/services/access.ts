@@ -87,3 +87,31 @@ export async function getRoleUsage(roleId: string): Promise<RoleUsage> {
 export async function getDepartmentsTree(): Promise<AccessDeptNode[]> {
   return api.get<AccessDeptNode[], AccessDeptNode[]>("/access/departments/tree");
 }
+
+/** P0.2 /role/{id}/delete-preview 返回体 */
+export interface RoleDeletePreview {
+  roleId: string;
+  roleName: string;
+  affectedUsers: Array<{
+    userId: string;
+    username: string;
+    deptId?: string | null;
+    deptName?: string | null;
+  }>;
+  affectedKbs: Array<{
+    kbId: string;
+    kbName: string;
+    deptId?: string | null;
+    deptName?: string | null;
+  }>;
+  userKbDiff: Array<{
+    userId: string;
+    username: string;
+    lostKbIds: string[];
+    lostKbNames: string[];
+  }>;
+}
+
+export async function getRoleDeletePreview(roleId: string): Promise<RoleDeletePreview> {
+  return api.get<RoleDeletePreview, RoleDeletePreview>(`/role/${roleId}/delete-preview`);
+}
