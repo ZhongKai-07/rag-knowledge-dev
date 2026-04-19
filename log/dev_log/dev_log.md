@@ -213,3 +213,4 @@ curl -X PUT http://localhost:9201/_search/pipeline/ragent-hybrid-search-pipeline
 - `FileStorageService` 增加 `ensureBucket` / `deleteBucket`，`S3FileStorageService` 收拢 bucket 生命周期管理。
 - `VectorStoreAdmin` 增加 `dropVectorSpace`，OpenSearch 支持幂等删除，Milvus/Pg 明确标记不支持生产删除。
 - `KnowledgeBaseServiceImpl.delete()` 增加 role-KB 解绑、事务后回收 OpenSearch index / S3 bucket，并补齐删除单测与缓存失效测试。
+- `t_knowledge_base.uk_collection_name` 调整为 `(collection_name, deleted)`，新增 `upgrade_v1.4_to_v1.5.sql`，修复“软删后无法重建同 collectionName KB”的预存 schema 缺陷。
