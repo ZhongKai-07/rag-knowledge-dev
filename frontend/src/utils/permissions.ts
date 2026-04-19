@@ -15,9 +15,10 @@ export type AdminMenuId =
   | "sample-questions"
   | "roles"
   | "sharing"
+  | "access"
   | "settings";
 
-const DEPT_VISIBLE: AdminMenuId[] = ["dashboard", "knowledge", "users", "roles", "sharing"];
+const DEPT_VISIBLE: AdminMenuId[] = ["dashboard", "knowledge", "users", "roles", "sharing", "access"];
 
 export interface Permissions {
   isSuperAdmin: boolean;

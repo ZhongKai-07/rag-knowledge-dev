@@ -151,6 +151,12 @@ const menuGroups: MenuGroup[] = [
     title: "设置",
     items: [
       {
+        menuId: "access",
+        path: "/admin/access",
+        label: "权限中心",
+        icon: ShieldCheck
+      },
+      {
         menuId: "users",
         path: "/admin/users",
         label: "用户管理",
@@ -204,6 +210,7 @@ const breadcrumbMap: Record<string, string> = {
   users: "用户管理",
   roles: "角色管理",
   sharing: "共享管理",
+  access: "权限中心",
   departments: "部门管理"
 };
 
