@@ -22,6 +22,7 @@ com.nageoffer.ai.ragent.framework/
 ├── exception/       ← 三层异常体系
 ├── idempotent/      ← 幂等性注解与切面（提交 + 消费）
 ├── mq/              ← 消息包装器
+├── security/port/   ← 权限端口（9 个接口）：KbReadAccessPort / KbManageAccessPort / KbMetadataReader / CurrentUserProbe / UserAdminGuard / SuperAdminInvariantGuard / KbAccessCacheAdmin + sealed AccessScope / SuperAdminMutationIntent
 ├── trace/           ← 链路追踪上下文（TransmittableThreadLocal）
 └── web/             ← 全局异常处理、Result 工厂、SSE 工具
 ```

@@ -43,6 +43,9 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `RAGChatServiceImpl` | 问答主编排：记忆→改写→意图→检索→生成 |
 | `RetrievalEngine` | 多通道检索引擎（并行执行各检索通道） |
 | `MultiChannelRetrievalEngine` | 意图导向 + 全局向量检索并行去重重排 |
+| `AuthzPostProcessor` | 检索后置纵深防御（order=0）：`kbId==null` / `AccessScope` / `security_level` 天花板三重 fail-closed；命中即 ERROR 日志 |
+| `MetadataFilterBuilder` | 按 kb 注入 `security_level` 过滤条件的可注入 bean（替代原 static `MultiChannelRetrievalEngine.buildMetadataFilters`）|
+| `VectorMetadataFields` | OpenSearch metadata 字段名常量单一真相源（`KB_ID` / `SECURITY_LEVEL`），避免字面量漂移 |
 | `RAGPromptService` | 根据检索结果和场景构建结构化 Prompt |
 | `PromptTemplateUtils.fillSlots(template, Map)` | `{slot}` 模板填充工具（不要手写 `.replace()` 链） |
 | `VectorStoreService` | 向量存储接口（Milvus/OpenSearch/pgvector 三种实现） |
@@ -82,13 +85,14 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 
 | 类 | 职责 |
 |----|------|
-| `KbAccessService` | RBAC 权限校验（`user→roles→kb_relations` 链） |
+| `KbAccessService` | `@Deprecated` 上帝接口；2026-04-18 RBAC 改造后保留用于 47 调用点分批迁移，新代码直接注入 framework `security/port/` 下的 7 个小 port |
+| `KbAccessServiceImpl` | 同时 implements 全部 7 个 framework security port（`CurrentUserProbe` / `KbReadAccessPort` / `KbManageAccessPort` / `UserAdminGuard` / `SuperAdminInvariantGuard` / `KbAccessCacheAdmin` + `KbMetadataReader` 由 `KbMetadataReaderImpl` 在 knowledge 域实现）|
 | `AuthController` | 登录/登出（Sa-Token） |
 | `RoleService` | 角色-知识库关联管理 |
 | `SysDeptService` | 部门 CRUD（GLOBAL 硬保护 + 删除前引用计数校验） |
 | `SysDeptController` | 部门 REST API（读 AnyAdmin / 写 `@SaCheckRole("SUPER_ADMIN")`） |
 | `UserProfileLoader` | 单次 JOIN 加载用户身份快照（user+dept+roles），不走缓存 |
-| `SuperAdminMutationIntent` | Last-SUPER_ADMIN 不变量的 mutation 语义类型（sealed interface） |
+| ~~`SuperAdminMutationIntent`~~ | ⚠️ 已于 2026-04-18 迁至 `framework.security.port.SuperAdminMutationIntent`，此处不再保留 |
 
 ## 关键 Gotchas
 
