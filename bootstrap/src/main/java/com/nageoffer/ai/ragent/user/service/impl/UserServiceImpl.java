@@ -58,17 +58,21 @@ public class UserServiceImpl implements UserService {
     @Override
     public IPage<UserVO> pageQuery(UserPageRequest requestParam) {
         String keyword = StrUtil.trimToNull(requestParam.getKeyword());
+        String requestedDeptId = StrUtil.trimToNull(requestParam.getDeptId());
         Page<UserDO> page = new Page<>(requestParam.getCurrent(), requestParam.getSize());
         var wrapper = Wrappers.lambdaQuery(UserDO.class)
                 .like(StrUtil.isNotBlank(keyword), UserDO::getUsername, keyword)
                 .orderByDesc(UserDO::getUpdateTime);
 
         if (!kbAccessService.isSuperAdmin() && kbAccessService.isDeptAdmin()) {
-            // DEPT_ADMIN only sees users from their dept
+            // DEPT_ADMIN only sees users from their dept; ignore any inbound deptId.
             LoginUser currentUser = UserContext.get();
             if (currentUser != null && currentUser.getDeptId() != null) {
                 wrapper.eq(UserDO::getDeptId, currentUser.getDeptId());
             }
+        } else if (requestedDeptId != null) {
+            // SUPER_ADMIN can narrow by dept via the new access-center tree navigation (P1.3d).
+            wrapper.eq(UserDO::getDeptId, requestedDeptId);
         }
 
         IPage<UserDO> result = userMapper.selectPage(page, wrapper);

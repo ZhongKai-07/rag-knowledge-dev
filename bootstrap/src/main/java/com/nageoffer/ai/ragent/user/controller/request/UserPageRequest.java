@@ -30,4 +30,9 @@ public class UserPageRequest extends Page {
      * 关键词（支持匹配用户名/角色）
      */
     private String keyword;
+
+    /**
+     * P1.3d: 按部门过滤。null 表示不过滤（沿用旧行为）。
+     */
+    private String deptId;
 }

@@ -19,6 +19,7 @@ package com.nageoffer.ai.ragent.user.service;
 
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
 import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
+import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 
 import java.util.List;
@@ -56,4 +57,12 @@ public interface AccessService {
 
     /** P1.3c: 角色使用情况 —— 挂载该角色的用户 + 共享给该角色的 KB */
     RoleUsageVO getRoleUsage(String roleId);
+
+    /**
+     * P1.3d: 部门"树"，含每节点的 userCount / roleCount / kbCount。
+     * <p>
+     * 当前 schema 中 sys_dept 是平表（无 parent_id），返回按 GLOBAL 优先的扁平列表，
+     * 前端按 id='1' 作为根节点挂载其余为子节点。
+     */
+    List<SysDeptVO> listDepartmentsTree();
 }

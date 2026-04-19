@@ -36,7 +36,9 @@ import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.SysDeptService;
 import com.nageoffer.ai.ragent.user.service.impl.AccessServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +68,7 @@ class AccessServiceImplTest {
     private RoleKbRelationMapper roleKbRelationMapper;
     private KnowledgeBaseMapper knowledgeBaseMapper;
     private KbAccessService kbAccessService;
+    private SysDeptService sysDeptService;
     private AccessServiceImpl service;
 
     @BeforeEach
@@ -82,6 +85,7 @@ class AccessServiceImplTest {
         roleKbRelationMapper = mock(RoleKbRelationMapper.class);
         knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
         kbAccessService = mock(KbAccessService.class);
+        sysDeptService = mock(SysDeptService.class);
         service = new AccessServiceImpl(
                 roleMapper,
                 sysDeptMapper,
@@ -89,7 +93,8 @@ class AccessServiceImplTest {
                 userRoleMapper,
                 roleKbRelationMapper,
                 knowledgeBaseMapper,
-                kbAccessService);
+                kbAccessService,
+                sysDeptService);
     }
 
     /** deptId + includeGlobal 组合：返回本部门角色 + GLOBAL 角色，且 deptName 回填 */
@@ -309,6 +314,24 @@ class AccessServiceImplTest {
     void getRoleUsage_missingRoleThrows() {
         when(roleMapper.selectById("nope")).thenReturn(null);
         assertThrows(ClientException.class, () -> service.getRoleUsage("nope"));
+    }
+
+    // ---------- P1.3d: listDepartmentsTree ordering ----------
+
+    @Test
+    void listDepartmentsTree_globalFirstThenByName() {
+        SysDeptVO ops = new SysDeptVO("2", "OPS", "Operation", 3, 2, 3, null, null, false);
+        SysDeptVO global = new SysDeptVO("1", "GLOBAL", "全局部门", 1, 1, 2, null, null, true);
+        SysDeptVO ficc = new SysDeptVO("3", "FICC", "固定收益部", 1, 0, 1, null, null, false);
+        when(sysDeptService.list(null)).thenReturn(List.of(ops, global, ficc));
+
+        List<SysDeptVO> out = service.listDepartmentsTree();
+
+        assertEquals(3, out.size());
+        assertEquals("1", out.get(0).getId()); // GLOBAL first
+        // 其余按 deptName 升序："Operation" > "固定收益部"（中文 Unicode 码点更高）
+        assertEquals("Operation", out.get(1).getDeptName());
+        assertEquals("固定收益部", out.get(2).getDeptName());
     }
 
     private static void initTableInfo(Class<?> entityClass) {

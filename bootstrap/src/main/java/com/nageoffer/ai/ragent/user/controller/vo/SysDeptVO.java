@@ -34,6 +34,8 @@ public class SysDeptVO {
     private Integer userCount;
     /** 该部门关联的知识库数 */
     private Integer kbCount;
+    /** P1.3d: 该部门归属的角色数 */
+    private Integer roleCount;
     private Date createTime;
     private Date updateTime;
     /** GLOBAL 部门该字段为 true，前端据此禁用编辑/删除按钮 */

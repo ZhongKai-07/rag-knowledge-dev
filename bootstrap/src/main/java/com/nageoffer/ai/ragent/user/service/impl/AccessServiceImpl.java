@@ -25,6 +25,7 @@ import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
 import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
+import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
@@ -38,6 +39,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.AccessService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -61,6 +63,7 @@ public class AccessServiceImpl implements AccessService {
     private final RoleKbRelationMapper roleKbRelationMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KbAccessService kbAccessService;
+    private final SysDeptService sysDeptService;
 
     @Override
     public List<AccessRoleVO> listRoles(String deptId, boolean includeGlobal) {
@@ -270,6 +273,21 @@ public class AccessServiceImpl implements AccessService {
                 .users(userRefs)
                 .kbs(kbRefs)
                 .build();
+    }
+
+    @Override
+    public List<SysDeptVO> listDepartmentsTree() {
+        List<SysDeptVO> depts = sysDeptService.list(null);
+        // GLOBAL（id='1'）排第一，其余按名称稳定排序
+        return depts.stream()
+                .sorted((a, b) -> {
+                    if (SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(a.getId())) return -1;
+                    if (SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(b.getId())) return 1;
+                    String an = a.getDeptName() == null ? "" : a.getDeptName();
+                    String bn = b.getDeptName() == null ? "" : b.getDeptName();
+                    return an.compareTo(bn);
+                })
+                .toList();
     }
 
     /** READ &lt; WRITE &lt; MANAGE — 取更高权限（null 兜底成 READ） */

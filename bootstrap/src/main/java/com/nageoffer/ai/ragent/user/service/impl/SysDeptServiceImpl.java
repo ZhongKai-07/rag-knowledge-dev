@@ -24,8 +24,10 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.controller.request.SysDeptCreateRequest;
 import com.nageoffer.ai.ragent.user.controller.request.SysDeptUpdateRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
+import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
+import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.service.SysDeptService;
@@ -47,6 +49,7 @@ public class SysDeptServiceImpl implements SysDeptService {
     private final SysDeptMapper sysDeptMapper;
     private final UserMapper userMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final RoleMapper roleMapper;
 
     @Override
     public List<SysDeptVO> list(String keyword) {
@@ -166,12 +169,15 @@ public class SysDeptServiceImpl implements SysDeptService {
                 Wrappers.lambdaQuery(UserDO.class).eq(UserDO::getDeptId, dept.getId()));
         Long kbCount = knowledgeBaseMapper.selectCount(
                 Wrappers.lambdaQuery(KnowledgeBaseDO.class).eq(KnowledgeBaseDO::getDeptId, dept.getId()));
+        Long roleCount = roleMapper.selectCount(
+                Wrappers.lambdaQuery(RoleDO.class).eq(RoleDO::getDeptId, dept.getId()));
         return new SysDeptVO(
                 dept.getId(),
                 dept.getDeptCode(),
                 dept.getDeptName(),
                 userCount == null ? 0 : userCount.intValue(),
                 kbCount == null ? 0 : kbCount.intValue(),
+                roleCount == null ? 0 : roleCount.intValue(),
                 dept.getCreateTime(),
                 dept.getUpdateTime(),
                 GLOBAL_DEPT_ID.equals(dept.getId())

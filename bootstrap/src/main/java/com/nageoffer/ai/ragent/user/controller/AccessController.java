@@ -21,6 +21,7 @@ import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
 import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
+import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 import com.nageoffer.ai.ragent.user.service.AccessService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
@@ -81,5 +82,15 @@ public class AccessController {
     public Result<RoleUsageVO> getRoleUsage(@PathVariable("roleId") String roleId) {
         kbAccessService.checkAnyAdminAccess();
         return Results.success(accessService.getRoleUsage(roleId));
+    }
+
+    /**
+     * P1.3d: 部门"树"（GLOBAL 优先 + 其余按名称排序），每节点含 userCount / roleCount / kbCount。
+     * Tab 1 / Tab 3 / Tab 4 共用。
+     */
+    @GetMapping("/departments/tree")
+    public Result<List<SysDeptVO>> getDepartmentsTree() {
+        kbAccessService.checkAnyAdminAccess();
+        return Results.success(accessService.listDepartmentsTree());
     }
 }
