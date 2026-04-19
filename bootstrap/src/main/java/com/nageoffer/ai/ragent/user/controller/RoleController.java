@@ -68,6 +68,20 @@ public class RoleController {
         return Results.success();
     }
 
+    /**
+     * P0.2: 删除角色前的影响面预览。
+     * <p>
+     * 设计依据：docs/dev/design/2026-04-19-access-center-redesign.md §六 P0 后端清单
+     * 局限：lostKbIds 仅基于显式 role 链推导。如果删除某 DEPT_ADMIN 类型角色导致用户失去
+     * DEPT_ADMIN 身份（同部门隐式 MANAGE 权限随之消失），不会反映在本预览。
+     * P1 的 GET /access/users/{userId}/kb-grants 提供完整算法（D13）。
+     */
+    @SaCheckRole("SUPER_ADMIN")
+    @GetMapping("/role/{roleId}/delete-preview")
+    public Result<RoleDeletePreviewVO> getRoleDeletePreview(@PathVariable("roleId") String roleId) {
+        return Results.success(roleService.getRoleDeletePreview(roleId));
+    }
+
     @GetMapping("/role")
     public Result<List<RoleDO>> listRoles() {
         kbAccessService.checkAnyAdminAccess();
@@ -127,5 +141,40 @@ public class RoleController {
         private String permission;
         /** 该角色对该 KB 的最高安全等级（0-3），可选，默认取 role.maxSecurityLevel */
         private Integer maxSecurityLevel;
+    }
+
+    /** P0.2 删除角色影响面预览返回体 */
+    @Data
+    public static class RoleDeletePreviewVO {
+        private String roleId;
+        private String roleName;
+        private List<AffectedUser> affectedUsers;
+        private List<AffectedKb> affectedKbs;
+        private List<UserKbDiff> userKbDiff;
+    }
+
+    @Data
+    public static class AffectedUser {
+        private String userId;
+        private String username;
+        private String deptId;
+        private String deptName;
+    }
+
+    @Data
+    public static class AffectedKb {
+        private String kbId;
+        private String kbName;
+        private String deptId;
+        private String deptName;
+    }
+
+    /** 删除该角色后，某用户将失去访问的 KB 列表（仅基于显式 role 链推导） */
+    @Data
+    public static class UserKbDiff {
+        private String userId;
+        private String username;
+        private List<String> lostKbIds;
+        private List<String> lostKbNames;
     }
 }

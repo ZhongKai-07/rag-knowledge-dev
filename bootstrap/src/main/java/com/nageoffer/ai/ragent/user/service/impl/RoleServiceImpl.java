@@ -22,12 +22,20 @@ import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.controller.KnowledgeBaseController;
+import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.user.controller.RoleController;
 import com.nageoffer.ai.ragent.user.controller.RoleController.RoleKbBindingRequest;
+import com.nageoffer.ai.ragent.user.controller.RoleController.RoleDeletePreviewVO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
+import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
@@ -36,6 +44,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +60,9 @@ public class RoleServiceImpl implements RoleService {
     private final RoleMapper roleMapper;
     private final RoleKbRelationMapper roleKbRelationMapper;
     private final UserRoleMapper userRoleMapper;
+    private final UserMapper userMapper;
+    private final SysDeptMapper sysDeptMapper;
+    private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KbAccessService kbAccessService;
 
     @Override
@@ -134,6 +148,148 @@ public class RoleServiceImpl implements RoleService {
         return roleMapper.selectList(
                 Wrappers.lambdaQuery(RoleDO.class)
                         .orderByDesc(RoleDO::getCreateTime));
+    }
+
+    @Override
+    public RoleDeletePreviewVO getRoleDeletePreview(String roleId) {
+        RoleDO role = roleMapper.selectById(roleId);
+        if (role == null) {
+            throw new ClientException("角色不存在: " + roleId);
+        }
+
+        // 1. 收集受影响用户
+        List<UserRoleDO> affectedUserRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getRoleId, roleId));
+        List<String> affectedUserIds = affectedUserRoles.stream()
+                .map(UserRoleDO::getUserId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 2. 收集该角色挂载的 KB
+        List<RoleKbRelationDO> roleKbRelations = roleKbRelationMapper.selectList(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
+        Set<String> roleKbIds = roleKbRelations.stream()
+                .map(RoleKbRelationDO::getKbId)
+                .collect(Collectors.toSet());
+
+        // 3. 批量查 user / dept / kb 元信息
+        Map<String, UserDO> userById = affectedUserIds.isEmpty()
+                ? Collections.emptyMap()
+                : userMapper.selectBatchIds(affectedUserIds).stream()
+                        .collect(Collectors.toMap(UserDO::getId, u -> u));
+        Map<String, KnowledgeBaseDO> kbById = roleKbIds.isEmpty()
+                ? Collections.emptyMap()
+                : knowledgeBaseMapper.selectBatchIds(roleKbIds).stream()
+                        .collect(Collectors.toMap(KnowledgeBaseDO::getId, k -> k));
+
+        Set<String> deptIds = new HashSet<>();
+        userById.values().forEach(u -> { if (u.getDeptId() != null) deptIds.add(u.getDeptId()); });
+        kbById.values().forEach(k -> { if (k.getDeptId() != null) deptIds.add(k.getDeptId()); });
+        Map<String, SysDeptDO> deptById = deptIds.isEmpty()
+                ? Collections.emptyMap()
+                : sysDeptMapper.selectBatchIds(deptIds).stream()
+                        .collect(Collectors.toMap(SysDeptDO::getId, d -> d));
+
+        // 4. 计算每个用户的 lostKbIds（仅显式 role 链）
+        // 拉取所有受影响用户其他角色挂载的 KB（一次查询批量解决 N+1）
+        Map<String, Set<String>> userToOtherKbs = computeUserToOtherKbs(affectedUserIds, roleId);
+
+        // 5. 组装 VO
+        RoleDeletePreviewVO vo = new RoleDeletePreviewVO();
+        vo.setRoleId(roleId);
+        vo.setRoleName(role.getName());
+
+        vo.setAffectedUsers(affectedUserIds.stream()
+                .map(uid -> {
+                    UserDO u = userById.get(uid);
+                    if (u == null) return null;
+                    RoleController.AffectedUser a = new RoleController.AffectedUser();
+                    a.setUserId(u.getId());
+                    a.setUsername(u.getUsername());
+                    a.setDeptId(u.getDeptId());
+                    SysDeptDO d = deptById.get(u.getDeptId());
+                    a.setDeptName(d != null ? d.getDeptName() : null);
+                    return a;
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList()));
+
+        vo.setAffectedKbs(roleKbIds.stream()
+                .map(kid -> {
+                    KnowledgeBaseDO k = kbById.get(kid);
+                    if (k == null) return null;
+                    RoleController.AffectedKb a = new RoleController.AffectedKb();
+                    a.setKbId(k.getId());
+                    a.setKbName(k.getName());
+                    a.setDeptId(k.getDeptId());
+                    SysDeptDO d = deptById.get(k.getDeptId());
+                    a.setDeptName(d != null ? d.getDeptName() : null);
+                    return a;
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList()));
+
+        vo.setUserKbDiff(affectedUserIds.stream()
+                .map(uid -> {
+                    UserDO u = userById.get(uid);
+                    if (u == null) return null;
+                    Set<String> otherKbs = userToOtherKbs.getOrDefault(uid, Collections.emptySet());
+                    List<String> lostKbIds = roleKbIds.stream()
+                            .filter(kbId -> !otherKbs.contains(kbId))
+                            .collect(Collectors.toList());
+                    if (lostKbIds.isEmpty()) return null;
+                    RoleController.UserKbDiff diff = new RoleController.UserKbDiff();
+                    diff.setUserId(u.getId());
+                    diff.setUsername(u.getUsername());
+                    diff.setLostKbIds(lostKbIds);
+                    diff.setLostKbNames(lostKbIds.stream()
+                            .map(kbId -> {
+                                KnowledgeBaseDO k = kbById.get(kbId);
+                                return k != null ? k.getName() : kbId;
+                            })
+                            .collect(Collectors.toList()));
+                    return diff;
+                })
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toList()));
+
+        return vo;
+    }
+
+    /**
+     * 对受影响用户批量计算"通过其他角色仍能访问的 KB 集合"，避免 N+1 查询。
+     */
+    private Map<String, Set<String>> computeUserToOtherKbs(List<String> affectedUserIds, String excludedRoleId) {
+        if (affectedUserIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        // 1) 拉这些用户的所有其他角色绑定
+        List<UserRoleDO> allUserRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class)
+                        .in(UserRoleDO::getUserId, affectedUserIds)
+                        .ne(UserRoleDO::getRoleId, excludedRoleId));
+        if (allUserRoles.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Set<String> otherRoleIds = allUserRoles.stream()
+                .map(UserRoleDO::getRoleId).collect(Collectors.toSet());
+
+        // 2) 拉这些其他角色挂载的所有 KB
+        List<RoleKbRelationDO> rels = roleKbRelationMapper.selectList(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class).in(RoleKbRelationDO::getRoleId, otherRoleIds));
+        Map<String, Set<String>> roleIdToKbs = new HashMap<>();
+        for (RoleKbRelationDO r : rels) {
+            roleIdToKbs.computeIfAbsent(r.getRoleId(), k -> new HashSet<>()).add(r.getKbId());
+        }
+
+        // 3) 反向聚合：userId -> union of kb 集合
+        Map<String, Set<String>> result = new HashMap<>();
+        for (UserRoleDO ur : allUserRoles) {
+            Set<String> kbs = roleIdToKbs.get(ur.getRoleId());
+            if (kbs == null || kbs.isEmpty()) continue;
+            result.computeIfAbsent(ur.getUserId(), k -> new HashSet<>()).addAll(kbs);
+        }
+        return result;
     }
 
     @Override

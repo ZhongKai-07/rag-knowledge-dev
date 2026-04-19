@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.user.service;
 
 import com.nageoffer.ai.ragent.knowledge.controller.KnowledgeBaseController;
+import com.nageoffer.ai.ragent.user.controller.RoleController.RoleDeletePreviewVO;
 import com.nageoffer.ai.ragent.user.controller.RoleController.RoleKbBindingRequest;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import java.util.List;
@@ -33,6 +34,14 @@ public interface RoleService {
     void updateRole(String roleId, String name, String description, String roleType, Integer maxSecurityLevel);
 
     void deleteRole(String roleId);
+
+    /**
+     * P0.2: 删除角色前的影响面预览。
+     * 返回受影响的用户、KB 以及每个用户因此将失去的 KB 列表。
+     * lostKbIds 仅基于显式 role 链推导，未考虑 DEPT_ADMIN 同部门隐式 MANAGE 权限消失场景
+     * （详见 RoleController 注释；P1 D13 完整算法）。
+     */
+    RoleDeletePreviewVO getRoleDeletePreview(String roleId);
 
     List<RoleDO> listRoles();
 
