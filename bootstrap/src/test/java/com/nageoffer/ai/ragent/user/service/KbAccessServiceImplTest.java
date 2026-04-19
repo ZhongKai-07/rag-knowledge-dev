@@ -19,7 +19,12 @@ package com.nageoffer.ai.ragent.user.service;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.nageoffer.ai.ragent.framework.context.LoginUser;
+import com.nageoffer.ai.ragent.framework.context.RoleType;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
@@ -29,6 +34,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.impl.KbAccessServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
@@ -37,11 +43,14 @@ import org.redisson.api.RedissonClient;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -52,6 +61,7 @@ class KbAccessServiceImplTest {
     private RoleKbRelationMapper roleKbRelationMapper;
     private UserRoleMapper userRoleMapper;
     private RedissonClient redissonClient;
+    private RoleMapper roleMapper;
     private KbAccessServiceImpl service;
 
     @BeforeEach
@@ -62,7 +72,7 @@ class KbAccessServiceImplTest {
         userRoleMapper = mock(UserRoleMapper.class);
         redissonClient = mock(RedissonClient.class);
         UserMapper userMapper = mock(UserMapper.class);
-        RoleMapper roleMapper = mock(RoleMapper.class);
+        roleMapper = mock(RoleMapper.class);
         SysDeptMapper sysDeptMapper = mock(SysDeptMapper.class);
         KbMetadataReader kbMetadataReader = mock(KbMetadataReader.class);
         service = new KbAccessServiceImpl(
@@ -74,6 +84,11 @@ class KbAccessServiceImplTest {
                 sysDeptMapper,
                 kbMetadataReader
         );
+    }
+
+    @AfterEach
+    void tearDown() {
+        UserContext.clear();
     }
 
     @Test
@@ -167,6 +182,106 @@ class KbAccessServiceImplTest {
         verify(keys).deleteByPattern("kb_access:dept:*");
         verify(keys).deleteByPattern("kb_security_level:*");
         verify(redissonClient, never()).getBucket(anyString());
+    }
+
+    // ---------- P1.2 D11 validateRoleAssignment 跨部门 hard reject 覆盖 ----------
+
+    /** SUPER_ADMIN 可分配任何角色，包括跨部门的 DEPT_ADMIN/SUPER_ADMIN 角色 */
+    @Test
+    void validateRoleAssignment_superAdmin_passesWithoutDbLookup() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-super")
+                .deptId("1")
+                .roleTypes(Set.of(RoleType.SUPER_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+
+        assertDoesNotThrow(() -> service.validateRoleAssignment(List.of("role-x")));
+        // 快路径：SUPER 根本不查 DB
+        verify(roleMapper, never()).selectList(any());
+    }
+
+    /** DEPT_ADMIN 分配本部门 USER 角色 → 通过 */
+    @Test
+    void validateRoleAssignment_deptAdmin_sameDeptRole_passes() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-ops-admin")
+                .deptId("dept-ops")
+                .roleTypes(Set.of(RoleType.DEPT_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+        when(roleMapper.selectList(any())).thenReturn(List.of(
+                RoleDO.builder()
+                        .id("role-ops-user")
+                        .roleType(RoleType.USER.name())
+                        .maxSecurityLevel(1)
+                        .deptId("dept-ops")
+                        .build()));
+
+        assertDoesNotThrow(() -> service.validateRoleAssignment(List.of("role-ops-user")));
+    }
+
+    /** DEPT_ADMIN 分配 GLOBAL（dept_id='1'）角色 → 通过 */
+    @Test
+    void validateRoleAssignment_deptAdmin_globalRole_passes() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-ops-admin")
+                .deptId("dept-ops")
+                .roleTypes(Set.of(RoleType.DEPT_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+        when(roleMapper.selectList(any())).thenReturn(List.of(
+                RoleDO.builder()
+                        .id("role-common-user")
+                        .roleType(RoleType.USER.name())
+                        .maxSecurityLevel(0)
+                        .deptId("1") // GLOBAL_DEPT_ID
+                        .build()));
+
+        assertDoesNotThrow(() -> service.validateRoleAssignment(List.of("role-common-user")));
+    }
+
+    /** DEPT_ADMIN 分配其他部门的 USER 角色 → reject（D11 核心）*/
+    @Test
+    void validateRoleAssignment_deptAdmin_crossDeptRole_rejected() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-ops-admin")
+                .deptId("dept-ops")
+                .roleTypes(Set.of(RoleType.DEPT_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+        when(roleMapper.selectList(any())).thenReturn(List.of(
+                RoleDO.builder()
+                        .id("role-pwm-user")
+                        .roleType(RoleType.USER.name())
+                        .maxSecurityLevel(0)
+                        .deptId("dept-pwm") // 非本部门、非 GLOBAL
+                        .build()));
+
+        ClientException ex = assertThrows(ClientException.class,
+                () -> service.validateRoleAssignment(List.of("role-pwm-user")));
+        assertEquals("DEPT_ADMIN 不可分配其他部门的角色", ex.getMessage());
+    }
+
+    /** DEPT_ADMIN 分配 dept_id=null 的角色（旧数据残留）→ fail-closed reject */
+    @Test
+    void validateRoleAssignment_deptAdmin_nullDeptRole_rejected() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-ops-admin")
+                .deptId("dept-ops")
+                .roleTypes(Set.of(RoleType.DEPT_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+        when(roleMapper.selectList(any())).thenReturn(List.of(
+                RoleDO.builder()
+                        .id("role-legacy")
+                        .roleType(RoleType.USER.name())
+                        .maxSecurityLevel(0)
+                        .deptId(null)
+                        .build()));
+
+        assertThrows(ClientException.class,
+                () -> service.validateRoleAssignment(List.of("role-legacy")));
     }
 
     private static void initTableInfo(Class<?> entityClass) {

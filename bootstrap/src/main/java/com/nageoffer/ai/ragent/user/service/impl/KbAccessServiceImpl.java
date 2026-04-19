@@ -496,7 +496,9 @@ public class KbAccessServiceImpl implements KbAccessService,
         if (isSuperAdmin() || roleIds == null || roleIds.isEmpty()) {
             return;
         }
-        int currentCeiling = UserContext.get().getMaxSecurityLevel();
+        LoginUser current = UserContext.get();
+        int currentCeiling = current.getMaxSecurityLevel();
+        String selfDeptId = current.getDeptId();
         List<RoleDO> roles = roleMapper.selectList(
                 Wrappers.lambdaQuery(RoleDO.class).in(RoleDO::getId, roleIds));
         for (RoleDO role : roles) {
@@ -508,6 +510,20 @@ public class KbAccessServiceImpl implements KbAccessService,
             }
             if (role.getMaxSecurityLevel() != null && role.getMaxSecurityLevel() > currentCeiling) {
                 throw new ClientException("不可分配超过自身安全等级上限的角色");
+            }
+            // P1.2 D11: DEPT_ADMIN 只能分配本部门或 GLOBAL 角色；跨部门 USER 角色 fail-closed。
+            // 不对称规则的后端闸门 —— 前端 dropdown 收敛不算授权边界。
+            String roleDeptId = role.getDeptId();
+            boolean isGlobalRole = SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(roleDeptId);
+            boolean isSameDeptRole = roleDeptId != null && roleDeptId.equals(selfDeptId);
+            if (!isGlobalRole && !isSameDeptRole) {
+                log.warn(
+                        "权限拒绝: userId={}, action=ASSIGN_ROLE, reason=跨部门, roleId={}, roleDept={}, selfDept={}",
+                        UserContext.getUserId(),
+                        role.getId(),
+                        roleDeptId,
+                        selfDeptId);
+                throw new ClientException("DEPT_ADMIN 不可分配其他部门的角色");
             }
         }
     }
