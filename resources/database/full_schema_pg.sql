@@ -1473,7 +1473,7 @@ ALTER TABLE ONLY public.t_user_role
 --
 
 ALTER TABLE ONLY public.t_knowledge_base
-    ADD CONSTRAINT uk_collection_name UNIQUE (collection_name);
+    ADD CONSTRAINT uk_collection_name UNIQUE (collection_name, deleted);
 
 
 --

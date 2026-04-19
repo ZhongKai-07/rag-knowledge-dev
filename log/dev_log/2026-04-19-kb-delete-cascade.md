@@ -13,6 +13,7 @@
 | `54f93df` | feat(storage) | `FileStorageService` 新增 bucket 生命周期 API，`S3FileStorageService` 收拢 bucket 创建/删除 |
 | `aab67a7` | feat(vector) | `VectorStoreAdmin` 新增 `dropVectorSpace`，OpenSearch 实现幂等删除，Milvus/Pg 明确不支持 |
 | `当前提交` | refactor(knowledge) | KB 删除级联解绑 role-KB、事务后回收向量索引和 bucket，补单测与验证 |
+| `当前提交` | fix(schema) | `t_knowledge_base.uk_collection_name` 改为 `(collection_name, deleted)`，允许软删后复用 collection 名称 |
 
 ---
 
@@ -32,6 +33,7 @@
 - `knowledge` 域已不再直接依赖 `S3Client`，创建 bucket 改走 `FileStorageService.ensureBucket(...)`。
 - `t_role_kb_relation` 在当前仓库实际 schema 中带 `deleted` 列，解绑实现沿用现有 `@TableLogic` 语义，与 `RoleServiceImpl` 现有删除路径保持一致。
 - OpenSearch 的索引删除按“不预查 exists，直接删并对 not-found 幂等”实现，避免额外 RT 和 TOCTOU。
+- `t_knowledge_base` 的唯一约束已从 `UNIQUE (collection_name)` 调整为 `UNIQUE (collection_name, deleted)`，对齐应用层“只校验活跃 KB”的语义，支持“删除后重建同 collectionName”的 E2E。
 
 ---
 
