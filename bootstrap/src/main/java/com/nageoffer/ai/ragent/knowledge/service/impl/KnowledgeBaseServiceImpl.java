@@ -39,6 +39,8 @@ import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
+import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
+import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +67,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final VectorStoreAdmin vectorStoreAdmin;
     private final FileStorageService fileStorageService;
     private final KbAccessService kbAccessService;
+    private final SysDeptMapper sysDeptMapper;
 
     @Transactional
     @Override
@@ -238,7 +241,14 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         if (kbDO == null || kbDO.getDeleted() != null && kbDO.getDeleted() == 1) {
             throw new ClientException("知识库不存在");
         }
-        return BeanUtil.toBean(kbDO, KnowledgeBaseVO.class);
+        KnowledgeBaseVO vo = BeanUtil.toBean(kbDO, KnowledgeBaseVO.class);
+        if (kbDO.getDeptId() != null) {
+            SysDeptDO dept = sysDeptMapper.selectById(kbDO.getDeptId());
+            if (dept != null) {
+                vo.setDeptName(dept.getDeptName());
+            }
+        }
+        return vo;
     }
 
     @Override
@@ -258,12 +268,21 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
         Page<KnowledgeBaseDO> page = new Page<>(requestParam.getCurrent(), requestParam.getSize());
         IPage<KnowledgeBaseDO> result = knowledgeBaseMapper.selectPage(page, queryWrapper);
+        Map<String, String> deptNameMap = new HashMap<>();
         Map<String, Long> docCountMap = new HashMap<>();
         if (CollUtil.isNotEmpty(result.getRecords())) {
             List<String> kbIds = result.getRecords().stream()
                     .map(KnowledgeBaseDO::getId)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
+            List<String> deptIds = result.getRecords().stream()
+                    .map(KnowledgeBaseDO::getDeptId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+            if (!deptIds.isEmpty()) {
+                sysDeptMapper.selectBatchIds(deptIds).forEach(d -> deptNameMap.put(d.getId(), d.getDeptName()));
+            }
             if (!kbIds.isEmpty()) {
                 List<Map<String, Object>> rows = knowledgeDocumentMapper.selectMaps(
                         Wrappers.query(KnowledgeDocumentDO.class)
@@ -293,6 +312,9 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             KnowledgeBaseVO vo = BeanUtil.toBean(each, KnowledgeBaseVO.class);
             Long docCount = docCountMap.get(each.getId());
             vo.setDocumentCount(docCount != null ? docCount : 0L);
+            if (each.getDeptId() != null) {
+                vo.setDeptName(deptNameMap.get(each.getDeptId()));
+            }
             return vo;
         });
     }

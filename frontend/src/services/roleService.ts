@@ -6,6 +6,8 @@ export interface RoleItem {
   roleType: string;
   maxSecurityLevel: number;
   deptId?: string | null;
+  /** 仅 /access/roles 返回体会填；旧 /role 只返回 deptId */
+  deptName?: string | null;
   description?: string | null;
   createTime?: string | null;
   updateTime?: string | null;

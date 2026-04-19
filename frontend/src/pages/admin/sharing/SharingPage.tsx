@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,7 +18,8 @@ import {
   type KbRoleBindingVO,
   type KnowledgeBase,
 } from "@/services/knowledgeService";
-import { getRoles, type RoleItem } from "@/services/roleService";
+import type { RoleItem } from "@/services/roleService";
+import { listAccessRoles } from "@/services/access";
 import { getErrorMessage } from "@/utils/error";
 import { usePermissions } from "@/utils/permissions";
 
@@ -27,6 +29,8 @@ type SortKey = "recent" | "name";
 
 export function SharingPage() {
   const permissions = usePermissions();
+  const [searchParams] = useSearchParams();
+  const highlightKbId = searchParams.get("kb");
   const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
   const [allRoles, setAllRoles] = useState<RoleItem[]>([]);
   const [bindingsMap, setBindingsMap] = useState<Record<string, KbRoleBindingVO[]>>({});
@@ -40,12 +44,24 @@ export function SharingPage() {
     (async () => {
       setLoading(true);
       try {
-        const [kbList, roles] = await Promise.all([
+        // Tab 2 规则（设计 §4.2）：共享下拉范围 = 全部角色（含其他部门），
+        // 由 KB 所属部门 admin 决策。走 /access/roles 拿到 deptId/deptName 以便 ⚡ 徽章使用。
+        const [kbList, accessRoles] = await Promise.all([
           getKnowledgeBases(1, 200),
-          getRoles(),
+          listAccessRoles({ includeGlobal: true }),
         ]);
         if (cancelled) return;
         setKbs(kbList);
+        // 复用 RoleItem 形状（deptId/deptName 已在类型中可选）
+        const roles: RoleItem[] = accessRoles.map((r) => ({
+          id: r.id,
+          name: r.name,
+          description: r.description ?? null,
+          roleType: r.roleType,
+          maxSecurityLevel: r.maxSecurityLevel,
+          deptId: r.deptId ?? null,
+          deptName: r.deptName ?? null,
+        }));
         setAllRoles(roles);
         const bindingsEntries = await Promise.all(
           kbList.map(async (kb) => {
@@ -187,6 +203,7 @@ export function SharingPage() {
               bindings={bindingsMap[kb.id] ?? []}
               allRoles={allRoles}
               onBindingsChange={handleBindingsChange}
+              highlight={highlightKbId === kb.id}
             />
           ))}
         </div>

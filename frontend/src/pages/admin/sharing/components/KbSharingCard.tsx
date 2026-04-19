@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,9 +48,17 @@ interface Props {
   bindings: KbRoleBindingVO[];
   allRoles: RoleItem[];
   onBindingsChange: (kbId: string, next: KbRoleBindingVO[]) => void;
+  /** 深链定位：匹配时卡片高亮 + 滚动到视野（Tab 1 点 KB 名跳转用） */
+  highlight?: boolean;
 }
 
-export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange }: Props) {
+export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange, highlight = false }: Props) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (highlight && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlight]);
   const [addOpen, setAddOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<KbRoleBindingVO | null>(null);
   const [downgradeTarget, setDowngradeTarget] = useState<
@@ -100,6 +109,8 @@ export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange }: Prop
         roleType: role?.roleType ?? "",
         permission: value.permission,
         maxSecurityLevel: value.maxSecurityLevel,
+        deptId: role?.deptId ?? null,
+        deptName: role?.deptName ?? null,
       },
     ];
     const ok = await persist(next);
@@ -151,7 +162,13 @@ export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange }: Prop
   };
 
   return (
-    <Card className="shadow-sm">
+    <Card
+      ref={cardRef}
+      className={cn(
+        "shadow-sm transition-all",
+        highlight && "ring-2 ring-indigo-400 shadow-md"
+      )}
+    >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
         <div className="space-y-1">
           <CardTitle className="text-base">
@@ -188,12 +205,15 @@ export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange }: Prop
                 <th className="pb-2 font-medium">类型</th>
                 <th className="pb-2 font-medium">权限</th>
                 <th className="pb-2 font-medium">密级</th>
-                {/* TODO P1: 归属列 —— 需要 role.deptId (schema 未落) */}
+                <th className="pb-2 font-medium">归属</th>
                 <th className="w-12 pb-2 font-medium"></th>
               </tr>
             </thead>
             <tbody>
-              {bindings.map((b) => (
+              {bindings.map((b) => {
+                const isCrossDept =
+                  !!kb.deptId && !!b.deptId && b.deptId !== kb.deptId;
+                return (
                 <tr key={b.roleId} className="border-b last:border-0">
                   <td className="py-2">
                     <span className="font-medium text-slate-800">{b.roleName}</span>
@@ -240,6 +260,21 @@ export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange }: Prop
                     </Select>
                   </td>
                   <td className="py-2">
+                    {isCrossDept ? (
+                      <span
+                        className="inline-flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700"
+                        title={`跨部门：角色归属「${b.deptName ?? b.deptId}」，KB 归属「${kb.deptName ?? kb.deptId}」`}
+                      >
+                        <Zap className="h-3 w-3" />
+                        {b.deptName ?? b.deptId}
+                      </span>
+                    ) : b.deptId === kb.deptId ? (
+                      <span className="text-xs text-slate-500">本部门</span>
+                    ) : (
+                      <span className="text-xs text-slate-400">{b.deptName ?? "—"}</span>
+                    )}
+                  </td>
+                  <td className="py-2">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -250,7 +285,8 @@ export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange }: Prop
                     </Button>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         )}
