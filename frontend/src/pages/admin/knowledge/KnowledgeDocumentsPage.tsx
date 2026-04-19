@@ -35,7 +35,7 @@ import { getIngestionPipelines, type IngestionPipeline } from "@/services/ingest
 import { getSystemSettings } from "@/services/settingsService";
 import { getErrorMessage } from "@/utils/error";
 import { usePermissions } from "@/utils/permissions";
-import KbSharingTab from "./KbSharingTab";
+import KbSharingSummary from "./KbSharingSummary";
 
 const PAGE_SIZE = 10;
 
@@ -612,11 +612,7 @@ export function KnowledgeDocumentsPage() {
         </CardContent>
       </Card>
 
-      {isAnyAdmin && kbId && (
-        <Card>
-          <KbSharingTab kbId={kbId} />
-        </Card>
-      )}
+      {isAnyAdmin && kbId && <KbSharingSummary kbId={kbId} />}
 
       <UploadDialog
         open={uploadOpen}
