@@ -51,6 +51,7 @@ CREATE TABLE t_role (
     description         VARCHAR(256),
     role_type           VARCHAR(32) NOT NULL DEFAULT 'USER',
     max_security_level  SMALLINT    NOT NULL DEFAULT 0,
+    dept_id             VARCHAR(20),
     created_by          VARCHAR(64),
     updated_by          VARCHAR(64),
     create_time         TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
@@ -58,12 +59,14 @@ CREATE TABLE t_role (
     deleted             INTEGER      DEFAULT 0,
     CONSTRAINT uk_role_name UNIQUE (name)
 );
+CREATE INDEX idx_role_dept_id ON t_role (dept_id);
 COMMENT ON TABLE t_role IS '角色表';
 COMMENT ON COLUMN t_role.id IS '主键ID';
 COMMENT ON COLUMN t_role.name IS '角色名称';
 COMMENT ON COLUMN t_role.description IS '角色描述';
 COMMENT ON COLUMN t_role.role_type IS 'SUPER_ADMIN/DEPT_ADMIN/USER';
 COMMENT ON COLUMN t_role.max_security_level IS '该角色可访问的最高安全等级（0-3）';
+COMMENT ON COLUMN t_role.dept_id IS '角色归属部门 ID（sys_dept.id），值 = ''1'' 时为 GLOBAL 角色（仅 SUPER 可创建）';
 COMMENT ON COLUMN t_role.created_by IS '创建人';
 COMMENT ON COLUMN t_role.updated_by IS '修改人';
 COMMENT ON COLUMN t_role.create_time IS '创建时间';

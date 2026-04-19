@@ -1019,6 +1019,7 @@ CREATE TABLE public.t_role (
     description character varying(256),
     role_type character varying(32) DEFAULT 'USER'::character varying NOT NULL,
     max_security_level smallint DEFAULT 0 NOT NULL,
+    dept_id character varying(20),
     created_by character varying(64),
     updated_by character varying(64),
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
@@ -1056,6 +1057,13 @@ COMMENT ON COLUMN public.t_role.role_type IS 'SUPER_ADMIN/DEPT_ADMIN/USER';
 --
 
 COMMENT ON COLUMN public.t_role.max_security_level IS '该角色可访问的最高安全等级（0-3）';
+
+
+--
+-- Name: COLUMN t_role.dept_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_role.dept_id IS '角色归属部门 ID（sys_dept.id），值 = ''1'' 时为 GLOBAL 角色（仅 SUPER 可创建）';
 
 
 --
@@ -1728,6 +1736,13 @@ CREATE INDEX idx_role_kb_kb_id ON public.t_role_kb_relation USING btree (kb_id);
 --
 
 CREATE INDEX idx_role_kb_role_id ON public.t_role_kb_relation USING btree (role_id);
+
+
+--
+-- Name: idx_role_dept_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_role_dept_id ON public.t_role USING btree (dept_id);
 
 
 --
