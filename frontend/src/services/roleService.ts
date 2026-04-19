@@ -5,6 +5,7 @@ export interface RoleItem {
   name: string;
   roleType: string;
   maxSecurityLevel: number;
+  deptId?: string | null;
   description?: string | null;
   createTime?: string | null;
   updateTime?: string | null;
@@ -15,6 +16,7 @@ export interface RoleCreatePayload {
   description?: string;
   roleType: string;
   maxSecurityLevel: number;
+  deptId?: string | null;
 }
 
 export interface RoleKbBinding {

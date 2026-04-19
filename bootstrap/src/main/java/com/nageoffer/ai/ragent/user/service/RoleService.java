@@ -25,13 +25,24 @@ import java.util.List;
 
 public interface RoleService {
 
-    /** 创建角色（含 roleType 和 maxSecurityLevel） */
-    String createRole(String name, String description, String roleType, Integer maxSecurityLevel);
+    /** 创建角色（含 roleType / maxSecurityLevel / deptId） */
+    String createRole(
+            String name,
+            String description,
+            String roleType,
+            Integer maxSecurityLevel,
+            String deptId);
 
     void updateRole(String roleId, String name, String description);
 
-    /** PR3：支持同时更新 roleType 和 maxSecurityLevel（含 Last-SUPER_ADMIN 前置校验） */
-    void updateRole(String roleId, String name, String description, String roleType, Integer maxSecurityLevel);
+    /** PR3/P1.1：支持同时更新 roleType / maxSecurityLevel / deptId（含 Last-SUPER_ADMIN 前置校验） */
+    void updateRole(
+            String roleId,
+            String name,
+            String description,
+            String roleType,
+            Integer maxSecurityLevel,
+            String deptId);
 
     void deleteRole(String roleId);
 

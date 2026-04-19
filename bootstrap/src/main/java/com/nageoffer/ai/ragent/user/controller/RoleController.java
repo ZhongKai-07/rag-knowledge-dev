@@ -45,7 +45,8 @@ public class RoleController {
                 request.getName(),
                 request.getDescription(),
                 request.getRoleType(),
-                request.getMaxSecurityLevel());
+                request.getMaxSecurityLevel(),
+                request.getDeptId());
         return Results.success(id);
     }
 
@@ -57,7 +58,8 @@ public class RoleController {
                 request.getName(),
                 request.getDescription(),
                 request.getRoleType(),
-                request.getMaxSecurityLevel());
+                request.getMaxSecurityLevel(),
+                request.getDeptId());
         return Results.success();
     }
 
@@ -132,6 +134,8 @@ public class RoleController {
         private String description;
         private String roleType;
         private Integer maxSecurityLevel;
+        /** 角色归属部门 ID（sys_dept.id）。null/"1" 表示 GLOBAL。P1.2 会在 validateRoleAssignment 加校验。 */
+        private String deptId;
     }
 
     @Data

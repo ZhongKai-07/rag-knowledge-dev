@@ -66,12 +66,18 @@ public class RoleServiceImpl implements RoleService {
     private final KbAccessService kbAccessService;
 
     @Override
-    public String createRole(String name, String description, String roleType, Integer maxSecurityLevel) {
+    public String createRole(
+            String name,
+            String description,
+            String roleType,
+            Integer maxSecurityLevel,
+            String deptId) {
         RoleDO role = new RoleDO();
         role.setName(name);
         role.setDescription(description);
         role.setRoleType(roleType != null ? roleType : RoleType.USER.name());
         role.setMaxSecurityLevel(maxSecurityLevel != null ? maxSecurityLevel : 0);
+        role.setDeptId(deptId);
         roleMapper.insert(role);
         return role.getId();
     }
@@ -91,7 +97,8 @@ public class RoleServiceImpl implements RoleService {
             String name,
             String description,
             String roleType,
-            Integer maxSecurityLevel) {
+            Integer maxSecurityLevel,
+            String deptId) {
         RoleDO existing = roleMapper.selectById(roleId);
         if (existing == null) {
             throw new ClientException("角色不存在");
@@ -117,6 +124,9 @@ public class RoleServiceImpl implements RoleService {
         }
         if (maxSecurityLevel != null) {
             update.setMaxSecurityLevel(maxSecurityLevel);
+        }
+        if (deptId != null) {
+            update.setDeptId(deptId);
         }
         roleMapper.updateById(update);
 
@@ -394,6 +404,17 @@ public class RoleServiceImpl implements RoleService {
                 Wrappers.lambdaQuery(RoleDO.class).in(RoleDO::getId, roleIds))
                 .stream().collect(Collectors.toMap(RoleDO::getId, r -> r));
 
+        // P1.1: resolve dept names for the roles (for cross-dept badge in P1.5).
+        Set<String> deptIds = roleMap.values().stream()
+                .map(RoleDO::getDeptId)
+                .filter(id -> id != null && !id.isEmpty())
+                .collect(Collectors.toSet());
+        Map<String, String> deptNameById = deptIds.isEmpty()
+                ? Map.of()
+                : sysDeptMapper.selectList(
+                        Wrappers.lambdaQuery(SysDeptDO.class).in(SysDeptDO::getId, deptIds))
+                        .stream().collect(Collectors.toMap(SysDeptDO::getId, SysDeptDO::getDeptName));
+
         return relations.stream().map(rel -> {
             KnowledgeBaseController.KbRoleBindingVO vo = new KnowledgeBaseController.KbRoleBindingVO();
             vo.setRoleId(rel.getRoleId());
@@ -403,6 +424,8 @@ public class RoleServiceImpl implements RoleService {
             if (role != null) {
                 vo.setRoleName(role.getName());
                 vo.setRoleType(role.getRoleType());
+                vo.setDeptId(role.getDeptId());
+                vo.setDeptName(deptNameById.get(role.getDeptId()));
             }
             return vo;
         }).toList();

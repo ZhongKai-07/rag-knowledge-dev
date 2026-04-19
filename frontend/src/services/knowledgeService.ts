@@ -366,6 +366,8 @@ export interface KbRoleBindingVO {
   roleType: string;
   permission: string;
   maxSecurityLevel: number;
+  deptId?: string | null;
+  deptName?: string | null;
 }
 
 export interface KbRoleBindingRequest {

@@ -54,6 +54,11 @@ public class RoleDO {
      */
     private Integer maxSecurityLevel;
 
+    /**
+     * 角色归属部门 ID（sys_dept.id）；值 = "1" 表示 GLOBAL 角色（仅 SUPER 可创建）
+     */
+    private String deptId;
+
     @TableField(fill = FieldFill.INSERT)
     private String createdBy;
 

@@ -140,6 +140,10 @@ public class KnowledgeBaseController {
         private String roleType;
         private String permission;
         private Integer maxSecurityLevel;
+        /** 角色归属部门 ID（sys_dept.id）；null 表示旧数据未回填（P1.0 backfill 后应非空）。P1.5 前端跨部门 badge 依赖此字段。 */
+        private String deptId;
+        /** 角色归属部门名称，派生自 sys_dept.dept_name，前端展示用。 */
+        private String deptName;
     }
 
     @Data
