@@ -16,6 +16,7 @@ import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeServi
 import { usePermissions } from "@/utils/permissions";
 import { getErrorMessage } from "@/utils/error";
 import { SecurityLevelBadge } from "@/components/common/SecurityLevelBadge";
+import { AccessCenterMigrationBanner } from "@/components/admin/AccessCenterMigrationBanner";
 
 // ---- Role type badge ----
 function RoleTypeBadge({ type }: { type: string }) {
@@ -226,6 +227,7 @@ export function RoleListPage() {
 
   return (
     <div className="admin-page">
+      <AccessCenterMigrationBanner tab="roles" pageName="角色管理" />
       <div className="admin-page-header">
         <div>
           <h1 className="admin-page-title">角色管理</h1>

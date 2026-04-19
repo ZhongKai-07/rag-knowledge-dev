@@ -12,6 +12,7 @@ import type { SysDept, SysDeptCreatePayload } from "@/services/sysDeptService";
 import { listDepartments, createDepartment, updateDepartment, deleteDepartment } from "@/services/sysDeptService";
 import { getErrorMessage } from "@/utils/error";
 import { formatDateTime } from "@/utils/helpers";
+import { AccessCenterMigrationBanner } from "@/components/admin/AccessCenterMigrationBanner";
 
 const buildEmptyForm = (): SysDeptCreatePayload => ({
   deptCode: "",
@@ -115,6 +116,7 @@ export function DepartmentListPage() {
 
   return (
     <div className="admin-page">
+      <AccessCenterMigrationBanner tab="departments" pageName="部门管理" />
       <div className="admin-page-header">
         <div>
           <h1 className="admin-page-title">部门管理</h1>

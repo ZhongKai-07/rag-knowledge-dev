@@ -20,6 +20,7 @@ import { getErrorMessage, isRbacRejection } from "@/utils/error";
 import { formatDateTime } from "@/utils/helpers";
 import { usePermissions } from "@/utils/permissions";
 import { SecurityLevelBadge } from "@/components/common/SecurityLevelBadge";
+import { AccessCenterMigrationBanner } from "@/components/admin/AccessCenterMigrationBanner";
 
 const PAGE_SIZE = 10;
 
@@ -217,6 +218,7 @@ export function UserListPage() {
 
   return (
     <div className="admin-page">
+      <AccessCenterMigrationBanner tab="members" pageName="用户管理" />
       <div className="admin-page-header">
         <div>
           <h1 className="admin-page-title">用户管理</h1>
