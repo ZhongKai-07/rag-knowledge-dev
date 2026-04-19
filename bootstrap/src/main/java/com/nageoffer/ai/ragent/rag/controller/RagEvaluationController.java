@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.rag.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
@@ -64,6 +65,7 @@ public class RagEvaluationController {
     /**
      * 导出 RAGAS 兼容 JSON
      */
+    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/rag/evaluations/export")
     public Result<List<RagEvaluationService.RagasExportItem>> exportForRagas(
             @RequestParam(value = "evalStatus", required = false) String evalStatus,
@@ -74,6 +76,7 @@ public class RagEvaluationController {
     /**
      * 回填评测结果（由外部评测工具调用）
      */
+    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/rag/evaluations/{id}/metrics")
     public Result<Void> updateMetrics(@PathVariable("id") String id, @RequestBody Map<String, String> body) {
         evaluationService.updateMetrics(id, body.get("evalMetrics"));

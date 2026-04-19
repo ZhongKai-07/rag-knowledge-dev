@@ -124,6 +124,9 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     @Value("knowledge-document-chunk_topic${unique-name:}")
     private String chunkTopic;
 
+    @Value("knowledge-document-security-level_topic${unique-name:}")
+    private String securityLevelRefreshTopic;
+
     @Override
     public KnowledgeDocumentVO upload(String kbId, KnowledgeDocumentUploadRequest requestParam, MultipartFile file) {
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(kbId);
@@ -593,7 +596,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 @Override
                 public void afterCommit() {
                     messageQueueProducer.send(
-                            "knowledge-document-security-level_topic${unique-name:}",
+                            securityLevelRefreshTopic,
                             docId,
                             "security_level 刷新",
                             event
@@ -603,7 +606,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             });
         } else {
             messageQueueProducer.send(
-                    "knowledge-document-security-level_topic${unique-name:}",
+                    securityLevelRefreshTopic,
                     docId,
                     "security_level 刷新",
                     event

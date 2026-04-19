@@ -27,8 +27,9 @@ npm run format
 
 ```
 src/
-├── main.tsx              ← 应用入口，挂载 React + Router
-├── App.tsx               ← 路由定义（React Router v6）
+├── main.tsx              ← 应用入口，挂载 React
+├── App.tsx               ← `<RouterProvider>` + ErrorBoundary + Toast 的薄壳
+├── router.tsx            ← 全部路由定义（React Router v6 createBrowserRouter）
 ├── utils/
 │   └── permissions.ts    ← 权限判断单一真相源（getPermissions 纯函数 + usePermissions hook）
 ├── router/
@@ -124,7 +125,7 @@ src/
 
 - **UI 组件**：一律从 `components/ui/` 引入（shadcn/ui 模式，基于 Radix UI）。图标用 `lucide-react`。
 - **样式**：Tailwind CSS 原子类为主，复杂布局的自定义 CSS 写在 `styles/globals.css`，用 `@apply` 引用 Tailwind 类。
-- **新增管理后台页面**：组件放 `pages/admin/{feature}/`，在 `App.tsx` 注册路由，在 `AdminLayout.tsx` 添加侧边栏菜单项和面包屑。
+- **新增管理后台页面**：组件放 `pages/admin/{feature}/`，在 `router.tsx` 注册路由（不是 `App.tsx`），在 `AdminLayout.tsx` 添加侧边栏菜单项和面包屑。
 - **表格**：用 `@tanstack/react-table` + `components/ui/table.tsx`。
 - **表单**：用 `react-hook-form` + `zod` schema 校验。
 - **安全等级徽章**：用 `components/common/SecurityLevelBadge`（props: `level: number`, `showLevel?: boolean`）。不要在页面里重写。

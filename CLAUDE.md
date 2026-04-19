@@ -40,6 +40,8 @@ mvn -pl bootstrap test -Dtest=SimpleIntentClassifierTests#testMethod
 
 The application starts on port **9090** with context path `/api/ragent`.
 
+**Pre-existing test failures on fresh checkout**: `MilvusCollectionTests`, `InvoiceIndexDocumentTests`, `PgVectorStoreServiceTest.testChineseCharacterInsertion`, `IntentTreeServiceTests.initFromFactory`, `VectorTreeIntentClassifierTests` (10 errors total) fail without Milvus container / pgvector extension / seeded KB data. These are baseline on `main`, not regressions — ignore their failures when validating unrelated changes.
+
 ## Project Structure
 
 Four Maven modules with parent POM at root:
@@ -76,7 +78,7 @@ Within each domain, code follows a standard layered pattern: `controller/` → `
 | JDK            | Java 17                                                           |
 | Framework      | Spring Boot 3.5.7                                                 |
 | Database       | PostgreSQL                                                        |
-| Vector DB      | OpenSearch 2.18 / Milvus 2.6 / pgvector（三选一，`rag.vector.type` 切换） |
+| Vector DB      | OpenSearch 2.18 (生产阶段确定只使用OpenSearch，暂时不考虑其他的切换)/ Milvus 2.6 / pgvector（三选一，`rag.vector.type` 切换） |
 | ORM            | MyBatis Plus 3.5.14                                               |
 | Cache          | Redis + Redisson                                                  |
 | Message Queue  | RocketMQ 5.x                                                      |
@@ -163,6 +165,8 @@ Project documentation and comments are in Chinese. Code identifiers are in Engli
 - **CHUNK-mode write path needs explicit `ensureVectorSpace`**: Unlike PIPELINE mode (routed through `IndexerNode.execute`), `KnowledgeDocumentServiceImpl.persistChunksAndVectorsAtomically` doesn't auto-ensure the index. If index is dropped externally, OpenSearch auto-create applies **dynamic mapping** (e.g. `kb_id` becomes `text` instead of declared `keyword`), breaking downstream term queries. Any new vector-write entry point must inject `VectorStoreAdmin` and call `ensureVectorSpace` before the DB transaction.
 - **`AuthzPostProcessor dropped N chunks` ERROR is a production alert**: Normal path = 0 drops (retriever already filtered). Non-zero drops mean (a) retriever filter broken / stale cache, (b) index schema drifted (missing `kb_id`), or (c) non-OpenSearch backend active. Investigate — don't suppress.
 - **RBAC changes that add new metadata-field filters require OS index rebuild**: AuthzPostProcessor fail-closes chunks missing the new field. Ship order is: (1) write path populates the field, (2) deploy, (3) `curl -X DELETE` each collection + re-run ingestion for all docs, (4) enable the reader-side check. Skipping step 3 makes authenticated sessions return empty answers.
+- **`MessageQueueProducer.send(topic, ...)` takes the raw string** — only `@Value` and `@RocketMQMessageListener` resolve `${...}` placeholders. Passing a literal like `"foo_topic${unique-name:}"` to `send()` silently routes to a non-existent topic while the consumer subscribes to the resolved one — no error, messages lost. Always inject the topic via `@Value("foo_topic${unique-name:}")` into a field, then pass the field. See `chunkTopic` / `feedbackTopic` / `securityLevelRefreshTopic` fields in `KnowledgeDocumentServiceImpl` and `MessageFeedbackServiceImpl` for the canonical pattern.
+- **DO→VO via `BeanUtil.toBean` is reflection by field name**: `KnowledgeDocumentServiceImpl.get/page` (and similar read endpoints) use `BeanUtil.toBean(do, Vo.class)`. Adding a new field on the DO is NOT enough — the matching field must exist on the VO or the frontend gets `undefined`. Always sweep the VO classes when adding a column.
 
 ## RAG Evaluation (RAGAS)
 
@@ -258,7 +262,9 @@ user/                             ← 用户与权限域（31 文件）
 │   ├── UserController            ← 用户 CRUD
 │   └── RoleController            ← 角色管理
 ├── service/
-│   ├── KbAccessService           ← RBAC 知识库权限校验（核心）
+│   ├── KbAccessService           ← @Deprecated 上帝接口（2026-04-18 RBAC 重构后保留用于调用点分批迁移）
+│   │                               新代码直接注入 framework/security/port/ 的 7 个 port
+│   │                               （CurrentUserProbe / KbReadAccessPort / KbManageAccessPort / ...）
 │   └── RoleService               ← 角色-知识库关联管理
 └── dao/entity/                   ← UserDO, RoleDO, UserRoleDO, RoleKbRelationDO
 
@@ -354,12 +360,13 @@ KB 共享管理（AnyAdmin）:
   PUT /knowledge-base/{kb-id}/role-bindings  → 全量覆盖 KB 的角色绑定
 
 权限校验（贯穿所有业务链路）:
-  KbAccessService.getAccessibleKbIds(userId)
-    → 查 t_user_role → 查 t_role_kb_relation → 返回可访问的 kbId 集合（Redis 缓存）
-  KbAccessService.checkAccess(kbId)
-    → 校验当前用户是否有权访问指定知识库（SUPER_ADMIN 跳过，DEPT_ADMIN 同部门跳过）
-  KbAccessService.getMaxSecurityLevelForKb(userId, kbId)
-    → 按 KB 解析安全等级（Redis Hash 缓存）
+  新代码（2026-04-18 后）：注入 framework/security/port/ 下的细粒度端口
+    CurrentUserProbe.isSuperAdmin() / isDeptAdmin()
+    KbReadAccessPort.getAccessibleKbIds(userId) / getMaxSecurityLevelForKb(userId, kbId)
+    KbManageAccessPort.checkManageAccess(kbId)
+  旧代码：KbAccessService 上帝接口（@Deprecated），47 个调用点分批迁移中
+  底层逻辑：查 t_user_role → 查 t_role_kb_relation → 返回可访问 kbId 集合 / 安全等级
+             SUPER_ADMIN 跳过校验；DEPT_ADMIN 同部门 KB 跳过；Redis 缓存
 
 生效点:
   - RAG 检索时: RetrievalEngine 过滤 accessibleKbIds
