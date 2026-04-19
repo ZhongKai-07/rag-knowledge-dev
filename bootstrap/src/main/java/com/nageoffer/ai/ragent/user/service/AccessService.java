@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.user.service;
 
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
+import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 
 import java.util.List;
 
@@ -36,4 +37,19 @@ public interface AccessService {
      *                       当 {@code deptId == '1'} 时此参数被忽略（避免重复）。
      */
     List<AccessRoleVO> listRoles(String deptId, boolean includeGlobal);
+
+    /**
+     * P1.3b: 目标用户对每个可访问 KB 的有效权限记录。
+     * <p>
+     * 四步算法（D13 / review v3 #2）：
+     * <ol>
+     *   <li>{@code getAccessibleKbIds(userId, READ)} 锁真相范围</li>
+     *   <li>范围内 LEFT JOIN {@code t_user_role + t_role_kb_relation} → 每 KB 得 explicit
+     *       权限 + sourceRoleIds（可为空）</li>
+     *   <li>独立判 {@code implicit = isDeptAdmin(user) && kb.deptId == user.deptId}</li>
+     *   <li>{@code effectivePermission = implicit ? MANAGE : explicit}；SUPER_ADMIN 一律
+     *       MANAGE（与 {@code checkManageAccess} 对齐）</li>
+     * </ol>
+     */
+    List<UserKbGrantVO> listUserKbGrants(String userId);
 }

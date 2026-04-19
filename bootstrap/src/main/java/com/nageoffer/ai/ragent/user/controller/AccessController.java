@@ -20,10 +20,12 @@ package com.nageoffer.ai.ragent.user.controller;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
+import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 import com.nageoffer.ai.ragent.user.service.AccessService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,5 +57,18 @@ public class AccessController {
             @RequestParam(value = "include_global", required = false, defaultValue = "true") boolean includeGlobal) {
         kbAccessService.checkAnyAdminAccess();
         return Results.success(accessService.listRoles(deptId, includeGlobal));
+    }
+
+    /**
+     * P1.3b: 目标用户的可访问 KB 列表 + 每个 KB 的有效权限 / 密级 / 来源角色。
+     * <p>
+     * 权限边界：SUPER 可查任意用户；DEPT_ADMIN 仅可查本部门用户（复用 {@code checkUserManageAccess}
+     * 的 fail-closed 策略）。
+     */
+    @GetMapping("/users/{userId}/kb-grants")
+    public Result<List<UserKbGrantVO>> getUserKbGrants(@PathVariable("userId") String userId) {
+        kbAccessService.checkAnyAdminAccess();
+        kbAccessService.checkUserManageAccess(userId);
+        return Results.success(accessService.listUserKbGrants(userId));
     }
 }
