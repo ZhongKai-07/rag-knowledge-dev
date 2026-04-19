@@ -304,6 +304,7 @@ public class KbAccessServiceImpl implements KbAccessService,
         if (userIds.size() > BULK_CACHE_EVICT_THRESHOLD) {
             RKeys keys = redissonClient.getKeys();
             keys.deleteByPattern(CACHE_PREFIX + "*");
+            keys.deleteByPattern(DEPT_ADMIN_CACHE_PREFIX + "*");
             keys.deleteByPattern(KB_SECURITY_LEVEL_CACHE_PREFIX + "*");
             return affectedRows;
         }

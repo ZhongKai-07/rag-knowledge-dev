@@ -52,11 +52,6 @@ public class PgVectorStoreAdmin implements VectorStoreAdmin {
     }
 
     @Override
-    public void dropVectorSpace(VectorSpaceId spaceId) {
-        throw new UnsupportedOperationException("dropVectorSpace: only OpenSearch supports 生产删除");
-    }
-
-    @Override
     public boolean vectorSpaceExists(VectorSpaceId spaceId) {
         try {
             // noinspection SqlDialectInspection,SqlNoDataSourceInspection

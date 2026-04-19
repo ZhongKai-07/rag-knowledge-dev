@@ -32,9 +32,12 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
+import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -141,6 +144,29 @@ class KbAccessServiceImplTest {
         verify(user2AccessBucket).delete();
         verify(user2DeptBucket).delete();
         verify(user2SecurityBucket).delete();
+    }
+
+    @Test
+    void unbindAllRolesFromKb_usesBulkPatternEvictAboveThreshold() {
+        RKeys keys = mock(RKeys.class);
+        List<UserRoleDO> manyUsers = new ArrayList<>();
+        IntStream.rangeClosed(1, 501)
+                .forEach(i -> manyUsers.add(UserRoleDO.builder().userId("user-" + i).roleId("role-1").build()));
+
+        when(roleKbRelationMapper.selectList(any())).thenReturn(List.of(
+                RoleKbRelationDO.builder().roleId("role-1").build()
+        ));
+        when(userRoleMapper.selectList(any())).thenReturn(manyUsers);
+        when(roleKbRelationMapper.delete(any())).thenReturn(1);
+        when(redissonClient.getKeys()).thenReturn(keys);
+
+        int affected = service.unbindAllRolesFromKb("kb-1");
+
+        assertEquals(1, affected);
+        verify(keys).deleteByPattern("kb_access:*");
+        verify(keys).deleteByPattern("kb_access:dept:*");
+        verify(keys).deleteByPattern("kb_security_level:*");
+        verify(redissonClient, never()).getBucket(anyString());
     }
 
     private static void initTableInfo(Class<?> entityClass) {

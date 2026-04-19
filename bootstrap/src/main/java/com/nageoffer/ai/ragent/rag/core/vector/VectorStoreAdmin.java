@@ -31,9 +31,11 @@ public interface VectorStoreAdmin {
     void ensureVectorSpace(VectorSpaceSpec spec);
 
     /**
-     * 删除向量空间。不存在视为成功（幂等）。
+     * 删除向量空间。不存在视为成功（幂等）。生产只支持 OpenSearch，其他实现默认抛 UOE。
      */
-    void dropVectorSpace(VectorSpaceId spaceId);
+    default void dropVectorSpace(VectorSpaceId spaceId) {
+        throw new UnsupportedOperationException("dropVectorSpace: only OpenSearch supports 生产删除");
+    }
 
     /**
      * 只判断存在性（不创建）
