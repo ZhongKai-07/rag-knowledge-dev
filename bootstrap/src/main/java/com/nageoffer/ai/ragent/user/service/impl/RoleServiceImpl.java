@@ -135,7 +135,7 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRole(String roleId) {
         RoleDO role = roleMapper.selectById(roleId);
         if (role != null && RoleType.SUPER_ADMIN.name().equals(role.getRoleType())) {
@@ -145,12 +145,24 @@ public class RoleServiceImpl implements RoleService {
                 throw new ClientException("不能删除该角色：此操作会使系统失去最后一个 SUPER_ADMIN");
             }
         }
-        evictCacheForRole(roleId);
+
+        // P1.4: 事务前收集受影响用户 —— 必须在删 t_user_role 之前取，否则删完就查不到了。
+        Set<String> affectedUserIds = userRoleMapper.selectList(
+                        Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getRoleId, roleId))
+                .stream()
+                .map(UserRoleDO::getUserId)
+                .collect(Collectors.toSet());
+
+        // 级联删
         roleKbRelationMapper.delete(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
         userRoleMapper.delete(
                 Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getRoleId, roleId));
         roleMapper.deleteById(roleId);
+
+        // P1.4: 失效所有相关用户的 kb_access / kb_access:dept / kb_security_level 三条缓存。
+        // 放在 DB 级联之后：DB 失败时缓存不被误清；缓存失败会让事务回滚（保守但安全）。
+        affectedUserIds.forEach(kbAccessService::evictCache);
     }
 
     @Override
