@@ -43,9 +43,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.support.TransactionOperations;
-
-import java.lang.reflect.Field;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,7 +63,7 @@ class KnowledgeDocumentServiceImplTest {
     private KnowledgeDocumentServiceImpl service;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         initTableInfo(KnowledgeDocumentDO.class);
         knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
         documentMapper = mock(KnowledgeDocumentMapper.class);
@@ -107,7 +106,7 @@ class KnowledgeDocumentServiceImplTest {
                 scheduleProperties,
                 remoteFileFetcher
         );
-        setField(service, "securityLevelRefreshTopic", "knowledge-document-security-level_topic");
+        ReflectionTestUtils.setField(service, "securityLevelRefreshTopic", "knowledge-document-security-level_topic");
     }
 
     @Test
@@ -138,12 +137,6 @@ class KnowledgeDocumentServiceImplTest {
         assertTrue(topicCaptor.getValue().contains("knowledge-document-security-level_topic"));
         assertFalse(topicCaptor.getValue().contains("${"));
         assertEquals(3, eventCaptor.getValue().getNewSecurityLevel());
-    }
-
-    private static void setField(Object target, String fieldName, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, value);
     }
 
     private static void initTableInfo(Class<?> entityClass) {

@@ -21,9 +21,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -37,7 +37,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class TraceEvalAccessSupport {
 
-    private final KbAccessService kbAccessService;
+    private final CurrentUserProbe currentUserProbe;
     private final UserMapper userMapper;
 
     public <T> void applyUserScope(LambdaQueryWrapper<T> wrapper, SFunction<T, ?> userIdGetter) {
@@ -46,10 +46,10 @@ public class TraceEvalAccessSupport {
             wrapper.apply("1 = 0");
             return;
         }
-        if (kbAccessService.isSuperAdmin()) {
+        if (currentUserProbe.isSuperAdmin()) {
             return;
         }
-        if (kbAccessService.isDeptAdmin()) {
+        if (currentUserProbe.isDeptAdmin()) {
             String deptId = current.getDeptId();
             if (!StringUtils.hasText(deptId)) {
                 wrapper.apply("1 = 0");
@@ -69,10 +69,10 @@ public class TraceEvalAccessSupport {
         if (current == null || !StringUtils.hasText(current.getUserId()) || !StringUtils.hasText(ownerUserId)) {
             return false;
         }
-        if (kbAccessService.isSuperAdmin()) {
+        if (currentUserProbe.isSuperAdmin()) {
             return true;
         }
-        if (kbAccessService.isDeptAdmin()) {
+        if (currentUserProbe.isDeptAdmin()) {
             String deptId = current.getDeptId();
             if (!StringUtils.hasText(deptId)) {
                 return false;

@@ -23,10 +23,10 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
 import com.nageoffer.ai.ragent.rag.dao.entity.RagEvaluationRecordDO;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,16 +39,16 @@ import static org.mockito.Mockito.when;
 
 class TraceEvalAccessSupportTest {
 
-    private KbAccessService kbAccessService;
+    private CurrentUserProbe currentUserProbe;
     private UserMapper userMapper;
     private TraceEvalAccessSupport support;
 
     @BeforeEach
     void setUp() {
         initTableInfo(RagEvaluationRecordDO.class);
-        kbAccessService = mock(KbAccessService.class);
+        currentUserProbe = mock(CurrentUserProbe.class);
         userMapper = mock(UserMapper.class);
-        support = new TraceEvalAccessSupport(kbAccessService, userMapper);
+        support = new TraceEvalAccessSupport(currentUserProbe, userMapper);
     }
 
     @AfterEach
@@ -59,8 +59,8 @@ class TraceEvalAccessSupportTest {
     @Test
     void applyUserScope_shouldRestrictRegularUserToOwnUserId() {
         UserContext.set(LoginUser.builder().userId("u-1").build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
-        when(kbAccessService.isDeptAdmin()).thenReturn(false);
+        when(currentUserProbe.isSuperAdmin()).thenReturn(false);
+        when(currentUserProbe.isDeptAdmin()).thenReturn(false);
         LambdaQueryWrapper<RagEvaluationRecordDO> wrapper = Wrappers.lambdaQuery(RagEvaluationRecordDO.class);
 
         support.applyUserScope(wrapper, RagEvaluationRecordDO::getUserId);
@@ -71,8 +71,8 @@ class TraceEvalAccessSupportTest {
     @Test
     void applyUserScope_shouldUseDeptSubqueryForDeptAdmin() {
         UserContext.set(LoginUser.builder().userId("admin-1").deptId("dept-1").build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
-        when(kbAccessService.isDeptAdmin()).thenReturn(true);
+        when(currentUserProbe.isSuperAdmin()).thenReturn(false);
+        when(currentUserProbe.isDeptAdmin()).thenReturn(true);
         LambdaQueryWrapper<RagEvaluationRecordDO> wrapper = Wrappers.lambdaQuery(RagEvaluationRecordDO.class);
 
         support.applyUserScope(wrapper, RagEvaluationRecordDO::getUserId);
@@ -83,8 +83,8 @@ class TraceEvalAccessSupportTest {
     @Test
     void applyUserScope_shouldFailClosedWhenDeptAdminHasNoDept() {
         UserContext.set(LoginUser.builder().userId("admin-1").build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
-        when(kbAccessService.isDeptAdmin()).thenReturn(true);
+        when(currentUserProbe.isSuperAdmin()).thenReturn(false);
+        when(currentUserProbe.isDeptAdmin()).thenReturn(true);
         LambdaQueryWrapper<RagEvaluationRecordDO> wrapper = Wrappers.lambdaQuery(RagEvaluationRecordDO.class);
 
         support.applyUserScope(wrapper, RagEvaluationRecordDO::getUserId);
@@ -95,8 +95,8 @@ class TraceEvalAccessSupportTest {
     @Test
     void isVisible_shouldReturnFalseWhenRegularUserReadsOthersRecord() {
         UserContext.set(LoginUser.builder().userId("u-1").build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
-        when(kbAccessService.isDeptAdmin()).thenReturn(false);
+        when(currentUserProbe.isSuperAdmin()).thenReturn(false);
+        when(currentUserProbe.isDeptAdmin()).thenReturn(false);
 
         assertFalse(support.isVisible("u-2"));
     }
@@ -104,8 +104,8 @@ class TraceEvalAccessSupportTest {
     @Test
     void isVisible_shouldAllowDeptAdminToReadSameDeptRecord() {
         UserContext.set(LoginUser.builder().userId("admin-1").deptId("dept-1").build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
-        when(kbAccessService.isDeptAdmin()).thenReturn(true);
+        when(currentUserProbe.isSuperAdmin()).thenReturn(false);
+        when(currentUserProbe.isDeptAdmin()).thenReturn(true);
         when(userMapper.selectById("owner-1")).thenReturn(UserDO.builder().id("owner-1").deptId("dept-1").build());
 
         assertTrue(support.isVisible("owner-1"));
