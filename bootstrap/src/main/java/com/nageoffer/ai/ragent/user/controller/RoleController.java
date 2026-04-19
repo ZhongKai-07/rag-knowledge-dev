@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
@@ -28,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -69,7 +71,16 @@ public class RoleController {
     @GetMapping("/role")
     public Result<List<RoleDO>> listRoles() {
         kbAccessService.checkAnyAdminAccess();
-        return Results.success(roleService.listRoles());
+        List<RoleDO> roles = roleService.listRoles();
+        // P0.1: DEPT_ADMIN must not see SUPER_ADMIN roles (information disclosure fix).
+        // Per design doc §6 P0 scope: role_type blacklist only; dept-based filtering deferred to P1
+        // when t_role.dept_id exists (see docs/dev/design/2026-04-19-access-center-redesign.md §一·六).
+        if (!kbAccessService.isSuperAdmin()) {
+            roles = roles.stream()
+                    .filter(r -> !RoleType.SUPER_ADMIN.name().equals(r.getRoleType()))
+                    .collect(Collectors.toList());
+        }
+        return Results.success(roles);
     }
 
     @SaCheckRole("SUPER_ADMIN")
