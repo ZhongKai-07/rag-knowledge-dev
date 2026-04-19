@@ -42,10 +42,16 @@ export interface ChangePasswordPayload {
 export async function getUsersPage(
   current = 1,
   size = 10,
-  keyword?: string
+  keyword?: string,
+  deptId?: string | null
 ): Promise<PageResult<UserItem>> {
   return api.get<PageResult<UserItem>, PageResult<UserItem>>("/users", {
-    params: { current, size, keyword: keyword || undefined }
+    params: {
+      current,
+      size,
+      keyword: keyword || undefined,
+      deptId: deptId || undefined,
+    }
   });
 }
 
