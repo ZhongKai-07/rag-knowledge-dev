@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.ingestion.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nageoffer.ai.ragent.ingestion.controller.request.IngestionTaskCreateRequest;
@@ -47,6 +48,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @Validated
+@SaCheckRole("SUPER_ADMIN")
 public class IngestionTaskController {
 
     private final IngestionTaskService taskService;

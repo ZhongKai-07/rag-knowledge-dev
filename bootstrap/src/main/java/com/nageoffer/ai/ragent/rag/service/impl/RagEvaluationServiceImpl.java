@@ -28,6 +28,7 @@ import com.nageoffer.ai.ragent.rag.dao.entity.RagEvaluationRecordDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagEvaluationRecordMapper;
 import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
+import com.nageoffer.ai.ragent.rag.service.support.TraceEvalAccessSupport;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -46,6 +47,7 @@ import java.util.List;
 public class RagEvaluationServiceImpl implements RagEvaluationService {
 
     private final RagEvaluationRecordMapper evaluationMapper;
+    private final TraceEvalAccessSupport accessSupport;
     private final Gson gson = new Gson();
 
     @Async
@@ -80,13 +82,17 @@ public class RagEvaluationServiceImpl implements RagEvaluationService {
         var wrapper = Wrappers.lambdaQuery(RagEvaluationRecordDO.class)
                 .eq(StrUtil.isNotBlank(evalStatus), RagEvaluationRecordDO::getEvalStatus, evalStatus)
                 .orderByDesc(RagEvaluationRecordDO::getCreateTime);
+        accessSupport.applyUserScope(wrapper, RagEvaluationRecordDO::getUserId);
         return evaluationMapper.selectPage(page, wrapper).convert(this::toVO);
     }
 
     @Override
     public RagEvaluationRecordVO detail(String id) {
         RagEvaluationRecordDO record = evaluationMapper.selectById(id);
-        return record != null ? toVO(record) : null;
+        if (record == null || !accessSupport.isVisible(record.getUserId())) {
+            return null;
+        }
+        return toVO(record);
     }
 
     @Override

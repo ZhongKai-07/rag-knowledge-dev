@@ -31,6 +31,7 @@ import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceNodeMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceRunMapper;
 import com.nageoffer.ai.ragent.rag.service.RagTraceQueryService;
+import com.nageoffer.ai.ragent.rag.service.support.TraceEvalAccessSupport;
 import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.google.gson.Gson;
@@ -57,6 +58,7 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
     private final RagTraceRunMapper runMapper;
     private final RagTraceNodeMapper nodeMapper;
     private final UserMapper userMapper;
+    private final TraceEvalAccessSupport accessSupport;
     private final Gson gson = new Gson();
 
     @Override
@@ -77,6 +79,7 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
         if (StrUtil.isNotBlank(request.getStatus())) {
             wrapper.eq(RagTraceRunDO::getStatus, request.getStatus());
         }
+        accessSupport.applyUserScope(wrapper, RagTraceRunDO::getUserId);
 
         IPage<RagTraceRunDO> pageResult = runMapper.selectPage(page, wrapper);
         Map<String, String> usernameMap = loadUsernameMap(pageResult.getRecords());
@@ -85,21 +88,30 @@ public class RagTraceQueryServiceImpl implements RagTraceQueryService {
 
     @Override
     public RagTraceDetailVO detail(String traceId) {
-        RagTraceRunDO run = runMapper.selectOne(Wrappers.lambdaQuery(RagTraceRunDO.class)
-                .eq(RagTraceRunDO::getTraceId, traceId)
-                .last("limit 1"));
+        RagTraceRunDO run = findVisibleRun(traceId);
         if (run == null) {
             return null;
         }
         Map<String, String> usernameMap = loadUsernameMap(List.of(run));
         return RagTraceDetailVO.builder()
                 .run(toRunVO(run, usernameMap))
-                .nodes(listNodes(traceId))
+                .nodes(listNodesInternal(traceId))
                 .build();
     }
 
     @Override
     public List<RagTraceNodeVO> listNodes(String traceId) {
+        return findVisibleRun(traceId) != null ? listNodesInternal(traceId) : Collections.emptyList();
+    }
+
+    private RagTraceRunDO findVisibleRun(String traceId) {
+        RagTraceRunDO run = runMapper.selectOne(Wrappers.lambdaQuery(RagTraceRunDO.class)
+                .eq(RagTraceRunDO::getTraceId, traceId)
+                .last("limit 1"));
+        return run != null && accessSupport.isVisible(run.getUserId()) ? run : null;
+    }
+
+    private List<RagTraceNodeVO> listNodesInternal(String traceId) {
         List<RagTraceNodeDO> nodes = nodeMapper.selectList(Wrappers.lambdaQuery(RagTraceNodeDO.class)
                 .eq(RagTraceNodeDO::getTraceId, traceId)
                 .orderByAsc(RagTraceNodeDO::getStartTime)
