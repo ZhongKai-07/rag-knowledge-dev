@@ -106,6 +106,36 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
     }
 
     @Override
+    public void dropVectorSpace(VectorSpaceId spaceId) {
+        String indexName = spaceId.getLogicalName();
+        try {
+            try (var response = client.generic().execute(
+                    Requests.builder()
+                            .method("DELETE")
+                            .endpoint(indexName)
+                            .build())) {
+                if (response.getStatus() == 404) {
+                    log.info("Skip delete OpenSearch index {}: index does not exist (idempotent)", indexName);
+                    return;
+                }
+                if (response.getStatus() >= 300) {
+                    throw new RuntimeException("OpenSearch returned status " + response.getStatus()
+                            + " when deleting index: " + indexName);
+                }
+            }
+            log.info("Deleted OpenSearch index: {}", indexName);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            if (isIndexNotFound(e)) {
+                log.info("Skip delete OpenSearch index {}: index does not exist (idempotent)", indexName);
+                return;
+            }
+            throw new RuntimeException("Failed to delete OpenSearch index: " + indexName, e);
+        }
+    }
+
+    @Override
     public boolean vectorSpaceExists(VectorSpaceId spaceId) {
         try {
             return client.indices().exists(e -> e.index(spaceId.getLogicalName())).value();
@@ -117,6 +147,17 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
 
     public boolean isPipelineReady() {
         return pipelineReady;
+    }
+
+    private static boolean isIndexNotFound(Throwable t) {
+        while (t != null) {
+            String msg = t.getMessage();
+            if (msg != null && msg.contains("index_not_found")) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 
     private void ensurePipelineExists() {

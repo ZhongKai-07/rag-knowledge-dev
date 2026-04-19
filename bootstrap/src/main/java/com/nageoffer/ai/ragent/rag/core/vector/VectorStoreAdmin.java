@@ -31,6 +31,11 @@ public interface VectorStoreAdmin {
     void ensureVectorSpace(VectorSpaceSpec spec);
 
     /**
+     * 删除向量空间。不存在视为成功（幂等）。
+     */
+    void dropVectorSpace(VectorSpaceId spaceId);
+
+    /**
      * 只判断存在性（不创建）
      */
     boolean vectorSpaceExists(VectorSpaceId spaceId);
