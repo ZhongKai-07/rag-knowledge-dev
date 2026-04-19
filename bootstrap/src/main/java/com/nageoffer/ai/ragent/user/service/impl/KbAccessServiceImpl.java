@@ -45,6 +45,7 @@ import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
+import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 
@@ -70,6 +71,7 @@ public class KbAccessServiceImpl implements KbAccessService,
     private static final String DEPT_ADMIN_CACHE_PREFIX = "kb_access:dept:";
     private static final String KB_SECURITY_LEVEL_CACHE_PREFIX = "kb_security_level:";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
+    private static final int BULK_CACHE_EVICT_THRESHOLD = 500;
 
     private final UserRoleMapper userRoleMapper;
     private final RoleKbRelationMapper roleKbRelationMapper;
@@ -264,6 +266,51 @@ public class KbAccessServiceImpl implements KbAccessService,
         redissonClient.getBucket(CACHE_PREFIX + userId).delete();
         redissonClient.getBucket(DEPT_ADMIN_CACHE_PREFIX + userId).delete();
         redissonClient.getBucket(KB_SECURITY_LEVEL_CACHE_PREFIX + userId).delete();
+    }
+
+    @Override
+    public int unbindAllRolesFromKb(String kbId) {
+        List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class)
+                        .select(RoleKbRelationDO::getRoleId)
+                        .eq(RoleKbRelationDO::getKbId, kbId));
+        if (relations.isEmpty()) {
+            return 0;
+        }
+
+        Set<String> roleIds = relations.stream()
+                .map(RoleKbRelationDO::getRoleId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Set<String> userIds = Collections.emptySet();
+        if (!roleIds.isEmpty()) {
+            userIds = userRoleMapper.selectList(
+                            Wrappers.lambdaQuery(UserRoleDO.class)
+                                    .select(UserRoleDO::getUserId)
+                                    .in(UserRoleDO::getRoleId, roleIds))
+                    .stream()
+                    .map(UserRoleDO::getUserId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+        }
+
+        int affectedRows = roleKbRelationMapper.delete(
+                Wrappers.lambdaQuery(RoleKbRelationDO.class)
+                        .eq(RoleKbRelationDO::getKbId, kbId));
+
+        if (userIds.isEmpty()) {
+            return affectedRows;
+        }
+        if (userIds.size() > BULK_CACHE_EVICT_THRESHOLD) {
+            RKeys keys = redissonClient.getKeys();
+            keys.deleteByPattern(CACHE_PREFIX + "*");
+            keys.deleteByPattern(DEPT_ADMIN_CACHE_PREFIX + "*");
+            keys.deleteByPattern(KB_SECURITY_LEVEL_CACHE_PREFIX + "*");
+            return affectedRows;
+        }
+
+        userIds.forEach(this::evictCache);
+        return affectedRows;
     }
 
     @Override
