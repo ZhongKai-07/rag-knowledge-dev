@@ -19,12 +19,9 @@ import {
   Search,
   Settings,
   Upload,
-  Users,
   ShieldCheck,
   FolderKanban,
-  Workflow,
-  Building2,
-  Share2
+  Workflow
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissions, type AdminMenuId } from "@/utils/permissions";
@@ -155,30 +152,6 @@ const menuGroups: MenuGroup[] = [
         path: "/admin/access",
         label: "权限中心",
         icon: ShieldCheck
-      },
-      {
-        menuId: "users",
-        path: "/admin/users",
-        label: "用户管理",
-        icon: Users
-      },
-      {
-        menuId: "roles",
-        path: "/admin/roles",
-        label: "角色管理",
-        icon: ShieldCheck
-      },
-      {
-        menuId: "sharing",
-        path: "/admin/sharing",
-        label: "共享管理",
-        icon: Share2
-      },
-      {
-        menuId: "departments",
-        path: "/admin/departments",
-        label: "部门管理",
-        icon: Building2
       },
       {
         menuId: "sample-questions",

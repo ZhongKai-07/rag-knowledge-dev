@@ -29,6 +29,7 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
+import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +54,7 @@ class KnowledgeBaseServiceImplDeleteTest {
     private VectorStoreAdmin vectorStoreAdmin;
     private FileStorageService fileStorageService;
     private KbAccessService kbAccessService;
+    private SysDeptMapper sysDeptMapper;
     private KnowledgeBaseServiceImpl service;
 
     @BeforeEach
@@ -63,12 +65,14 @@ class KnowledgeBaseServiceImplDeleteTest {
         vectorStoreAdmin = mock(VectorStoreAdmin.class);
         fileStorageService = mock(FileStorageService.class);
         kbAccessService = mock(KbAccessService.class);
+        sysDeptMapper = mock(SysDeptMapper.class);
         service = new KnowledgeBaseServiceImpl(
                 knowledgeBaseMapper,
                 knowledgeDocumentMapper,
                 vectorStoreAdmin,
                 fileStorageService,
-                kbAccessService
+                kbAccessService,
+                sysDeptMapper
         );
         UserContext.set(LoginUser.builder().username("tester").build());
     }

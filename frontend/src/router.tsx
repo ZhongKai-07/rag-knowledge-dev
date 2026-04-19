@@ -18,11 +18,7 @@ import { RagTraceDetailPage } from "@/pages/admin/traces/RagTraceDetailPage";
 import { SystemSettingsPage } from "@/pages/admin/settings/SystemSettingsPage";
 import { SampleQuestionPage } from "@/pages/admin/sample-questions/SampleQuestionPage";
 import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTermMappingPage";
-import { UserListPage } from "@/pages/admin/users/UserListPage";
-import { RoleListPage } from "@/pages/admin/roles/RoleListPage";
 import { RagEvaluationPage } from "@/pages/admin/evaluations/RagEvaluationPage";
-import { DepartmentListPage } from "@/pages/admin/departments/DepartmentListPage";
-import { SharingPage } from "@/pages/admin/sharing/SharingPage";
 import { AccessCenterPage } from "@/pages/admin/access/AccessCenterPage";
 import { useAuthStore } from "@/stores/authStore";
 import { RequireAuth, RequireAnyAdmin, RequireSuperAdmin, RequireMenuAccess } from "@/router/guards";
@@ -144,29 +140,18 @@ export const router = createBrowserRouter([
         element: <RequireSuperAdmin><QueryTermMappingPage /></RequireSuperAdmin>
       },
       {
-        path: "users",
-        element: <RequireMenuAccess menuId="users"><UserListPage /></RequireMenuAccess>
-      },
-      {
-        path: "roles",
-        element: <RequireMenuAccess menuId="roles"><RoleListPage /></RequireMenuAccess>
-      },
-      {
         path: "evaluations",
         element: <RequireSuperAdmin><RagEvaluationPage /></RequireSuperAdmin>
       },
       {
-        path: "departments",
-        element: <RequireSuperAdmin><DepartmentListPage /></RequireSuperAdmin>
-      },
-      {
-        path: "sharing",
-        element: <RequireMenuAccess menuId="sharing"><SharingPage /></RequireMenuAccess>
-      },
-      {
         path: "access",
         element: <RequireMenuAccess menuId="access"><AccessCenterPage /></RequireMenuAccess>
-      }
+      },
+      // P2.2: 旧路由 301 重定向至权限中心对应 Tab。观察期满，页面文件已删除。
+      { path: "users", element: <Navigate to="/admin/access?tab=members" replace /> },
+      { path: "roles", element: <Navigate to="/admin/access?tab=roles" replace /> },
+      { path: "departments", element: <Navigate to="/admin/access?tab=departments" replace /> },
+      { path: "sharing", element: <Navigate to="/admin/access?tab=sharing" replace /> }
     ]
   },
   {

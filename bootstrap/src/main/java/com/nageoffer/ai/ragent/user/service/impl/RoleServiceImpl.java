@@ -165,12 +165,6 @@ public class RoleServiceImpl implements RoleService {
         affectedUserIds.forEach(kbAccessService::evictCache);
     }
 
-    @Override
-    public List<RoleDO> listRoles() {
-        return roleMapper.selectList(
-                Wrappers.lambdaQuery(RoleDO.class)
-                        .orderByDesc(RoleDO::getCreateTime));
-    }
 
     @Override
     public RoleDeletePreviewVO getRoleDeletePreview(String roleId) {

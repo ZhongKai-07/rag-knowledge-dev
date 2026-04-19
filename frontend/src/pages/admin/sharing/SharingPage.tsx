@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Search } from "lucide-react";
 import { toast } from "sonner";
-
-import { AccessCenterMigrationBanner } from "@/components/admin/AccessCenterMigrationBanner";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -32,10 +30,7 @@ type SortKey = "recent" | "name";
 export function SharingPage() {
   const permissions = usePermissions();
   const [searchParams] = useSearchParams();
-  const location = useLocation();
   const highlightKbId = searchParams.get("kb");
-  // P1.6: 旧 /admin/sharing 入口显示迁移 banner；挂在 Tab 2 内（/admin/access 下）时不显示。
-  const isLegacyRoute = location.pathname === "/admin/sharing";
   const [kbs, setKbs] = useState<KnowledgeBase[]>([]);
   const [allRoles, setAllRoles] = useState<RoleItem[]>([]);
   const [bindingsMap, setBindingsMap] = useState<Record<string, KbRoleBindingVO[]>>({});
@@ -124,7 +119,6 @@ export function SharingPage() {
 
   return (
     <div className="space-y-4">
-      {isLegacyRoute && <AccessCenterMigrationBanner tab="sharing" pageName="共享管理" />}
       <header className="rounded-lg border bg-white p-4">
         <div className="flex items-start justify-between">
           <div>

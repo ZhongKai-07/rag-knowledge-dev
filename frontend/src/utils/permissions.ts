@@ -5,20 +5,16 @@ import type { User } from "@/types";
 export type AdminMenuId =
   | "dashboard"
   | "knowledge"
-  | "users"
-  | "departments"
   | "intent-tree"
   | "ingestion"
   | "mappings"
   | "traces"
   | "evaluations"
   | "sample-questions"
-  | "roles"
-  | "sharing"
   | "access"
   | "settings";
 
-const DEPT_VISIBLE: AdminMenuId[] = ["dashboard", "knowledge", "users", "roles", "sharing", "access"];
+const DEPT_VISIBLE: AdminMenuId[] = ["dashboard", "knowledge", "access"];
 
 export interface Permissions {
   isSuperAdmin: boolean;

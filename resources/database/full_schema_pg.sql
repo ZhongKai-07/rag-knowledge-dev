@@ -1019,7 +1019,7 @@ CREATE TABLE public.t_role (
     description character varying(256),
     role_type character varying(32) DEFAULT 'USER'::character varying NOT NULL,
     max_security_level smallint DEFAULT 0 NOT NULL,
-    dept_id character varying(20),
+    dept_id character varying(20) NOT NULL,
     created_by character varying(64),
     updated_by character varying(64),
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,

@@ -54,8 +54,6 @@ public interface RoleService {
      */
     RoleDeletePreviewVO getRoleDeletePreview(String roleId);
 
-    List<RoleDO> listRoles();
-
     /** 设置角色关联的知识库列表（含权限级别，全量替换） */
     void setRoleKnowledgeBases(String roleId, List<RoleKbBindingRequest> bindings);
 

@@ -27,11 +27,7 @@ export interface RoleKbBinding {
   maxSecurityLevel?: number;
 }
 
-// 角色 CRUD
-export async function getRoles(): Promise<RoleItem[]> {
-  return api.get<RoleItem[], RoleItem[]>("/role");
-}
-
+// 角色 CRUD（GET /role 已于 P2.2 删除，列表一律走 /access/roles）
 export async function createRole(payload: RoleCreatePayload): Promise<string> {
   return api.post<string, string>("/role", payload);
 }

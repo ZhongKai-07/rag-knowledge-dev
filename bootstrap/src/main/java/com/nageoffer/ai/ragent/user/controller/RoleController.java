@@ -18,10 +18,8 @@
 package com.nageoffer.ai.ragent.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.web.Results;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import lombok.Data;
@@ -29,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -84,20 +81,7 @@ public class RoleController {
         return Results.success(roleService.getRoleDeletePreview(roleId));
     }
 
-    @GetMapping("/role")
-    public Result<List<RoleDO>> listRoles() {
-        kbAccessService.checkAnyAdminAccess();
-        List<RoleDO> roles = roleService.listRoles();
-        // P0.1: DEPT_ADMIN must not see SUPER_ADMIN roles (information disclosure fix).
-        // Per design doc §6 P0 scope: role_type blacklist only; dept-based filtering deferred to P1
-        // when t_role.dept_id exists (see docs/dev/design/2026-04-19-access-center-redesign.md §一·六).
-        if (!kbAccessService.isSuperAdmin()) {
-            roles = roles.stream()
-                    .filter(r -> !RoleType.SUPER_ADMIN.name().equals(r.getRoleType()))
-                    .collect(Collectors.toList());
-        }
-        return Results.success(roles);
-    }
+    // P2.2: GET /role 已删除（30 天观察期满）。新代码一律走 GET /access/roles。
 
     @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}/knowledge-bases")

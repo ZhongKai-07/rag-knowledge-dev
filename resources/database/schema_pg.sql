@@ -51,7 +51,7 @@ CREATE TABLE t_role (
     description         VARCHAR(256),
     role_type           VARCHAR(32) NOT NULL DEFAULT 'USER',
     max_security_level  SMALLINT    NOT NULL DEFAULT 0,
-    dept_id             VARCHAR(20),
+    dept_id             VARCHAR(20) NOT NULL,
     created_by          VARCHAR(64),
     updated_by          VARCHAR(64),
     create_time         TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
