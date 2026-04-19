@@ -18,17 +18,25 @@
 package com.nageoffer.ai.ragent.rag.service.impl;
 
 import cn.hutool.core.lang.Assert;
+import com.nageoffer.ai.ragent.framework.exception.ServiceException;
 import com.nageoffer.ai.ragent.rag.dto.StoredFileDTO;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import com.nageoffer.ai.ragent.rag.util.FileTypeDetector;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.BucketAlreadyExistsException;
+import software.amazon.awssdk.services.s3.model.BucketAlreadyOwnedByYouException;
+import software.amazon.awssdk.services.s3.model.Delete;
+import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
@@ -40,9 +48,11 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class S3FileStorageService implements FileStorageService {
 
@@ -53,6 +63,56 @@ public class S3FileStorageService implements FileStorageService {
     private static final Duration PRESIGN_DURATION = Duration.ofMinutes(10);
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 60_000;
+
+    @Override
+    public void ensureBucket(String bucketName) {
+        validateBucketName(bucketName);
+        try {
+            s3Client.createBucket(builder -> builder.bucket(bucketName));
+            log.info("成功创建RestFS存储桶，Bucket名称: {}", bucketName);
+        } catch (BucketAlreadyOwnedByYouException | BucketAlreadyExistsException e) {
+            if (e instanceof BucketAlreadyOwnedByYouException) {
+                log.error("RestFS存储桶已存在，Bucket名称: {}", bucketName, e);
+            } else {
+                log.error("RestFS存储桶已存在但由其他账户拥有，Bucket名称: {}", bucketName, e);
+            }
+            throw new ServiceException("存储桶名称已被占用：" + bucketName);
+        }
+    }
+
+    @Override
+    public void deleteBucket(String bucketName) {
+        validateBucketName(bucketName);
+        long deletedObjects = 0L;
+        String continuationToken = null;
+        try {
+            do {
+                String currentToken = continuationToken;
+                var response = s3Client.listObjectsV2(builder -> {
+                    builder.bucket(bucketName).maxKeys(1000);
+                    if (currentToken != null) {
+                        builder.continuationToken(currentToken);
+                    }
+                });
+                List<ObjectIdentifier> objectIdentifiers = response.contents().stream()
+                        .map(S3Object::key)
+                        .map(key -> ObjectIdentifier.builder().key(key).build())
+                        .toList();
+                if (!objectIdentifiers.isEmpty()) {
+                    s3Client.deleteObjects(builder -> builder
+                            .bucket(bucketName)
+                            .delete(Delete.builder().objects(objectIdentifiers).build()));
+                    deletedObjects += objectIdentifiers.size();
+                }
+                continuationToken = response.nextContinuationToken();
+            } while (continuationToken != null);
+
+            s3Client.deleteBucket(builder -> builder.bucket(bucketName));
+            log.info("成功删除RestFS存储桶，Bucket名称: {}, deletedObjects={}", bucketName, deletedObjects);
+        } catch (NoSuchBucketException e) {
+            log.info("RestFS存储桶不存在，视为删除成功，Bucket名称: {}", bucketName);
+        }
+    }
 
     @Override
     @SneakyThrows

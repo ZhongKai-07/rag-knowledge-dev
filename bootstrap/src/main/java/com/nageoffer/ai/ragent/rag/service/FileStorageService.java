@@ -25,6 +25,16 @@ import java.io.InputStream;
 public interface FileStorageService {
 
     /**
+     * 创建 bucket（幂等）。已存在视为成功。
+     */
+    void ensureBucket(String bucketName);
+
+    /**
+     * 删除 bucket（含所有对象）。不存在视为成功（幂等）。
+     */
+    void deleteBucket(String bucketName);
+
+    /**
      * 上传文件（流式，低内存）
      * <p>
      * 通过 S3Presigner 预签名 URL + HttpURLConnection 流式上传，堆内存开销近似为零
