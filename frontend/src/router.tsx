@@ -22,6 +22,7 @@ import { UserListPage } from "@/pages/admin/users/UserListPage";
 import { RoleListPage } from "@/pages/admin/roles/RoleListPage";
 import { RagEvaluationPage } from "@/pages/admin/evaluations/RagEvaluationPage";
 import { DepartmentListPage } from "@/pages/admin/departments/DepartmentListPage";
+import { SharingPage } from "@/pages/admin/sharing/SharingPage";
 import { useAuthStore } from "@/stores/authStore";
 import { RequireAuth, RequireAnyAdmin, RequireSuperAdmin, RequireMenuAccess } from "@/router/guards";
 
@@ -156,6 +157,10 @@ export const router = createBrowserRouter([
       {
         path: "departments",
         element: <RequireSuperAdmin><DepartmentListPage /></RequireSuperAdmin>
+      },
+      {
+        path: "sharing",
+        element: <RequireMenuAccess menuId="sharing"><SharingPage /></RequireMenuAccess>
       }
     ]
   },

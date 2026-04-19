@@ -23,7 +23,8 @@ import {
   ShieldCheck,
   FolderKanban,
   Workflow,
-  Building2
+  Building2,
+  Share2
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 import { usePermissions, type AdminMenuId } from "@/utils/permissions";
@@ -162,6 +163,12 @@ const menuGroups: MenuGroup[] = [
         icon: ShieldCheck
       },
       {
+        menuId: "sharing",
+        path: "/admin/sharing",
+        label: "共享管理",
+        icon: Share2
+      },
+      {
         menuId: "departments",
         path: "/admin/departments",
         label: "部门管理",
@@ -196,6 +203,7 @@ const breadcrumbMap: Record<string, string> = {
   settings: "系统设置",
   users: "用户管理",
   roles: "角色管理",
+  sharing: "共享管理",
   departments: "部门管理"
 };
 
