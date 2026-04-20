@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识库开发工作汇报</title>
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --surface-2: #fbfbfe;
+    --border: #e5e7eb;
+    --border-strong: #d1d5db;
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+    --primary: #4f46e5;
+    --primary-soft: #eef2ff;
+    --primary-dark: #4338ca;
+    --accent: #0ea5e9;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --ph-bg: #fafbff;
+    --ph-border: #c7d2fe;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.04);
+    --shadow-md: 0 1px 2px rgba(15,23,42,.04), 0 4px 14px rgba(15,23,42,.05);
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 16px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+                 "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  aside.sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 20px;
+    z-index: 20;
+  }
+  .brand { margin-bottom: 22px; }
+  .brand .dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  .brand .title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    align-items: center;
+  }
+  .brand .subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 6px 0 0 16px;
+    letter-spacing: .02em;
+  }
+
+  nav ul { list-style: none; margin: 0; padding: 0; }
+  nav li a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--text-muted);
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    transition: all .15s ease;
+    border-left: 2px solid transparent;
+    margin-bottom: 2px;
+  }
+  nav li a:hover { background: var(--primary-soft); color: var(--primary); }
+  nav li a.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 600;
+    border-left-color: var(--primary);
+  }
+  nav li a .num {
+    font-variant-numeric: tabular-nums;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    width: 22px;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  nav li a.active .num { color: var(--primary); }
+
+  .sidebar-footer {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+  kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  /* ---------- Progress bar ---------- */
+  .progress-bar {
+    position: fixed;
+    top: 0;
+    left: 260px;
+    right: 0;
+    height: 3px;
+    background: transparent;
+    z-index: 50;
+  }
+  .progress-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    width: 0%;
+    transition: width .1s linear;
+  }
+
+  /* ---------- Main ---------- */
+  main {
+    padding: 48px 64px 120px;
+    max-width: 1120px;
+  }
+
+  section.chapter {
+    padding: 40px 0 56px;
+    border-bottom: 1px dashed var(--border);
+    scroll-margin-top: 16px;
+  }
+  section.chapter:last-child { border-bottom: none; }
+  section.chapter:first-child { padding-top: 8px; }
+
+  .chapter-header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 6px;
+  }
+  .chapter-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: .12em;
+    font-variant-numeric: tabular-nums;
+  }
+  .chapter-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -.01em;
+  }
+  .chapter-lead {
+    font-size: 15.5px;
+    color: var(--text-muted);
+    margin: 10px 0 26px;
+    max-width: 780px;
+    line-height: 1.7;
+  }
+
+  /* ---------- Card ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+  .card h3 {
+    margin: 0 0 12px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p { margin: 0 0 10px; color: var(--text); }
+  .card p:last-child { margin-bottom: 0; }
+  .label {
+    display: inline-block;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+  .label.warn  { color: #b45309; background: #fef3c7; }
+  .label.good  { color: #047857; background: #d1fae5; }
+  .label.muted { color: var(--text-muted); background: #f3f4f6; }
+
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  ul.bullets { margin: 0; padding-left: 20px; }
+  ul.bullets li { margin: 6px 0; }
+  ul.bullets li::marker { color: var(--primary); }
+
+  /* ---------- Placeholder (interactive area) ---------- */
+  .placeholder {
+    position: relative;
+    border: 2px dashed var(--ph-border);
+    background: var(--ph-bg);
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    color: var(--text-muted);
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0 12px;
+    text-align: center;
+  }
+  .placeholder .pill {
+    font-size: 10.5px;
+    background: #fff;
+    color: var(--primary);
+    border: 1px solid var(--ph-border);
+    padding: 3px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .placeholder .ph-title {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 15px;
+    margin-top: 4px;
+  }
+  .placeholder .ph-hint {
+    font-size: 13px;
+    max-width: 640px;
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  /* Pipeline preview nodes (hint layout) */
+  .pipeline-preview {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+    width: 100%;
+  }
+  .pipeline-preview .node {
+    background: white;
+    border: 1.5px solid var(--ph-border);
+    border-radius: 10px;
+    padding: 12px 6px;
+    text-align: center;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+  .pipeline-preview .node b {
+    display: block;
+    color: var(--primary);
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+
+  /* ---------- Cover ---------- */
+  .cover {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #0ea5e9 100%);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: 56px 48px;
+    margin-bottom: 32px;
+    box-shadow: 0 10px 40px rgba(79,70,229,.18);
+  }
+  .cover .tag {
+    font-size: 11.5px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    opacity: .85;
+    font-weight: 600;
+  }
+  .cover h1 {
+    font-size: 38px;
+    line-height: 1.2;
+    margin: 14px 0 14px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+  .cover p.lead {
+    font-size: 16px;
+    opacity: .92;
+    max-width: 760px;
+    margin: 0;
+    line-height: 1.7;
+  }
+  .cover .meta {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    font-size: 13px;
+    opacity: .88;
+  }
+  .cover .meta span b { font-weight: 600; opacity: 1; margin-right: 6px; }
+
+  /* ---------- Metric / KPI ---------- */
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .kpi .name { font-size: 12px; color: var(--text-muted); margin: 0; }
+  .kpi .val {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 6px 0 2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi .delta { font-size: 11.5px; color: var(--success); }
+  .kpi .delta.warn { color: var(--warn); }
+  .kpi .val .tbd { color: var(--text-dim); font-weight: 500; font-size: 15px; }
+
+  /* ---------- Chip ---------- */
+  .chip {
+    display: inline-block;
+    font-size: 12px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    padding: 3px 10px;
+    border-radius: 999px;
+    margin: 2px 4px 2px 0;
+    font-weight: 500;
+  }
+  .chip.muted { background: #f3f4f6; color: var(--text-muted); }
+
+  /* ---------- Responsive / Print ---------- */
+  @media (max-width: 960px) {
+    .app { grid-template-columns: 1fr; }
+    aside.sidebar { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    main { padding: 32px 20px 80px; }
+    .progress-bar { left: 0; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .cover { padding: 36px 24px; }
+    .cover h1 { font-size: 28px; }
+    .pipeline-preview { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media print {
+    aside.sidebar, .progress-bar { display: none; }
+    main { padding: 0; max-width: 100%; }
+    .card, .placeholder { break-inside: avoid; }
+    section.chapter { page-break-after: always; border-bottom: none; }
+    .cover { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+
+<div class="app">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <p class="title"><span class="dot"></span>知识库开发工作汇报</p>
+      <p class="subtitle">三支柱 · 中台 · 智能化</p>
+    </div>
+    <nav>
+      <ul id="navList">
+        <li><a href="#cover"    data-target="cover"><span class="num">00</span>封面 / 概览</a></li>
+        <li><a href="#overview" data-target="overview"><span class="num">01</span>整体工作拆解</a></li>
+        <li><a href="#arch"     data-target="arch"><span class="num">02</span>系统架构</a></li>
+        <li><a href="#rag"      data-target="rag"><span class="num">03</span>RAG 链路</a></li>
+        <li><a href="#prompt"   data-target="prompt"><span class="num">04</span>Prompt 支柱</a></li>
+        <li><a href="#context"  data-target="context"><span class="num">05</span>Context 支柱</a></li>
+        <li><a href="#harness"  data-target="harness"><span class="num">06</span>Harness 支柱</a></li>
+        <li><a href="#intent"   data-target="intent"><span class="num">07</span>意图识别</a></li>
+        <li><a href="#tools"    data-target="tools"><span class="num">08</span>部门工具 &amp; API</a></li>
+        <li><a href="#ops"      data-target="ops"><span class="num">09</span>知识运营</a></li>
+        <li><a href="#memory"   data-target="memory"><span class="num">10</span>Memory 融合</a></li>
+        <li><a href="#roadmap"  data-target="roadmap"><span class="num">11</span>Roadmap &amp; 总结</a></li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      快捷键：<kbd>J</kbd>/<kbd>↓</kbd> 下一章<br>
+      <kbd>K</kbd>/<kbd>↑</kbd> 上一章<br>
+      <kbd>G</kbd> 回到顶部
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+
+    <!-- ============ 00 COVER ============ -->
+    <section class="chapter" id="cover">
+      <div class="cover">
+        <div class="tag">INTERNAL REPORT · 2026</div>
+        <h1>从部门知识库到知识库中台</h1>
+        <p class="lead">
+          把"一个部门的 RAG 知识库"演进为"跨部门、可复用、带 Memory 加工能力的<b>知识库中台</b>"。
+          本报告聚焦<b>开发阶段的系统建设</b>——链路、架构、能力模块、运营机制与未来 Memory 融合路径，
+          最终指向"知识库智能化"这一目标。
+        </p>
+        <div class="meta">
+          <span><b>汇报人：</b>[待补充]</span>
+          <span><b>汇报日期：</b>[待补充]</span>
+          <span><b>版本：</b>v0.1 Skeleton</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="label">如何使用本报告</span>
+        <ul class="bullets">
+          <li>左侧导航可点击跳转，支持键盘快捷键 <kbd>J</kbd>/<kbd>K</kbd> 切换章节；顶部进度条指示阅读位置。</li>
+          <li>每一章节均包含：<b>关键信息卡片</b>（观点、结构） + <b>可交互演示区</b>（当前为占位，待填充真实流程图 / 指标 / Demo）。</li>
+          <li>单文件 HTML：<b>可离线演示、可打印为 PDF、可直接转发</b>，无需部署。</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 01 OVERVIEW ============ -->
+    <section class="chapter" id="overview">
+      <div class="chapter-header">
+        <span class="chapter-num">01</span>
+        <h2 class="chapter-title">整体工作拆解</h2>
+      </div>
+      <p class="chapter-lead">
+        把知识库分成三根能力支柱——<b>Prompt / Context / Harness</b>：一根决定"模型怎么想"，一根决定"模型看到什么"，一根决定"整台机器怎么跑"。
+        三根支柱在当前"部门知识库"之上叠加，朝<b>知识库中台</b>演进，最终以后端 Memory 处理管线为引擎走向<b>知识库智能化</b>。
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label">三支柱（能力维度）</span>
+          <ul class="bullets">
+            <li><b>Prompt Engineering</b> —— LLM 内部的指令体系。本项目 12 个 <code>.st</code> 模板 + 4 个 Enhancer prompt，8 阶段动态组装。</li>
+            <li><b>Context Engineering</b> —— 有限上下文窗口内塞入"让推理做对"的信息。<b>RAG 质量的决定性层级、工程量最大的一层。</b></li>
+            <li><b>Harness Engineering</b> —— 把 LLM / Prompt / Context 装进可运行、可观测、可演进的工程系统。决定系统<b>能不能上生产、能不能持续迭代</b>。</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">三阶段（时间维度）</span>
+          <ul class="bullets">
+            <li>第一阶段 · <b>部门知识库</b>：打通单一部门端到端链路（当前形态）</li>
+            <li>第二阶段 · <b>知识库中台</b>：能力模块化、多业务可复用、对外统一输出</li>
+            <li>第三阶段 · <b>知识库智能化</b>：多层 Memory 融合 + 后端加工，问答反哺知识</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <span class="label">为什么要做这件事（Purpose）</span>
+        <ul class="bullets">
+          <li>把部门里"散在文档 / 工单 / 聊天记录 / 工具调用"中的隐性知识显性化、结构化。</li>
+          <li>给"懂业务但不熟 AI"的同事一套稳定、可解释、可追溯的问答与工具调用入口。</li>
+          <li>沉淀出可跨业务复用的知识能力，而非一次性的项目交付。</li>
+        </ul>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · 三支柱 × 三阶段</span>
+        <div class="ph-title">三支柱 × 三阶段 的二维全景图</div>
+        <div class="ph-hint">
+          建议呈现：横向为"部门知识库 → 中台 → 智能化"三阶段，纵向为 Prompt / Context / Harness 三支柱；
+          每格标注当前所处位置与下一步关键动作。点击格子跳转至对应章节。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 02 ARCHITECTURE ============ -->
+    <section class="chapter" id="arch">
+      <div class="chapter-header">
+        <span class="chapter-num">02</span>
+        <h2 class="chapter-title">系统架构：四层分工、依赖单向</h2>
+      </div>
+      <p class="chapter-lead">
+        系统分为 <b>Frontend · Bootstrap · framework+infra-ai · Infrastructure</b> 四层。
+        <b>依赖方向严格单向</b>——业务代码永远不碰具体模型或具体向量库；
+        AI 能力由 <code>infra-ai</code> 统一屏蔽 <b>百炼 / Ollama / SiliconFlow</b> 差异，
+        向量库由 <code>VectorStoreService</code> 统一屏蔽 <b>OpenSearch / Milvus / pgvector</b>。
+      </p>
+
+      <div style="margin: 8px 0 24px;">
+        <img src="./assets/system-architecture.png" alt="系统架构图"
+             style="display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow-md);">
+        <p style="text-align:center;font-size:12px;color:var(--text-muted);margin:10px 0 0;">
+          图：系统架构总览 · 源文件 <code>diagram/architecture/系统架构.drawio</code>
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label">四层分工</span>
+          <ul class="bullets">
+            <li><b>Frontend</b> · React SPA —— 交互与展示；权限只做"乐观渲染"，<b>不承担权限边界</b></li>
+            <li><b>Bootstrap</b> · Spring Boot —— 按业务域组织：<code>rag / ingestion / knowledge / user / admin / core</code>；唯一对外接口层</li>
+            <li><b>framework + infra-ai</b> —— framework 提供 Result/异常/TTL 追踪/幂等/ID；<b>infra-ai 统一 LLM/Embedding/Rerank 接口，内建路由和熔断降级</b></li>
+            <li><b>Infrastructure</b> —— PostgreSQL · Redis · RocketMQ · OpenSearch（向量） · RustFS（S3） · 外部 LLM</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">四大架构不变量</span>
+          <ul class="bullets">
+            <li><b>依赖单向</b> —— <code>framework / infra-ai</code> 不能反向依赖 <code>bootstrap</code>，AI 逻辑不可出现在 framework</li>
+            <li><b>业务域边界</b> —— 域内 <code>controller → service → dao</code>；跨域只读聚合放 <code>admin/</code></li>
+            <li><b>向量库可切换</b> —— <code>rag.vector.type</code> 切 OpenSearch / Milvus / pgvector，<b>不改业务代码</b></li>
+            <li><b>外部 LLM 可替换</b> —— 新增供应商只动 <code>infra-ai</code>，加一个 <code>ChatClient</code> 实现 + yaml 候选即可</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <span class="label">两条核心业务链路（细节见 03 RAG 链路）</span>
+        <ul class="bullets">
+          <li><b>RAG 问答（SSE）</b> —— 8 阶段管线：AOP（限流 + traceId）→ RBAC 过滤 → 记忆加载 → 改写 / 拆分 → 意图识别 → 多路检索 → Prompt 装配 → LLM 流式生成</li>
+          <li><b>文档入库（MQ 异步）</b> —— 上传立即返回；<b>事务消息</b>保证"消息发出 + 状态变更"原子；消费者跑节点链 Fetcher → Parser(Tika) → Chunker → Indexer；原子事务删旧写新</li>
+        </ul>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label">跨层关键设计</span>
+          <ul class="bullets">
+            <li><b>RBAC 单一真相源</b> · <code>KbAccessService</code> —— 真正拦截在<b>向量库层 filter</b>：<code>bool.filter: kb_id ∈ 可访问 ∧ security_level ≤ 上限</code></li>
+            <li><b>LLM 路由降级</b> · <code>RoutingLLMService</code> —— 按优先级选模型，失败切换下一家，连续失败 <b>Redis 熔断</b></li>
+            <li><b>全链路追踪</b> · <code>t_rag_trace_run / t_rag_trace_node</code> —— 每节点 IO/耗时可回放；短路点（未登录 / 无可见 KB / 歧义 / 零命中 / 纯系统意图）都可见</li>
+            <li><b>跨线程上下文</b> · <code>TransmittableThreadLocal</code> —— SSE 回调运行在 <code>modelStreamExecutor</code> 独立线程，<code>RagTraceContext</code> 须透传</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label warn">当前已知风险（source: <code>docs/dev/followup/</code>）</span>
+          <ul class="bullets">
+            <li><code>security_level</code> 过滤只在 OpenSearch 实现——切 Milvus / pgvector 会<b>静默失效</b></li>
+            <li>RocketMQ 在单机 Compose 部署收益 &lt; 成本，<b>计划迁移 Spring Events + @TransactionalEventListener</b></li>
+            <li><code>sendInTransaction</code> 把 MQ 概念泄漏进 framework 通用接口（ARCH-6）</li>
+            <li><code>DefaultIntentClassifier</code> 每次请求重建意图树内存结构（ARCH-8，改为热缓存）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · 分层架构图</span>
+        <div class="ph-title">点击任一层展开职责与跨层契约</div>
+        <div class="ph-hint">
+          以上 PNG 为底图，叠加点击区——点 Frontend / Bootstrap / infra-ai / Infrastructure，
+          右侧弹出该层的"职责 / 关键模块 / 对外契约 / 现状 vs 目标"。汇报时按层讲解，听众跟着图走。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 03 RAG ============ -->
+    <section class="chapter" id="rag">
+      <div class="chapter-header">
+        <span class="chapter-num">03</span>
+        <h2 class="chapter-title">RAG 链路：8 阶段管线 + 可观测短路</h2>
+      </div>
+      <p class="chapter-lead">
+        RAG 问答由 <code>RAGChatServiceImpl.streamChat()</code> 编排，共 <b>8 个显式节点</b>，
+        每节点都有输入 / 输出契约、全链路 <code>traceId</code> 贯穿；<b>5 类短路路径</b>
+        （未登录 / 无可见 KB / 歧义 / 零命中 / 纯系统意图）都在 trace 表里一眼可见。
+      </p>
+
+      <div style="margin: 8px 0 24px;">
+        <img src="./assets/rag-sequence.png" alt="RAG 时序图"
+             style="display:block;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--border);box-shadow:var(--shadow-md);">
+        <p style="text-align:center;font-size:12px;color:var(--text-muted);margin:10px 0 0;">
+          图：RAG 时序图 · 源文件 <code>diagram/sequence/rag_sequence_diagram.drawio</code>
+        </p>
+      </div>
+
+      <div class="card">
+        <span class="label">8 阶段管线 · <code>GET /rag/v3/chat → RAGChatController → RAGChatServiceImpl.streamChat</code></span>
+        <ul class="bullets">
+          <li><b>① AOP 入口</b> · <code>ChatRateLimitAspect</code> —— 限流入队 + 生成 <code>traceId</code> + 写入 <code>RagTraceContext</code></li>
+          <li><b>② RBAC 权限过滤</b> · <code>KbAccessService.getAccessibleKbIds(userId)</code> —— Redis 缓存 <code>kb_access:{userId}</code></li>
+          <li><b>③ 加载对话记忆</b> · <code>ConversationMemoryService.loadAndAppend()</code> —— 窗口截取 + 摘要压缩</li>
+          <li><b>④ 查询改写 + 子问题拆分</b> · <code>MultiQuestionRewriteService</code> —— 术语归一化 → LLM 改写/拆分（T=0.1） → 兜底规则</li>
+          <li><b>⑤ 意图识别 + 歧义检测</b> · 并行叶子打分（<code>score ≥ 0.35</code>，最多 3 个意图） → <code>IntentGuidanceService.detectAmbiguity()</code></li>
+          <li><b>⑥ 多通道检索</b> · <b>KB 意图</b>走 <code>IntentDirected + VectorGlobal</code> + 去重 + Rerank；<b>MCP 意图</b>并行走工具调用（LLM 提参 → 执行）</li>
+          <li><b>⑦ 上下文装配</b> · <code>RAGPromptService.buildStructuredMessages()</code> —— system + 证据 + 历史 + 多/单问题</li>
+          <li><b>⑧ LLM 流式生成</b> · SSE 帧序 <code>content / thinking / usage / [DONE]</code>；<code>onComplete</code> 写回记忆 + token 用量 + RAGAS 采集</li>
+        </ul>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label">5 类短路点（trace 表一眼可见）</span>
+          <ul class="bullets">
+            <li><b>未登录</b> —— Sa-Token 拦截器拒绝</li>
+            <li><b>无可见 KB</b> —— RBAC 返回空集</li>
+            <li><b>歧义</b> —— 同名意图出现在多个系统，返回引导语让用户二选一</li>
+            <li><b>纯系统意图（System-Only）</b> —— 跳过检索直接调 LLM</li>
+            <li><b>零命中</b> —— 检索结果为空，返回"未检索到"而不是幻觉</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">可观测性 / Trace</span>
+          <ul class="bullets">
+            <li><code>t_rag_trace_run</code> —— 一次完整问答（traceId、耗时、短路原因、token 用量）</li>
+            <li><code>t_rag_trace_node</code> —— 每节点 IO / 得分 / 耗时</li>
+            <li><code>extra_data</code> JSON —— Gson 读 / Jackson 写（避免 <code>5228.0</code> 类型强转失败）</li>
+            <li><b>跨线程透传</b> —— SSE 回调在独立线程，用 <code>TransmittableThreadLocal</code> 捕获 traceId</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <span class="label warn">与 WeKnora 对比发现的差距 · source: <code>docs/dev/research/weknora_vs_myrag.md</code></span>
+        <ul class="bullets">
+          <li><b>后处理薄</b> —— 缺 MMR 去冗余、缺阈值自动降级、缺复合评分（model + base + source 加权）</li>
+          <li><b>缺上下文重建</b> —— 父子块合并、区间合并、短块邻居扩展、历史引用注入 全未做</li>
+          <li><b>已领先的</b> —— RBAC 体系 / 模型路由熔断 / RAGAS 评测采集 / 短路机制更细</li>
+        </ul>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · 链路流程图</span>
+        <div class="ph-title">可点击的 8 阶段 Pipeline，叠加在时序图之上</div>
+        <div class="ph-hint">
+          每节点为可点击卡片，点击后右侧弹出"代码位置 + 输入/输出示例 + 短路触发条件"。
+          现场演示按节点顺序讲，并展示各短路分支如何命中。
+        </div>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · Trace 回放</span>
+        <div class="ph-title">单次问答的完整 trace 回放</div>
+        <div class="ph-hint">
+          取一条真实 / 脱敏的 <code>t_rag_trace_run</code>，展开每一节点查看 prompt、召回片段、得分、耗时。
+          用来演示"为什么这句话回答成这样"。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 04 PROMPT ============ -->
+    <section class="chapter" id="prompt">
+      <div class="chapter-header">
+        <span class="chapter-num">04</span>
+        <h2 class="chapter-title">Prompt 支柱：动态 Prompt 体系</h2>
+      </div>
+      <p class="chapter-lead">
+        Prompt 支柱决定"模型怎么想"。本项目把 Prompt 当作<b>可版本化、可组合、可追溯</b>的资产：
+        <code>bootstrap/src/main/resources/prompt/</code> 下集中 <b>12 个 <code>.st</code> 模板</b>
+        + <code>EnhancerPromptManager</code> 内嵌 <b>4 类入库 Prompt</b>，
+        统一由 <code>PromptTemplateLoader</code> 加载缓存，按 <b>Scene × Intent</b> 两维度动态组装。
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label">Prompt 资产盘点 · 12 + 4 条</span>
+          <ul class="bullets">
+            <li><b>答案生成（按 Scene）</b> · <code>answer-chat-kb.st</code> / <code>answer-chat-mcp.st</code> / <code>answer-chat-mcp-kb-mixed.st</code> / <code>answer-chat-system.st</code></li>
+            <li><b>链路阶段</b> · <code>user-question-rewrite.st</code> · <code>intent-classifier.st</code> · <code>guidance-prompt.st</code> · <code>conversation-summary.st</code> · <code>conversation-title.st</code> · <code>suggested-questions.st</code> · <code>mcp-parameter-extract.st</code> · <code>pdf-format-guard.st</code></li>
+            <li><b>入库侧 · EnhancerPromptManager</b> · <code>CONTEXT_ENHANCE / KEYWORDS / QUESTIONS / METADATA</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">动态组装机制</span>
+          <ul class="bullets">
+            <li><b>加载</b> · <code>PromptTemplateLoader</code> 按 classpath 加载 <code>.st</code> 文件，<code>ConcurrentHashMap</code> 缓存</li>
+            <li><b>渲染</b> · <code>PromptTemplateUtils.fillSlots(template, Map&lt;String,String&gt;)</code> 替换 <code>{placeholder}</code></li>
+            <li><b>Scene-based 选择</b> · <code>PromptScene</code> 枚举（<code>KB_ONLY / MCP_ONLY / MIXED / EMPTY</code>）决定装哪个答案模板</li>
+            <li><b>Intent-driven 选择</b> · 意图节点的 <code>promptTemplate</code> 字段若非空，命中单意图时<b>优先</b>用它，多意图回退默认</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <span class="label">8 阶段 LLM 调用链（同 03 管线）</span>
+        <ul class="bullets">
+          <li>① <b>Query 改写 + 拆分</b> · <code>user-question-rewrite.st</code> → JSON <code>{rewrite, should_split, sub_questions}</code></li>
+          <li>② <b>意图分类</b> · 动态系统 prompt 由意图树展开构建 → JSON <code>[{id, score, reason}]</code></li>
+          <li>③ <b>歧义澄清</b>（可选） · <code>guidance-prompt.st</code>，仅在同名意图跨系统时触发</li>
+          <li>④ <b>检索</b>（非 LLM，属 Context 支柱）</li>
+          <li>⑤ <b>答案装配</b> · <code>RAGPromptService.buildStructuredMessages()</code> 按 Scene 选模板，拼 system + 证据 + 历史 + 问题</li>
+          <li>⑥ <b>答案生成</b> · 主 LLM 调用，SSE 流式</li>
+          <li>⑦ <b>对话摘要 + 推荐追问</b>（异步） · <code>conversation-summary.st</code> · <code>suggested-questions.st</code></li>
+          <li>⑧ <b>会话标题</b>（首轮） · <code>conversation-title.st</code></li>
+        </ul>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label good">本项目的 Prompt 亮点</span>
+          <ul class="bullets">
+            <li><b>结构化输出强约束</b> —— 意图分类、Query 改写、参数抽取全部 JSON schema 强约束，消除后处理解析失败</li>
+            <li><b>Scene × Intent 双维度选择</b> —— 业务侧改 Prompt 不动代码，意图节点挂模板即可自定答案风格</li>
+            <li><b>对话摘要只存"主题索引 + 是否已答"</b> —— 不存答案本体，避免与新检索碰撞（见 <code>conversation-summary.st</code>）</li>
+            <li><b>多问题自动编号装配</b> —— <code>buildStructuredMessages</code> 对子问题自动加 "1./2./..."，防止 LLM 漏答</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label warn">下一步</span>
+          <ul class="bullets">
+            <li>Prompt <b>版本管理 + Diff + 离线 A/B</b></li>
+            <li>与评测基线绑定：任何 Prompt 改动触发回归</li>
+            <li>剥离<b>模型特定写法</b>（避免 prompt 与单一模型耦合）</li>
+            <li>与 Memory 支柱联动：按用户 / 部门画像动态挑选 Prompt 片段</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · Prompt 资产地图 + Diff</span>
+        <div class="ph-title">12 个模板的资产全景 + 单模板 Before/After 并排对比</div>
+        <div class="ph-hint">
+          左侧树形列出所有 Prompt 资产（按 Scene / 链路阶段 / 入库 分组），
+          点击任一模板右侧展示：变量清单、调用位置、渲染后示例、Before/After 效果对比。
+          现场演示时挑 1-2 个关键模板（如 intent-classifier + answer-chat-kb）讲清"怎么变、为什么变"。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 05 CONTEXT ============ -->
+    <section class="chapter" id="context">
+      <div class="chapter-header">
+        <span class="chapter-num">05</span>
+        <h2 class="chapter-title">Context 支柱：RAG 质量的决定性层级</h2>
+      </div>
+      <p class="chapter-lead">
+        <b>定位：在有限上下文窗口内，塞进"最能让这次推理做对"的信息。</b>
+        这是 RAG 质量的决定性层级，也是<b>工程量最大的一层</b>——
+        由检索前、检索中、检索后、对话状态四个子系统组成。
+      </p>
+
+      <!-- 子系统 1：检索前 -->
+      <div class="card">
+        <span class="label">① 检索前 · Query 处理</span>
+        <ul class="bullets">
+          <li><b>Query Rewriting</b> —— 对话中的指代消解、department context 补全</li>
+          <li><b>HyDE / Query Expansion</b> —— 生成假设性答案做检索，<b>对自然语言多、专业术语少的问题收益明显</b></li>
+          <li><b>Multi-query</b> —— 一次问题拆多子查询并行检索，<b>特别适合"对比 A 和 B 的合规差异"这类问题</b></li>
+          <li><b>意图路由</b> —— 闲聊走不走 RAG？结构化问题是不是直接走 SQL？<b>路由错判会放大下游所有成本</b></li>
+        </ul>
+      </div>
+
+      <!-- 子系统 2：检索中 -->
+      <div class="card">
+        <span class="label">② 检索中 · Hybrid Retrieval</span>
+        <ul class="bullets">
+          <li><b>BM25 + KNN + KG 三路并行，RRF 融合</b>。经验：BM25 在法规术语的精确匹配上<b>经常胜过纯向量</b>；向量擅长语义改写；KG 擅长关系型查询（"谁签了什么协议"）。三路互补。</li>
+          <li><b>Rerank 是性价比最高的单点投入</b> —— cross-encoder 把 top-50 压到 top-5，显著降低 context 噪声。本项目已用 <code>gte-rerank</code>。</li>
+          <li><span class="label warn" style="font-size:10px;padding:2px 6px;margin:0 6px 0 0;">提醒</span><b>rerank query 必须用 canonical first-round query</b>——多轮改写后的 query 送进 rerank 会导致 drift（之前已踩过）</li>
+          <li><b>权限过滤必须下推到检索引擎层</b>（OpenSearch filter），<b>不能召回后过滤</b>——否则既泄露元信息也浪费召回配额</li>
+        </ul>
+      </div>
+
+      <!-- 子系统 3：检索后 -->
+      <div class="card">
+        <span class="label">③ 检索后 · Context Assembly</span>
+        <ul class="bullets">
+          <li><b>去重</b> —— 跨 chunk、跨 round 的语义去重。<b>Agentic 多轮最容易把同一份源文档反复塞进去</b></li>
+          <li><b>排序</b> —— 不是按相关度，而是按"对生成最有用"的顺序：<b>通常最相关的放 prompt 末尾</b>（recency bias 比 primacy 更强）</li>
+          <li><b>压缩</b> —— 长 chunk 用 <b>LLMLingua</b> 或模型自己做抽取式压缩；<b>表格类要保持结构化</b></li>
+          <li><b>Token 预算</b> —— <code>TokenBudgetManager</code> 方向对。按"<b>系统 prompt + 对话历史 + 检索上下文 + 生成预留</b>"四段预算，超额时按优先级截断，<b>别让框架默认从最前面截掉系统指令</b></li>
+        </ul>
+      </div>
+
+      <!-- 子系统 4：对话状态 -->
+      <div class="card">
+        <span class="label">④ 对话状态 · Session Context</span>
+        <ul class="bullets">
+          <li><b>超过 N 轮做 running summary</b>，不要无脑拼接历史</li>
+          <li><b>用户 / 部门画像作为隐式上下文</b>——FICC vs EQD 对同一个问题的默认倾向是不一样的</li>
+          <li>本项目 <code>JdbcConversationMemorySummaryService</code> 已实现异步压缩 + Redis 锁；summary 作为 SYSTEM 消息 prepend，只存主题索引不存答案</li>
+        </ul>
+      </div>
+
+      <!-- 失败模式 -->
+      <div class="card">
+        <span class="label warn">常见失败模式（必须避免）</span>
+        <ul class="bullets">
+          <li><b>Chunking 一刀切</b> —— 512 token 固定窗口对条款类文档是灾难，应该<b>按结构切分 + 父子 chunk</b></li>
+          <li><b>元数据埋点不够</b> —— 后期想做权限 / 时效过滤才发现字段不存在</li>
+          <li><b>没做 retrieval-only 评估</b> —— 出了问题分不清是召回差还是生成差</li>
+        </ul>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · 上下文装配器</span>
+        <div class="ph-title">子系统 ①→②→③→④ 的端到端可视化</div>
+        <div class="ph-hint">
+          输入一个 Query，左栏展示候选片段（来源 / 打分 / 长度 / 时效），
+          中栏可切换装配策略（去重 / 排序 / 压缩 / 预算），右栏展示最终塞进 Prompt 的 Context。
+          演示时展示"这段为什么没进去、那段为什么排末尾"——直接把 Context 工程讲清楚。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 06 HARNESS ============ -->
+    <section class="chapter" id="harness">
+      <div class="chapter-header">
+        <span class="chapter-num">06</span>
+        <h2 class="chapter-title">Harness 支柱：模型之外的工程体系</h2>
+      </div>
+      <p class="chapter-lead">
+        <b>定位：把 LLM / Prompt / Context 这些"LLM 内部"的组件，装进一个可运行、可观测、可演进的工程系统。</b>
+        这一层决定了系统<b>能不能上生产、能不能持续迭代</b>——缺 Harness 的项目只能跑 demo。
+      </p>
+
+      <div class="card">
+        <span class="label">三支柱的关系</span>
+        <p>
+          <b>Prompt 支柱</b>决定模型怎么想；<b>Context 支柱</b>决定模型看到什么；<b>Harness 支柱</b>决定整台机器怎么跑、怎么修、怎么进化。
+          三者不是三段流程，而是<b>每一次请求同时经过的三根支柱</b>——Harness 负责把前两根支柱的产物
+          <b>安全、可观测、可恢复地</b>送进模型、把结果送出来。
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label">当前已有的 Harness 能力（散落在各层）</span>
+          <ul class="bullets">
+            <li><b>四大架构不变量</b>（见 02）—— 依赖单向是 Harness 最底层的保证</li>
+            <li><b>链路编排</b> · <code>RAGChatServiceImpl</code> 串起 8 阶段，短路点可观测</li>
+            <li><b>全链路 Trace</b> · <code>t_rag_trace_run / t_rag_trace_node</code>，traceId 跨线程透传（TTL）</li>
+            <li><b>AOP 横切</b> · 限流入队 / traceId 生成 / TTL 追踪 / 幂等</li>
+            <li><b>LLM 路由降级</b> · <code>RoutingLLMService</code> 按优先级选模型，Redis 熔断</li>
+            <li><b>向量库抽象</b> · <code>VectorStoreService</code> 屏蔽 OpenSearch / Milvus / pgvector</li>
+            <li><b>并发 / 锁</b> · Redis 锁保证摘要不重复生成；异步池跑 summary / 推荐问题</li>
+            <li><b>RBAC 单一真相源</b> · 真正拦截在向量库层 filter</li>
+            <li><b>工具调度</b> · MCP Server + <code>LLMMCPParameterExtractor</code>（并行 + 容错）</li>
+            <li><b>MQ 事务消息</b> · 状态变更 + 消息发送原子</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">Harness 的核心能力模块（目标态）</span>
+          <ul class="bullets">
+            <li><b>控制流编排</b> —— 何时检索、何时调工具、何时反思 / 重试</li>
+            <li><b>可靠性</b> —— 超时 / 重试 / 降级 / 熔断；结构化输出失败的<b>修复循环</b>（re-prompt with validator error）</li>
+            <li><b>可观测性</b> —— Trace / Span / Metrics / Eval Hook，支持回放</li>
+            <li><b>资源管理</b> —— Token 预算 / 速率限制 / 成本追踪 / 缓存</li>
+            <li><b>模型路由</b> —— 便宜模型做意图 / 改写；强模型做合成；超时回退</li>
+            <li><b>Memory 编排</b> —— 决定本次调用读 / 写哪层 Memory（详见 10 Memory 融合）</li>
+            <li><b>评测闭环</b> —— Trace → 评测集 → 回归，绑定 Prompt / Context 变更</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <span class="label warn">已识别的 Harness 演进动作 · source: <code>docs/dev/followup/architecture-backlog.md</code></span>
+        <ul class="bullets">
+          <li><b>MQ-1 · RocketMQ → Spring Events</b> —— 单机部署复杂度下降，本地开发去掉 broker 依赖（约半天到一天）</li>
+          <li><b>ARCH-6 · <code>sendInTransaction</code> 概念泄漏</b> —— "本地事务"是 RocketMQ 专有概念，不应出现在通用接口签名</li>
+          <li><b>ARCH-7 · <code>TransactionSynchronizationManager</code> 出现在业务 Service</b> —— 改 <code>@TransactionalEventListener(AFTER_COMMIT)</code></li>
+          <li><b>ARCH-8 · 意图树每次重建</b> —— 改为 <code>volatile IntentTreeData hotCache</code>，CRUD 时主动 refresh</li>
+          <li><b>统一 Harness 抽象层</b> —— 把零散能力收敛为中台的"运行层"，对外暴露统一 SDK / 契约</li>
+        </ul>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · Harness 能力全景</span>
+        <div class="ph-title">七维度雷达：现状 vs 目标</div>
+        <div class="ph-hint">
+          雷达图展示 7 个 Harness 维度（控制流 / 可靠性 / 可观测 / 资源 / 模型路由 / Memory 编排 / 评测）的现状 vs 目标分值；
+          点击任一轴展示对应代码位置 + backlog 条目。把"Harness 看不见摸不着"变成可量化的演进轴。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 07 INTENT ============ -->
+    <section class="chapter" id="intent">
+      <div class="chapter-header">
+        <span class="chapter-num">07</span>
+        <h2 class="chapter-title">意图识别</h2>
+      </div>
+      <p class="chapter-lead">
+        意图识别是"工具 / 知识库 / 多路召回"的总调度员——它决定一个问题该走 FAQ、走检索、走工具，还是走拒答。
+        当前采用 <b>规则 + 分类器 + 向量意图树</b> 的混合策略，目标是"可解释 + 可扩展"。
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <span class="label">当前策略</span>
+          <ul class="bullets">
+            <li>SimpleIntentClassifier：快速规则/关键词</li>
+            <li>VectorTreeIntent：层级向量意图树</li>
+            <li>LLM Fallback：兜底泛化</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">路由结果</span>
+          <ul class="bullets">
+            <li>FAQ 直答</li>
+            <li>RAG 检索</li>
+            <li>工具 / API 调用</li>
+            <li>澄清 / 拒答</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label warn">挑战</span>
+          <ul class="bullets">
+            <li>意图边界模糊 / 多意图并存</li>
+            <li>冷启动：新业务的意图样本稀缺</li>
+            <li>与 Memory 联动：基于用户上下文调整意图</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · 意图树 + 路由演示</span>
+        <div class="ph-title">输入问题，实时展示意图命中路径与路由结果</div>
+        <div class="ph-hint">
+          建议呈现：左侧输入框 / 预设样例，中间树形结构高亮命中路径，
+          右侧显示最终路由到的下游（FAQ / 检索 / 工具 / 拒答）与置信度。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 08 TOOLS ============ -->
+    <section class="chapter" id="tools">
+      <div class="chapter-header">
+        <span class="chapter-num">08</span>
+        <h2 class="chapter-title">部门工具 &amp; API 生态</h2>
+      </div>
+      <p class="chapter-lead">
+        知识库不止于"检索文档"——把部门内部工具、业务 API、数据查询能力经由 <b>MCP / 工具协议</b> 统一接入，
+        才能做到"问得到、查得到、也办得到"。
+      </p>
+
+      <div class="grid-2">
+        <div class="card">
+          <span class="label">接入模式</span>
+          <ul class="bullets">
+            <li><b>MCP Server</b>：统一工具注册与发现</li>
+            <li><b>Tool Adapter</b>：对内部 API 做参数/鉴权适配</li>
+            <li><b>Schema 驱动</b>：工具描述即 Prompt，降低调优成本</li>
+            <li><b>审计与配额</b>：每一次工具调用可追溯</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">已 / 拟接入清单</span>
+          <div>
+            <span class="chip">[占位] 工单查询</span>
+            <span class="chip">[占位] 发票检索</span>
+            <span class="chip">[占位] 权限查询</span>
+            <span class="chip muted">[规划] 报表生成</span>
+            <span class="chip muted">[规划] 审批触发</span>
+            <span class="chip muted">[规划] 内部搜索</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · 工具目录 &amp; 调用演示</span>
+        <div class="ph-title">工具卡片 Grid，点开可查看 Schema 与模拟调用</div>
+        <div class="ph-hint">
+          建议呈现：工具以卡片方式展示（名称、描述、参数、所属系统）；
+          点击后可在模拟器中输入参数，看到一次脱敏调用的输入与返回。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 09 OPS ============ -->
+    <section class="chapter" id="ops">
+      <div class="chapter-header">
+        <span class="chapter-num">09</span>
+        <h2 class="chapter-title">知识运营</h2>
+      </div>
+      <p class="chapter-lead">
+        知识运营讨论的是<b>机制</b>，不是 KPI：知识如何<b>进来、被用、被修、再进化</b>。
+        一套可持续的运营机制，是知识库"活下去"并反哺中台的前提。
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <span class="label">入库机制</span>
+          <ul class="bullets">
+            <li>来源管理、去重、敏感信息过滤</li>
+            <li>结构化切片与元数据标注</li>
+            <li>版本 / 生命周期 / 归属人</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">使用机制</span>
+          <ul class="bullets">
+            <li>引用回链：每条回答可溯源到条目</li>
+            <li>反馈入口：赞 / 踩 / 补充 / 纠错</li>
+            <li>未覆盖问题自动沉淀为候选条目</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">反馈 &amp; 迭代机制</span>
+          <ul class="bullets">
+            <li>Badcase 标注 → 责任人 → 修复流转</li>
+            <li>评测集随运营自动回流</li>
+            <li>过期 / 冲突条目的下线与仲裁</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <span class="label">与中台 / Memory 的接口</span>
+        <ul class="bullets">
+          <li>运营收集到的问题与反馈 → 进入后端 Memory 处理管线</li>
+          <li>Memory 蒸馏出的"高频问题 / 部门共识" → 作为候选条目进入入库机制</li>
+          <li>知识运营本身成为中台的一个能力模块，支持多部门各自运营各自的知识域</li>
+        </ul>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · 运营闭环流程图</span>
+        <div class="ph-title">入库 → 使用 → 反馈 → 再入库 的闭环可视化</div>
+        <div class="ph-hint">
+          建议呈现：一个环形流程图，每个节点可点开展示对应机制与当前建设进度；
+          与"后端 Memory 处理管线"那张图对应起来看，说明"运营 + Memory"共同构成知识库的自演进引擎。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 10 MEMORY ============ -->
+    <section class="chapter" id="memory">
+      <div class="chapter-header">
+        <span class="chapter-num">10</span>
+        <h2 class="chapter-title">Memory 融合：迈向知识库智能化</h2>
+      </div>
+      <p class="chapter-lead">
+        这是整个中台叙事的"智能化引擎"。把 RAG 从"每次冷启动的检索问答"升级为<b>有记忆、会学习、能沉淀</b>的系统——
+        通过 <b>会话 / 用户 / 部门 / 组织</b> 多层 Memory 的协同，以及<b>后端异步加工管线</b>，
+        让问答持续反哺知识本身。
+      </p>
+
+      <div class="grid-4">
+        <div class="card">
+          <h3>① Session Memory</h3>
+          <p>一次会话内的短期上下文、澄清记录、已展示证据。</p>
+        </div>
+        <div class="card">
+          <h3>② User Memory</h3>
+          <p>用户画像、偏好、常问主题、历史反馈与纠错。</p>
+        </div>
+        <div class="card">
+          <h3>③ Department Memory</h3>
+          <p>部门共识、Runbook、常见流程、组内术语。</p>
+        </div>
+        <div class="card">
+          <h3>④ Org Memory</h3>
+          <p>跨部门通用规则、制度、上下游接口约定。</p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card">
+          <span class="label">前台融合点（运行时注入）</span>
+          <ul class="bullets">
+            <li><b>意图识别前</b>：用 User / Department Memory 修正路由</li>
+            <li><b>检索阶段</b>：用 Session Memory 做上下文续接</li>
+            <li><b>Prompt 组装</b>：按层级动态挑选记忆片段</li>
+            <li><b>工具调用</b>：复用偏好参数与历史成功模式</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">后台加工（异步管线）</span>
+          <ul class="bullets">
+            <li><b>抽取</b>：从对话 / 反馈 / 调用中抽取结构化条目</li>
+            <li><b>聚合 &amp; 去重</b>：跨会话合并相似条目</li>
+            <li><b>蒸馏</b>：升格为"部门共识 / 高频问题 / 失败模式"</li>
+            <li><b>反哺</b>：高置信度条目回写到正式知识库</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <span class="label warn">关键权衡</span>
+        <ul class="bullets">
+          <li><b>隐私 / 权限</b>：Memory 的读写边界必须与 RBAC 一致，User 不泄露到 Department，Department 不随意汇入 Org</li>
+          <li><b>遗忘策略</b>：时效衰减、冲突仲裁、用户可撤销</li>
+          <li><b>可解释</b>：每一条被用到的 Memory 都要在 Trace 中可追溯</li>
+          <li><b>反哺门槛</b>：Memory → 知识库主库必须经过置信度与人审双闸门</li>
+        </ul>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · Memory × 链路 矩阵图</span>
+        <div class="ph-title">四层 Memory × RAG 链路节点的交互矩阵</div>
+        <div class="ph-hint">
+          建议呈现：纵向为四层 Memory，横向为 RAG 链路节点；
+          鼠标悬停格子高亮"这一层 Memory 在这一节点如何被使用"；
+          点击查看示例条目、写入策略、读取策略、隐私边界。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 11 ROADMAP ============ -->
+    <section class="chapter" id="roadmap">
+      <div class="chapter-header">
+        <span class="chapter-num">11</span>
+        <h2 class="chapter-title">Roadmap &amp; 总结</h2>
+      </div>
+      <p class="chapter-lead">
+        沿"<b>部门知识库 → 知识库中台 → 知识库智能化</b>"三阶段推进，
+        每一阶段都有明确的架构动作与能力产出，且彼此向下兼容、渐进交付。
+      </p>
+
+      <div class="grid-3">
+        <div class="card">
+          <span class="label good">第一阶段 · 部门知识库（当前）</span>
+          <ul class="bullets">
+            <li>打通端到端 RAG 链路与 Trace</li>
+            <li>Prompt / Context 资产化</li>
+            <li>意图识别 + Top N 部门工具接入</li>
+            <li>基础运营机制：入库 / 反馈 / Badcase</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label">第二阶段 · 知识库中台</span>
+          <ul class="bullets">
+            <li>能力层抽离：统一 API / SDK / 对话入口</li>
+            <li>多租户 / 多业务隔离</li>
+            <li>Memory 四层骨架上线（前台注入）</li>
+            <li>运营机制模块化，支持多部门各自运营</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="label muted">第三阶段 · 知识库智能化</span>
+          <ul class="bullets">
+            <li>后端 Memory 处理管线完整落地</li>
+            <li>Memory 蒸馏 → 反哺知识库主库</li>
+            <li>问答 / 工具调用 / 反馈共同驱动知识自演进</li>
+            <li>跨部门知识协同与互通</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:8px">
+        <span class="label">资源与支持诉求</span>
+        <ul class="bullets">
+          <li>[占位] 人力 / 算力 / 数据 诉求</li>
+          <li>[占位] 跨部门协作：数据源、工具权限、业务共建</li>
+          <li>[占位] 指标对齐：OKR / 考核口径</li>
+        </ul>
+      </div>
+
+      <div class="placeholder">
+        <span class="pill">Interactive · Roadmap 时间轴</span>
+        <div class="ph-title">按季度展开的里程碑时间轴</div>
+        <div class="ph-hint">
+          建议呈现：横向时间轴，纵向按"链路 / 内容 / 能力 / 运营 / Memory"分泳道，
+          每个里程碑可点击查看详情与负责人。
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  const navLinks = Array.from(document.querySelectorAll('#navList a'));
+  const sections = navLinks.map(a => document.getElementById(a.dataset.target)).filter(Boolean);
+  const progressFill = document.getElementById('progressFill');
+
+  // ---- Active section highlight (IntersectionObserver) ----
+  const byId = {};
+  navLinks.forEach(a => { byId[a.dataset.target] = a; });
+
+  const io = new IntersectionObserver((entries) => {
+    // Pick the entry most in view
+    let best = null;
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
+      }
+    });
+    if (best) {
+      navLinks.forEach(a => a.classList.remove('active'));
+      const a = byId[best.target.id];
+      if (a) a.classList.add('active');
+    }
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: [0, .25, .5, .75, 1] });
+
+  sections.forEach(s => io.observe(s));
+
+  // ---- Progress bar ----
+  function updateProgress() {
+    const h = document.documentElement;
+    const scrolled = h.scrollTop || document.body.scrollTop;
+    const total = (h.scrollHeight - h.clientHeight) || 1;
+    const pct = Math.min(100, Math.max(0, (scrolled / total) * 100));
+    progressFill.style.width = pct + '%';
+  }
+  document.addEventListener('scroll', updateProgress, { passive: true });
+  updateProgress();
+
+  // ---- Keyboard shortcuts ----
+  function currentIndex() {
+    const scrollY = window.scrollY + 100;
+    let idx = 0;
+    for (let i = 0; i < sections.length; i++) {
+      if (sections[i].offsetTop <= scrollY) idx = i;
+    }
+    return idx;
+  }
+  function goTo(i) {
+    i = Math.max(0, Math.min(sections.length - 1, i));
+    sections[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.target && /input|textarea/i.test(e.target.tagName)) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    switch (e.key) {
+      case 'j': case 'ArrowDown': e.preventDefault(); goTo(currentIndex() + 1); break;
+      case 'k': case 'ArrowUp':   e.preventDefault(); goTo(currentIndex() - 1); break;
+      case 'g': case 'Home':      e.preventDefault(); goTo(0); break;
+      case 'G': case 'End':       e.preventDefault(); goTo(sections.length - 1); break;
+    }
+  });
+
+  // Smooth click (native smooth-scroll already works, but ensure focus doesn't jump)
+  navLinks.forEach(a => {
+    a.addEventListener('click', (e) => {
+      const el = document.getElementById(a.dataset.target);
+      if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
