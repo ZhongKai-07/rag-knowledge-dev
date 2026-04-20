@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -75,12 +76,17 @@ const emptyForm = (): RoleCreatePayload => ({
 });
 export function RolesTab() {
   const scope = useAccessScope();
+  const [searchParams] = useSearchParams();
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(
     scope.isSuperAdmin ? GLOBAL_DEPT_ID : scope.deptId
+  );
+  const [selectedDeptName, setSelectedDeptName] = useState<string>(
+    scope.isSuperAdmin ? "全局部门" : scope.deptName ?? "本部门"
   );
   const [roles, setRoles] = useState<AccessRole[]>([]);
   const [rolesLoading, setRolesLoading] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [pendingRoleId, setPendingRoleId] = useState<string | null>(null);
   const [usage, setUsage] = useState<RoleUsage | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
 
@@ -121,8 +127,18 @@ export function RolesTab() {
 
   useEffect(() => {
     loadRoles(selectedDeptId);
-    setSelectedRoleId(null);
-  }, [selectedDeptId, loadRoles]);
+    if (!pendingRoleId) {
+      setSelectedRoleId(null);
+    }
+  }, [selectedDeptId, pendingRoleId, loadRoles]);
+
+  useEffect(() => {
+    if (!pendingRoleId) return;
+    if (roles.some((role) => role.id === pendingRoleId)) {
+      setSelectedRoleId(pendingRoleId);
+      setPendingRoleId(null);
+    }
+  }, [pendingRoleId, roles]);
 
   const loadUsage = useCallback(async (roleId: string) => {
     try {
@@ -147,18 +163,34 @@ export function RolesTab() {
     }
   }, [selectedRoleId, loadUsage]);
 
+  useEffect(() => {
+    const roleIdParam = searchParams.get("roleId");
+    if (!roleIdParam || roleIdParam === selectedRoleId || roleIdParam === pendingRoleId) return;
+    let cancelled = false;
+    getRoleUsage(roleIdParam)
+      .then((data) => {
+        if (cancelled) return;
+        setPendingRoleId(roleIdParam);
+        setSelectedDeptId(data.deptId ?? GLOBAL_DEPT_ID);
+        setSelectedDeptName(data.deptName ?? "所选部门");
+      })
+      .catch((err) => {
+        if (!cancelled && !isRbacRejection(err)) {
+          toast.error(getErrorMessage(err, "定位角色失败"));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, selectedRoleId, pendingRoleId]);
+
   // ── 写权限判定 ────────────────────────────────────
   const isGlobalSelected = selectedDeptId === GLOBAL_DEPT_ID;
   const isOwnDeptSelected =
     scope.isDeptAdmin && selectedDeptId !== null && selectedDeptId === scope.deptId;
   const canCrudAtSelected =
     scope.isSuperAdmin || (scope.isDeptAdmin && isOwnDeptSelected && !isGlobalSelected);
-  const selectedDeptName =
-    scope.isSuperAdmin
-      ? isGlobalSelected
-        ? "全局"
-        : "所选"
-      : scope.deptName ?? "—";
+  const selectedDeptLabel = isGlobalSelected ? "全局部门" : selectedDeptName || "所选部门";
 
   const openCreate = () => {
     setForm({
@@ -234,9 +266,13 @@ export function RolesTab() {
         </div>
         <OrgTree
           selectedDeptId={selectedDeptId}
-          onSelect={(id) => setSelectedDeptId(id ?? GLOBAL_DEPT_ID)}
+          onSelect={(id, name) => {
+            setSelectedDeptId(id ?? GLOBAL_DEPT_ID);
+            setSelectedDeptName(id === null ? "全局部门" : name ?? "所选部门");
+          }}
           countField="roleCount"
           allowAllNode={false}
+          restrictToOwnDept={false}
         />
       </div>
 
@@ -246,7 +282,7 @@ export function RolesTab() {
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-slate-700">
-                {isGlobalSelected ? "🏢 全公司 GLOBAL" : `📂 ${selectedDeptName}部门`}
+                {isGlobalSelected ? "🏢 全局部门 GLOBAL" : `📂 ${selectedDeptLabel}`}
                 <span className="ml-2 text-xs text-slate-400">({roles.length})</span>
               </h3>
               {!canCrudAtSelected && (
@@ -286,7 +322,10 @@ export function RolesTab() {
                   return (
                     <TableRow
                       key={r.id}
-                      onClick={() => setSelectedRoleId(r.id)}
+                      onClick={() => {
+                        setPendingRoleId(null);
+                        setSelectedRoleId(r.id);
+                      }}
                       className={
                         "cursor-pointer " + (isActive ? "bg-indigo-50" : "")
                       }
@@ -371,7 +410,13 @@ export function RolesTab() {
                     <ul className="space-y-0.5 text-xs text-slate-600">
                       {usage.users.slice(0, 8).map((u) => (
                         <li key={u.userId}>
-                          · {u.username}
+                          ·{" "}
+                          <Link
+                            to={`/admin/access?tab=members&userId=${u.userId}${u.deptId ? `&deptId=${u.deptId}` : ""}`}
+                            className="text-indigo-600 hover:underline"
+                          >
+                            {u.username}
+                          </Link>
                           {u.deptName && (
                             <span className="text-slate-400"> ({u.deptName})</span>
                           )}
@@ -393,7 +438,13 @@ export function RolesTab() {
                     <ul className="space-y-0.5 text-xs text-slate-600">
                       {usage.kbs.slice(0, 8).map((k) => (
                         <li key={k.kbId}>
-                          · {k.kbName}
+                          ·{" "}
+                          <Link
+                            to={`/admin/access?tab=sharing&kb=${k.kbId}`}
+                            className="text-indigo-600 hover:underline"
+                          >
+                            {k.kbName}
+                          </Link>
                           {k.permission && (
                             <span className="text-slate-400"> [{k.permission}]</span>
                           )}
@@ -427,7 +478,7 @@ export function RolesTab() {
             <DialogDescription>
               {isGlobalSelected
                 ? "归属：🏢 全公司 GLOBAL（仅 SUPER 可创建）"
-                : `归属：📂 ${selectedDeptName}部门`}
+                : `归属：📂 ${selectedDeptLabel}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

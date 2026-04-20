@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Plus, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
 
@@ -216,7 +217,13 @@ export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange, highli
                 return (
                 <tr key={b.roleId} className="border-b last:border-0">
                   <td className="py-2">
-                    <span className="font-medium text-slate-800">{b.roleName}</span>
+                    <Link
+                      to={`/admin/access?tab=roles&roleId=${b.roleId}`}
+                      className="font-medium text-indigo-600 hover:underline"
+                      title="跳转到角色管理并定位此角色"
+                    >
+                      {b.roleName}
+                    </Link>
                   </td>
                   <td className="py-2">
                     <Badge variant="outline" className="text-xs">
