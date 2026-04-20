@@ -75,7 +75,7 @@ Browser  ──GET /api/ragent/rag/v3/chat──►  RAGChatController
 
 1. **依赖单向** — framework/infra-ai 不能反向依赖 bootstrap；任何 AI 逻辑不应出现在 framework。
 2. **业务域边界** — 每个域内部保持 `controller → service → dao`。跨域只读聚合归在 `admin/`，不允许一个业务 controller 直接查别域的 DAO。
-3. **向量库可切换** — 通过 `rag.vector.type` 配置，OpenSearch / Milvus / pgvector 三实现走同一个 `VectorStoreService` 接口。切换不应改业务代码。⚠️ 当前只有 OpenSearch 实现了 `metadataFilters`（security_level 过滤），见 `follow-ups.md`。
+3. **向量库可切换** — 通过 `rag.vector.type` 配置，OpenSearch / Milvus / pgvector 三实现走同一个 `VectorStoreService` 接口。切换不应改业务代码。⚠️ 当前只有 OpenSearch 实现了 `metadataFilters`（security_level 过滤），见 `../followup/backlog.md`。
 4. **外部 LLM 可替换** — 新增第 4 家供应商只改 `infra-ai`（加一个 `ChatClient` 实现 + `application.yaml` 配候选）；业务不感知。
 
 ## 6. 跨层约定（高频踩坑汇总）
@@ -97,4 +97,4 @@ Browser  ──GET /api/ragent/rag/v3/chat──►  RAGChatController
 | LLM/Embedding/Rerank 抽象、模型路由降级 | [`infra-ai.md`](infra-ai.md) |
 | PG/Redis/MQ/向量库/RustFS 拓扑与使用模式 | [`infrastructure.md`](infrastructure.md) |
 | 场景式代码导航（"想做 X，从哪儿改"） | [`../entry-points.md`](../entry-points.md) |
-| 已知技术债/决策 | [`../follow-ups.md`](../follow-ups.md) |
+| 已知技术债/决策 | [`../followup/backlog.md`](../followup/backlog.md) |

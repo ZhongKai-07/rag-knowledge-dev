@@ -158,7 +158,7 @@ KnowledgeDocumentChunkConsumer @IdempotentConsume
 
 ### 6.3 已知架构债
 
-- **security_level 过滤仅 OpenSearch 实现**：`MilvusRetrieverService` 和 `PgRetrieverService` 静默忽略 `metadataFilters` 参数。切换 `rag.vector.type` 到 milvus/pg 前必须补齐（`follow-ups.md` SL-1）。
+- **security_level 过滤仅 OpenSearch 实现**：`MilvusRetrieverService` 和 `PgRetrieverService` 静默忽略 `metadataFilters` 参数。切换 `rag.vector.type` 到 milvus/pg 前必须补齐（`../followup/backlog.md` SL-1）。
 
 ## 7. admin 域（仪表盘）
 
@@ -188,4 +188,4 @@ KnowledgeDocumentChunkConsumer @IdempotentConsume
 - **扩展点契约清晰**：新增向量库/模型供应商/检索通道/入库节点都只需实现接口 + `@Component`，配置驱动生效。改业务代码的成本低。
 - **域边界守得住**：跨域聚合集中在 `admin/`，写操作走 MQ 或 service 注入。评审时需警惕有无"顺手查一下别域 DAO"。
 - **异步/流式的 ThreadLocal 陷阱反复出现**：统一用 TTL `RagTraceContext`；`UserContext` 禁止进异步线程（需捕获 `userId` 传参）。
-- **架构债已记录**：`docs/dev/follow-ups.md` 收录 security_level 过滤缺失、两份 schema 维护成本等；评审建议结合 follow-ups 决定本轮是否还债。
+- **架构债已记录**：`docs/dev/followup/backlog.md` 收录 security_level 过滤缺失、两份 schema 维护成本等；评审建议结合 followup 决定本轮是否还债。

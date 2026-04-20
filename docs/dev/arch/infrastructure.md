@@ -3,7 +3,7 @@
 > 所有持久化资源、中间件和外部服务。本地通过 `resources/docker/` 下的 docker-compose 编排；生产部署拓扑参考 `diagram/deploy/aws_deploy.drawio`（不在本文档范围）。
 >
 > 架构图：[`diagram/architecture/arch_infrastructure.drawio`](../../../diagram/architecture/arch_infrastructure.drawio)
-> 启动流程：[`docs/dev/launch.md`](../launch.md)
+> 启动流程：[`docs/dev/setup/launch.md`](../setup/launch.md)
 
 ## 1. 组件总览
 
@@ -94,7 +94,7 @@ KnowledgeDocumentChunkConsumer @IdempotentConsume
 | 实现 | 特点 | metadataFilters |
 | --- | --- | --- |
 | `OpenSearchRetrieverService` | 混合检索（向量 + 全文）· 默认推荐 | ✅ 已实现 security_level 过滤 |
-| `MilvusRetrieverService` | 专用向量库，性能高 | ❌ **静默忽略**（`follow-ups.md` SL-1） |
+| `MilvusRetrieverService` | 专用向量库，性能高 | ❌ **静默忽略**（`../followup/backlog.md` SL-1） |
 | `PgRetrieverService` | 与业务 PG 同实例，运维简单 | ❌ **静默忽略** |
 
 ### 5.1 索引/集合命名

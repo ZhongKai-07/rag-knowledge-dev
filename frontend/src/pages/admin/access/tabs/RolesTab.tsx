@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Pencil, Plus, RefreshCw, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -76,7 +76,7 @@ const emptyForm = (): RoleCreatePayload => ({
 });
 export function RolesTab() {
   const scope = useAccessScope();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(
     scope.isSuperAdmin ? GLOBAL_DEPT_ID : scope.deptId
   );
@@ -125,12 +125,17 @@ export function RolesTab() {
     }
   }, []);
 
+  const pendingRoleIdRef = useRef(pendingRoleId);
+  useEffect(() => {
+    pendingRoleIdRef.current = pendingRoleId;
+  }, [pendingRoleId]);
+
   useEffect(() => {
     loadRoles(selectedDeptId);
-    if (!pendingRoleId) {
+    if (!pendingRoleIdRef.current) {
       setSelectedRoleId(null);
     }
-  }, [selectedDeptId, pendingRoleId, loadRoles]);
+  }, [selectedDeptId, loadRoles]);
 
   useEffect(() => {
     if (!pendingRoleId) return;
@@ -165,7 +170,7 @@ export function RolesTab() {
 
   useEffect(() => {
     const roleIdParam = searchParams.get("roleId");
-    if (!roleIdParam || roleIdParam === selectedRoleId || roleIdParam === pendingRoleId) return;
+    if (!roleIdParam) return;
     let cancelled = false;
     getRoleUsage(roleIdParam)
       .then((data) => {
@@ -173,6 +178,10 @@ export function RolesTab() {
         setPendingRoleId(roleIdParam);
         setSelectedDeptId(data.deptId ?? GLOBAL_DEPT_ID);
         setSelectedDeptName(data.deptName ?? "所选部门");
+        // 定位完成后清掉 URL 中的 roleId，避免用户点其他部门节点时被重新拉回
+        const next = new URLSearchParams(searchParams);
+        next.delete("roleId");
+        setSearchParams(next, { replace: true });
       })
       .catch((err) => {
         if (!cancelled && !isRbacRejection(err)) {
@@ -182,7 +191,7 @@ export function RolesTab() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams, selectedRoleId, pendingRoleId]);
+  }, [searchParams, setSearchParams]);
 
   // ── 写权限判定 ────────────────────────────────────
   const isGlobalSelected = selectedDeptId === GLOBAL_DEPT_ID;

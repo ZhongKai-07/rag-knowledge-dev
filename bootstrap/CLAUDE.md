@@ -4,18 +4,14 @@ bootstrap 是项目的主 Spring Boot 应用模块，包含所有业务域的完
 
 ## 构建与运行
 
+完整命令见**根 `CLAUDE.md`** 的 "Build & Run Commands" 节。常用速记：
+
 ```bash
-# 单独编译本模块（跳过测试）
+# 单独编译本模块
 mvn -pl bootstrap install -DskipTests
 
-# 启动应用（在项目根目录执行，绕过代理避免 RustFS/S3 连接问题）
-$env:NO_PROXY='localhost,127.0.0.1'; $env:no_proxy='localhost,127.0.0.1'; mvn -pl bootstrap spring-boot:run
-
-# 运行单个测试类
-mvn -pl bootstrap test -Dtest=SimpleIntentClassifierTests
-
-# 运行单个测试方法
-mvn -pl bootstrap test -Dtest=SimpleIntentClassifierTests#testMethod
+# 启动（必须在根目录执行，且 PowerShell 设 NO_PROXY）
+$env:NO_PROXY='localhost,127.0.0.1'; mvn -pl bootstrap spring-boot:run
 ```
 
 配置文件：`bootstrap/src/main/resources/application.yaml`
@@ -94,18 +90,13 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `UserProfileLoader` | 单次 JOIN 加载用户身份快照（user+dept+roles），不走缓存 |
 | ~~`SuperAdminMutationIntent`~~ | ⚠️ 已于 2026-04-18 迁至 `framework.security.port.SuperAdminMutationIntent`，此处不再保留 |
 
-## 关键 Gotchas
+## 关键 Gotchas（bootstrap 独有）
 
-- **SSE 是异步的**：`streamChat()` 立即返回，`StreamCallback` 在独立线程池上执行。不要在调用线程读取回调内设置的 ThreadLocal 值。
-- **SUPER_ADMIN 权限**：`KbAccessService.getAccessibleKbIds()` 对 `SUPER_ADMIN` 直接返回全量 KB（在 service 内部处理，不再依赖 controller 层判断）。判断当前用户是否超管用 `kbAccessService.isSuperAdmin()`。`@SaCheckRole` 注解用 `"SUPER_ADMIN"` 而非 `"admin"`（PR1 已全局替换，旧字符串不存在了）。
-- **@TableLogic 自动过滤**：带 `@TableLogic` 的实体 MyBatis Plus 自动追加 `WHERE deleted=0`，不要再手动 `.eq(::getDeleted, 0)`。
-- **两份 Schema 文件**：`schema_pg.sql`（干净 DDL）和 `full_schema_pg.sql`（pg_dump 格式）需同步维护。改表结构时必须两个都改。
-- **PostgreSQL 小写折叠**：`selectMaps` 中 `.select("kb_id AS kbId")` 的 map key 是 `kbid` 不是 `kbId`。始终用 snake_case 别名（`AS kb_id`）再用 `row.get("kb_id")` 取值。
-- **RagTraceContext 提前清空**：`ChatRateLimitAspect.finally` 在流结束前就清了上下文。在回调构造器里捕获 `traceId` 等值，不要等到回调时再读。
-- **Knowledge Spaces**：`t_conversation.kb_id` 区分会话所属空间。`validateKbOwnership()` 用 `Objects.equals()` 做 null 安全比较；`kb_id=NULL` 的旧会话是 fail-closed 的（不属于任何空间）。
-- **`t_knowledge_base` 没有 `description` 列**：schema_pg.sql 里只有 `id / name / embedding_model / collection_name / created_by / updated_by / dept_id`。`embedding_model` 和 `created_by` 是 NOT NULL 无默认。写 INSERT 或 fixture 时必须提供这两个字段，且不要尝试插入 `description`。
+通用坑点见 `docs/dev/gotchas.md`。以下仅为 bootstrap 域数据/写路径的独有约束：
+
+- **`t_knowledge_base` 没有 `description` 列**：`schema_pg.sql` 里只有 `id / name / embedding_model / collection_name / created_by / updated_by / dept_id`。`embedding_model` 和 `created_by` 是 NOT NULL 无默认。写 INSERT 或 fixture 时必须提供这两个字段，且不要尝试插入 `description`。
 - **`t_user_role.id` 和 `t_role_kb_relation.id` 是显式主键**：`VARCHAR(20) NOT NULL PRIMARY KEY`，无自动生成（不同于 `@TableId(type=ASSIGN_ID)` 的 Java 层雪花 ID）。手写 SQL INSERT 时必须显式提供 `id` 值，否则 NOT NULL 违反。
-- **Controller 参数注解必须写显式名称**：`@RequestParam("name") String name`、`@PathVariable("id") String id` — 禁止省略名称依赖参数名推断（IntelliJ 本地跑正常，`mvn` 命令行会报 `IllegalArgumentException`）。同类型多 Bean 时构造函数参数必须加 `@Qualifier("beanName")`，不能依赖 Lombok `@RequiredArgsConstructor` 自动推断。
+- **Knowledge Spaces 会话归属**：`t_conversation.kb_id` 区分会话所属空间。`validateKbOwnership()` 用 `Objects.equals()` 做 null 安全比较；`kb_id=NULL` 的旧会话是 fail-closed 的（不属于任何空间）。
 - **测试里给 `@Value` 字段注值用 `ReflectionTestUtils.setField`**：`spring-boot-starter-test` 已带 `spring-test`，直接 `import org.springframework.test.util.ReflectionTestUtils`，不要手写 `field.setAccessible(true)` + `throws Exception`。
 
 ## 数据库访问

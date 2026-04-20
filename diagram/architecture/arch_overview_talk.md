@@ -106,7 +106,7 @@ OpenSearchRetrieverService 构造查询：
 
 ## 5. 一个已知风险（30 秒）
 
-> "目前 `security_level` 过滤逻辑**只在 OpenSearch 实现了**。我们当前生产只用 OpenSearch，风险可控；但切换到 Milvus/pgvector 会静默失效——已登记在 `docs/dev/follow-ups.md`，切换前必须先补齐。其他细节技术债都在同一份文档里。"
+> "目前 `security_level` 过滤逻辑**只在 OpenSearch 实现了**。我们当前生产只用 OpenSearch，风险可控；但切换到 Milvus/pgvector 会静默失效——已登记在 `docs/dev/followup/backlog.md`，切换前必须先补齐。其他细节技术债都在同一份文档里。"
 
 ---
 

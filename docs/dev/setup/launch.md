@@ -348,7 +348,7 @@ PR3 的 28 个 task 全部完成后，提供两种验收模式：
 
 ### Mode A — UI walkthrough（证明前端 CRUD 闭环）
 
-使用 §10 的快速重建，**不加载 fixture**。然后按 `docs/dev/pr3-demo-walkthrough.md` 的 12 步手动操作。
+使用 §10 的快速重建，**不加载 fixture**。然后按 `docs/dev/verification/pr3-demo-walkthrough.md` 的 12 步手动操作。
 
 ### Mode B — curl bypass 矩阵（证明后端授权边界）
 
@@ -358,6 +358,6 @@ PR3 的 28 个 task 全部完成后，提供两种验收模式：
 docker exec -i postgres psql -U postgres -d ragent < resources/database/fixture_pr3_demo.sql
 ```
 
-然后按 `docs/dev/pr3-curl-matrix.http` 逐条执行。
+然后按 `docs/dev/verification/pr3-curl-matrix.http` 逐条执行。
 
 > 两种模式**不可混合**。详见 `docs/superpowers/plans/2026-04-12-pr3-rbac-frontend-demo.md` Task S9。

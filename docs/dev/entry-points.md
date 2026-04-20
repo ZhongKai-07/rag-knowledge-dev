@@ -41,7 +41,7 @@
 - **契约**：`rag/core/vector/VectorStoreService` + `VectorStoreAdmin`
 - **激活**：`application.yaml` `rag.vector.type=<你的 type>`，再配对应 `@ConditionalOnProperty` 的 bean
 - **现成**：`OpenSearchVectorStoreService` / `MilvusVectorStoreService` / `PgVectorStoreService`
-- **⚠️ 坑**：`metadataFilters` 目前只有 OpenSearch 实现了真过滤，Milvus/Pg 静默忽略 → 切换前必须补（见 `follow-ups.md` SL-1）
+- **⚠️ 坑**：`metadataFilters` 目前只有 OpenSearch 实现了真过滤，Milvus/Pg 静默忽略 → 切换前必须补（见 `followup/backlog.md` SL-1）
 
 ### 加一个模型供应商（第四家 LLM）
 
@@ -205,9 +205,9 @@
 
 ## 🧭 不在这里找什么
 
-- **"这个 class 在哪个包"** → 根 `CLAUDE.md` 的 Project Code Map
+- **"这个 class 在哪个包"** → `docs/dev/arch/code-map.md`
 - **"一个 package 里都有啥"** → `bootstrap/CLAUDE.md` / `frontend/CLAUDE.md` 各自的"关键类"表
-- **"项目怎么跑起来"** → `README.md` + `docs/dev/launch.md`
-- **"踩过的坑"** → 各层 `CLAUDE.md` 的 Key Gotchas
+- **"项目怎么跑起来"** → `README.md` + `docs/dev/setup/launch.md`
+- **"踩过的坑"** → `docs/dev/gotchas.md`
 - **"过去几轮干了啥"** → `log/dev_log/dev_log.md` + `log/dev_log/YYYY-MM-DD-*.md`
-- **"待办"** → `docs/dev/follow-ups.md`
+- **"待办"** → `docs/dev/followup/backlog.md`

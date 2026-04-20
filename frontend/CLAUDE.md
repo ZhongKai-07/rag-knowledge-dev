@@ -46,8 +46,11 @@ src/
 │       ├── intent-tree/
 │       ├── traces/
 │       ├── evaluations/
-│       ├── roles/
-│       ├── users/
+│       ├── access/          ← 权限中心：4-Tab 容器（2026-04-19 重构）
+│       │   ├── AccessCenterPage.tsx    ← 容器 + Banner + scope Context
+│       │   ├── tabs/                    ← MembersTab/SharingTab/RolesTab/DepartmentsTab
+│       │   ├── components/              ← OrgTree, RoleDeleteConfirmDialog, AccessBanner
+│       │   └── hooks/useAccessScope.ts  ← 从 authStore 派生 isSuperAdmin/isDeptAdmin/deptName
 │       └── settings/
 ├── components/
 │   ├── ui/               ← 原子 UI（Radix UI 封装，shadcn/ui 模式）
@@ -150,6 +153,18 @@ src/
 - `router/guards.tsx`：`RequireAnyAdmin`（SUPER + DEPT 可进 /admin）/ `RequireSuperAdmin`（仅 SUPER）/ `RequireMenuAccess(menuId)`（按菜单项粒度）。失败策略：Navigate + toast，不做 403 页
 - `AdminLayout.tsx` 的侧边栏通过 `usePermissions().canSeeMenuItem(item.id)` 动态过滤菜单项。DEPT_ADMIN 见 4 项（Dashboard / 知识库 / 用户管理 / 角色管理[只读]），由 `permissions.ts` 的 `DEPT_VISIBLE` 数组控制
 - **Permission-gated API calls on shared pages**: Components like `KbSharingTab` that call role-restricted endpoints must handle rejection gracefully. Pattern: catch load error → set `noAccess` state → `return null`. Don't rely solely on `isAnyAdmin` for rendering — DEPT_ADMIN's access varies by KB department.
+
+## Access Center (`/admin/access`)
+
+2026-04-19 起所有权限管理合并到单入口 4-Tab 容器。设计文档：`docs/dev/design/2026-04-19-access-center-redesign.md` + `2026-04-20-access-center-followup-p3.md`。
+
+- **Tab 路由**：`?tab=members|sharing|roles|departments`。旧路由 `/admin/users` / `/admin/roles` / `/admin/departments` / `/admin/sharing` 均 301 重定向到对应 tab（`router.tsx:151-154`）。
+- **双视角 scope**：`useAccessScope()` 从 `authStore.user` 派生 `{isSuperAdmin, isDeptAdmin, deptId, deptName, scopeLabel}`，不调后端 `/access/scope`（D10 决议）。
+- **不对称规则**（D5 / §4.2）：`Tab 2 共享` 角色下拉 = 全部角色（跨部门共享合法）；`Tab 1 分配` 角色下拉 = 本部门 + GLOBAL。前端 dropdown 收敛 + 后端 `KbAccessServiceImpl.validateRoleAssignment` hard reject 双保险，仅前端隐藏不算授权边界。
+- **Tab 3 可见性**（P3.4）：DEPT_ADMIN 能看全部部门树（只读 GLOBAL / 其他部门，CRUD own-dept）；`OrgTree` 通过 `restrictToOwnDept` prop 控制，`RolesTab` 传 `false`，MembersTab/DepartmentsTab 保持默认 `true`。
+- **Tab 2 owner 过滤**（P3.3）：DEPT_ADMIN 的 Tab 2 只显示 `kb.dept_id == self.dept_id` 的 KB。`SharingPage` 通过 `getKnowledgeBases(..., 'owner')` 传 `scope=owner` 触发；其他调用点不传走默认 `scope=access`。
+- **Deep link 参数规则**（🔥 2026-04-20 踩坑）：承载 `?roleId=` / `?kb=` / `?userId=&deptId=` 的 tab，**参数消费完必须 `setSearchParams(next, { replace: true })` 从 URL 清掉**，否则会和常驻的 state effect 互相拉扯导致 useEffect 死循环（高频 XHR + 页面闪烁 + 无法切换部门节点）。详见 `docs/dev/gotchas.md` §6。
+- **角色删除预览**：`RoleDeleteConfirmDialog` 调 `GET /role/{id}/delete-preview`，展示 affected users / affected KBs / 级联说明，二次确认后才真删。
 
 ## 技术栈速查
 

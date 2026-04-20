@@ -29,7 +29,7 @@
 | 6 | 成本看板 | 管理后台新增「用量与成本」页,按用户/日/模型聚合,估算成本(按模型单价),软预算预警 | OPS 部门管理员可见本部门月度用量 |
 | 7 | Last Admin 硬保护 | `AdminInvariantGuard` 在 `UserService` / `RoleService` 入口统一 pre-check;覆盖删用户/改角色/停用/解绑 | 删最后一个 SUPER_ADMIN 返 `E_LAST_ADMIN`,事务回滚 |
 | 8 | 权限缓存失效面补全 | 统一发 `AccessCacheInvalidateEvent`,监听清 `kb_access:*` 和 `kb_security_level:*`;失效面覆盖成本高的子分支按 SUPER_ADMIN / DEPT_ADMIN 直接 bypass cache | 权限变更后下一次请求 < 1s 内生效 |
-| 9 | 意图树 RBAC 最低改造(吸收 [followup-intent-tree-rbac-multitenancy.md](../followup-intent-tree-rbac-multitenancy.md) 最小面) | ① 建立 Global 池(`kb_id IS NULL`):SYSTEM / 通用 MCP 意图归入全局,所有登录用户可见<br>② 加载层按 kbId 过滤:`DefaultIntentClassifier.loadIntentTreeData(kbId)` SQL 改为 `WHERE kb_id IS NULL OR kb_id = :currentKb`<br>③ 缓存 key 拆分:`ragent:intent:tree:global` + `ragent:intent:tree:kb:{kbId}`;节点跨池迁移时同时失效新旧 key<br>④ 接口签名透传:`IntentClassifier.classifyTargets(q, kbId)`;`IntentResolver.resolve(..., kbId)`;`RAGChatServiceImpl.streamChat` 透传已有 `knowledgeBaseId`<br>⑤ 管理写权接入 `checkManageAccess(kbId)`,复用 `KbAccessService`,不引入新权限概念 | 用户在 KB_A 空间发问时,LLM 看不到 KB_B 意图;跨 KB 改意图走管理写权拒绝;**模板库(`t_intent_template`)本期不做,进暂缓** |
+| 9 | 意图树 RBAC 最低改造(吸收 [intent-tree-rbac-multitenancy.md](./intent-tree-rbac-multitenancy.md) 最小面) | ① 建立 Global 池(`kb_id IS NULL`):SYSTEM / 通用 MCP 意图归入全局,所有登录用户可见<br>② 加载层按 kbId 过滤:`DefaultIntentClassifier.loadIntentTreeData(kbId)` SQL 改为 `WHERE kb_id IS NULL OR kb_id = :currentKb`<br>③ 缓存 key 拆分:`ragent:intent:tree:global` + `ragent:intent:tree:kb:{kbId}`;节点跨池迁移时同时失效新旧 key<br>④ 接口签名透传:`IntentClassifier.classifyTargets(q, kbId)`;`IntentResolver.resolve(..., kbId)`;`RAGChatServiceImpl.streamChat` 透传已有 `knowledgeBaseId`<br>⑤ 管理写权接入 `checkManageAccess(kbId)`,复用 `KbAccessService`,不引入新权限概念 | 用户在 KB_A 空间发问时,LLM 看不到 KB_B 意图;跨 KB 改意图走管理写权拒绝;**模板库(`t_intent_template`)本期不做,进暂缓** |
 | 10 | 两层 Rerank(粗排 + 精排) | `RerankPostProcessor` 拆成两个 postprocessor:<br>① **`CoarseRerankPostProcessor`**(order=9):bi-encoder 对 Hybrid 合并后 top-100 重打分,输出 top-20。选型:本地部署 **BGE-base-zh** 或复用现有 embedding model 做重打分(零成本)<br>② **`FineRerankPostProcessor`**(order=10):保留现有 `qwen3-rerank` cross-encoder,输入 top-20,输出 top-6<br>配置:`rag.rerank.coarse.enabled` / `rag.rerank.coarse.topIn=100` / `rag.rerank.coarse.topOut=20` | Golden Set nDCG@5 相对单层 rerank ≥ +8%;P99 延迟相对单层增加 < 30% |
 
 ---
@@ -120,11 +120,11 @@ OPS 语料 ~10 GB / 数千份文档,按平均单份 2~3 MB 估算:
 
 本文件是本期收敛视图。下列既有文档已被吸收或改期:
 
-- `docs/dev/follow-ups.md` —— 2026-04-14 `/simplify` 积累的短期债,条目按本计划吸收或推迟
-- `docs/dev/followup-intent-tree-rbac-multitenancy.md` —— **拆分吸收**:
+- `docs/dev/followup/backlog.md` —— 2026-04-14 `/simplify` 积累的短期债,条目按本计划吸收或推迟
+- `docs/dev/followup/intent-tree-rbac-multitenancy.md` —— **拆分吸收**:
   - **本期做(必做 #9)**:第二节 "两层意图池模型"、"读写两条权限轴" 最小落地(DB 过滤 + 缓存拆分 + 管理写权)
   - **本期不做 / 进暂缓**:模板库(第四节 "模板数据模型" / 第五节 "apply 操作" / 第六节 "模板权限检查" / 第七节 "跨部门共享模板" / 第八节 "管理后台 UI 结构" 中的模板部分)
-- `docs/dev/follow-up2.md` —— 待 W1 核对并入本计划或 backlog
+- `docs/dev/followup/architecture-backlog.md` —— 待 W1 核对并入本计划或 backlog
 - `memory/` 中 `project_source_display_plan.md` → 选做 #12
 - `memory/` 中 `feedback_last_admin_protection.md` → 必做 #7
 - `memory/` 中 `feedback_cache_invalidation_coverage.md` → 必做 #8
