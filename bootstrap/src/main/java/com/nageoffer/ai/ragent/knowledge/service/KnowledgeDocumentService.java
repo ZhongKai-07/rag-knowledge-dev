@@ -126,4 +126,16 @@ public interface KnowledgeDocumentService {
      * @param newLevel 新安全等级（0-3）
      */
     void updateSecurityLevel(String docId, Integer newLevel);
+
+    /**
+     * 根据文档 ID 集合批量查询元信息快照.
+     * <p>
+     * 返回的 snapshot 数量 ≤ 入参数量: 不存在 / 已软删除的 docId 会被自动过滤 (不抛异常).
+     * 用于"回答来源"功能在构建 source 卡片时批量拉取 docName / kbId 的 O(1) 写库映射.
+     *
+     * @param docIds 文档 ID 集合, 允许为空或含不存在 ID
+     * @return 可用文档的元信息子集; 空入参返回空列表
+     */
+    List<com.nageoffer.ai.ragent.knowledge.dto.DocumentMetaSnapshot> findMetaByIds(
+            java.util.Collection<String> docIds);
 }
