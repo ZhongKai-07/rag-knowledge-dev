@@ -25,8 +25,9 @@ import org.springframework.stereotype.Component;
 /**
  * 向量库类型配置校验器。
  * <p>
- * 非 opensearch 配置时打印 WARN: Milvus/Pg 实现不回填 {@code RetrievedChunk.kbId},
- * {@code AuthzPostProcessor} 会对 kbId==null 的 chunk 在认证会话里 fail-closed。
+ * 非 opensearch 配置时打印 WARN: Milvus/Pg 实现不回填 {@code RetrievedChunk.kbId} /
+ * {@code securityLevel} / {@code docId} / {@code chunkIndex}; AuthzPostProcessor 对缺
+ * {@code kbId} 的 chunk 在认证会话里 fail-closed, "回答来源"功能下 source 卡片永远为空。
  * 开发/测试环境可用，不建议生产。
  */
 @Slf4j
@@ -41,8 +42,10 @@ public class RagVectorTypeValidator {
         if (!"opensearch".equalsIgnoreCase(vectorType)) {
             log.warn("RAG vector backend is '{}' (not opensearch). " +
                             "AuthzPostProcessor will fail-close all chunks where kbId is null " +
-                            "in authenticated sessions. This is a dev-only configuration — " +
-                            "do NOT use in production without equivalent authz metadata support.",
+                            "in authenticated sessions; answer-sources feature (PR1+) will show " +
+                            "empty source cards because docId/chunkIndex are not backfilled either. " +
+                            "This is a dev-only configuration — do NOT use in production without " +
+                            "equivalent authz + source metadata support.",
                     vectorType);
         }
     }

@@ -50,7 +50,9 @@ public class PgRetrieverService implements RetrieverService {
         jdbcTemplate.execute("SET hnsw.ef_search = 200");
 
         String vectorLiteral = toVectorLiteral(vector);
-        // Pg dev-only: kbId/securityLevel 不回填, AuthzPostProcessor 会在认证会话中 fail-close。
+        // Pg dev-only: kbId/securityLevel/docId/chunkIndex 均不回填.
+        // AuthzPostProcessor 会对缺 kbId 的 chunk 在认证会话中 fail-close;
+        // "回答来源" (PR1 onwards) 依赖 docId/chunkIndex, 本后端下 source 卡片永远为空 —— 未来启用前需补齐.
         // noinspection SqlDialectInspection,SqlNoDataSourceInspection
         return jdbcTemplate.query("SELECT id, content, 1 - ((embedding <=> ?::vector) / 2) AS score FROM t_knowledge_vector WHERE metadata->>'collection_name' = ? ORDER BY embedding <=> ?::vector LIMIT ?",
                 (rs, rowNum) -> RetrievedChunk.builder()

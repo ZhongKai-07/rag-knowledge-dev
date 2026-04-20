@@ -85,7 +85,9 @@ public class MilvusRetrieverService implements RetrieverService {
 
         // TODO 需确认后续是否对分数较低数据进行限制，限制多少合适？0.65？
         // TODO 如果本次查询分数都较高，是否应该扩大查询范围？1.5倍？
-        // Milvus dev-only: kbId/securityLevel 不回填, AuthzPostProcessor 会在认证会话中 fail-close。
+        // Milvus dev-only: kbId/securityLevel/docId/chunkIndex 均不回填.
+        // AuthzPostProcessor 会对缺 kbId 的 chunk 在认证会话中 fail-close;
+        // "回答来源" (PR1 onwards) 依赖 docId/chunkIndex, 本后端下 source 卡片永远为空 —— 未来启用前需补齐.
         return results.get(0).stream()
                 .map(r -> RetrievedChunk.builder()
                         .id(Objects.toString(r.getEntity().get("id"), ""))
