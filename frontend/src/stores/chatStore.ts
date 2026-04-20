@@ -6,6 +6,7 @@ import type {
   FeedbackValue,
   Message,
   MessageDeltaPayload,
+  SourcesPayload,
   Session,
   SuggestionsPayload
 } from "@/types";
@@ -216,6 +217,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         content: item.content,
         createdAt: item.createTime,
         feedback: mapVoteToFeedback(item.vote),
+        sources: item.sources ?? [],
         status: "done"
       }));
       set({ messages: mapped });
@@ -388,6 +390,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
           messages: state.messages.map((message) =>
             message.id === payload.messageId
               ? { ...message, suggestedQuestions: payload.questions }
+              : message
+          )
+        }));
+      },
+      onSources: (payload: SourcesPayload) => {
+        if (!payload || !payload.messageId || !Array.isArray(payload.sources)) return;
+        set((state) => ({
+          messages: state.messages.map((message) =>
+            message.id === payload.messageId
+              ? { ...message, sources: payload.sources }
               : message
           )
         }));

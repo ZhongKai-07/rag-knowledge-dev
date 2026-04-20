@@ -20,6 +20,8 @@ package com.nageoffer.ai.ragent.rag.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.rag.controller.vo.ConversationMessageVO;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationMessageDO;
@@ -27,6 +29,7 @@ import com.nageoffer.ai.ragent.rag.dao.entity.ConversationSummaryDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationSummaryMapper;
+import com.nageoffer.ai.ragent.rag.dto.SourceRefPayload;
 import com.nageoffer.ai.ragent.rag.enums.ConversationMessageOrder;
 import com.nageoffer.ai.ragent.rag.service.MessageFeedbackService;
 import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
@@ -48,6 +51,7 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
     private final ConversationSummaryMapper conversationSummaryMapper;
     private final ConversationMapper conversationMapper;
     private final MessageFeedbackService feedbackService;
+    private final ObjectMapper objectMapper;
 
     @Override
     public String addMessage(ConversationMessageBO conversationMessage) {
@@ -104,6 +108,7 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                     .content(record.getContent())
                     .thinkingContent(record.getThinkingContent())
                     .thinkingDuration(record.getThinkingDuration())
+                    .sources(parseSources(record.getSourcesJson()))
                     .vote(votesByMessageId.get(record.getId()))
                     .createTime(record.getCreateTime())
                     .build();
@@ -117,5 +122,17 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
     public void addMessageSummary(ConversationSummaryBO conversationSummary) {
         ConversationSummaryDO conversationSummaryDO = BeanUtil.toBean(conversationSummary, ConversationSummaryDO.class);
         conversationSummaryMapper.insert(conversationSummaryDO);
+    }
+
+    private List<SourceRefPayload> parseSources(String sourcesJson) {
+        if (StrUtil.isBlank(sourcesJson)) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(sourcesJson, new TypeReference<List<SourceRefPayload>>() {
+            });
+        } catch (Exception ex) {
+            return List.of();
+        }
     }
 }

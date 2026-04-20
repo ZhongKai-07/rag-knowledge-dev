@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.service.handler;
 
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
+import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
@@ -49,6 +50,8 @@ public class StreamCallbackFactory {
     private final RagTraceRecordService traceRecordService;
     private final SuggestedQuestionsService suggestedQuestionsService;
     private final RAGConfigProperties ragConfigProperties;
+    private final SourceCitationResolver sourceCitationResolver;
+    private final ConversationMessageMapper conversationMessageMapper;
 
     @Qualifier("suggestedQuestionsExecutor")
     private final ThreadPoolTaskExecutor suggestedQuestionsExecutor;
@@ -72,6 +75,8 @@ public class StreamCallbackFactory {
                 .suggestedQuestionsService(suggestedQuestionsService)
                 .suggestedQuestionsExecutor(suggestedQuestionsExecutor)
                 .ragConfigProperties(ragConfigProperties)
+                .sourceCitationResolver(sourceCitationResolver)
+                .conversationMessageMapper(conversationMessageMapper)
                 .build();
 
         return new StreamChatEventHandler(params);

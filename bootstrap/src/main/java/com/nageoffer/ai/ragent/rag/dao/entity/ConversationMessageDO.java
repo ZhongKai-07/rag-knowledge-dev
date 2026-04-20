@@ -83,6 +83,12 @@ public class ConversationMessageDO {
     private Long thinkingDuration;
 
     /**
+     * 引用来源（JSON）
+     */
+    @TableField(updateStrategy = FieldStrategy.NOT_NULL)
+    private String sourcesJson;
+
+    /**
      * 创建时间，自动填充
      */
     @TableField(fill = FieldFill.INSERT)

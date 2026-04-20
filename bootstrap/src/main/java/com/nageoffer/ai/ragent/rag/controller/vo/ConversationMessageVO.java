@@ -17,12 +17,14 @@
 
 package com.nageoffer.ai.ragent.rag.controller.vo;
 
+import com.nageoffer.ai.ragent.rag.dto.SourceRefPayload;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * 会话消息视图对象
@@ -62,6 +64,11 @@ public class ConversationMessageVO {
      * 深度思考耗时（毫秒），仅深度思考模型返回
      */
     private Long thinkingDuration;
+
+    /**
+     * 引用来源列表
+     */
+    private List<SourceRefPayload> sources;
 
     /**
      * 反馈值：1=点赞，-1=点踩，null=未反馈

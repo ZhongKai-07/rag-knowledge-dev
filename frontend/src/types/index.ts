@@ -37,6 +37,18 @@ export interface Message {
   feedback?: FeedbackValue;
   status?: MessageStatus;
   suggestedQuestions?: string[];
+  sources?: SourceRef[];
+}
+
+export interface SourceRef {
+  index: number;
+  chunkId: string;
+  docId?: string | null;
+  docName?: string | null;
+  kbId?: string | null;
+  score?: number | null;
+  snippet: string;
+  chunkSummary: string;
 }
 
 export interface StreamMetaPayload {
@@ -57,4 +69,9 @@ export interface CompletionPayload {
 export interface SuggestionsPayload {
   messageId: string;
   questions: string[];
+}
+
+export interface SourcesPayload {
+  messageId: string;
+  sources: SourceRef[];
 }

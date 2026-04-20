@@ -18,30 +18,35 @@
 package com.nageoffer.ai.ragent.rag.service.handler;
 
 import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
-import com.nageoffer.ai.ragent.rag.dto.CompletionPayload;
-import com.nageoffer.ai.ragent.rag.dto.MessageDelta;
-import com.nageoffer.ai.ragent.rag.dto.MetaPayload;
-import com.nageoffer.ai.ragent.rag.enums.SSEEventType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
+import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.framework.web.SseEmitterSender;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.infra.chat.TokenUsage;
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
-import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
+import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
+import com.nageoffer.ai.ragent.rag.dao.entity.ConversationMessageDO;
+import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
+import com.nageoffer.ai.ragent.rag.dto.CompletionPayload;
 import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
+import com.nageoffer.ai.ragent.rag.dto.MessageDelta;
+import com.nageoffer.ai.ragent.rag.dto.MetaPayload;
+import com.nageoffer.ai.ragent.rag.dto.SourceRefPayload;
+import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
 import com.nageoffer.ai.ragent.rag.dto.SuggestionsPayload;
+import com.nageoffer.ai.ragent.rag.enums.SSEEventType;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -71,6 +76,9 @@ public class StreamChatEventHandler implements StreamCallback {
     private final SuggestedQuestionsService suggestedQuestionsService;
     private final ThreadPoolTaskExecutor suggestedQuestionsExecutor;
     private final RAGConfigProperties ragConfigProperties;
+    private final SourceCitationResolver sourceCitationResolver;
+    private final ConversationMessageMapper conversationMessageMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private volatile SuggestionContext suggestionContext = SuggestionContext.skip();
 
     /**
@@ -92,6 +100,8 @@ public class StreamChatEventHandler implements StreamCallback {
         this.suggestedQuestionsService = params.getSuggestedQuestionsService();
         this.suggestedQuestionsExecutor = params.getSuggestedQuestionsExecutor();
         this.ragConfigProperties = params.getRagConfigProperties();
+        this.sourceCitationResolver = params.getSourceCitationResolver();
+        this.conversationMessageMapper = params.getConversationMessageMapper();
 
         // 计算配置
         this.messageChunkSize = resolveMessageChunkSize(params.getModelProperties());
@@ -177,8 +187,17 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId)) {
             return;
         }
+        List<SourceRefPayload> sources = sourceCitationResolver.buildSources(suggestionContext.topChunks());
+        String citationMarkers = sourceCitationResolver.buildCitationMarkers(sources);
+        if (StrUtil.isNotBlank(citationMarkers)) {
+            answer.append(citationMarkers);
+            sendChunked(TYPE_RESPONSE, citationMarkers);
+        }
+
+        String answerText = answer.toString();
         String messageId = memoryService.append(conversationId, UserContext.getUserId(),
-                ChatMessage.assistant(answer.toString()), null);
+                ChatMessage.assistant(answerText), null);
+        persistSourcesJson(messageId, sources);
 
         // 更新 Trace token 用量
         updateTraceTokenUsage();
@@ -191,6 +210,9 @@ public class StreamChatEventHandler implements StreamCallback {
 
         // 立即发 FINISH，让前端进入"完成"状态
         sender.sendEvent(SSEEventType.FINISH.value(), new CompletionPayload(messageIdText, title));
+        if (!sources.isEmpty()) {
+            sender.sendEvent(SSEEventType.SOURCES.value(), new SourcesPayload(messageIdText, sources));
+        }
 
         SuggestionContext ctx = this.suggestionContext;
         boolean enabled = Boolean.TRUE.equals(ragConfigProperties.getSuggestionsEnabled());
@@ -208,6 +230,23 @@ public class StreamChatEventHandler implements StreamCallback {
         } catch (RejectedExecutionException rex) {
             log.warn("推荐生成线程池拒绝提交，直接结束 SSE", rex);
             sendDoneAndClose();
+        }
+    }
+
+    private void persistSourcesJson(String messageId, List<SourceRefPayload> sources) {
+        if (StrUtil.isBlank(messageId) || sources == null || sources.isEmpty()) {
+            return;
+        }
+        try {
+            String sourcesJson = objectMapper.writeValueAsString(sources);
+            ConversationMessageDO update = new ConversationMessageDO();
+            update.setId(messageId);
+            update.setSourcesJson(sourcesJson);
+            conversationMessageMapper.updateById(update);
+        } catch (JsonProcessingException e) {
+            log.warn("序列化来源 JSON 失败, messageId={}", messageId, e);
+        } catch (Exception e) {
+            log.warn("写入来源 JSON 失败, messageId={}", messageId, e);
         }
     }
 

@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import type { SourceRef } from "@/types";
 
 export interface ConversationVO {
   conversationId: string;
@@ -14,6 +15,7 @@ export interface ConversationMessageVO {
   content: string;
   vote: number | null;
   createTime?: string;
+  sources?: SourceRef[];
 }
 
 export async function listSessions(kbId?: string) {

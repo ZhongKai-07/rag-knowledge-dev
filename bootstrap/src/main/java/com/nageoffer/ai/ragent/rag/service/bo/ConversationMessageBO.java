@@ -60,4 +60,9 @@ public class ConversationMessageBO {
      * 深度思考耗时（毫秒），仅深度思考模型返回
      */
     private Long thinkingDuration;
+
+    /**
+     * 引用来源（JSON）
+     */
+    private String sourcesJson;
 }

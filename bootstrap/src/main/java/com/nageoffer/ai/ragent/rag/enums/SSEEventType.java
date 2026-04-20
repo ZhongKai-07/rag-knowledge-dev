@@ -58,7 +58,12 @@ public enum SSEEventType {
     /**
      * 推荐问题事件
      */
-    SUGGESTIONS("suggestions");
+    SUGGESTIONS("suggestions"),
+
+    /**
+     * 引用来源事件
+     */
+    SOURCES("sources");
 
     private final String value;
 

@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.service.handler;
 
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
+import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
@@ -96,4 +97,14 @@ public class StreamChatHandlerParams {
      * RAG 功能配置属性
      */
     private final RAGConfigProperties ragConfigProperties;
+
+    /**
+     * 引用来源解析器
+     */
+    private final SourceCitationResolver sourceCitationResolver;
+
+    /**
+     * 消息 Mapper（用于补写来源 JSON）
+     */
+    private final ConversationMessageMapper conversationMessageMapper;
 }
