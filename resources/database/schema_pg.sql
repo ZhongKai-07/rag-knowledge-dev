@@ -211,7 +211,7 @@ CREATE TABLE t_knowledge_base (
     collection_name VARCHAR(64) NOT NULL,
     created_by      VARCHAR(20)  NOT NULL,
     updated_by      VARCHAR(20),
-    dept_id         VARCHAR(20) NOT NULL DEFAULT 'GLOBAL',
+    dept_id         VARCHAR(20) NOT NULL DEFAULT '1',
     create_time     TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time     TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted         SMALLINT     NOT NULL DEFAULT 0,

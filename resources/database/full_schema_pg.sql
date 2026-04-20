@@ -458,7 +458,7 @@ CREATE TABLE public.t_knowledge_base (
     collection_name character varying(64) NOT NULL,
     created_by character varying(20) NOT NULL,
     updated_by character varying(20),
-    dept_id character varying(20) DEFAULT 'GLOBAL'::character varying NOT NULL,
+    dept_id character varying(20) DEFAULT '1'::character varying NOT NULL,
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     deleted smallint DEFAULT 0 NOT NULL
