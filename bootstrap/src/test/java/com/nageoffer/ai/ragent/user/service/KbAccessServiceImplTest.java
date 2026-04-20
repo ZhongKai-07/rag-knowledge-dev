@@ -33,6 +33,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.impl.KbAccessServiceImpl;
+import com.nageoffer.ai.ragent.user.service.impl.SysDeptServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -282,6 +283,59 @@ class KbAccessServiceImplTest {
 
         assertThrows(ClientException.class,
                 () -> service.validateRoleAssignment(List.of("role-legacy")));
+    }
+
+    @Test
+    void checkRoleMutation_superAdmin_allowsAnyDept() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-super")
+                .deptId("1")
+                .roleTypes(Set.of(RoleType.SUPER_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+
+        assertDoesNotThrow(() -> service.checkRoleMutation("dept-pwm"));
+        assertDoesNotThrow(() -> service.checkRoleMutation(SysDeptServiceImpl.GLOBAL_DEPT_ID));
+    }
+
+    @Test
+    void checkRoleMutation_deptAdmin_sameDept_passes() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-ops-admin")
+                .deptId("dept-ops")
+                .roleTypes(Set.of(RoleType.DEPT_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+
+        assertDoesNotThrow(() -> service.checkRoleMutation("dept-ops"));
+    }
+
+    @Test
+    void checkRoleMutation_deptAdmin_global_rejected() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-ops-admin")
+                .deptId("dept-ops")
+                .roleTypes(Set.of(RoleType.DEPT_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+
+        ClientException ex = assertThrows(ClientException.class,
+                () -> service.checkRoleMutation(SysDeptServiceImpl.GLOBAL_DEPT_ID));
+        assertEquals("DEPT_ADMIN 不可管理 GLOBAL 角色", ex.getMessage());
+    }
+
+    @Test
+    void checkRoleMutation_deptAdmin_crossDept_rejected() {
+        UserContext.set(LoginUser.builder()
+                .userId("u-ops-admin")
+                .deptId("dept-ops")
+                .roleTypes(Set.of(RoleType.DEPT_ADMIN))
+                .maxSecurityLevel(3)
+                .build());
+
+        ClientException ex = assertThrows(ClientException.class,
+                () -> service.checkRoleMutation("dept-pwm"));
+        assertEquals("DEPT_ADMIN 只能管理本部门角色", ex.getMessage());
     }
 
     private static void initTableInfo(Class<?> entityClass) {

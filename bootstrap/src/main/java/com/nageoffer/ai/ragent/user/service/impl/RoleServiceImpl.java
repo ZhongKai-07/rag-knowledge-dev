@@ -399,6 +399,11 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public RoleDO getRoleById(String roleId) {
+        return roleMapper.selectById(roleId);
+    }
+
+    @Override
     public List<KnowledgeBaseController.KbRoleBindingVO> getKbRoleBindings(String kbId) {
         List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getKbId, kbId));

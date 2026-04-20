@@ -23,6 +23,7 @@ import com.nageoffer.ai.ragent.framework.context.Permission;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
 import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
@@ -44,6 +45,8 @@ import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,6 +72,7 @@ class AccessServiceImplTest {
     private KnowledgeBaseMapper knowledgeBaseMapper;
     private KbAccessService kbAccessService;
     private SysDeptService sysDeptService;
+    private KbMetadataReader kbMetadataReader;
     private AccessServiceImpl service;
 
     @BeforeEach
@@ -86,6 +90,11 @@ class AccessServiceImplTest {
         knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
         kbAccessService = mock(KbAccessService.class);
         sysDeptService = mock(SysDeptService.class);
+        kbMetadataReader = mock(KbMetadataReader.class);
+        when(kbMetadataReader.filterExistingKbIds(any())).thenAnswer(invocation -> {
+            Collection<String> ids = invocation.getArgument(0);
+            return ids == null ? new HashSet<>() : new HashSet<>(ids);
+        });
         service = new AccessServiceImpl(
                 roleMapper,
                 sysDeptMapper,
@@ -94,7 +103,8 @@ class AccessServiceImplTest {
                 roleKbRelationMapper,
                 knowledgeBaseMapper,
                 kbAccessService,
-                sysDeptService);
+                sysDeptService,
+                kbMetadataReader);
     }
 
     /** deptId + includeGlobal 组合：返回本部门角色 + GLOBAL 角色，且 deptName 回填 */
@@ -181,6 +191,7 @@ class AccessServiceImplTest {
         // 所有 RoleKbRelation 查询都返回同一显式绑定
         when(roleKbRelationMapper.selectList(any())).thenReturn(List.of(
                 RoleKbRelationDO.builder().roleId(roleId).kbId(kbId).permission("READ").build()));
+        when(kbMetadataReader.listKbIdsByDeptId(deptId)).thenReturn(Set.of(kbId));
         // 所有 KnowledgeBase 查询都返回本 KB（同部门 + 范围内 enrichment）
         when(knowledgeBaseMapper.selectList(any())).thenReturn(List.of(
                 KnowledgeBaseDO.builder().id(kbId).name("OPS-COB").deptId(deptId).build()));
@@ -236,7 +247,7 @@ class AccessServiceImplTest {
                 UserRoleDO.builder().userId(userId).roleId("role-super").build()));
         when(roleMapper.selectList(any())).thenReturn(List.of(
                 RoleDO.builder().id("role-super").roleType("SUPER_ADMIN").build()));
-        when(roleKbRelationMapper.selectList(any())).thenReturn(List.of());
+        when(kbMetadataReader.listAllKbIds()).thenReturn(Set.of(kbId));
         when(knowledgeBaseMapper.selectList(any())).thenReturn(List.of(
                 KnowledgeBaseDO.builder().id(kbId).name("PWM-KB").deptId("dept-pwm").build()));
         when(kbAccessService.getMaxSecurityLevelForKb(userId, kbId)).thenReturn(3);
@@ -276,6 +287,58 @@ class AccessServiceImplTest {
         assertEquals("MANAGE", out.get(0).getPermission());
         assertEquals("MANAGE", out.get(0).getExplicitPermission());
         assertEquals(2, out.get(0).getSourceRoleIds().size());
+    }
+
+    @Test
+    void listUserKbGrants_skipsRelationWithNullPermission() {
+        String userId = "u-null-perm";
+        when(userMapper.selectById(userId)).thenReturn(
+                UserDO.builder().id(userId).deptId("dept-ops").build());
+        when(userRoleMapper.selectList(any())).thenReturn(List.of(
+                UserRoleDO.builder().userId(userId).roleId("r-null").build()));
+        when(roleMapper.selectList(any())).thenReturn(List.of(
+                RoleDO.builder().id("r-null").roleType("USER").build()));
+        when(roleKbRelationMapper.selectList(any())).thenReturn(List.of(
+                RoleKbRelationDO.builder().roleId("r-null").kbId("kb-bad").permission(null).build()));
+
+        List<UserKbGrantVO> out = service.listUserKbGrants(userId);
+
+        assertTrue(out.isEmpty());
+    }
+
+    @Test
+    void listUserKbGrants_skipsRelationWithUnknownPermission() {
+        String userId = "u-unknown-perm";
+        when(userMapper.selectById(userId)).thenReturn(
+                UserDO.builder().id(userId).deptId("dept-ops").build());
+        when(userRoleMapper.selectList(any())).thenReturn(List.of(
+                UserRoleDO.builder().userId(userId).roleId("r-unknown").build()));
+        when(roleMapper.selectList(any())).thenReturn(List.of(
+                RoleDO.builder().id("r-unknown").roleType("USER").build()));
+        when(roleKbRelationMapper.selectList(any())).thenReturn(List.of(
+                RoleKbRelationDO.builder().roleId("r-unknown").kbId("kb-bad").permission("FOO").build()));
+
+        List<UserKbGrantVO> out = service.listUserKbGrants(userId);
+
+        assertTrue(out.isEmpty());
+    }
+
+    @Test
+    void listUserKbGrants_skipsSoftDeletedKb() {
+        String userId = "u-deleted-kb";
+        when(userMapper.selectById(userId)).thenReturn(
+                UserDO.builder().id(userId).deptId("dept-ops").build());
+        when(userRoleMapper.selectList(any())).thenReturn(List.of(
+                UserRoleDO.builder().userId(userId).roleId("r-1").build()));
+        when(roleMapper.selectList(any())).thenReturn(List.of(
+                RoleDO.builder().id("r-1").roleType("USER").build()));
+        when(roleKbRelationMapper.selectList(any())).thenReturn(List.of(
+                RoleKbRelationDO.builder().roleId("r-1").kbId("kb-deleted").permission("READ").build()));
+        when(kbMetadataReader.filterExistingKbIds(any())).thenReturn(Set.of());
+
+        List<UserKbGrantVO> out = service.listUserKbGrants(userId);
+
+        assertTrue(out.isEmpty());
     }
 
     // ---------- P1.3c: getRoleUsage ----------
