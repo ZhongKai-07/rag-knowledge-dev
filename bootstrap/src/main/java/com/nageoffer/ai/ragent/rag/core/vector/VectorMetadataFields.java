@@ -32,6 +32,12 @@ public final class VectorMetadataFields {
     /** 文档安全等级 (0=PUBLIC … 3=RESTRICTED). AuthzPostProcessor 以此做天花板校验. */
     public static final String SECURITY_LEVEL = "security_level";
 
+    /** 文档 ID. 写路径: {@code OpenSearchVectorStoreService}/{@code IndexerNode}. 读路径: {@code OpenSearchRetrieverService} 回填到 {@link com.nageoffer.ai.ragent.framework.convention.RetrievedChunk#getDocId()}. */
+    public static final String DOC_ID = "doc_id";
+
+    /** 分块在文档内的顺序索引. 写路径同 DOC_ID. 读路径回填到 {@link com.nageoffer.ai.ragent.framework.convention.RetrievedChunk#getChunkIndex()}. */
+    public static final String CHUNK_INDEX = "chunk_index";
+
     private VectorMetadataFields() {
     }
 }
