@@ -130,9 +130,14 @@ export const getChunkStrategies = async (): Promise<ChunkStrategyOption[]> => {
   return api.get<ChunkStrategyOption[], ChunkStrategyOption[]>("/knowledge-base/chunk-strategies");
 };
 
-export const getKnowledgeBases = async (current = 1, size = 200, name?: string): Promise<KnowledgeBase[]> => {
+export const getKnowledgeBases = async (
+  current = 1,
+  size = 200,
+  name?: string,
+  scope?: "access" | "owner"
+): Promise<KnowledgeBase[]> => {
   const page = await api.get<PageResult<KnowledgeBase>, PageResult<KnowledgeBase>>("/knowledge-base", {
-    params: { current, size, name: name || undefined }
+    params: { current, size, name: name || undefined, scope: scope || undefined }
   });
   return page?.records || [];
 };
@@ -140,10 +145,11 @@ export const getKnowledgeBases = async (current = 1, size = 200, name?: string):
 export const getKnowledgeBasesPage = async (
   current = 1,
   size = 10,
-  name?: string
+  name?: string,
+  scope?: "access" | "owner"
 ): Promise<PageResult<KnowledgeBase>> => {
   return api.get<PageResult<KnowledgeBase>, PageResult<KnowledgeBase>>("/knowledge-base", {
-    params: { current, size, name: name || undefined }
+    params: { current, size, name: name || undefined, scope: scope || undefined }
   });
 };
 
