@@ -81,7 +81,7 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 
 | 类 | 职责 |
 |----|------|
-| `KbAccessService` | `@Deprecated` 上帝接口；2026-04-18 RBAC 改造后保留用于 47 调用点分批迁移，新代码直接注入 framework `security/port/` 下的 7 个小 port |
+| `KbAccessService` | `@Deprecated` 上帝接口；2026-04-18 RBAC 改造后保留用于历史调用点分批迁移（数量随每轮 PR 下降，实时用 `grep -rn KbAccessService bootstrap/src/main/java` 查）。新代码直接注入 `framework.security.port.*` 下的 7 个小 port |
 | `KbAccessServiceImpl` | 同时 implements 全部 7 个 framework security port（`CurrentUserProbe` / `KbReadAccessPort` / `KbManageAccessPort` / `UserAdminGuard` / `SuperAdminInvariantGuard` / `KbAccessCacheAdmin` + `KbMetadataReader` 由 `KbMetadataReaderImpl` 在 knowledge 域实现）|
 | `AuthController` | 登录/登出（Sa-Token） |
 | `RoleService` | 角色-知识库关联管理 |

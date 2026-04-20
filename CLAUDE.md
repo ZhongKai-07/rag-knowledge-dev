@@ -92,7 +92,7 @@ Within each domain, code follows a standard layered pattern: `controller/` → `
 | JDK            | Java 17                                                           |
 | Framework      | Spring Boot 3.5.7                                                 |
 | Database       | PostgreSQL                                                        |
-| Vector DB      | OpenSearch 2.18 (生产阶段确定只使用OpenSearch，暂时不考虑其他的切换)/ Milvus 2.6 / pgvector（三选一，`rag.vector.type` 切换） |
+| Vector DB      | OpenSearch 2.18 / Milvus 2.6 / pgvector（三选一，`rag.vector.type` 切换） |
 | ORM            | MyBatis Plus 3.5.14                                               |
 | Cache          | Redis + Redisson                                                  |
 | Message Queue  | RocketMQ 5.x                                                      |
@@ -101,6 +101,8 @@ Within each domain, code follows a standard layered pattern: `controller/` → `
 | Auth           | Sa-Token 1.43                                                     |
 | Code Format    | Spotless (enforced in build)                                      |
 | Frontend       | React 18 + Vite + TypeScript + TailwindCSS                        |
+
+> **当前生产只用 OpenSearch**（`application.yaml` `rag.vector.type=opensearch`）。Milvus / pgvector 后端的 `metadataFilters`（security_level 过滤）尚未实现 —— 切换前必须先补齐，见 `docs/dev/followup/backlog.md` SL-1。
 
 ## Configuration
 

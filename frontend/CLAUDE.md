@@ -143,7 +143,7 @@ src/
 - **SSE 聊天接口**：`GET /rag/v3/chat` 用 SSE 推送，前端通过原生 `EventSource` 或自定义 fetch 流处理，不是 WebSocket。取消生成调用 `POST /rag/v3/stop`，带 `taskId`。
 - **品牌名**：应用名称是 "HT KnowledgeBase"（不是 "Ragent"），影响 `index.html` title、`.env` 中 `VITE_APP_NAME`、`Sidebar.tsx`、`AdminLayout.tsx`。
 - **`KnowledgeChunksPage.tsx` 实际是文档详情页**：路由 `knowledge/:kbId/docs/:docId` 指向它（`router.tsx:124-125`），不是分块管理页。`KnowledgeDocumentsPage.tsx` 才是按 KB 分组的文档列表页。写涉及"文档详情"的改动时，改 `KnowledgeChunksPage.tsx`。
-- **Sidebar 在 `components/layout/Sidebar.tsx`**：不是 `components/chat/Sidebar.tsx`（后者不存在）。管理后台入口按钮（"管理后台"）用 `permissions.canSeeAdminMenu` 判断（约第 429 行）。
+- **Sidebar 在 `components/layout/Sidebar.tsx`**：不是 `components/chat/Sidebar.tsx`（后者不存在）。管理后台入口按钮（"管理后台"）用 `permissions.canSeeAdminMenu` 判断。
 - **chrome-devtools MCP "browser already running"**：上一次会话 Chrome 没干净退出（残留进程锁着 `~/.cache/chrome-devtools-mcp/chrome-profile`），`new_page` / `list_pages` 都会报错。修复：`powershell Stop-Process -Name chrome -Force` 后重试；会话被硬中断后几乎每次都会遇到。
 - **`tsc` 本地运行优先走 `node_modules/.bin/tsc --noEmit`**：`npx tsc` 在这个仓库偶尔会落到全局版 tsc 并报 "This is not the tsc command you are looking for" 同时 exit 0，看起来通过实际没跑。`npm run build`（走 vite）或 `.bin/tsc` 直调都能稳定检出类型错误。
 
@@ -151,7 +151,7 @@ src/
 
 - `utils/permissions.ts`：`getPermissions(user)` 纯函数（非 React 代码/单测可用）+ `usePermissions()` hook（组件用）。所有 `canSeeMenuItem` / `canManageKb` / `canManageUser` 等判断都从这里走，不要在组件里内联 `user.isSuperAdmin` 判断
 - `router/guards.tsx`：`RequireAnyAdmin`（SUPER + DEPT 可进 /admin）/ `RequireSuperAdmin`（仅 SUPER）/ `RequireMenuAccess(menuId)`（按菜单项粒度）。失败策略：Navigate + toast，不做 403 页
-- `AdminLayout.tsx` 的侧边栏通过 `usePermissions().canSeeMenuItem(item.id)` 动态过滤菜单项。DEPT_ADMIN 见 4 项（Dashboard / 知识库 / 用户管理 / 角色管理[只读]），由 `permissions.ts` 的 `DEPT_VISIBLE` 数组控制
+- `AdminLayout.tsx` 的侧边栏通过 `usePermissions().canSeeMenuItem(item.id)` 动态过滤菜单项。DEPT_ADMIN 见 3 项（Dashboard / 知识库管理 / 权限中心），由 `permissions.ts:DEPT_VISIBLE = ["dashboard", "knowledge", "access"]` 控制。access-center 重构后用户/角色/部门已合并到"权限中心" 4-Tab 容器
 - **Permission-gated API calls on shared pages**: Components like `KbSharingTab` that call role-restricted endpoints must handle rejection gracefully. Pattern: catch load error → set `noAccess` state → `return null`. Don't rely solely on `isAnyAdmin` for rendering — DEPT_ADMIN's access varies by KB department.
 
 ## Access Center (`/admin/access`)
