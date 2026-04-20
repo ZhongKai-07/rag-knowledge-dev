@@ -586,7 +586,7 @@ public StreamChatEventHandler(StreamChatHandlerParams params, ...) {
 
 | PR | 范围 | 可见影响 |
 |----|------|----------|
-| PR1 | `EnrichedChunk` + OpenSearch/Milvus/PG 检索层回填 metadata（新方法） + `KnowledgeDocumentService.findMetaByIds` + `DocumentMetaSnapshot`（OpenSearch only — Milvus/PG 保持既有 dev-only 不回填状态，未来启用时再补） | 无行为变化，零业务影响 |
+| PR1 | `RetrievedChunk` 扩展 docId/chunkIndex + OpenSearch 检索层回填 metadata + `KnowledgeDocumentService.findMetaByIds` + `DocumentMetaSnapshot`（OpenSearch only — Milvus/PG 保持既有 dev-only 不回填状态，未来启用时再补） | 无行为变化，零业务影响 |
 | PR2 | `SourceCardBuilder` + `SourceCard/SourceChunk/SourcesPayload` DTO + `SSEEventType.SOURCES` + `RAGChatServiceImpl` 编排 + 前端 `<Sources />` 骨架（**flag 默认 off**） | 默认无感 |
 | PR3 | Prompt 改造 + `remarkCitations` + `CitationBadge` + 埋点（仍在 flag 后） | 默认无感 |
 | PR4 | `t_message.sources_json` + upgrade_v1.4_to_v1.5.sql + schema 双写 + `ConversationMessageVO.sources` + `selectSession` 映射补齐（含顺带修 `thinkingContent/thinkingDuration`） | 默认无感 |
