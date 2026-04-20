@@ -21,6 +21,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.context.Permission;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
@@ -64,6 +65,7 @@ public class AccessServiceImpl implements AccessService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KbAccessService kbAccessService;
     private final SysDeptService sysDeptService;
+    private final KbMetadataReader kbMetadataReader;
 
     @Override
     public List<AccessRoleVO> listRoles(String deptId, boolean includeGlobal) {
@@ -133,7 +135,7 @@ public class AccessServiceImpl implements AccessService {
         // Step 1: 真相范围 —— 直接按目标用户的身份计算，不能用 getAccessibleKbIds
         // （该方法依赖 CALLER context 的 isSuperAdmin 判断，在 admin 查其他人时会漏算成"全量"）
         Set<String> accessibleKbIds = computeTargetUserAccessibleKbIds(
-                userId, user.getDeptId(), targetIsSuper, targetIsDeptAdmin, roleIds);
+                userId, user.getDeptId(), targetIsSuper, targetIsDeptAdmin);
         if (accessibleKbIds.isEmpty()) {
             return Collections.emptyList();
         }
@@ -309,30 +311,25 @@ public class AccessServiceImpl implements AccessService {
     /**
      * 按"目标用户"身份计算可访问 KB ID 集合。
      * <p>
-     * 不复用 {@code KbAccessServiceImpl.getAccessibleKbIds}，因为那个方法内的
-     * {@code isSuperAdmin()} 读 CALLER 的 UserContext，用于 SUPER 查其他人时会漏算成全量。
-     * 算法：SUPER → 全量；DEPT_ADMIN → 同部门 KB ∪ 显式授权 KB；USER → 仅显式授权 KB。
+     * 不直接复用 {@code getAccessibleKbIds}，因为它读 CALLER 的 UserContext。
+     * 这里改为复用同包共享的 RBAC helper，避免和 KbAccessServiceImpl 漂移出两套算法。
      */
     private Set<String> computeTargetUserAccessibleKbIds(
             String userId,
             String userDeptId,
             boolean targetIsSuper,
-            boolean targetIsDeptAdmin,
-            Set<String> roleIds) {
+            boolean targetIsDeptAdmin) {
         if (targetIsSuper) {
-            return knowledgeBaseMapper.selectList(Wrappers.lambdaQuery(KnowledgeBaseDO.class))
-                    .stream().map(KnowledgeBaseDO::getId).collect(Collectors.toSet());
+            return kbMetadataReader.listAllKbIds();
         }
-        Set<String> result = new HashSet<>();
-        if (!roleIds.isEmpty()) {
-            roleKbRelationMapper.selectList(
-                    Wrappers.lambdaQuery(RoleKbRelationDO.class).in(RoleKbRelationDO::getRoleId, roleIds))
-                    .forEach(rel -> result.add(rel.getKbId()));
-        }
+        Set<String> result = KbAccessServiceImpl.computeRbacKbIdsFor(
+                userId,
+                Permission.READ,
+                userRoleMapper,
+                roleKbRelationMapper,
+                kbMetadataReader);
         if (targetIsDeptAdmin && userDeptId != null && !userDeptId.isBlank()) {
-            knowledgeBaseMapper.selectList(
-                    Wrappers.lambdaQuery(KnowledgeBaseDO.class).eq(KnowledgeBaseDO::getDeptId, userDeptId))
-                    .forEach(kb -> result.add(kb.getId()));
+            result.addAll(kbMetadataReader.listKbIdsByDeptId(userDeptId));
         }
         return result;
     }

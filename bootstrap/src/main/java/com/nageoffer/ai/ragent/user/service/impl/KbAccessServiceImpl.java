@@ -158,6 +158,16 @@ public class KbAccessServiceImpl implements KbAccessService,
 
     /** RBAC 路径：user → roles → kb_relations → filter permission */
     private Set<String> computeRbacKbIds(String userId, Permission minPermission) {
+        return computeRbacKbIdsFor(userId, minPermission, userRoleMapper, roleKbRelationMapper, kbMetadataReader);
+    }
+
+    /** 共享 RBAC 真相源：user → roles → kb_relations → permission 过滤 → 过滤已删除 KB */
+    static Set<String> computeRbacKbIdsFor(
+            String userId,
+            Permission minPermission,
+            UserRoleMapper userRoleMapper,
+            RoleKbRelationMapper roleKbRelationMapper,
+            KbMetadataReader kbMetadataReader) {
         // user → roles
         List<UserRoleDO> userRoles = userRoleMapper.selectList(
                 Wrappers.lambdaQuery(UserRoleDO.class)
@@ -185,7 +195,7 @@ public class KbAccessServiceImpl implements KbAccessService,
         return kbIds;
     }
 
-    private boolean permissionSatisfies(String actual, Permission required) {
+    static boolean permissionSatisfies(String actual, Permission required) {
         if (actual == null) return false;
         try {
             return Permission.valueOf(actual).ordinal() >= required.ordinal();
@@ -489,6 +499,37 @@ public class KbAccessServiceImpl implements KbAccessService,
             return; // SUPER_ADMIN 可分配任意角色
         }
         validateRoleAssignment(newRoleIds);
+    }
+
+    @Override
+    public void checkRoleMutation(String roleDeptId) {
+        if (!UserContext.hasUser()) {
+            throw new ClientException("未登录用户不可管理角色");
+        }
+        if (isSuperAdmin()) {
+            return;
+        }
+        if (!isDeptAdmin()) {
+            log.warn("权限拒绝: userId={}, action=MUTATE_ROLE, reason=非管理员", UserContext.getUserId());
+            throw new ClientException("无权管理角色");
+        }
+        if (roleDeptId == null || roleDeptId.isBlank()) {
+            log.warn("权限拒绝: userId={}, action=MUTATE_ROLE, reason=角色未归属部门", UserContext.getUserId());
+            throw new ClientException("角色未归属部门，无法操作");
+        }
+        if (SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(roleDeptId)) {
+            log.warn("权限拒绝: userId={}, action=MUTATE_ROLE, reason=GLOBAL角色", UserContext.getUserId());
+            throw new ClientException("DEPT_ADMIN 不可管理 GLOBAL 角色");
+        }
+        LoginUser current = UserContext.get();
+        if (!sameDept(current, roleDeptId)) {
+            log.warn(
+                    "权限拒绝: userId={}, action=MUTATE_ROLE, reason=跨部门, roleDept={}, selfDept={}",
+                    UserContext.getUserId(),
+                    roleDeptId,
+                    current.getDeptId());
+            throw new ClientException("DEPT_ADMIN 只能管理本部门角色");
+        }
     }
 
     @Override

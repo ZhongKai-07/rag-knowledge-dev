@@ -19,12 +19,14 @@ package com.nageoffer.ai.ragent.knowledge.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingMode;
+import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseCreateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBasePageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseUpdateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.ChunkStrategyVO;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeBaseVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
@@ -55,6 +57,7 @@ public class KnowledgeBaseController {
     private final KnowledgeBaseService knowledgeBaseService;
     private final KbAccessService kbAccessService;
     private final RoleService roleService;
+    private final KbMetadataReader kbMetadataReader;
 
     /**
      * 创建知识库
@@ -99,12 +102,32 @@ public class KnowledgeBaseController {
      */
     @GetMapping("/knowledge-base")
     public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest requestParam) {
-        // RBAC: non-super-admin users only see accessible KBs
-        if (UserContext.hasUser() && !kbAccessService.isSuperAdmin()) {
+        if (UserContext.hasUser()) {
+            applyKbScope(requestParam);
+        }
+        return Results.success(knowledgeBaseService.pageQuery(requestParam));
+    }
+
+    private void applyKbScope(KnowledgeBasePageRequest requestParam) {
+        if ("owner".equalsIgnoreCase(requestParam.getScope())) {
+            if (kbAccessService.isSuperAdmin()) {
+                return;
+            }
+            if (kbAccessService.isDeptAdmin()) {
+                LoginUser current = UserContext.get();
+                String deptId = current != null ? current.getDeptId() : null;
+                requestParam.setAccessibleKbIds(
+                        deptId == null ? Set.of() : kbMetadataReader.listKbIdsByDeptId(deptId));
+                return;
+            }
+            requestParam.setAccessibleKbIds(Set.of());
+            return;
+        }
+
+        if (!kbAccessService.isSuperAdmin()) {
             Set<String> accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
             requestParam.setAccessibleKbIds(accessibleKbIds);
         }
-        return Results.success(knowledgeBaseService.pageQuery(requestParam));
     }
 
     /**

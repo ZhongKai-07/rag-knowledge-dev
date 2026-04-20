@@ -81,6 +81,7 @@ export function MembersTab() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 
   // ─── 右侧 ─────────────────────────────────────────────
   const [userRoles, setUserRolesState] = useState<RoleItem[]>([]);
@@ -125,13 +126,42 @@ export function MembersTab() {
       .finally(() => {
         if (!cancelled) setUsersLoading(false);
       });
-    setSelectedUserId(null);
+    if (!pendingUserId) {
+      setSelectedUserId(null);
+    }
     return () => {
       cancelled = true;
     };
     // keyword changes are handled by handleSearch() calling loadUsers directly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedDeptId]);
+  }, [selectedDeptId, pendingUserId]);
+
+  useEffect(() => {
+    if (!pendingUserId) return;
+    if (users.some((user) => user.id === pendingUserId)) {
+      setSelectedUserId(pendingUserId);
+      setPendingUserId(null);
+    }
+  }, [pendingUserId, users]);
+
+  useEffect(() => {
+    const userIdParam = searchParams.get("userId");
+    const deptIdParam = searchParams.get("deptId");
+    if (!userIdParam) return;
+    if (userIdParam === selectedUserId && (!deptIdParam || deptIdParam === selectedDeptId)) {
+      return;
+    }
+    if (userIdParam === pendingUserId && (!deptIdParam || deptIdParam === selectedDeptId)) {
+      return;
+    }
+    setPendingUserId(userIdParam);
+    if (deptIdParam && deptIdParam !== selectedDeptId) {
+      setSelectedDeptId(deptIdParam);
+      return;
+    }
+    setSelectedUserId(userIdParam);
+    setPendingUserId(null);
+  }, [searchParams, selectedDeptId, selectedUserId, pendingUserId]);
 
   const loadDetail = useCallback(async (userId: string) => {
     try {
@@ -252,7 +282,10 @@ export function MembersTab() {
           </div>
           <OrgTree
             selectedDeptId={selectedDeptId}
-            onSelect={setSelectedDeptId}
+            onSelect={(deptId) => {
+              setPendingUserId(null);
+              setSelectedDeptId(deptId);
+            }}
             countField="userCount"
           />
         </div>
@@ -284,7 +317,10 @@ export function MembersTab() {
                     <li key={u.id}>
                       <button
                         type="button"
-                        onClick={() => setSelectedUserId(u.id)}
+                        onClick={() => {
+                          setPendingUserId(null);
+                          setSelectedUserId(u.id);
+                        }}
                         className={
                           "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100 " +
                           (isActive ? "bg-indigo-50 text-indigo-700" : "")

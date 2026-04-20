@@ -19,7 +19,10 @@ package com.nageoffer.ai.ragent.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.context.RoleType;
+import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import lombok.Data;
@@ -35,9 +38,10 @@ public class RoleController {
     private final RoleService roleService;
     private final KbAccessService kbAccessService;
 
-    @SaCheckRole("SUPER_ADMIN")
     @PostMapping("/role")
     public Result<String> createRole(@RequestBody RoleCreateRequest request) {
+        kbAccessService.checkRoleMutation(request.getDeptId());
+        rejectDeptAdminSuperAdminMutation(request.getRoleType(), "创建");
         String id = roleService.createRole(
                 request.getName(),
                 request.getDescription(),
@@ -47,9 +51,12 @@ public class RoleController {
         return Results.success(id);
     }
 
-    @SaCheckRole("SUPER_ADMIN")
     @PutMapping("/role/{roleId}")
     public Result<Void> updateRole(@PathVariable("roleId") String roleId, @RequestBody RoleCreateRequest request) {
+        RoleDO existing = requireRole(roleId);
+        kbAccessService.checkRoleMutation(existing.getDeptId());
+        rejectDeptAdminSuperAdminMutation(existing.getRoleType(), "修改");
+        rejectDeptAdminSuperAdminMutation(request.getRoleType(), "修改");
         roleService.updateRole(
                 roleId,
                 request.getName(),
@@ -60,9 +67,11 @@ public class RoleController {
         return Results.success();
     }
 
-    @SaCheckRole("SUPER_ADMIN")
     @DeleteMapping("/role/{roleId}")
     public Result<Void> deleteRole(@PathVariable("roleId") String roleId) {
+        RoleDO existing = requireRole(roleId);
+        kbAccessService.checkRoleMutation(existing.getDeptId());
+        rejectDeptAdminSuperAdminMutation(existing.getRoleType(), "删除");
         roleService.deleteRole(roleId);
         return Results.success();
     }
@@ -75,9 +84,11 @@ public class RoleController {
      * DEPT_ADMIN 身份（同部门隐式 MANAGE 权限随之消失），不会反映在本预览。
      * P1 的 GET /access/users/{userId}/kb-grants 提供完整算法（D13）。
      */
-    @SaCheckRole("SUPER_ADMIN")
     @GetMapping("/role/{roleId}/delete-preview")
     public Result<RoleDeletePreviewVO> getRoleDeletePreview(@PathVariable("roleId") String roleId) {
+        RoleDO existing = requireRole(roleId);
+        kbAccessService.checkRoleMutation(existing.getDeptId());
+        rejectDeptAdminSuperAdminMutation(existing.getRoleType(), "查看");
         return Results.success(roleService.getRoleDeletePreview(roleId));
     }
 
@@ -108,6 +119,23 @@ public class RoleController {
         kbAccessService.checkAnyAdminAccess();
         kbAccessService.checkUserManageAccess(userId);
         return Results.success(roleService.getUserRoles(userId));
+    }
+
+    private RoleDO requireRole(String roleId) {
+        RoleDO role = roleService.getRoleById(roleId);
+        if (role == null) {
+            throw new ClientException("角色不存在");
+        }
+        return role;
+    }
+
+    private void rejectDeptAdminSuperAdminMutation(String roleType, String actionLabel) {
+        if (kbAccessService.isSuperAdmin()) {
+            return;
+        }
+        if (RoleType.SUPER_ADMIN.name().equals(roleType)) {
+            throw new ClientException("DEPT_ADMIN 不可" + actionLabel + " SUPER_ADMIN 角色");
+        }
     }
 
     @Data

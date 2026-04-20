@@ -39,4 +39,11 @@ public class KnowledgeBasePageRequest extends Page {
      */
     @TableField(exist = false)
     private Set<String> accessibleKbIds;
+
+    /**
+     * 列表口径：
+     * - access（默认）：当前用户可访问范围
+     * - owner：当前管理员的拥有范围（DEPT_ADMIN 仅本部门；SUPER_ADMIN 不限）
+     */
+    private String scope;
 }

@@ -123,6 +123,12 @@ public interface KbAccessService {
     void checkAssignRolesAccess(String targetUserId, java.util.List<String> newRoleIds);
 
     /**
+     * 角色 CRUD / delete-preview 授权。
+     * SUPER_ADMIN 可操作任意角色；DEPT_ADMIN 仅可操作本部门且非 GLOBAL 的角色。
+     */
+    void checkRoleMutation(String roleDeptId);
+
+    /**
      * 校验 DEPT_ADMIN 分配角色的合法性：
      * - 不可分配 SUPER_ADMIN 角色
      * - 不可分配 DEPT_ADMIN 角色

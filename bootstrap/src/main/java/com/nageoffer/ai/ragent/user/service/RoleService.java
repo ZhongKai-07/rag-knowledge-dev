@@ -66,6 +66,9 @@ public interface RoleService {
     /** 获取用户的角色列表 */
     List<RoleDO> getUserRoles(String userId);
 
+    /** 按 id 查询角色。不存在时返回 null。 */
+    RoleDO getRoleById(String roleId);
+
     /** 获取指定 KB 的所有角色绑定 */
     List<KnowledgeBaseController.KbRoleBindingVO> getKbRoleBindings(String kbId);
 

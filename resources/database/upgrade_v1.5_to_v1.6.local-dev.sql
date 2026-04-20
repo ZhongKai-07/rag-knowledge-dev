@@ -1,6 +1,9 @@
--- 升级脚本：v1.5 → v1.6
+-- ⚠️⚠️⚠️ 本文件仅供 local-dev 使用，其他环境禁止直接执行 ⚠️⚠️⚠️
+-- 升级脚本：v1.5 → v1.6（local-dev）
 -- 功能：给 t_role 加 dept_id 列（值 = sys_dept.id，不是 dept_code），让角色按部门归属
 -- 设计文档：docs/dev/design/2026-04-19-access-center-redesign.md §一·六
+-- 其他环境：请复制 upgrade_v1.5_to_v1.6.template.sql 并改名为 upgrade_v1.5_to_v1.6.<env>.sql，
+--           再按该环境实际 sys_dept / t_role 数据填写 Step 2 的显式 UPDATE。
 
 -- 1. 加列 + 索引
 ALTER TABLE t_role ADD COLUMN IF NOT EXISTS dept_id VARCHAR(20);
