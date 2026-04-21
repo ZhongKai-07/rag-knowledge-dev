@@ -55,6 +55,9 @@ public enum SSEEventType {
      */
     REJECT("reject"),
 
+    /** 回答来源事件。 */
+    SOURCES("sources"),
+
     /**
      * 推荐问题事件
      */
