@@ -431,13 +431,13 @@ git commit -m "feat(sources): add SourceCardsHolder set-once CAS container [PR2]
 
 - [ ] **Step 3.1: 创建 `RagSourcesProperties.java`**
 
-沿用 `RAGConfigProperties.java` 的 `@Configuration + @Value` 风格（不用 `@ConfigurationProperties` 以保持项目一致）：
+沿用项目主流模式 `@Configuration + @ConfigurationProperties`（参考 `GuidanceProperties` / `MemoryProperties` 等）。与签字的 spec § 2 一致。
 
 ```java
 package com.nageoffer.ai.ragent.rag.config;
 
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -447,19 +447,17 @@ import org.springframework.context.annotation.Configuration;
  */
 @Data
 @Configuration
+@ConfigurationProperties(prefix = "rag.sources")
 public class RagSourcesProperties {
 
     /** 功能总开关（默认关闭）。 */
-    @Value("${rag.sources.enabled:false}")
-    private Boolean enabled;
+    private Boolean enabled = false;
 
     /** Chunk preview 截断长度（按 codePoint 计算）。 */
-    @Value("${rag.sources.preview-max-chars:200}")
-    private Integer previewMaxChars;
+    private Integer previewMaxChars = 200;
 
     /** SourceCard 列表条数上限。 */
-    @Value("${rag.sources.max-cards:8}")
-    private Integer maxCards;
+    private Integer maxCards = 8;
 }
 ```
 
@@ -978,29 +976,57 @@ import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
 
 **注意**：闸门 1 早返回分支（`guidanceDecision.isPrompt()` / `allSystemOnly` / `ctx.isEmpty()`）**不要**加 sources 发射代码——它们在 `distinctChunks` 计算之前就 `return` 了，天然不会走到 sources 逻辑。
 
-- [ ] **Step 7.3: 写 `RAGChatServiceImplSourcesTest.java`**
+- [ ] **Step 7.3: 写 `RAGChatServiceImplSourcesTest.java`（真实 service + @InjectMocks + InOrder）**
 
-由于 `RAGChatServiceImpl` 字段很多，完整 mock 组装工作量大。此测试聚焦"三层闸门 + build/emit 被调用情况"，用 Mockito 验证 `sourceCardBuilder.build(...)` 和 `callback.trySetCards / emitSources` 的调用次数。
-
-**测试范围**：主路径的 3 闸门行为组合 + MCP-only 锁口径场景。不覆盖 L109~L180 早返回分支（那些分支不触达新代码，无需额外断言）。
+**关键设计**：此测试**驱动真实的 `RAGChatServiceImpl.streamChat(...)` 方法**，用 `@InjectMocks` 组装 14 个依赖的 mock，通过 `Mockito.inOrder(...)` 锁住 `retrieve → build → emit → streamChat` 的相对调用顺序。这样：
+- 代码放错位置（如放到 `ctx.isEmpty()` 之前、放到 `llmService.streamChat(...)` 之后）测试都会挂
+- 闸门判定错误（如把 `distinctChunks.isEmpty()` 写成 `ctx.isEmpty()`）的场景测试都会挂
 
 ```java
 package com.nageoffer.ai.ragent.rag.service.impl;
 
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.nageoffer.ai.ragent.infra.chat.LLMService;
+import com.nageoffer.ai.ragent.infra.chat.StreamCancellationHandle;
 import com.nageoffer.ai.ragent.rag.config.RagSourcesProperties;
+import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
+import com.nageoffer.ai.ragent.rag.core.guidance.GuidanceDecision;
+import com.nageoffer.ai.ragent.rag.core.guidance.IntentGuidanceService;
+import com.nageoffer.ai.ragent.rag.core.intent.IntentResolver;
+import com.nageoffer.ai.ragent.rag.core.intent.SubQuestionIntent;
+import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.nageoffer.ai.ragent.rag.core.prompt.RAGPromptService;
+import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
+import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalContext;
+import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
+import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
+import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
 import com.nageoffer.ai.ragent.rag.core.source.SourceCardBuilder;
 import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
+import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamChatEventHandler;
+import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
+import com.nageoffer.ai.ragent.user.access.AccessScope;
+import com.nageoffer.ai.ragent.user.access.KbAccessService;
+import com.nageoffer.ai.ragent.user.access.KbReadAccessPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -1008,100 +1034,164 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 聚焦 RAGChatServiceImpl 新增的"3 层闸门"编排行为。
- * <p>
- * 因 RAGChatServiceImpl 的完整依赖图很大，此测试不启动 Spring，也不进入真实
- * 检索 / LLM 链路。我们把 3 闸门的判定逻辑抽到一个可独立测试的小辅助
- * （见 {@link #applySourcesGates}），锁住期望行为。
- * <p>
- * 真实端到端顺序由 {@code RAGChatControllerSourcesIntegrationTest} 覆盖。
+ * 驱动真实的 {@link RAGChatServiceImpl#streamChat} 方法，验证：
+ * <ol>
+ *   <li>sources 发射点在 {@code retrieve} 之后、{@code llmService.streamChat} 之前</li>
+ *   <li>三层闸门下 builder/emit 的调用次数符合预期</li>
+ * </ol>
  */
+@ExtendWith(MockitoExtension.class)
 class RAGChatServiceImplSourcesTest {
 
-    private SourceCardBuilder builder;
-    private StreamChatEventHandler callback;
-    private RagSourcesProperties props;
+    @Mock LLMService llmService;
+    @Mock RAGPromptService promptBuilder;
+    @Mock PromptTemplateLoader promptTemplateLoader;
+    @Mock ConversationMemoryService memoryService;
+    @Mock StreamTaskManager taskManager;
+    @Mock IntentGuidanceService guidanceService;
+    @Mock StreamCallbackFactory callbackFactory;
+    @Mock QueryRewriteService queryRewriteService;
+    @Mock IntentResolver intentResolver;
+    @Mock RetrievalEngine retrievalEngine;
+    @Mock KbAccessService kbAccessService;
+    @Mock KbReadAccessPort kbReadAccess;
+    @Mock ConversationMapper conversationMapper;
+    @Mock SourceCardBuilder sourceCardBuilder;
+    @Mock StreamChatEventHandler callback;
+
+    RagSourcesProperties props;
+
+    @InjectMocks
+    RAGChatServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        builder = mock(SourceCardBuilder.class);
-        callback = mock(StreamChatEventHandler.class);
+        // 用 lenient() 避免 MockitoExtension 的 strict stubbing 对"只在部分测试里用"的 stub 报错
+        lenient().when(kbReadAccess.getAccessScope(any(), any())).thenReturn(AccessScope.empty());
+
+        lenient().when(queryRewriteService.rewriteWithSplit(any(), any()))
+                .thenReturn(new RewriteResult("q", "q", List.of("q")));
+        lenient().when(intentResolver.resolve(any())).thenReturn(List.<SubQuestionIntent>of());
+        lenient().when(intentResolver.isSystemOnly(any())).thenReturn(false);
+
+        lenient().when(guidanceService.detectAmbiguity(any(), any()))
+                .thenReturn(GuidanceDecision.pass());
+
+        lenient().when(callbackFactory.createChatEventHandler(any(), any(), any())).thenReturn(callback);
+
+        // 默认给回空 history，避免 NPE
+        lenient().when(memoryService.loadAndAppend(any(), any(), any(), any())).thenReturn(List.of());
+
+        // 默认流式 LLM 返回一个可注册的 handle
+        lenient().when(llmService.streamChat(any(), any()))
+                .thenReturn(mock(StreamCancellationHandle.class));
+
+        // 配置
         props = new RagSourcesProperties();
         props.setEnabled(true);
         props.setMaxCards(8);
         props.setPreviewMaxChars(200);
+        // 通过反射 / 构造器注入 props —— @InjectMocks 已处理 @Mock 字段，
+        // 这里手动把 props 赋给 service 的 ragSourcesProperties 字段（同样手法处理其他
+        // 非 @Mock 字段；实施时可用 ReflectionTestUtils.setField）
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "ragSourcesProperties", props);
     }
 
-    private void applySourcesGates(List<RetrievedChunk> distinctChunks) {
-        if (Boolean.TRUE.equals(props.getEnabled()) && !distinctChunks.isEmpty()) {
-            List<SourceCard> cards = builder.build(distinctChunks, props.getMaxCards(), props.getPreviewMaxChars());
-            if (!cards.isEmpty() && callback.trySetCards(cards)) {
-                callback.emitSources(any());
-            }
-        }
+    private RetrievalContext ctxWithKbChunks(List<RetrievedChunk> chunks) {
+        RetrievalContext mock = mock(RetrievalContext.class);
+        when(mock.isEmpty()).thenReturn(chunks.isEmpty());
+        when(mock.getIntentChunks()).thenReturn(Map.of("i1", chunks));
+        when(mock.getMcpContext()).thenReturn("");
+        when(mock.getKbContext()).thenReturn("");
+        when(mock.hasMcp()).thenReturn(false);
+        return mock;
     }
 
     @Test
-    void happyPathShouldCallBuilderAndEmit() {
+    void happyPath_emitSourcesBetweenRetrieveAndStreamChat() {
         List<RetrievedChunk> chunks = List.of(
-                RetrievedChunk.builder().id("c1").docId("d1").chunkIndex(0).score(0.9).text("t").build());
+                RetrievedChunk.builder().id("c1").docId("d1").chunkIndex(0).score(0.9).text("hi").build());
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctxWithKbChunks(chunks));
         List<SourceCard> cards = List.of(SourceCard.builder().index(1).docId("d1").build());
-        when(builder.build(any(), anyInt(), anyInt())).thenReturn(cards);
+        when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(cards);
         when(callback.trySetCards(cards)).thenReturn(true);
 
-        applySourcesGates(chunks);
+        service.streamChat("q", null, null, false, mock(SseEmitter.class));
 
-        verify(builder, times(1)).build(chunks, 8, 200);
-        verify(callback, times(1)).trySetCards(cards);
-        verify(callback, times(1)).emitSources(any());
+        InOrder order = inOrder(retrievalEngine, sourceCardBuilder, callback, llmService);
+        order.verify(retrievalEngine).retrieve(any(), anyInt(), any(), any());
+        order.verify(sourceCardBuilder).build(any(), anyInt(), anyInt());
+        order.verify(callback).emitSources(any());
+        order.verify(llmService).streamChat(any(), any());
     }
 
     @Test
-    void flagOffShouldNotCallBuilder() {
+    void flagOff_shouldNotCallBuilder_butShouldStillStartLlmStream() {
         props.setEnabled(false);
         List<RetrievedChunk> chunks = List.of(
-                RetrievedChunk.builder().id("c1").docId("d1").build());
+                RetrievedChunk.builder().id("c1").docId("d1").chunkIndex(0).score(0.9).text("hi").build());
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctxWithKbChunks(chunks));
 
-        applySourcesGates(chunks);
+        service.streamChat("q", null, null, false, mock(SseEmitter.class));
 
-        verify(builder, never()).build(any(), anyInt(), anyInt());
-        verify(callback, never()).trySetCards(any());
+        verify(sourceCardBuilder, never()).build(any(), anyInt(), anyInt());
         verify(callback, never()).emitSources(any());
+        verify(llmService, times(1)).streamChat(any(), any());  // 回答照常走
     }
 
     @Test
-    void emptyDistinctChunksShouldNotCallBuilder() {
-        applySourcesGates(List.of());
+    void emptyDistinctChunks_mcpOnlyScenario_shouldNotCallBuilder_butLlmStillStarts() {
+        // ctx 非空（有 MCP），但 intentChunks 为空 → distinctChunks.isEmpty()
+        RetrievalContext ctx = mock(RetrievalContext.class);
+        when(ctx.isEmpty()).thenReturn(false);
+        when(ctx.getIntentChunks()).thenReturn(Map.of());
+        when(ctx.hasMcp()).thenReturn(true);
+        when(ctx.getMcpContext()).thenReturn("mcp-ctx");
+        when(ctx.getKbContext()).thenReturn("");
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
 
-        verify(builder, never()).build(any(), anyInt(), anyInt());
+        service.streamChat("q", null, null, false, mock(SseEmitter.class));
+
+        verify(sourceCardBuilder, never()).build(any(), anyInt(), anyInt());
         verify(callback, never()).emitSources(any());
+        verify(llmService, times(1)).streamChat(any(), any());  // MCP-Only 回答路径照常
     }
 
     @Test
-    void emptyCardsShouldNotEmit() {
+    void emptyCards_shouldNotEmit_butLlmStillStarts() {
         List<RetrievedChunk> chunks = List.of(
-                RetrievedChunk.builder().id("c1").docId("d1").build());
-        when(builder.build(any(), anyInt(), anyInt())).thenReturn(List.of());
+                RetrievedChunk.builder().id("c1").docId("d1").chunkIndex(0).score(0.9).text("hi").build());
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctxWithKbChunks(chunks));
+        when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of());
 
-        applySourcesGates(chunks);
+        service.streamChat("q", null, null, false, mock(SseEmitter.class));
 
-        verify(builder, times(1)).build(any(), anyInt(), anyInt());
+        verify(sourceCardBuilder, times(1)).build(any(), anyInt(), anyInt());
         verify(callback, never()).trySetCards(any());
         verify(callback, never()).emitSources(any());
+        verify(llmService, times(1)).streamChat(any(), any());
     }
 
     @Test
-    void mcpOnlyWithEmptyDistinctChunksShouldNotCallBuilder() {
-        // 锁住判定口径：即使 ctx.hasMcp=true（本测试层抽象掉 ctx），
-        // 只要 distinctChunks.isEmpty()，sources 就不推。
-        applySourcesGates(List.of());
+    void ctxIsEmpty_shouldNotCallBuilder_andShouldNotStartLlm() {
+        // ctx.isEmpty() 是真早返回分支
+        RetrievalContext ctx = mock(RetrievalContext.class);
+        when(ctx.isEmpty()).thenReturn(true);
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
 
-        verify(builder, never()).build(any(), anyInt(), anyInt());
+        service.streamChat("q", null, null, false, mock(SseEmitter.class));
+
+        verify(sourceCardBuilder, never()).build(any(), anyInt(), anyInt());
+        verify(callback, never()).emitSources(any());
+        verify(llmService, never()).streamChat(any(), any());  // 真早返回，LLM 不启动
     }
 }
 ```
 
-**说明**：此测试采用"抽取闸门逻辑到辅助方法"的策略避免拉起完整 `RAGChatServiceImpl` 依赖图。`RAGChatServiceImpl` 本身的真实执行由 Task 8 的集成测试覆盖 SSE 帧序。
+**实施期备注**：
+1. `GuidanceDecision.pass()` 是假定存在的静态工厂。若实际类型不同（例如需 `.notPrompt()` 语义），实施时按实际 API 替换
+2. `RewriteResult` / `SubQuestionIntent` 的构造签名可能与上文不同；编译错误时按实际签名调整
+3. `@InjectMocks` 无法注入非 `@Mock` 的 `RagSourcesProperties`（它是一个 POJO，需要实例），因此通过 `ReflectionTestUtils.setField(...)` 手动赋值；如果项目已有更优雅的注入模式（如 `@Spy`），实施期可替换
 
 - [ ] **Step 7.4: 运行测试**
 
@@ -1128,68 +1218,36 @@ git commit -m "feat(sources): RAGChatServiceImpl 3-gate orchestration + emit [PR
 
 ---
 
-### Task 8: 后端集成测试 — SSE 帧序（happy path + flag off）
+### Task 8: （可选）后端 @SpringBootTest 真实 SSE wire 格式验证
 
 **Files:**
 - Test: `bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/controller/RAGChatControllerSourcesIntegrationTest.java`
 
-**说明**：基线 10 个已知失败测试不包含集成级 `@SpringBootTest`，项目没有现成的 `/rag/v3/chat` 端到端 SSE 断言框架。完整端到端（连真实 OpenSearch + LLM）成本高。
+**说明**：**Task 7 已通过真实 service + InOrder 锁住了 `retrieve → build → emit → streamChat` 的相对顺序**，这对 SSE 帧序的实际保障已经足够（`sender.sendEvent` 是同步调用，在单一 SseEmitter 上必然按调用顺序序列化）。
 
-**本任务的选择**：写一个 **"组件级"集成测试**，对 `RAGChatServiceImpl.streamChat(...)` 做部分 mock（`LLMService`、`RetrievalEngine` 等用 `@MockBean`），使 `SseEmitter` 真实工作；断言 SSE 发射顺序中 `sources` 位置。**不依赖**真实 OpenSearch / LLM 部署。
+本任务是**可选加强**：若项目已有 `@SpringBootTest` + `MockMvc` 的 SSE 断言基类可复用，再加一层真实 wire 格式验证；**否则直接跳过并在 PR 描述里记录**"SSE 顺序由 Task 7 的 InOrder 断言保证"。
 
-若此集成测试复杂度超过预期（如 `@MockBean` 字段过多），可降级为"纯 unit 测试 + Mockito InOrder 验证 `callback.emitSources` 相对 `llmService.streamChat` 的调用顺序"——见 Step 8.2 备选方案。
-
-- [ ] **Step 8.1: 写组件级集成测试（推荐）**
-
-```java
-package com.nageoffer.ai.ragent.rag.controller;
-
-import com.nageoffer.ai.ragent.rag.service.impl.RAGChatServiceImpl;
-// ... 依赖 mock 组装
-// [此处留详细 @SpringBootTest 组装 — 实施时按项目实际 WebMvc 测试基类填充]
-```
-
-**实施时**：参考项目中已有的 `@SpringBootTest` 测试（如果有）组装 `MockMvc` + `MockBean`；否则走 Step 8.2 备选方案。
-
-- [ ] **Step 8.2: 备选 — InOrder 单元测试**
-
-若 Step 8.1 组装困难，改用以下单元测试对 `RAGChatServiceImpl.streamChat` 做 Mockito 验证：
-
-```java
-package com.nageoffer.ai.ragent.rag.service.impl;
-
-// ... [使用 Mockito InOrder 验证：
-//      retrievalEngine.retrieve → sourceCardBuilder.build → callback.emitSources → llmService.streamChat
-//      的相对调用顺序]
-```
-
-完整 mock 表较长（RAGChatServiceImpl 有 14 个 `@RequiredArgsConstructor` 依赖）。实施时：
-1. 用 `@ExtendWith(MockitoExtension.class)` + 多个 `@Mock` 字段
-2. 用 `Mockito.inOrder(sourceCardBuilder, callback, llmService)` 验证相对次序
-3. 不验证 SSE 线缆格式（那是 `SseEmitterSender` 的责任）
-
-**闸门覆盖**（3 个测试）：
-- happy path：`retrieve` 返回非空 ctx → `build` 被调 → `emitSources` 被调 → `streamChat` 被调
-- flag off：`props.enabled=false` → `build` 不被调、`emitSources` 不被调，`streamChat` 照常被调
-- 空 distinctChunks：`retrieve` 返回的 ctx 使得 `distinctChunks.isEmpty()` → `build` 不被调，`streamChat` 照常被调
-
-- [ ] **Step 8.3: 运行测试**
+- [ ] **Step 8.1: 先确认项目是否有可复用的 @SpringBootTest 基类**
 
 ```bash
-mvn -pl bootstrap test -Dtest='RAGChatControllerSourcesIntegrationTest,RAGChatServiceImplSourcesTest'
+grep -rn "@SpringBootTest" bootstrap/src/test/java/ | head
+grep -rn "SseEmitter\|text/event-stream" bootstrap/src/test/java/ | head
 ```
 
-预期：全通过。
+若命中零条或不含 SSE 断言模式 → **跳过 Task 8，直接进 Task 9**。
 
-- [ ] **Step 8.4: Spotless + 提交**
+- [ ] **Step 8.2: 若有基类可复用，再写 wire 格式测试**
+
+（此处按项目实际基类抽象填充；无现成基类则不写）
+
+- [ ] **Step 8.3: 提交（仅当 8.2 写了代码）**
 
 ```bash
-mvn spotless:apply -q
 git add bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/controller/RAGChatControllerSourcesIntegrationTest.java
-git commit -m "test(sources): SSE frame order integration test (happy path + flag off) [PR2]"
+git commit -m "test(sources): @SpringBootTest SSE wire format integration test [PR2]"
 ```
 
-**⚠️ 执行期注意**：若 Step 8.1 组装失败且 Step 8.2 能覆盖"3 闸门相对调用次序"，可以在 commit message 里注明"使用 InOrder 单测代替 @SpringBootTest"并继续。Task 8 的成立标准是"3 闸门行为被测试覆盖"，不强求真实 SSE wire 格式。
+**执行期决策**：Task 8 的存在与否不影响 PR2 交付的完整性；若跳过，在 PR 描述 "Test plan" 部分明确写 "SSE 顺序由 Task 7 的 Mockito InOrder 断言保证；未加 @SpringBootTest 层，因项目无现成 SSE 测试基类"。
 
 ---
 
@@ -1307,59 +1365,143 @@ git commit -m "feat(sources): wire sources SSE event in useStreamResponse [PR2]"
 
 ---
 
-### Task 11: Frontend `chatStore.onSources` + guard
+### Task 11: Frontend `chatStore` — 提取 `createStreamHandlers` 工厂 + 加 `onSources`
+
+**设计决策**：当前 `chatStore.ts` 的 `handlers = {...}` 在 `sendMessage` 闭包内构造（L299-L465），测试无法拿到引用。本任务把 handlers 对象**提取**为模块级 `export function createStreamHandlers(...)`，行为等价不变。这是 PR2 能够写出 P4 评审要求的 store 单测的前提。
 
 **Files:**
 - Modify: `frontend/src/stores/chatStore.ts`
 
 - [ ] **Step 11.1: 更新 imports**
 
-找到 `chatStore.ts` 顶部的 type imports，确保包含 `SourcesPayload`。如果现有 import 行已经是：
+顶部 type imports 追加 `SourcesPayload`（如果现有 import 还没有）：
 
 ```typescript
 import type {
-  ...
-  SuggestionsPayload,
-  ...
+  CompletionPayload,
+  MessageDeltaPayload,
+  SourcesPayload,
+  StreamMetaPayload,
+  SuggestionsPayload
 } from "@/types";
 ```
 
-则追加 `SourcesPayload`。
+同时保证 `createStreamResponse` 的类型 `StreamHandlers` 能 import 进来。若 `useStreamResponse.ts` 未 export `StreamHandlers`，先加 `export` 关键字：
 
-- [ ] **Step 11.2: 在 stream handlers 构造处加 `onSources`**
-
-找到 `onSuggestions:` handler（约 L385 附近），在它之后加：
+`frontend/src/hooks/useStreamResponse.ts` 顶部：
 
 ```typescript
-      onSources: (payload: SourcesPayload) => {
-        if (get().streamingMessageId !== assistantId) return;
-        if (!payload || !Array.isArray(payload.cards)) return;
-        set((state) => ({
-          messages: state.messages.map((message) =>
-            message.id === state.streamingMessageId
-              ? { ...message, sources: payload.cards }
-              : message
-          )
-        }));
-      },
+export interface StreamHandlers { /* ... 原有字段不变 */ }
 ```
 
-**关键约束**：
-- Guard 必须先于所有 set：`streamingMessageId !== assistantId` 时直接 return
-- 更新目标用 `state.streamingMessageId` 匹配，**不**用 `payload.messageId`（流式阶段为 null）
+然后在 `chatStore.ts`：
+
+```typescript
+import { createStreamResponse, type StreamHandlers } from "@/hooks/useStreamResponse";
+```
+
+- [ ] **Step 11.2: 提取 `createStreamHandlers` 工厂（含 `onSources`）**
+
+定位 `chatStore.ts` 中 `sendMessage` 函数体里 `const handlers = { ... }`（约 L299-L465）。把整个 handlers 对象移到模块顶层，包裹为可导出的工厂函数。工厂签名需要闭包内用到的所有外部引用——`get` / `set` / `assistantId` / 以及 `stopTask`（来自 `@/services/taskService` 或类似）。
+
+**操作步骤**：
+
+1. 先看 handlers 对象体里用到的外部变量有哪些（搜 `get(` / `set(` / `assistantId` / `stopTask`）
+2. 把它们全列入工厂参数
+3. 新建一个 `createStreamHandlers` 函数并 `export`，位置在 `useChatStore` 定义之前
+4. 把 handlers 对象体整体复制进工厂（保持每个 handler 的行为不变）
+5. 在原 `sendMessage` 内把 `const handlers = { ... }` 替换为 `const handlers = createStreamHandlers(get, set, assistantId, stopTask);`
+6. 在 handlers 对象里**新增** `onSources`
+
+建议的工厂长这样（实施时把 TODO 替换为实际闭包捕获的参数列表）：
+
+```typescript
+type GetFn = typeof useChatStore.getState;
+type SetFn = typeof useChatStore.setState;
+
+export function createStreamHandlers(
+  get: GetFn,
+  set: SetFn,
+  assistantId: string,
+  stopTask: (taskId: string) => Promise<unknown>
+): StreamHandlers {
+  return {
+    onMeta: (payload) => {
+      // [原 onMeta 代码体，完全照搬]
+    },
+    onMessage: (payload) => {
+      // [原 onMessage 代码体]
+    },
+    onThinking: (payload) => {
+      // [原 onThinking 代码体]
+    },
+    onReject: (payload) => {
+      // [原 onReject 代码体]
+    },
+    onFinish: (payload) => {
+      // [原 onFinish 代码体]
+    },
+    onSuggestions: (payload) => {
+      // [原 onSuggestions 代码体]
+    },
+    onSources: (payload: SourcesPayload) => {
+      if (get().streamingMessageId !== assistantId) return;
+      if (!payload || !Array.isArray(payload.cards)) return;
+      set((state) => ({
+        messages: state.messages.map((message) =>
+          message.id === state.streamingMessageId
+            ? { ...message, sources: payload.cards }
+            : message
+        )
+      }));
+    },
+    onCancel: (payload) => {
+      // [原 onCancel 代码体]
+    },
+    onTitle: (payload) => {
+      // [原 onTitle 代码体（如果存在）]
+    },
+    onError: (error) => {
+      // [原 onError 代码体]
+    }
+  };
+}
+```
+
+`onSources` 的关键约束：
+- Guard 先于所有 set：`streamingMessageId !== assistantId` 时直接 return
+- 更新目标用 `state.streamingMessageId`，**不**用 `payload.messageId`（流式阶段为 null）
 - payload 形状 guard：`!Array.isArray(payload.cards)` 丢弃异常载荷
 
-- [ ] **Step 11.3: TypeScript + ESLint 验证**
+- [ ] **Step 11.3: 在 `sendMessage` 里改为调用工厂**
+
+原 L299 附近：
+
+```typescript
+const handlers = { /* 大段对象 */ };
+```
+
+改为：
+
+```typescript
+const handlers = createStreamHandlers(get, set, assistantId, stopTask);
+```
+
+（若 `stopTask` 不在 chatStore 内直接可见、是闭包外 import 的函数，则保留原 import 即可；它是静态引用，传进工厂即可）
+
+- [ ] **Step 11.4: TypeScript + ESLint 验证行为等价**
 
 ```bash
 cd frontend && npx tsc --noEmit && npm run lint
 ```
 
-- [ ] **Step 11.4: 提交**
+预期：无错误；行为等价（所有 handler 函数体逐字搬运，仅作用域从闭包换成显式参数）。
+
+- [ ] **Step 11.5: 提交**
 
 ```bash
-git add frontend/src/stores/chatStore.ts
-git commit -m "feat(sources): onSources handler with streamingMessageId guard [PR2]"
+git add frontend/src/stores/chatStore.ts frontend/src/hooks/useStreamResponse.ts
+git commit -m "feat(sources): extract createStreamHandlers factory + add onSources [PR2]"
 ```
 
 ---
@@ -1408,13 +1550,22 @@ export default defineConfig({
     "test:watch": "vitest"
 ```
 
-- [ ] **Step 12.4: 冒烟验证 vitest 能跑**
+- [ ] **Step 12.4: 冒烟验证 vitest 能跑（`--passWithNoTests` 允许零测试文件通过）**
+
+临时改 `package.json` 的 test script 为：
+
+```json
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
+```
+
+然后：
 
 ```bash
 cd frontend && npm run test
 ```
 
-预期：`No test files found`（匹配不到测试文件，但 vitest 自身启动成功）。
+预期：`No test files found` 但 exit code 为 0（`--passWithNoTests` 作用）。Task 13 写入第一个测试后会实际执行。
 
 - [ ] **Step 12.5: 提交**
 
@@ -1507,49 +1658,145 @@ git commit -m "test(sources): useStreamResponse routes sources event to handler 
 **Files:**
 - Test: `frontend/src/stores/chatStore.test.ts`
 
-- [ ] **Step 14.1: 写 store 层测试**
+**前置**：Task 11 已把 handlers 对象提取为 `createStreamHandlers` 导出工厂。本任务直接调用该工厂并对 zustand store 状态断言。
+
+- [ ] **Step 14.1: 写 store 层测试（完整具体测试体）**
 
 ```typescript
-import { describe, expect, it } from "vitest";
-import { useChatStore } from "./chatStore";
-import type { SourceCard, SourcesPayload, CompletionPayload } from "@/types";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Message, SourceCard, SourcesPayload } from "@/types";
+import { createStreamHandlers, useChatStore } from "./chatStore";
+
+/**
+ * 构造一个带占位 assistant message 的初始 store 状态。
+ * assistantId 即占位消息的 id，也是 streamingMessageId。
+ */
+function seedStreamingState(assistantId: string) {
+  const placeholder: Message = {
+    id: assistantId,
+    role: "assistant",
+    content: "",
+    status: "streaming",
+    feedback: null,
+    createdAt: new Date().toISOString()
+  };
+  useChatStore.setState((state) => ({
+    ...state,
+    messages: [placeholder],
+    streamingMessageId: assistantId,
+    isStreaming: true,
+    currentSessionId: "c_test",
+    sessions: [{ id: "c_test", title: "t", lastTime: new Date().toISOString() }],
+    thinkingStartAt: null
+  }));
+}
+
+function buildHandlers(assistantId: string) {
+  const stopTask = vi.fn().mockResolvedValue(undefined);
+  return createStreamHandlers(
+    useChatStore.getState,
+    useChatStore.setState,
+    assistantId,
+    stopTask
+  );
+}
+
+function buildSourcesPayload(): SourcesPayload {
+  const card: SourceCard = {
+    index: 1,
+    docId: "d1",
+    docName: "doc.pdf",
+    kbId: "kb1",
+    topScore: 0.9,
+    chunks: [{ chunkId: "c1", chunkIndex: 0, preview: "hi", score: 0.9 }]
+  };
+  return { conversationId: "c_test", messageId: null, cards: [card] };
+}
 
 describe("chatStore.onSources", () => {
-  // [注意] 这些测试依赖 chatStore 把 onSources handler 暴露为可调用。
-  // 若 onSources 是闭包内部构造不可访问，需要重构 chatStore 导出 handler
-  // 构造函数；另一条路是测 handler 的"效果"：手动 set streamingMessageId +
-  // 通过某种入口调用。实施时择一。
+  beforeEach(() => {
+    useChatStore.setState({
+      messages: [],
+      streamingMessageId: null,
+      isStreaming: false,
+      sessions: [],
+      currentSessionId: null,
+      thinkingStartAt: null
+    } as Partial<ReturnType<typeof useChatStore.getState>>);
+  });
 
-  it("ignores payload when streamingMessageId does not match assistantId", () => {
-    // TODO（实施时细化）：构造 state 使 streamingMessageId='sA'；
-    // 通过 chatStore 的入口调用模拟 assistantId='sB' 的 onSources
-    // 断言：messages 中没有 sources 字段出现
+  it("ignores payload when streamingMessageId does not match assistantId (stale stream)", () => {
+    seedStreamingState("msgA");
+    const staleHandlers = buildHandlers("msgB");
+
+    staleHandlers.onSources?.(buildSourcesPayload());
+
+    const msg = useChatStore.getState().messages[0];
+    expect(msg.id).toBe("msgA");
+    expect(msg.sources).toBeUndefined();
   });
 
   it("writes sources to the streaming message when ids match", () => {
-    // TODO（实施时细化）：构造 state 使 streamingMessageId='sA' 且
-    // messages 中存在 id='sA' 的占位消息；assistantId='sA' 触发 onSources
-    // 断言：该 message 的 sources 等于 payload.cards
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+    const payload = buildSourcesPayload();
+
+    handlers.onSources?.(payload);
+
+    const msg = useChatStore.getState().messages[0];
+    expect(msg.sources).toEqual(payload.cards);
   });
 
-  it("preserves sources after onFinish replaces the temp id with db id", () => {
-    // 构造 message 有 sources + id='sA'，触发 onFinish({messageId:'db_1'})；
-    // 断言 message 的 id 改为 'db_1'，sources 仍存在。
+  it("drops payload when cards is not an array", () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+
+    handlers.onSources?.({
+      conversationId: "c_test",
+      messageId: null,
+      cards: null as unknown as SourceCard[]
+    });
+
+    const msg = useChatStore.getState().messages[0];
+    expect(msg.sources).toBeUndefined();
+  });
+});
+
+describe("chatStore.onFinish sources preservation", () => {
+  beforeEach(() => {
+    useChatStore.setState({
+      messages: [],
+      streamingMessageId: null,
+      isStreaming: false,
+      sessions: [],
+      currentSessionId: null,
+      thinkingStartAt: null
+    } as Partial<ReturnType<typeof useChatStore.getState>>);
+  });
+
+  it("preserves sources after id is replaced by db id on finish", () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+
+    // 先塞 sources
+    handlers.onSources?.(buildSourcesPayload());
+    expect(useChatStore.getState().messages[0].sources).toBeDefined();
+
+    // onFinish 触发 id 替换
+    handlers.onFinish?.({ messageId: "db_1", title: "新标题" });
+
+    const finalMsg = useChatStore.getState().messages[0];
+    expect(finalMsg.id).toBe("db_1");
+    expect(finalMsg.sources).toBeDefined();
+    expect(finalMsg.sources?.[0].docId).toBe("d1");
   });
 });
 ```
 
-**实施期说明**：当前 `chatStore.ts` 的 stream handlers 在 `sendChat(...)` 闭包内构造，外部拿不到 handler 回调引用。两条实施路径：
-
-**路径 A（推荐）：提取 handlers 工厂为可导出函数**
-
-把 `chatStore.ts` 里 stream handlers 对象的构造抽成一个 `createStreamHandlers(get, set, assistantId)` 函数并 `export`。这样测试可以直接调用 handlers.onSources(...) 并观察 store 状态变化。改动小（包装 + 导出），不影响行为。
-
-**路径 B：通过 zustand store API 直接 set `streamingMessageId`，然后用某个现有公共方法触发 handler**
-
-更侵入性，不推荐。
-
-选定路径 A 时，测试里把 `TODO` 展开为对 `createStreamHandlers` 的直接调用，断言 `useChatStore.getState().messages` 的变化。
+**实施期备注**：
+1. `useChatStore.setState` 的 `Partial` 类型断言 `as Partial<ReturnType<typeof useChatStore.getState>>` 是为了绕过 zustand 严格的 set shape 检查；若 TypeScript 报更严格，改用 `store.setState(state => ({ ...state, messages: [], ... }))` 的函数式 set
+2. `Message` 的必填字段按实际 `types/index.ts` 定义调整；这里构造的占位 message 至少需要 `id / role / content / status / feedback / createdAt`
+3. `onFinish` payload 的字段按实际 `CompletionPayload` 定义调整；当前假设含 `messageId` / `title`
 
 - [ ] **Step 14.2: 运行测试**
 
@@ -1557,10 +1804,12 @@ describe("chatStore.onSources", () => {
 cd frontend && npx vitest run src/stores/chatStore.test.ts
 ```
 
+预期：4 个测试全通过。若 `createStreamHandlers` 未 export（Task 11 遗漏），先回 Task 11 补 `export`。
+
 - [ ] **Step 14.3: 提交**
 
 ```bash
-git add frontend/src/stores/chatStore.test.ts frontend/src/stores/chatStore.ts
+git add frontend/src/stores/chatStore.test.ts
 git commit -m "test(sources): chatStore.onSources guard + onFinish sources preservation [PR2]"
 ```
 
@@ -1626,9 +1875,9 @@ cd frontend && npx tsc --noEmit && npm run lint && npm run test
 - § 7 Gotcha：Task 5 落实 `@Builder.Default @NonNull`、Task 6 落实 `emitSources` 不吞错
 - § 8 PR 拆分：本计划严格属于 PR2 边界
 
-**Placeholder 扫描**：Task 8.1 (`[此处留详细 @SpringBootTest 组装]`) 和 Task 14 (TODO 占位) 是已标注"实施期视情况细化"的两处——非占位失败，而是已给出备选方案（Step 8.2 InOrder 单测 / 路径 A 工厂提取）的条件性分支。
+**Placeholder 扫描**：无——Task 8 已改成可选加强（有/无基类二选一决策点），Task 14 已写具体测试体不留 TODO，Task 7 用真实 service + InOrder 取代原来的"抽取闸门辅助"误设计。
 
-**类型一致性**：`SourceCardsHolder.trySet/get` 签名在 Task 2 定义、Task 6 消费；`SourceCardBuilder.build(chunks, maxCards, previewMaxChars)` 在 Task 4 定义、Task 7 调用——签名一致。
+**类型一致性**：`SourceCardsHolder.trySet/get` 签名在 Task 2 定义、Task 6 消费；`SourceCardBuilder.build(chunks, maxCards, previewMaxChars)` 在 Task 4 定义、Task 7 调用；`createStreamHandlers(get, set, assistantId, stopTask)` 在 Task 11 提取并 export，Task 14 消费——签名一致。
 
 ---
 
