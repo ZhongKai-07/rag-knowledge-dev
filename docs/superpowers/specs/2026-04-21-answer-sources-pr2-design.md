@@ -6,7 +6,7 @@
 >
 > **上游设计**：`docs/superpowers/specs/2026-04-17-answer-sources-design.md`（v1 总体设计）。本文档在总体设计基础上**收紧 PR2 边界**，并在代码现状与 v1 spec 冲突处以代码为准。
 >
-> **上游交接**：`docs/superpowers/plans/2026-04-20-answer-sources-pr1-handoff.md`。
+> **上游交接**：`docs/superpowers/plans/2026-04-20-answer-sources-pr1-metadata.md`。
 
 ---
 
@@ -30,24 +30,25 @@
 
 ```
 RAGChatServiceImpl.chat(...)
-  ├─ 闸门 1（早返回，不进 builder）
-  │    ├─ rag.sources.enabled = false
-  │    ├─ 意图歧义 clarification（guidanceDecision.isPrompt()）
-  │    └─ System-Only（intentResolver.isSystemOnly()）
+  ├─ 闸门 1（"不进 builder" 的条件，不等同于"早返回"）
+  │    ├─ rag.sources.enabled = false  ← 回答路径继续；仅跳过 sources
+  │    ├─ 意图歧义 clarification        ← 真早返回（不继续回答）
+  │    └─ System-Only                   ← 真早返回（走 streamSystemResponse）
   │
   ├─ retrievalEngine.retrieve(...) → ctx
-  │    └─ ctx.isEmpty() → 早返回"未检索到" (回答路径保留现有语义)
+  │    └─ ctx.isEmpty() → 真早返回"未检索到"（回答路径保留现有语义）
   │
   ├─ 聚合 distinctChunks（PR1 已有代码）
   │
-  ├─ 闸门 2（sources 总闸门）
-  │    └─ distinctChunks.isEmpty() → 跳过 builder 调用
-  │         覆盖场景：空检索 / MCP-Only / Mixed 但 KB 零命中
+  ├─ 闸门 2（sources 总闸门 — 回答路径继续）
+  │    └─ distinctChunks.isEmpty() → 跳过 builder 调用，LLM 流照常启动
+  │         覆盖场景：MCP-Only / Mixed 但 KB 零命中
+  │         （纯空检索场景已被上面 ctx.isEmpty() 拦住，但 sources 口径仍视作闸门 2）
   │
   ├─ cards = sourceCardBuilder.build(distinctChunks, cfg)
   │
-  ├─ 闸门 3（最后保险）
-  │    └─ cards.isEmpty() → 不 trySet / 不 emit
+  ├─ 闸门 3（最后保险 — 回答路径继续）
+  │    └─ cards.isEmpty() → 不 trySet / 不 emit，LLM 流照常启动
   │         覆盖场景：findMetaByIds 过滤后无卡片
   │
   ├─ handlerParams.cardsHolder.trySet(cards)      ← set-once CAS
@@ -113,9 +114,10 @@ META → SOURCES → MESSAGE+ → FINISH → (SUGGESTIONS) → DONE
 | 路径 | 改动 |
 |---|---|
 | `bootstrap/rag/enums/SSEEventType.java` | 新增 `SOURCES("sources")` 枚举常量 |
-| `bootstrap/rag/service/handler/StreamChatHandlerParams.java` | 新增 `final SourceCardsHolder cardsHolder` 字段（构造时 `new SourceCardsHolder()` 空壳；orchestrator 后续 trySet） |
+| `bootstrap/rag/service/handler/StreamChatHandlerParams.java` | 新增 `final SourceCardsHolder cardsHolder` 字段。**必须**标 `@Builder.Default cardsHolder = new SourceCardsHolder()` 让默认值语义不可绕过 — 任何经 `StreamChatHandlerParams.builder()...build()` 的调用即使不调用 `.cardsHolder(...)` 也保证拿到空壳实例，禁止 `null` 通过。orchestrator 后续 `trySet` |
+| `bootstrap/rag/service/handler/StreamCallbackFactory.java` | **无需改动** — 因 `@Builder.Default` 自动兜底，现有 `.builder()...build()` 调用（`createChatEventHandler` L62-75）直接受益。本行仅为显式声明，避免实施时误改 |
 | `bootstrap/rag/service/handler/StreamChatEventHandler.java` | 构造器解包 `cardsHolder`；**PR2 仅持有 holder，不在 onComplete 中读取消费**（避免无业务效果的读取动作；PR4 真正使用）；新增 `emitSources(SourcesPayload payload)` 方法 — 内部调 `sender.sendEvent(SSEEventType.SOURCES.value(), payload)` |
-| `bootstrap/rag/service/impl/RAGChatServiceImpl.java` | 注入 `SourceCardBuilder` + `RagSourcesProperties`；在聚合 `distinctChunks` 后（v1 spec 提到的 L202 附近）按三层闸门逻辑调用 builder、trySet、`callback.emitSources`；**4 个早返回分支**（flag off / 歧义 / System-Only / `distinctChunks.isEmpty()`）不调 builder、不 trySet、不 emit |
+| `bootstrap/rag/service/impl/RAGChatServiceImpl.java` | 注入 `SourceCardBuilder` + `RagSourcesProperties`；在聚合 `distinctChunks` 后（v1 spec 提到的 L202 附近）按三层闸门逻辑调用 builder、trySet、`callback.emitSources`。**"不调 builder / 不 emit" 的分支分两类**，实施时严格区分：<br/>(a) **真早返回**（不继续回答流程）：意图歧义 / System-Only / `ctx.isEmpty()`<br/>(b) **继续回答但跳过 sources**（回答路径不变，仅 sources 路径短路）：`rag.sources.enabled=false` / `distinctChunks.isEmpty()`（含 MCP-Only、Mixed 但 KB 零命中）/ `cards.isEmpty()` |
 | `bootstrap/src/main/resources/application.yaml` | 新增 `rag.sources: {enabled: false, preview-max-chars: 200, max-cards: 8}` |
 
 ### 架构原则（边界承诺）
@@ -211,6 +213,9 @@ META → SOURCES → MESSAGE+ → FINISH → (SUGGESTIONS) → DONE
 
 ### 前端单测
 
+- **`useStreamResponse` 的 SSE 事件路由**：
+  - 喂一帧 `event: sources\ndata: {...}` 到 reader，断言 `handlers.onSources` 被调用一次、参数为解析后的 `SourcesPayload`
+  - 保护点：若 `useStreamResponse` 忘加 `case "sources"` 分支，本断言失败；否则 store 层测试全过也发现不了回归
 - `chatStore.onSources`：
   - `streamingMessageId !== assistantId` 时丢弃（不调 set）
   - 相等时正确写入 `message.sources`
@@ -265,7 +270,7 @@ META → SOURCES → MESSAGE+ → FINISH → (SUGGESTIONS) → DONE
 
 - 本 PR 基线分支：`feature/answer-sources-pr2`（tip 初始 `96b2d06`）
 - 上游 v1 spec：`docs/superpowers/specs/2026-04-17-answer-sources-design.md`
-- PR1 交接：`docs/superpowers/plans/2026-04-20-answer-sources-pr1-handoff.md`
+- PR1 交接：`docs/superpowers/plans/2026-04-20-answer-sources-pr1-metadata.md`
 - 代码现状锚点：
   - `RAGChatServiceImpl.java` 主链路聚合点（`distinctChunks` 构建附近，L200 区域）
   - `StreamChatHandlerParams.java`（构造器参数面）
