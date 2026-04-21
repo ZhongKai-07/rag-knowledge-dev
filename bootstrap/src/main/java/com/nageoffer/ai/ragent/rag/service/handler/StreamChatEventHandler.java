@@ -39,6 +39,7 @@ import com.nageoffer.ai.ragent.rag.dto.SourceCard;
 import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
 import com.nageoffer.ai.ragent.rag.dto.SuggestionsPayload;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
+import com.nageoffer.ai.ragent.rag.core.source.CitationStatsCollector;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.extern.slf4j.Slf4j;
@@ -184,8 +185,11 @@ public class StreamChatEventHandler implements StreamCallback {
         String messageId = memoryService.append(conversationId, UserContext.getUserId(),
                 ChatMessage.assistant(answer.toString()), null);
 
-        // 更新 Trace token 用量
+        // 更新 Trace token 用量（overwrite 写，必须在 merge 之前）
         updateTraceTokenUsage();
+
+        // 合并 citation 埋点到 Trace extra_data（merge 写，必须在 overwrite 之后）
+        mergeCitationStatsIntoTrace();
 
         // 保存评测记录（异步）
         saveEvaluationRecord(messageId);
@@ -268,6 +272,36 @@ public class StreamChatEventHandler implements StreamCallback {
             traceRecordService.updateRunExtraData(traceId, extraData);
         } catch (Exception e) {
             log.warn("更新 Trace token 用量失败", e);
+        }
+    }
+
+    /**
+     * 合并 citation 埋点到 trace.extra_data（PR3）。
+     *
+     * <p>顺序要求：必须在 {@link #updateTraceTokenUsage()}（overwrite 写）之后调用，
+     * 否则 merge 结果会被后续 overwrite 清掉。
+     *
+     * <p>traceId 来自构造期缓存的 final 字段，不读 ThreadLocal。
+     */
+    private void mergeCitationStatsIntoTrace() {
+        if (traceRecordService == null || StrUtil.isBlank(traceId)) {
+            return;
+        }
+        Optional<List<SourceCard>> cardsOpt = cardsHolder.get();
+        if (cardsOpt.isEmpty()) {
+            return;
+        }
+        try {
+            CitationStatsCollector.CitationStats stats =
+                    CitationStatsCollector.scan(answer.toString(), cardsOpt.get());
+            traceRecordService.mergeRunExtraData(traceId, Map.of(
+                    "citationTotal", stats.total(),
+                    "citationValid", stats.valid(),
+                    "citationInvalid", stats.invalid(),
+                    "citationCoverage", stats.coverage()
+            ));
+        } catch (Exception e) {
+            log.warn("合并引用统计到 trace.extra_data 失败", e);
         }
     }
 
