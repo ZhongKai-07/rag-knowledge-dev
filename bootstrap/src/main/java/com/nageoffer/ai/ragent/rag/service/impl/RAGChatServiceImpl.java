@@ -45,10 +45,14 @@ import com.nageoffer.ai.ragent.rag.core.prompt.RAGPromptService;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
+import com.nageoffer.ai.ragent.rag.core.source.SourceCardBuilder;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
+import com.nageoffer.ai.ragent.rag.config.RagSourcesProperties;
 import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
 import com.nageoffer.ai.ragent.rag.dto.IntentGroup;
 import com.nageoffer.ai.ragent.rag.dto.RetrievalContext;
+import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
 import com.nageoffer.ai.ragent.rag.service.RAGChatService;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
@@ -94,6 +98,8 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final KbAccessService kbAccessService;
     private final KbReadAccessPort kbReadAccess;
     private final ConversationMapper conversationMapper;
+    private final SourceCardBuilder sourceCardBuilder;
+    private final RagSourcesProperties ragSourcesProperties;
 
     @Override
     @ChatRateLimit
@@ -211,6 +217,24 @@ public class RAGChatServiceImpl implements RAGChatService {
                 topChunks,
                 !hasMcp && !topChunks.isEmpty()
         ));
+
+        // ---- 回答来源事件推送（3 层闸门）----
+        // 闸门 1：feature flag off → 跳过 sources（不影响回答路径）
+        // 闸门 2：distinctChunks.isEmpty() → 跳过 builder 调用（MCP-Only / Mixed-but-no-KB 等）
+        // 闸门 3：cards.isEmpty() → 不 trySet / 不 emit（findMetaByIds 过滤后无卡片）
+        if (Boolean.TRUE.equals(ragSourcesProperties.getEnabled()) && !distinctChunks.isEmpty()) {
+            List<SourceCard> cards = sourceCardBuilder.build(
+                    distinctChunks,
+                    ragSourcesProperties.getMaxCards(),
+                    ragSourcesProperties.getPreviewMaxChars());
+            if (!cards.isEmpty() && callback.trySetCards(cards)) {
+                callback.emitSources(SourcesPayload.builder()
+                        .conversationId(actualConversationId)
+                        .messageId(null)
+                        .cards(cards)
+                        .build());
+            }
+        }
 
         evalCollector.setTopK(DEFAULT_TOP_K);
         evalCollector.setChunks(distinctChunks.stream()

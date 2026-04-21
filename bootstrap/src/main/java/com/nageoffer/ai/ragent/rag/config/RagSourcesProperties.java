@@ -1,0 +1,42 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.nageoffer.ai.ragent.rag.config;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * 回答来源功能配置。
+ * <p>
+ * 默认 {@code enabled=false}，PR2~PR4 合并期间保持关闭，PR5 转为 true。
+ */
+@Data
+@Configuration
+@ConfigurationProperties(prefix = "rag.sources")
+public class RagSourcesProperties {
+
+    /** 功能总开关（默认关闭）。 */
+    private Boolean enabled = false;
+
+    /** Chunk preview 截断长度（按 codePoint 计算）。 */
+    private Integer previewMaxChars = 200;
+
+    /** SourceCard 列表条数上限。 */
+    private Integer maxCards = 8;
+}

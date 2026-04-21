@@ -35,6 +35,8 @@ import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
 import com.nageoffer.ai.ragent.rag.dto.EvaluationCollector;
+import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
 import com.nageoffer.ai.ragent.rag.dto.SuggestionsPayload;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
@@ -71,6 +73,7 @@ public class StreamChatEventHandler implements StreamCallback {
     private final SuggestedQuestionsService suggestedQuestionsService;
     private final ThreadPoolTaskExecutor suggestedQuestionsExecutor;
     private final RAGConfigProperties ragConfigProperties;
+    private final SourceCardsHolder cardsHolder;
     private volatile SuggestionContext suggestionContext = SuggestionContext.skip();
 
     /**
@@ -92,6 +95,7 @@ public class StreamChatEventHandler implements StreamCallback {
         this.suggestedQuestionsService = params.getSuggestedQuestionsService();
         this.suggestedQuestionsExecutor = params.getSuggestedQuestionsExecutor();
         this.ragConfigProperties = params.getRagConfigProperties();
+        this.cardsHolder = params.getCardsHolder();
 
         // 计算配置
         this.messageChunkSize = resolveMessageChunkSize(params.getModelProperties());
@@ -324,6 +328,23 @@ public class StreamChatEventHandler implements StreamCallback {
             return conversation.getTitle();
         }
         return "新对话";
+    }
+
+    /**
+     * 一次性存入 cards。委托给 {@link SourceCardsHolder#trySet(List)}。
+     * <p>
+     * 返回值用于调用方防御（理论上 orchestrator 主路径仅调一次，始终返回 true）。
+     */
+    public boolean trySetCards(List<SourceCard> cards) {
+        return cardsHolder.trySet(cards);
+    }
+
+    /**
+     * 机械发射 SSE {@code sources} 事件。异常语义沿用 {@link SseEmitterSender#sendEvent}，
+     * 不做额外吞错。
+     */
+    public void emitSources(SourcesPayload payload) {
+        sender.sendEvent(SSEEventType.SOURCES.value(), payload);
     }
 
     /**
