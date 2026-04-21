@@ -16,12 +16,18 @@ npm run dev
 # 生产构建
 npm run build
 
-# 代码检查
+# 代码检查（⚠️ 当前有 pre-existing break，见 Gotchas）
 npm run lint
 
 # 格式化
 npm run format
+
+# 单元测试（2026-04-21 引入 vitest 2.x + jsdom）
+npm run test              # 一次性跑（CI 用；默认 --passWithNoTests）
+npm run test:watch        # watch 模式
 ```
+
+测试文件匹配：`src/**/*.{test,spec}.{ts,tsx}`。配置在 `vitest.config.ts`（含 `@` alias + jsdom env）。
 
 ## 目录结构
 
@@ -93,6 +99,7 @@ src/
 | `sendMessage(content)` | 发送消息并建立 SSE 连接处理流式响应 |
 | `cancelGeneration()` | 调用 stop 接口终止生成 |
 | `resetForNewSpace()` | 进入新 KB 空间时清空 sessions/messages/currentSessionId |
+| `createStreamHandlers(get, set, assistantId, stopTask)` | **module-level export 工厂**（2026-04-21 PR2 从 `sendMessage` 闭包提取），返回 SSE handlers 对象（onMeta/onMessage/onThinking/onReject/onFinish/onSuggestions/onSources/onCancel/...）。提取后 `chatStore.test.ts` 可直接调用测试 handler 行为。sendMessage 内部改为 `const handlers = createStreamHandlers(get, set, assistantId, stopTask);` |
 
 ### authStore（stores/authStore.ts）
 
@@ -146,6 +153,7 @@ src/
 - **Sidebar 在 `components/layout/Sidebar.tsx`**：不是 `components/chat/Sidebar.tsx`（后者不存在）。管理后台入口按钮（"管理后台"）用 `permissions.canSeeAdminMenu` 判断。
 - **chrome-devtools MCP "browser already running"**：上一次会话 Chrome 没干净退出（残留进程锁着 `~/.cache/chrome-devtools-mcp/chrome-profile`），`new_page` / `list_pages` 都会报错。修复：`powershell Stop-Process -Name chrome -Force` 后重试；会话被硬中断后几乎每次都会遇到。
 - **`tsc` 本地运行优先走 `node_modules/.bin/tsc --noEmit`**：`npx tsc` 在这个仓库偶尔会落到全局版 tsc 并报 "This is not the tsc command you are looking for" 同时 exit 0，看起来通过实际没跑。`npm run build`（走 vite）或 `.bin/tsc` 直调都能稳定检出类型错误。
+- **`npm run lint` 当前有 pre-existing break**（2026-04-21 确认）：ESLint 8.57.1 与 `plugin:react-refresh/recommended` 不兼容（后者的 flat-config `name` 属性被 legacy `.eslintrc.cjs` 拒绝）。**不是 PR2 引入的，在 clean branch 上也复现**。类型 gate 用 `./node_modules/.bin/tsc --noEmit`，测试 gate 用 `npm run test`，lint 修复另开任务。
 
 ## 权限层（PR3 新增）
 

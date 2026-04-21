@@ -205,6 +205,25 @@ curl -X PUT http://localhost:9201/_search/pipeline/ragent-hybrid-search-pipeline
 
 ---
 
+## 2026-04-21 | Answer Sources PR1 + PR2 — 元数据管道 + 编排/SSE/前端路由骨架
+
+详情：[`2026-04-21-answer-sources-pr1-pr2.md`](./2026-04-21-answer-sources-pr1-pr2.md)
+
+**核心改动**：
+- PR1 (commit `96b2d06`)：`RetrievedChunk.docId`/`chunkIndex` 两字段 + `OpenSearchRetrieverService` 回填 + `VectorMetadataFields.DOC_ID`/`CHUNK_INDEX` 常量 + `KnowledgeDocumentService.findMetaByIds` 批量接口（+ `DocumentMetaSnapshot` record）。`RetrievedChunk.@EqualsAndHashCode(of="id")` 修复 `DefaultContextFormatter.java:103` + `RAGChatServiceImpl.java:194` 两处 `.distinct()` 的 latent bug（同 id 不同 score 未去重膨胀 prompt context）。
+- PR2（15 commit）：5 新后端类（`SourceCard`/`SourceChunk`/`SourcesPayload` DTOs + `SourceCardsHolder` set-once CAS 容器 + `SourceCardBuilder` 纯聚合 `@Service` + `RagSourcesProperties`）+ 5 改后端类（`SSEEventType.SOURCES` / `StreamChatHandlerParams.cardsHolder @Builder.Default @NonNull` / `StreamChatEventHandler.trySetCards`+`emitSources` 机械 delegate / `RAGChatServiceImpl` 三层闸门编排 / `application.yaml` 加 `rag.sources` 块）+ 前端 3 改（types / `useStreamResponse` case / `chatStore` 提取 `createStreamHandlers` 工厂 + `onSources` guard）+ vitest+jsdom 首次引入 + 26 单测（21 后端 + 5 前端，全绿）。
+- **SSE 契约**：`META → SOURCES → MESSAGE+ → FINISH → (SUGGESTIONS) → DONE`。SOURCES 由 orchestrator 同步 emit（不走 handler 生命周期回调），保证在 LLM 流启动前到位。
+- **架构 invariants**：(1) orchestrator 决策 / handler 机械发射；(2) set-once CAS 替代 ThreadLocal 做同步→异步数据传递；(3) sources 判定锚点统一 `distinctChunks.isEmpty()`（严禁 `ctx.isEmpty()` 或 `hasMcp`）；(4) "真早返回"（歧义/SystemOnly/空检索）vs "继续回答跳过 sources"（flag off / distinctChunks 空 / cards 空）严格区分。
+- **feature flag**：`rag.sources.enabled=false` 默认，PR2-PR4 期间静默零可见变化，PR5 翻 true 上线。
+
+**流程教训**：(1) stacked PR 陷阱（PR #13 base=PR1 分支没回到 main，需 PR #14 catch-up）；(2) `mvn compile -q` stale bytecode 假阳性（T5 漏网错 import，需 `mvn clean compile` 兜底）；(3) subagent 类路径/签名"读真源"不"信 spec"（T7 多处 spec vs 代码冲突，implementer 主动纠正）；(4) 闭包 handlers 提取为 module-level 工厂解锁测试可达性（`chatStore.createStreamHandlers` 模式）。
+
+**PR 列表**：[#12](https://github.com/ZhongKai-07/rag-knowledge-dev/pull/12) (PR1→main) / [#13](https://github.com/ZhongKai-07/rag-knowledge-dev/pull/13) (PR2→PR1) / [#14](https://github.com/ZhongKai-07/rag-knowledge-dev/pull/14) (catch-up→main)
+
+**Follow-ups**：见 `docs/dev/followup/backlog.md` 新增 7 条（kbName additive / onSuggestions guard 缺失 / handler ThreadLocal 残留 / 写路径字面量扫荡 / Milvus-Pg retriever 回填 / npm lint break / 歧义矩阵行没显式单测）。
+
+---
+
 ## 2026-04-19 | KB 删除级联回收
 
 详情：[`2026-04-19-kb-delete-cascade.md`](./2026-04-19-kb-delete-cascade.md)

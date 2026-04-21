@@ -130,8 +130,84 @@
 
 ---
 
+## 📦 Answer Sources（2026-04-21 PR1+PR2 遗留）
+
+### SRC-1. Milvus / Pg retriever 未回填 `docId` / `chunkIndex`（以及历史遗留的 `kbId` / `securityLevel`）
+
+**位置**：`MilvusRetrieverService.java` / `PgRetrieverService.java`（`toRetrievedChunk` 或等价映射处）
+**症状**：PR1 只在 `OpenSearchRetrieverService.toRetrievedChunk` 回填了这 4 个字段，Milvus/Pg 保持 dev-only 状态不回填（代码注释已标明）。
+**影响**：切 `rag.vector.type=milvus` 或 `pg` 后：
+- Answer Sources 功能（PR2-PR5）完全失效（`distinctChunks` 都没 docId，`SourceCardBuilder` 全部丢弃）
+- `security_level` 过滤完全失效（和 SL-1 叠加）
+**修复**：上线非 OpenSearch 后端之前必须补齐这 4 个字段的回填。
+**优先级**：P0（前置于 vector backend 切换）。
+
+### SRC-2. 写路径字符串字面量扫荡：`"doc_id"` / `"chunk_index"` → `VectorMetadataFields.DOC_ID` / `.CHUNK_INDEX`
+
+**位置（已定位）**：
+- `IndexerNode.java:230`
+- `OpenSearchVectorStoreService.java:226-227`
+- `OpenSearchVectorStoreAdmin.java:280-281`（text block 改不了，留注释说明即可）
+- `MilvusVectorStoreService.java:220-221`
+- `PgVectorStoreService.java:119-120`
+**症状**：PR1 给读路径加了 `VectorMetadataFields` 常量但写路径还用字面量，未来改字段名会漂移。
+**修复**：逐点改为常量引用。text-block 场景留 `// SSOT: VectorMetadataFields.DOC_ID` 注释。
+**优先级**：P3（功能无风险，纯一致性）。
+
+### SRC-3. `StreamChatEventHandler` 里遗留 ThreadLocal 读取
+
+**位置**：`StreamChatEventHandler.java`
+**症状**：`onComplete()` 仍直接读 `UserContext.getUserId()` 和 `RagTraceContext.getEvalCollector()`。虽然构造器已经缓存了 `this.userId` 和 `this.traceId`，但业务代码路径没用缓存，而是运行时再读 ThreadLocal。
+**背景**：CLAUDE.md 记录 `ChatRateLimitAspect.finally` 会提前清空上下文，理论上 handler 异步回调时 ThreadLocal 可能为空。实测 `TransmittableThreadLocal` 目前覆盖了（OBS-1/2 里探明），但是**依赖脆弱**。
+**修复**：改用构造期捕获的字段，彻底去掉异步段的 ThreadLocal 读取。PR2 已经给 cards 立了典范（set-once holder 模式）。
+**优先级**：P2（PR4 改 onComplete 做 sources_json 落库时可以顺手清）。
+
+### SRC-4. `chatStore.onSuggestions` 缺 `streamingMessageId` guard
+
+**位置**：`frontend/src/stores/chatStore.ts`（`onSuggestions` handler 内）
+**症状**：`onSuggestions(payload)` 直接用 `payload.messageId` 找消息写 `suggestedQuestions`，没做 `streamingMessageId === assistantId` guard。如果用户已取消/重发，payload.messageId 可能匹配到历史消息而不是"当前流消息"。
+**对比**：PR2 给 `onSources` 严格加了这个 guard + non-array drop，模板可照搬。
+**优先级**：P3（pre-existing 小概率 bug，不是 PR2 引入）。
+
+### SRC-5. `SourceCard.kbName` 字段延期
+
+**背景**：v1 spec 设计里 `SourceCard` 有 `kbName` 展示字段，PR2 按边界收紧决策**去掉了**（DocumentMetaSnapshot 无 kbName）。
+**未来怎么补**：**不要** rag 侧再注一个 `KnowledgeBaseService` 查 name，那样会扩 rag→knowledge 查询面。**正确做法**：扩展 `KnowledgeDocumentService.findMetaByIds` 的返回 record 从 `(docId, docName, kbId)` 升为 `(docId, docName, kbId, kbName)`，让 knowledge 域一次 JOIN `t_knowledge_base` 带出 name。`rag` 仍然只依赖一个 service 边界。
+**触发**：PR3 / PR4 用户层需要看到 KB 名称时再做。
+**优先级**：P3（additive，功能可推迟）。
+
+### SRC-6. 缺席矩阵"意图歧义 clarification" 行没显式单测
+
+**位置**：`RAGChatServiceImplSourcesTest.java`
+**症状**：PR2 spec § 4 缺席矩阵 8 行里，`ctx.isEmpty()` / flag off / MCP-Only / cards empty / happy path / SystemOnly / trySet=false 都有单测，但"意图歧义 clarification"这一行没有。
+**现状**：结构上被 `RAGChatServiceImpl.java:168-172`（`guidanceDecision.isPrompt()` 早返回）隔离不会走到 sources 逻辑，但没有 Mockito 断言锁定。
+**修复**：10 行断言："当 `guidanceService.detectAmbiguity` 返回 prompt 结果，sourceCardBuilder.build never called + callback.emitSources never called"。
+**优先级**：P3（结构保护已有，断言补防御）。
+
+### SRC-7. `npm run lint` 预存在 ESLint 破损
+
+**位置**：`frontend/` 根（`.eslintrc.cjs` + `package.json`）
+**症状**：`npm run lint` 报 `"ConfigArrayFactory._normalizePluginConfig" failed: Object literal may only specify known properties, and 'name' does not exist in type 'PluginConf'`（ESLint 8.57.1 与 `plugin:react-refresh/recommended` flat-config 不兼容）。**不是 PR2 引入**：clean branch stash 掉所有本地改动后复现。
+**影响**：CI lint gate 无法运行。PR2 期间改用 `node_modules/.bin/tsc --noEmit` 作类型 gate + `npm run test` 作测试 gate 代替。
+**修复路径**（二选一）：
+- (a) 升 ESLint 到 9.x（flat config 原生支持，但需要迁移 `.eslintrc.cjs` → `eslint.config.js`）
+- (b) 降 `eslint-plugin-react-refresh` 到兼容 8.x 的老版本
+**优先级**：P2（阻塞 CI lint gate，独立任务修）。
+
+### SRC-8. Stacked PR 流程 checklist 缺失
+
+**背景**：2026-04-21 PR1+PR2 这次 stacked PR 踩了坑：PR #13 base 写的是 `feature/answer-sources-pr1`，PR #12 合完之后 GitHub 不自动把 PR #13 的 base 改到 main，导致 PR #13 合并后 PR2 内容**只进了 PR1 分支不进 main**，需要开 PR #14 catch-up 才能把 PR2 推到 main。
+**建议**：在 `docs/dev/` 某处（或 `CLAUDE.md` 根级 "PR 流程" 小节）沉淀 checklist：
+1. 父 PR 合并后立即 `git fetch origin && git log origin/main | head` 确认 main 是否含子 PR 内容
+2. 若缺，两条路：(a) 开 catch-up PR（head=更新后的中间分支，base=main）；(b) 去 GitHub UI 把子 PR 的 base 从中间分支改到 main 再 merge
+3. 或者更朴素：在 PR1 合并前就去把 PR2 的 base 改 main，避开坑
+**优先级**：P3（流程债，不是代码债）。
+
+---
+
 ## 🗂️ 引用
 
 - 审查来源：本地会话 2026-04-14 `/simplify`（3 个并行 agent：reuse / quality / efficiency）
+- 2026-04-21 新增 SRC-1~8：Answer Sources PR1+PR2 合并后记录的遗留项
 - 本轮已处理：参见 `log/dev_log/dev_log.md` 的 "2026-04-14" 条目
 - 本表不是 TODO 兜底，只记"有意识地留到下一轮"的东西。下一轮 feature 不必优先刷它。

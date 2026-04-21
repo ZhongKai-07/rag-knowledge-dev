@@ -41,7 +41,10 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `MultiChannelRetrievalEngine` | 意图导向 + 全局向量检索并行去重重排 |
 | `AuthzPostProcessor` | 检索后置纵深防御（order=0）：`kbId==null` / `AccessScope` / `security_level` 天花板三重 fail-closed；命中即 ERROR 日志 |
 | `MetadataFilterBuilder` | 按 kb 注入 `security_level` 过滤条件的可注入 bean（替代原 static `MultiChannelRetrievalEngine.buildMetadataFilters`）|
-| `VectorMetadataFields` | OpenSearch metadata 字段名常量单一真相源（`KB_ID` / `SECURITY_LEVEL`），避免字面量漂移 |
+| `VectorMetadataFields` | OpenSearch metadata 字段名常量单一真相源（`KB_ID` / `SECURITY_LEVEL` / `DOC_ID` / `CHUNK_INDEX`），避免字面量漂移 |
+| `SourceCardBuilder` | 按 `docId` 聚合 `List<RetrievedChunk>` → `List<SourceCard>` 的纯聚合 `@Service`。不理解业务分支（flag/推不推判定/SSE/落库/kbName 查询都不负责） |
+| `SourceCardsHolder` | set-once CAS 容器（`AtomicReference<List<SourceCard>>`）。编排层同步段 `trySet`，handler 异步 `onComplete`（PR4 才用）安全读快照，避开 ThreadLocal |
+| `RagSourcesProperties` | `rag.sources.*` 配置（`enabled` / `previewMaxChars` / `maxCards`，PR2-PR4 期间默认 off，PR5 才翻 true） |
 | `RAGPromptService` | 根据检索结果和场景构建结构化 Prompt |
 | `PromptTemplateUtils.fillSlots(template, Map)` | `{slot}` 模板填充工具（不要手写 `.replace()` 链） |
 | `VectorStoreService` | 向量存储接口（Milvus/OpenSearch/pgvector 三种实现） |
@@ -98,6 +101,9 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 - **`t_user_role.id` 和 `t_role_kb_relation.id` 是显式主键**：`VARCHAR(20) NOT NULL PRIMARY KEY`，无自动生成（不同于 `@TableId(type=ASSIGN_ID)` 的 Java 层雪花 ID）。手写 SQL INSERT 时必须显式提供 `id` 值，否则 NOT NULL 违反。
 - **Knowledge Spaces 会话归属**：`t_conversation.kb_id` 区分会话所属空间。`validateKbOwnership()` 用 `Objects.equals()` 做 null 安全比较；`kb_id=NULL` 的旧会话是 fail-closed 的（不属于任何空间）。
 - **测试里给 `@Value` 字段注值用 `ReflectionTestUtils.setField`**：`spring-boot-starter-test` 已带 `spring-test`，直接 `import org.springframework.test.util.ReflectionTestUtils`，不要手写 `field.setAccessible(true)` + `throws Exception`。
+- **回答来源 SSE 事件顺序**（2026-04-21 PR2）：`META → SOURCES → MESSAGE+ → FINISH → (SUGGESTIONS) → DONE`。`SOURCES` 由 `RAGChatServiceImpl` 在检索 + 聚合完成后、LLM 流启动前**同步 emit**（通过 `callback.emitSources(payload)`），**不走 handler 生命周期回调**。这保证 SSE 帧序：`sender.sendEvent` 同步，单个 `SseEmitter` 上 SOURCES 必然在首个 MESSAGE 之前到达。
+- **sources 推不推的判定锚点统一用 `distinctChunks.isEmpty()`**：不要用 `RetrievalContext.isEmpty()`（其定义是 `!hasMcp && !hasKb`，MCP-only 成功时 ctx 不 empty 但 KB chunks 为 0，会漏判），也不要用 `hasMcp`（会误伤 mixed KB+MCP 场景）。三层闸门：(1) `rag.sources.enabled=false` 或 (2) `distinctChunks.isEmpty()` → 不调 `SourceCardBuilder`；(3) builder 返回 `cards.isEmpty()` → 不 `trySet` / 不 `emit`。这三条都是"继续回答但跳过 sources"，**不是**"真早返回"（真早返回是 guidance/SystemOnly/`ctx.isEmpty()`）。
+- **orchestrator 决策，handler 机械发射**（PR2 起架构约定）：sources 的推不推 / flag 读取 / 三层闸门全在 `RAGChatServiceImpl`；`StreamChatEventHandler.emitSources(payload)` 是纯 delegate 到 `sender.sendEvent(SSEEventType.SOURCES.value(), payload)`，**不加 try/catch，不加业务分支**。后续改动保持边界：业务决策不要下沉到 handler，handler 的机械方法不要上浮到 orchestrator。
 
 ## 数据库访问
 
@@ -116,6 +122,7 @@ docker exec postgres psql -U postgres -d ragent -c "SQL语句"
 | `rag.rate-limit` | 全局并发限制 |
 | `rag.memory` | 会话记忆保留轮数、摘要开关、TTL |
 | `rag.search.channels` | 各检索通道的置信度阈值 |
+| `rag.sources` | 回答来源（Answer Sources）功能开关 + 卡片参数。默认 `enabled: false`（PR2-PR4 期间静默，PR5 翻 true 上线） |
 | `ai.chat.candidates` | 聊天模型候选列表（含优先级） |
 | `ai.embedding.candidates` | Embedding 模型候选列表 |
 | `ai.rerank` | 重排模型配置 |
