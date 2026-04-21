@@ -73,6 +73,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -324,5 +325,28 @@ class RAGChatServiceImplSourcesTest {
         verify(callback, never()).emitSources(any());
         // streamSystemResponse 内部调用 llmService.streamChat（SystemOnly 依然需要 LLM 生成回答）
         verify(llmService, times(1)).streamChat(any(ChatRequest.class), any(StreamCallback.class));
+    }
+
+    /**
+     * 8. guidanceService 返回 prompt（clarification 分支：意图歧义）→ sources 全链路 + LLM 均未启动，
+     * 但 callback.onContent + onComplete 仍然触发，确保 clarification 字符串到达用户。
+     */
+    @Test
+    void streamChat_whenGuidanceClarificationPrompt_thenSkipSourcesEntirely() {
+        // guidance 返回 prompt（clarification 分支：意图歧义）
+        when(guidanceService.detectAmbiguity(any(), any()))
+                .thenReturn(GuidanceDecision.prompt("请补充您的问题细节"));
+
+        service.streamChat("q", "cid-src6", null, false, emitter);
+
+        // 负向：sources 链路 + LLM 均未启动
+        verifyNoInteractions(sourceCardBuilder);
+        verify(callback, never()).trySetCards(any());
+        verify(callback, never()).emitSources(any());
+        verify(llmService, never()).streamChat(any(ChatRequest.class), any(StreamCallback.class));
+
+        // 正向：clarification 仍走流式返回（直接 callback.onContent + onComplete）
+        verify(callback).onContent(eq("请补充您的问题细节"));
+        verify(callback).onComplete();
     }
 }
