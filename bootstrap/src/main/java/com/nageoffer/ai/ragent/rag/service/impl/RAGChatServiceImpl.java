@@ -222,8 +222,9 @@ public class RAGChatServiceImpl implements RAGChatService {
         // 闸门 1：feature flag off → 跳过 sources（不影响回答路径）
         // 闸门 2：distinctChunks.isEmpty() → 跳过 builder 调用（MCP-Only / Mixed-but-no-KB 等）
         // 闸门 3：cards.isEmpty() → 不 trySet / 不 emit（findMetaByIds 过滤后无卡片）
+        List<SourceCard> cards = List.of(); // outer scope; stays empty unless gate-3 sets it
         if (Boolean.TRUE.equals(ragSourcesProperties.getEnabled()) && !distinctChunks.isEmpty()) {
-            List<SourceCard> cards = sourceCardBuilder.build(
+            cards = sourceCardBuilder.build(
                     distinctChunks,
                     ragSourcesProperties.getMaxCards(),
                     ragSourcesProperties.getPreviewMaxChars());
@@ -250,7 +251,8 @@ public class RAGChatServiceImpl implements RAGChatService {
                 mergedGroup,
                 history,
                 thinkingEnabled,
-                callback
+                callback,
+                cards
         );
         taskManager.bindHandle(taskId, handle);
     }
@@ -285,7 +287,8 @@ public class RAGChatServiceImpl implements RAGChatService {
 
     private StreamCancellationHandle streamLLMResponse(RewriteResult rewriteResult, RetrievalContext ctx,
                                                        IntentGroup intentGroup, List<ChatMessage> history,
-                                                       boolean deepThinking, StreamCallback callback) {
+                                                       boolean deepThinking, StreamCallback callback,
+                                                       List<SourceCard> cards) {
         PromptContext promptContext = PromptContext.builder()
                 .question(rewriteResult.rewrittenQuestion())
                 .mcpContext(ctx.getMcpContext())
@@ -293,6 +296,7 @@ public class RAGChatServiceImpl implements RAGChatService {
                 .mcpIntents(intentGroup.mcpIntents())
                 .kbIntents(intentGroup.kbIntents())
                 .intentChunks(ctx.getIntentChunks())
+                .cards(cards)
                 .build();
 
         List<ChatMessage> messages = promptBuilder.buildStructuredMessages(
