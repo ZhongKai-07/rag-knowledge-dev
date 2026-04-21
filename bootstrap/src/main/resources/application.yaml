@@ -61,6 +61,11 @@ rag:
     max-output-tokens: 150
     timeout-ms: 5000
 
+  sources:
+    enabled: false
+    preview-max-chars: 200
+    max-cards: 8
+
   rate-limit:
     global:
       enabled: true
