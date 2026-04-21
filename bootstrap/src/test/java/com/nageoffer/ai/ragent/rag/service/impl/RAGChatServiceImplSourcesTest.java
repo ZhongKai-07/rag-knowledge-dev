@@ -22,6 +22,7 @@ import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
 import com.nageoffer.ai.ragent.infra.chat.LLMService;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
 import com.nageoffer.ai.ragent.infra.chat.StreamCancellationHandle;
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -60,8 +62,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
@@ -106,6 +110,8 @@ class RAGChatServiceImplSourcesTest {
     void setUp() {
         // 未登录场景：UserContext.hasUser()=false → AccessScope.empty() 分支
         UserContext.clear();
+        // 清理 TTL 评测采集器，防止 streamChat 写入的 EVAL_COLLECTOR 在测试间泄漏
+        RagTraceContext.clear();
 
         // RagSourcesProperties 是真实 POJO（非 @Mock），通过反射注入到 @InjectMocks 构造的 service 中
         props = new RagSourcesProperties();
@@ -147,6 +153,7 @@ class RAGChatServiceImplSourcesTest {
     @AfterEach
     void tearDown() {
         UserContext.clear();
+        RagTraceContext.clear();
     }
 
     // ---------- helpers ----------
@@ -202,6 +209,14 @@ class RAGChatServiceImplSourcesTest {
         io.verify(callback).trySetCards(any());
         io.verify(callback).emitSources(any(SourcesPayload.class));
         io.verify(llmService).streamChat(any(ChatRequest.class), any(StreamCallback.class));
+
+        // 用 ArgumentCaptor 精确断言 SourcesPayload 内容
+        ArgumentCaptor<SourcesPayload> captor = ArgumentCaptor.forClass(SourcesPayload.class);
+        verify(callback).emitSources(captor.capture());
+        SourcesPayload p = captor.getValue();
+        assertThat(p.getConversationId()).isEqualTo("cid-1");
+        assertThat(p.getMessageId()).isNull();
+        assertThat(p.getCards()).containsExactly(card);
     }
 
     /** 2. feature flag off → 跳过 builder + emit，但 LLM 流必须照常启动。 */
@@ -263,5 +278,51 @@ class RAGChatServiceImplSourcesTest {
         verify(sourceCardBuilder, never()).build(any(), anyInt(), anyInt());
         verify(callback, never()).emitSources(any());
         verify(llmService, never()).streamChat(any(ChatRequest.class), any(StreamCallback.class));
+    }
+
+    /**
+     * 6. trySetCards 返回 false（CAS 失败）→ builder 被调用一次，trySetCards 被调用一次，
+     * 但不触发 emitSources；LLM 流路径不受影响。
+     */
+    @Test
+    void whenTrySetCardsReturnsFalse_shouldNotCallEmitSources() {
+        // 防御：若 holder 已被设置（理论上不应发生，但锁住行为）
+        List<RetrievedChunk> chunks = List.of(chunk("c1", "d1"));
+        RetrievalContext ctx = ctxWithKbChunks(chunks);
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+
+        SourceCard card = SourceCard.builder().index(1).docId("d1").docName("D1").topScore(0.9f).chunks(List.of()).build();
+        when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of(card));
+        // 模拟 CAS 失败：trySetCards 返回 false
+        when(callback.trySetCards(any())).thenReturn(false);
+
+        service.streamChat("q", "cid-6", null, false, emitter);
+
+        verify(sourceCardBuilder, times(1)).build(any(), anyInt(), anyInt());
+        verify(callback, times(1)).trySetCards(any());
+        verify(callback, never()).emitSources(any()); // 关键断言：CAS 失败不触发推送
+        // 回答路径不受影响：LLM 流仍然启动
+        verify(llmService, times(1)).streamChat(any(ChatRequest.class), any(StreamCallback.class));
+    }
+
+    /**
+     * 7. allSystemOnly=true 早返分支（L174-186）→ 走 streamSystemResponse，不调用 SourceCardBuilder，
+     * 不调用 emitSources。注意：streamSystemResponse 内部仍会调用 llmService.streamChat，
+     * 这是 SystemOnly 分支的正常 LLM 路径（不经过多通道检索，使用简化 System Prompt）。
+     */
+    @Test
+    void systemOnly_shouldNotCallBuilder_andShouldNotEmitSources() {
+        // SystemOnly 早返回：isSystemOnly 对所有 intent 返回 true
+        when(intentResolver.isSystemOnly(any())).thenReturn(true);
+        // promptTemplateLoader.load 在 streamSystemResponse 中被调用（customPrompt=null 时走默认 prompt）
+        lenient().when(promptTemplateLoader.load(anyString())).thenReturn("system-prompt");
+
+        service.streamChat("q", "cid-7", null, false, emitter);
+
+        // sources 路径完全不触发
+        verify(sourceCardBuilder, never()).build(any(), anyInt(), anyInt());
+        verify(callback, never()).emitSources(any());
+        // streamSystemResponse 内部调用 llmService.streamChat（SystemOnly 依然需要 LLM 生成回答）
+        verify(llmService, times(1)).streamChat(any(ChatRequest.class), any(StreamCallback.class));
     }
 }
