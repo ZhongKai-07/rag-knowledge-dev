@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.framework.convention;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
@@ -32,6 +33,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
+@EqualsAndHashCode(of = "id")
 public class RetrievedChunk {
 
     /**
@@ -64,4 +66,18 @@ public class RetrievedChunk {
      * 授权后置处理器使用；null 表示不做等级过滤（系统态/老数据）。
      */
     private Integer securityLevel;
+
+    /**
+     * 文档 ID（从向量库 metadata.doc_id 回填）。
+     * 用于"回答来源"功能按文档聚合 chunks。
+     * OpenSearch 后端回填；其他后端（Milvus/Pg）当前不回填（与 kbId/securityLevel 同例），空值兼容旧数据。
+     */
+    private String docId;
+
+    /**
+     * 分块在所属文档内的顺序索引（从 metadata.chunk_index 回填）。
+     * 用于 source 卡片内的阅读顺序展示；非顺序索引（如跨文档的全局序号）不使用此字段。
+     * OpenSearch 后端回填；其他后端当前不回填，空值兼容旧数据。
+     */
+    private Integer chunkIndex;
 }

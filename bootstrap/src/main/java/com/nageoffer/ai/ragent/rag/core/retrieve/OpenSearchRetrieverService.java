@@ -263,6 +263,8 @@ public class OpenSearchRetrieverService implements RetrieverService {
 
         String kbId = null;
         Integer securityLevel = null;
+        String docId = null;
+        Integer chunkIndex = null;
         if (source != null) {
             Object meta = source.get("metadata");
             if (meta instanceof Map<?, ?> metaMap) {
@@ -274,6 +276,14 @@ public class OpenSearchRetrieverService implements RetrieverService {
                 if (sl instanceof Number n) {
                     securityLevel = n.intValue();
                 }
+                Object did = metaMap.get(VectorMetadataFields.DOC_ID);
+                if (did != null && !did.toString().isBlank()) {
+                    docId = did.toString();
+                }
+                Object ci = metaMap.get(VectorMetadataFields.CHUNK_INDEX);
+                if (ci instanceof Number n) {
+                    chunkIndex = n.intValue();
+                }
             }
         }
 
@@ -283,6 +293,8 @@ public class OpenSearchRetrieverService implements RetrieverService {
                 .score(score)
                 .kbId(kbId)
                 .securityLevel(securityLevel)
+                .docId(docId)
+                .chunkIndex(chunkIndex)
                 .build();
     }
 

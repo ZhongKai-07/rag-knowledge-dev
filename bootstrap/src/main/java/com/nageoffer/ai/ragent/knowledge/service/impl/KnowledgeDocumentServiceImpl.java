@@ -46,6 +46,7 @@ import com.nageoffer.ai.ragent.ingestion.domain.pipeline.PipelineDefinition;
 import com.nageoffer.ai.ragent.ingestion.engine.IngestionEngine;
 import com.nageoffer.ai.ragent.ingestion.service.IngestionPipelineService;
 import com.nageoffer.ai.ragent.knowledge.config.KnowledgeScheduleProperties;
+import com.nageoffer.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentPageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUpdateRequest;
@@ -88,6 +89,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -95,6 +97,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -613,6 +616,24 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
             );
         }
         log.info("已提交 security_level 刷新事件: docId={}, newLevel={}", docId, newLevel);
+    }
+
+    @Override
+    public List<DocumentMetaSnapshot> findMetaByIds(Collection<String> docIds) {
+        if (docIds == null || docIds.isEmpty()) {
+            return List.of();
+        }
+        // @TableLogic 自动过滤 deleted=0, 无需显式条件 (CLAUDE.md Gotcha).
+        List<KnowledgeDocumentDO> rows = documentMapper.selectList(
+                Wrappers.<KnowledgeDocumentDO>lambdaQuery()
+                        .in(KnowledgeDocumentDO::getId, docIds)
+                        .select(
+                                KnowledgeDocumentDO::getId,
+                                KnowledgeDocumentDO::getDocName,
+                                KnowledgeDocumentDO::getKbId));
+        return rows.stream()
+                .map(d -> new DocumentMetaSnapshot(d.getId(), d.getDocName(), d.getKbId()))
+                .collect(Collectors.toList());
     }
 
     @Override
