@@ -21,11 +21,13 @@ import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.nageoffer.ai.ragent.rag.dto.sources.SourceCardsHolder;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -96,4 +98,15 @@ public class StreamChatHandlerParams {
      * RAG 功能配置属性
      */
     private final RAGConfigProperties ragConfigProperties;
+
+    /**
+     * 回答来源 cards 的 set-once 容器。
+     * <p>
+     * 使用 {@code @Builder.Default} 保证任何 {@code builder().build()} 调用
+     * 都拿到非 null 的空壳实例；{@code @NonNull} 让显式传 null 在构建期 NPE，
+     * 防止 {@code .cardsHolder(null)} 这种调用习惯混进来。
+     */
+    @lombok.Builder.Default
+    @NonNull
+    private final SourceCardsHolder cardsHolder = new SourceCardsHolder();
 }
