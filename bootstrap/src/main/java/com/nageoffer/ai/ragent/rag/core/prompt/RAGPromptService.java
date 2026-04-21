@@ -23,11 +23,14 @@ import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.core.intent.IntentNode;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
+import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -68,15 +71,25 @@ public class RAGPromptService {
                                                      String question,
                                                      List<String> subQuestions) {
         List<ChatMessage> messages = new ArrayList<>();
-        String systemPrompt = buildSystemPrompt(context);
-        if (StrUtil.isNotBlank(systemPrompt)) {
-            messages.add(ChatMessage.system(systemPrompt));
+
+        boolean citationMode = CollUtil.isNotEmpty(context.getCards()) && context.hasKb();
+
+        String resolvedSystemPrompt = buildSystemPrompt(context);
+        String resolvedKbEvidence = context.getKbContext();
+
+        if (citationMode) {
+            resolvedKbEvidence = buildCitationEvidence(context);
+            resolvedSystemPrompt = appendCitationRule(resolvedSystemPrompt, context.getCards());
+        }
+
+        if (StrUtil.isNotBlank(resolvedSystemPrompt)) {
+            messages.add(ChatMessage.system(resolvedSystemPrompt));
         }
         if (StrUtil.isNotBlank(context.getMcpContext())) {
             messages.add(ChatMessage.system(formatEvidence(MCP_CONTEXT_HEADER, context.getMcpContext())));
         }
-        if (StrUtil.isNotBlank(context.getKbContext())) {
-            messages.add(ChatMessage.user(formatEvidence(KB_CONTEXT_HEADER, context.getKbContext())));
+        if (StrUtil.isNotBlank(resolvedKbEvidence)) {
+            messages.add(ChatMessage.user(formatEvidence(KB_CONTEXT_HEADER, resolvedKbEvidence)));
         }
         if (CollUtil.isNotEmpty(history)) {
             messages.addAll(history);
@@ -193,6 +206,51 @@ public class RAGPromptService {
             case MIXED -> promptTemplateLoader.load(MCP_KB_MIXED_PROMPT_PATH);
             case EMPTY -> "";
         };
+    }
+
+    private String buildCitationEvidence(PromptContext ctx) {
+        Map<String, String> chunkTextById = new HashMap<>();
+        Map<String, List<RetrievedChunk>> intentChunks = ctx.getIntentChunks();
+        if (intentChunks != null) {
+            intentChunks.values().forEach(list -> {
+                if (list == null) return;
+                for (RetrievedChunk rc : list) {
+                    if (rc != null && rc.getId() != null) {
+                        chunkTextById.put(rc.getId(), rc.getText());
+                    }
+                }
+            });
+        }
+
+        StringBuilder sb = new StringBuilder("【参考文档】\n");
+        for (SourceCard card : ctx.getCards()) {
+            sb.append('[').append('^').append(card.getIndex()).append(']')
+              .append('《').append(card.getDocName()).append('》').append('\n');
+            int i = 1;
+            for (SourceChunk chunk : card.getChunks()) {
+                String body = chunkTextById.getOrDefault(chunk.getChunkId(), chunk.getPreview());
+                sb.append("—— 片段 ").append(i++).append("：").append(body).append('\n');
+            }
+            sb.append('\n');
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    private String appendCitationRule(String base, List<SourceCard> cards) {
+        String range = cards.size() == 1
+                ? "[^1]"
+                : "[^1] 至 [^" + cards.size() + "]";
+        String rule = """
+                【引用规则】
+                回答中凡是基于【参考文档】的陈述，必须在该陈述末尾附上对应文档的编号，
+                格式为半角方括号加脱字符加数字 [^n]，多个来源用 [^1][^2] 连写。
+                例：
+                  员工入职后第 6 个月可申请转正评估[^2]。
+                  培训期满后考评合格者予以正式录用[^1][^3]。
+                若陈述属于常识或不依赖参考文档，则不要添加 [^n]。
+                本次可用引用编号仅限 %s；不要输出任何超出范围或未在【参考文档】中出现的编号。
+                """.formatted(range);
+        return PromptTemplateUtils.cleanupPrompt(base + "\n\n" + rule);
     }
 
     private String formatEvidence(String header, String body) {
