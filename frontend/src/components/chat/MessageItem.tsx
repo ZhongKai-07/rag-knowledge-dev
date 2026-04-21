@@ -3,6 +3,7 @@ import { Brain, ChevronDown } from "lucide-react";
 
 import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
+import { Sources } from "@/components/chat/Sources";
 import { ThinkingIndicator } from "@/components/chat/ThinkingIndicator";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
@@ -26,6 +27,38 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
   const hasThinking = Boolean(message.thinking && message.thinking.trim().length > 0);
   const hasContent = message.content.trim().length > 0;
   const isWaiting = message.status === "streaming" && !isThinking && !hasContent;
+
+  // --- citation interaction (hooks must precede early return) ---
+  const sourcesRef = React.useRef<HTMLDivElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = React.useState<number | null>(null);
+  const timerRef = React.useRef<number | null>(null);
+
+  const handleCitationClick = React.useCallback(
+    (n: number) => {
+      if (!message.sources?.some((c) => c.index === n)) return;
+      sourcesRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setHighlightedIndex(n);
+      if (timerRef.current != null) window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => {
+        setHighlightedIndex(null);
+        timerRef.current = null;
+      }, 1500);
+    },
+    [message.sources]
+  );
+
+  React.useEffect(
+    () => () => {
+      if (timerRef.current != null) window.clearTimeout(timerRef.current);
+    },
+    []
+  );
+
+  const hasSources =
+    message.role === "assistant" &&
+    Array.isArray(message.sources) &&
+    message.sources.length > 0;
+  // --- end citation interaction ---
 
   if (isUser) {
     return (
@@ -88,7 +121,20 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
               </span>
             </div>
           ) : null}
-          {hasContent ? <MarkdownRenderer content={message.content} /> : null}
+          {hasContent ? (
+            <MarkdownRenderer
+              content={message.content}
+              sources={message.sources}
+              onCitationClick={handleCitationClick}
+            />
+          ) : null}
+          {hasSources && (
+            <Sources
+              ref={sourcesRef}
+              cards={message.sources!}
+              highlightedIndex={highlightedIndex}
+            />
+          )}
           {message.status === "error" ? (
             <p className="text-xs text-rose-500">生成已中断。</p>
           ) : null}
