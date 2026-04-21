@@ -37,6 +37,7 @@ export interface Message {
   feedback?: FeedbackValue;
   status?: MessageStatus;
   suggestedQuestions?: string[];
+  sources?: SourceCard[];
 }
 
 export interface StreamMetaPayload {
@@ -57,4 +58,28 @@ export interface CompletionPayload {
 export interface SuggestionsPayload {
   messageId: string;
   questions: string[];
+}
+
+export interface SourceChunk {
+  chunkId: string;
+  chunkIndex: number;
+  preview: string;
+  score: number;
+}
+
+export interface SourceCard {
+  /** 引用编号，1..N（对应未来 LLM 输出的 [^n]）。 */
+  index: number;
+  docId: string;
+  docName: string;
+  kbId: string;
+  topScore: number;
+  chunks: SourceChunk[];
+}
+
+export interface SourcesPayload {
+  conversationId: string;
+  /** 流式阶段为 null；前端按 streamingMessageId 定位消息，不依赖此字段。 */
+  messageId: string | null;
+  cards: SourceCard[];
 }
