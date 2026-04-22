@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { Loading } from "@/components/common/Loading";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -389,6 +390,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           />
         </div>
         <div className="mt-auto pt-3">
+          <div className="px-2 pb-2">
+            <LanguageSwitcher />
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

@@ -11,6 +11,12 @@ import {
   type Locale,
 } from "./config";
 
+// Seed every supported locale with a placeholder so i18next resolvedLanguage
+// resolves correctly before async bundle loading completes.
+const SEED_RESOURCES = Object.fromEntries(
+  SUPPORTED_LOCALES.map((l) => [l, { common: { _locale: l } }]),
+);
+
 async function loadBundle(locale: Locale) {
   for (const ns of NAMESPACES) {
     try {
@@ -26,6 +32,7 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
+    resources: SEED_RESOURCES,
     fallbackLng: FALLBACK_LOCALE,
     supportedLngs: SUPPORTED_LOCALES as unknown as string[],
     ns: NAMESPACES as unknown as string[],
