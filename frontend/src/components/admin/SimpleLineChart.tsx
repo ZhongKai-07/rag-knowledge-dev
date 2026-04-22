@@ -45,12 +45,12 @@ interface SimpleLineChartProps {
 const FALLBACK_TONES: ChartTone[] = ["primary", "success", "warning", "danger", "info", "neutral"];
 
 const CHART_COLOR_VARS: CSSProperties = {
-  ["--chart-primary" as string]: "#8b5cf6",
-  ["--chart-success" as string]: "#22c55e",
-  ["--chart-warning" as string]: "#f59e0b",
-  ["--chart-danger" as string]: "#ef4444",
-  ["--chart-info" as string]: "#06b6d4",
-  ["--chart-neutral" as string]: "#64748b"
+  ["--chart-primary" as string]: "#5B4BE8",   // ← vio-accent
+  ["--chart-success" as string]: "#4C9F7A",   // ← vio-success
+  ["--chart-warning" as string]: "#D9A14E",   // ← vio-warning
+  ["--chart-danger" as string]: "#D55757",    // ← vio-danger
+  ["--chart-info" as string]: "#8B7FEF",      // ← vio-accent-2
+  ["--chart-neutral" as string]: "#15141A"    // ← vio-ink
 };
 
 const TONE_STROKE: Record<ChartTone, string> = {
@@ -64,10 +64,10 @@ const TONE_STROKE: Record<ChartTone, string> = {
 
 const CHART_THEME = {
   light: {
-    grid: "#f1f5f9",
-    axis: "#94a3b8",
-    label: "#64748b",
-    legend: "#475569",
+    grid: "#EAE6DB",     // ← vio-line
+    axis: "#D4CEF5",     // ← vio-accent-subtle
+    label: "#15141A",    // ← vio-ink
+    legend: "#5B4BE8",   // ← vio-accent
     hoverLine: "#94a3b8",
     pointStroke: "#ffffff",
     tooltipBg: "rgba(255,255,255,0.95)",
