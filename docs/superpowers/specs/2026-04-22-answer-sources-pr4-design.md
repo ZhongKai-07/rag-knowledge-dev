@@ -462,7 +462,7 @@ describe("selectSession mapping", () => {
 - **`StreamChatEventHandlerPersistenceTest`**：`traceId` 是 handler 构造期从 `RagTraceContext` 读取的 final 字段。必须在 `new StreamChatEventHandler(...)` 之前 `RagTraceContext.setTraceId("test-trace-id")`；`@AfterEach` 做 `RagTraceContext.clear()`。参照 PR3 的 `StreamChatEventHandlerCitationTest` setup 模式
 - **mock `ConversationMessageService`**：用 `@Mock` + `@InjectMocks` 或手工构造，注入到 `StreamChatHandlerParams.builder().conversationMessageService(mock).build()`
 - **mock `conversationMessageMapper`**：`ConversationMessageServiceSourcesTest` 里 mock `ConversationMessageMapper`，不 mock 整个 MyBatis 栈；用 `ArgumentCaptor<ConversationMessageDO>` 抓实际 entity 断言其 `sourcesJson`；用 `ArgumentCaptor<Wrapper<ConversationMessageDO>>` 抓 wrapper，**断言分两层**：(a) `wrapper.getSqlSegment()` 验包含 `id =` 谓词形状（不直接含 messageId 字面量，MP 生成的是 `#{ew.paramNameValuePairs.MPGENVAL1}` 占位符）；(b) `wrapper.getParamNameValuePairs()` 取出对应 key 的 value 断言等于 messageId。**不**用 `getTargetSql()`——该 API 非当前 MP 版本稳定断言点，且易在完整 SQL 字符串上脆化测试
-- **`log.warn` 捕获**：用 Logback ListAppender 捕获（项目已有测试用例模式，见 `RAGPromptServiceCitationTest` 或其他），或放宽为"仅断言没 rethrow"（更稳定）
+- **`log.warn` 捕获**：**优先放宽为"仅断言没 rethrow"**（最稳定，不依赖任何 log 框架细节）。若后续真的需要精确断言 `log.warn` 被调用，可在本测试类里新建 Logback `ListAppender` 并 attach 到目标 Logger——**注意仓库目前无此模式的现成参考**，需从头写；因此除非有明确需要，不建议仅为此引入 log appender 机制
 
 ---
 
