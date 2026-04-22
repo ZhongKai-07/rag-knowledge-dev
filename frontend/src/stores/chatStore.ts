@@ -409,7 +409,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         content: item.content,
         createdAt: item.createTime,
         feedback: mapVoteToFeedback(item.vote),
-        status: "done"
+        status: "done",
+        thinking: item.thinkingContent,
+        thinkingDuration: item.thinkingDuration,
+        sources: item.sources
       }));
       set({ messages: mapped });
     } catch (error) {
