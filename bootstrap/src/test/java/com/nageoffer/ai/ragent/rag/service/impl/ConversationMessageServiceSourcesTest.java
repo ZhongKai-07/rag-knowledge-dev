@@ -21,10 +21,17 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nageoffer.ai.ragent.rag.controller.vo.ConversationMessageVO;
+import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationMessageDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationSummaryMapper;
+import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
+import com.nageoffer.ai.ragent.rag.enums.ConversationMessageOrder;
 import com.nageoffer.ai.ragent.rag.service.MessageFeedbackService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,14 +41,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ConversationMessageServiceSourcesTest {
@@ -113,5 +125,87 @@ class ConversationMessageServiceSourcesTest {
 
     private static void initTableInfo(Class<?> entityClass) {
         TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), entityClass);
+    }
+
+    // ── Read-path helpers ───────────────────────────────────────────────────
+
+    private static final ObjectMapper TEST_MAPPER = new ObjectMapper();
+    private static final TypeReference<List<SourceCard>> SOURCES_TYPE = new TypeReference<>() {};
+
+    private ConversationDO stubConversation() {
+        ConversationDO conv = new ConversationDO();
+        conv.setConversationId("conv-1");
+        conv.setUserId("user-1");
+        conv.setDeleted(0);
+        return conv;
+    }
+
+    private ConversationMessageDO assistantRecord(String id, String sourcesJson) {
+        return ConversationMessageDO.builder()
+                .id(id)
+                .conversationId("conv-1")
+                .userId("user-1")
+                .role("assistant")
+                .content("answer")
+                .sourcesJson(sourcesJson)
+                .createTime(new Date())
+                .deleted(0)
+                .build();
+    }
+
+    private SourceCard sampleCard() {
+        return SourceCard.builder()
+                .index(1).docId("d1").docName("D1").kbId("kb").topScore(0.9f)
+                .chunks(List.of(SourceChunk.builder()
+                        .chunkId("c1").chunkIndex(0).preview("p").score(0.85f).build()))
+                .build();
+    }
+
+    private void stubListQueries(ConversationMessageDO record) {
+        when(conversationMapper.selectOne(any())).thenReturn(stubConversation());
+        when(conversationMessageMapper.selectList(any())).thenReturn(List.of(record));
+        when(feedbackService.getUserVotes(any(), any())).thenReturn(java.util.Map.of());
+    }
+
+    // ── Read-path tests ─────────────────────────────────────────────────────
+
+    @Test
+    void listMessages_withValidSourcesJson_deserializesToSourceCardList() throws Exception {
+        SourceCard card = sampleCard();
+        String json = TEST_MAPPER.writeValueAsString(List.of(card));
+        stubListQueries(assistantRecord("msg-1", json));
+
+        List<ConversationMessageVO> result = service.listMessages(
+                "conv-1", "user-1", null, ConversationMessageOrder.ASC);
+
+        assertEquals(1, result.size());
+        List<SourceCard> sources = result.get(0).getSources();
+        assertNotNull(sources, "sources should be populated");
+        assertEquals(1, sources.size());
+        assertEquals(card.getIndex(), sources.get(0).getIndex());
+        assertEquals(card.getDocId(), sources.get(0).getDocId());
+        assertEquals(card.getDocName(), sources.get(0).getDocName());
+    }
+
+    @Test
+    void listMessages_withMalformedJson_returnsNullSourcesNotThrow() {
+        stubListQueries(assistantRecord("msg-2", "not-a-json"));
+
+        List<ConversationMessageVO> result = service.listMessages(
+                "conv-1", "user-1", null, ConversationMessageOrder.ASC);
+
+        assertEquals(1, result.size());
+        assertNull(result.get(0).getSources(), "malformed json should degrade to null, not throw");
+    }
+
+    @Test
+    void listMessages_withNullSourcesJson_returnsNullSources() {
+        stubListQueries(assistantRecord("msg-3", null));
+
+        List<ConversationMessageVO> result = service.listMessages(
+                "conv-1", "user-1", null, ConversationMessageOrder.ASC);
+
+        assertEquals(1, result.size());
+        assertNull(result.get(0).getSources());
     }
 }
