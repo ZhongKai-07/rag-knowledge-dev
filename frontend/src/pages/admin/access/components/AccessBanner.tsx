@@ -7,7 +7,7 @@ export function AccessBanner() {
   return (
     <div className="rounded-lg border bg-white p-4">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--vio-accent-mist)] text-vio-accent">
           <ShieldCheck className="h-5 w-5" />
         </div>
         <div className="flex-1">

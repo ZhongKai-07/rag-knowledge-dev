@@ -336,11 +336,11 @@ export function RolesTab() {
                         setSelectedRoleId(r.id);
                       }}
                       className={
-                        "cursor-pointer " + (isActive ? "bg-indigo-50" : "")
+                        "cursor-pointer " + (isActive ? "bg-[var(--vio-accent-mist)]" : "")
                       }
                     >
                       <TableCell className="font-medium">
-                        <ShieldCheck className="mr-1 inline h-3.5 w-3.5 text-indigo-500" />
+                        <ShieldCheck className="mr-1 inline h-3.5 w-3.5 text-vio-accent" />
                         {r.name}
                       </TableCell>
                       <TableCell>
@@ -422,7 +422,7 @@ export function RolesTab() {
                           ·{" "}
                           <Link
                             to={`/admin/access?tab=members&userId=${u.userId}${u.deptId ? `&deptId=${u.deptId}` : ""}`}
-                            className="text-indigo-600 hover:underline"
+                            className="text-vio-accent hover:underline"
                           >
                             {u.username}
                           </Link>
@@ -450,7 +450,7 @@ export function RolesTab() {
                           ·{" "}
                           <Link
                             to={`/admin/access?tab=sharing&kb=${k.kbId}`}
-                            className="text-indigo-600 hover:underline"
+                            className="text-vio-accent hover:underline"
                           >
                             {k.kbName}
                           </Link>

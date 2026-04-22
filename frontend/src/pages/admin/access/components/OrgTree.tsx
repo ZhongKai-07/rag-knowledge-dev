@@ -86,7 +86,7 @@ export function OrgTree({
         <div
           className={cn(
             "flex items-center justify-between rounded-md px-2 py-1.5 hover:bg-slate-100",
-            selectedDeptId === null && "bg-indigo-50 text-indigo-700"
+            selectedDeptId === null && "bg-[var(--vio-accent-mist)] text-vio-accent"
           )}
         >
           <div className="flex items-center gap-1.5">
@@ -125,7 +125,7 @@ export function OrgTree({
             className={cn(
               "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left hover:bg-slate-100",
               showAllNode && "pl-7",
-              isActive && "bg-indigo-50 text-indigo-700"
+              isActive && "bg-[var(--vio-accent-mist)] text-vio-accent"
             )}
           >
             <span className="flex items-center gap-1.5 truncate">

@@ -186,7 +186,7 @@ export function DepartmentsTab() {
                   <TableRow key={dept.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 shrink-0 text-indigo-500" />
+                        <Building2 className="h-4 w-4 shrink-0 text-vio-accent" />
                         <span className="font-mono text-sm text-slate-700">
                           {dept.deptCode}
                         </span>
@@ -202,17 +202,17 @@ export function DepartmentsTab() {
                       {dept.deptName}
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm font-medium text-indigo-600">
+                      <span className="text-sm font-medium text-vio-accent">
                         {dept.userCount ?? 0} 人
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm font-medium text-indigo-600">
+                      <span className="text-sm font-medium text-vio-accent">
                         {dept.kbCount ?? 0} 个
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className="text-sm font-medium text-indigo-600">
+                      <span className="text-sm font-medium text-vio-accent">
                         {dept.roleCount ?? 0} 个
                       </span>
                     </TableCell>

@@ -71,7 +71,7 @@ function AccessCenterInner() {
                 className={cn(
                   "inline-flex items-center gap-2 rounded-t-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "border border-b-0 border-slate-200 bg-white text-indigo-600"
+                    ? "border border-b-0 border-slate-200 bg-white text-vio-accent"
                     : "text-slate-500 hover:text-slate-700"
                 )}
               >

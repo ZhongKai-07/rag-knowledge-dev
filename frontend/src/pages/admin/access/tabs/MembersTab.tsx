@@ -323,7 +323,7 @@ export function MembersTab() {
                         }}
                         className={
                           "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100 " +
-                          (isActive ? "bg-indigo-50 text-indigo-700" : "")
+                          (isActive ? "bg-[var(--vio-accent-mist)] text-vio-accent" : "")
                         }
                       >
                         <span className="flex items-center gap-1.5 truncate">
@@ -494,7 +494,7 @@ export function MembersTab() {
                           <button
                             type="button"
                             onClick={() => handleJumpToSharing(g.kbId)}
-                            className="text-indigo-600 hover:underline"
+                            className="text-vio-accent hover:underline"
                             title="跳转到 知识库共享 并定位此 KB"
                           >
                             {g.kbName}
