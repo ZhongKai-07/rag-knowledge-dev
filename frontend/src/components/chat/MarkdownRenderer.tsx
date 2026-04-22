@@ -116,7 +116,7 @@ export function MarkdownRenderer({ content, sources, onCitationClick }: Markdown
       a({ children, ...props }: any) {
         return (
           <a
-            className="text-[#0969da] underline-offset-4 hover:underline dark:text-[#58a6ff]"
+            className="text-vio-accent underline-offset-4 hover:underline hover:text-vio-accent-2"
             target="_blank"
             rel="noreferrer"
             {...props}
@@ -155,16 +155,50 @@ export function MarkdownRenderer({ content, sources, onCitationClick }: Markdown
           </td>
         );
       },
-      blockquote({ children, ...props }: any) {
-        return (
-          <blockquote
-            className="my-3 border-l-4 border-[#3B82F6] bg-[#F0F7FF] pl-3 pr-3 py-2 italic text-[#333333] dark:border-[#60A5FA] dark:bg-[#1A2332] dark:text-[#CCCCCC]"
-            {...props}
-          >
-            {children}
-          </blockquote>
-        );
-      },
+      h1: ({ children, ...props }: any) => (
+        <h1
+          {...props}
+          className="font-display text-[30px] font-medium leading-[1.15] tracking-[-0.02em] text-vio-ink mb-3 mt-6 first:mt-0"
+        >
+          {children}
+        </h1>
+      ),
+      h2: ({ children, ...props }: any) => (
+        <h2
+          {...props}
+          className="font-display text-[22px] font-medium leading-[1.2] tracking-[-0.015em] text-vio-ink mb-2 mt-5 first:mt-0"
+        >
+          {children}
+        </h2>
+      ),
+      h3: ({ children, ...props }: any) => (
+        <h3
+          {...props}
+          className="font-display text-[17px] font-semibold leading-[1.3] text-vio-ink mb-2 mt-4 first:mt-0"
+        >
+          {children}
+        </h3>
+      ),
+      strong: ({ children, ...props }: any) => (
+        <strong
+          {...props}
+          className="font-semibold"
+          style={{
+            background: "linear-gradient(to top, var(--vio-accent-subtle) 35%, transparent 35%)",
+            paddingInline: "2px",
+          }}
+        >
+          {children}
+        </strong>
+      ),
+      blockquote: ({ children, ...props }: any) => (
+        <blockquote
+          {...props}
+          className="my-3 rounded-r-[10px] border-l-[3px] border-vio-accent-2 bg-white pl-3 pr-4 py-2 font-body italic text-[13px] leading-[1.55] text-vio-ink/80"
+        >
+          {children}
+        </blockquote>
+      ),
       ul({ children, ...props }: any) {
         return (
           <ul className="my-2 ml-6 list-disc space-y-1" {...props}>
@@ -203,7 +237,7 @@ export function MarkdownRenderer({ content, sources, onCitationClick }: Markdown
     <ReactMarkdown
       remarkPlugins={remarkPlugins}
       components={components}
-      className="prose prose-gray max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[#1A1A1A] dark:prose-headings:text-[#EEEEEE] prose-p:text-[#333333] dark:prose-p:text-[#CCCCCC] prose-p:leading-relaxed prose-li:text-[#333333] dark:prose-li:text-[#CCCCCC] prose-strong:text-[#1A1A1A] dark:prose-strong:text-[#EEEEEE]"
+      className="prose max-w-none prose-p:leading-[1.75] prose-p:text-vio-ink/90 prose-p:text-[14px] prose-li:text-vio-ink/90 prose-li:text-[14px]"
     >
       {content}
     </ReactMarkdown>
