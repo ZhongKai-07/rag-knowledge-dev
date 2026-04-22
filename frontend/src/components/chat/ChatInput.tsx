@@ -1,5 +1,6 @@
 import * as React from "react";
 import { BookOpen, Brain, ChevronDown, Lightbulb, Send, Square } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -13,6 +14,7 @@ import { useChatStore } from "@/stores/chatStore";
 import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeService";
 
 export function ChatInput() {
+  const { t } = useTranslation("chat");
   const [value, setValue] = React.useState("");
 
   const [knowledgeBases, setKnowledgeBases] = React.useState<KnowledgeBase[]>([]);
@@ -89,7 +91,7 @@ export function ChatInput() {
             ref={textareaRef}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder={deepThinkingEnabled ? "输入需要深度分析的问题..." : "输入你的问题..."}
+            placeholder={deepThinkingEnabled ? t("input.placeholder_deep") : t("input.placeholder")}
             className="max-h-40 min-h-[44px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 pr-2 text-[15px] text-ink-2 shadow-none placeholder:text-ink-4 focus-visible:ring-0"
             rows={1}
             onCompositionStart={() => {
@@ -129,7 +131,7 @@ export function ChatInput() {
           >
             <span className="inline-flex items-center gap-2">
               <Brain className={cn("h-3.5 w-3.5", deepThinkingEnabled && "text-brand-muted")} />
-              深度思考
+              {t("input.deep_thinking")}
               {deepThinkingEnabled ? (
                 <span className="h-2 w-2 rounded-full bg-brand-muted animate-pulse" />
               ) : null}
@@ -184,7 +186,7 @@ export function ChatInput() {
             type="button"
             onClick={handleSubmit}
             disabled={!hasContent && !isStreaming}
-            aria-label={isStreaming ? "停止生成" : "发送消息"}
+            aria-label={isStreaming ? t("stop") : t("input.send_aria")}
             className={cn(
               "ml-auto rounded-full p-2.5 transition-all duration-200",
               isStreaming
@@ -202,7 +204,7 @@ export function ChatInput() {
         <p className="text-xs text-brand">
           <span className="inline-flex items-center gap-1.5">
             <Lightbulb className="h-3.5 w-3.5" />
-            深度思考模式已开启，AI将进行更深入的分析推理
+            {t("input.deep_thinking_on")}
           </span>
         </p>
       ) : null}

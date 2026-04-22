@@ -31,6 +31,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { useTranslation } from "react-i18next";
+
 import { LanguageSwitcher } from "@/components/common/LanguageSwitcher";
 import { Loading } from "@/components/common/Loading";
 import { cn } from "@/lib/utils";
@@ -44,6 +46,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { t } = useTranslation(["chat", "common"]);
   const {
     sessions,
     currentSessionId,
@@ -234,8 +237,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <Plus className="h-4 w-4" />
                 </span>
                 <span className="flex-1">
-                  <span className="block text-sm font-medium text-vio-ink">新建对话</span>
-                  <span className="block font-mono text-[10px] text-vio-ink/40">从空白开始</span>
+                  <span className="block text-sm font-medium text-vio-ink">{t("chat:session.new_chat")}</span>
+                  <span className="block font-mono text-[10px] text-vio-ink/40">{t("chat:session.new_chat_hint")}</span>
                 </span>
               </button>
             </div>
@@ -251,7 +254,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="搜索对话..."
+                  placeholder={t("chat:session.search_placeholder")}
                   className="h-9 w-full rounded-lg border border-vio-line bg-[var(--vio-surface-2)] pl-9 pr-3 text-sm text-vio-ink placeholder:text-vio-ink/40 focus:border-vio-accent focus:outline-none transition-colors"
                 />
               </div>
@@ -447,7 +450,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => logout()} className="text-rose-600 focus:text-rose-600">
                 <LogOut className="mr-2 h-4 w-4" />
-                退出登录
+                {t("common:actions.logout")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
