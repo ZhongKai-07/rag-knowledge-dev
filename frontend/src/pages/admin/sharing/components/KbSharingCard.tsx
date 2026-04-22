@@ -219,7 +219,7 @@ export function KbSharingCard({ kb, bindings, allRoles, onBindingsChange, highli
                   <td className="py-2">
                     <Link
                       to={`/admin/access?tab=roles&roleId=${b.roleId}`}
-                      className="font-medium text-indigo-600 hover:underline"
+                      className="font-medium text-vio-accent hover:underline"
                       title="跳转到角色管理并定位此角色"
                     >
                       {b.roleName}
