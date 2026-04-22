@@ -39,6 +39,7 @@ import com.nageoffer.ai.ragent.rag.dto.SourceCard;
 import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
 import com.nageoffer.ai.ragent.rag.dto.SuggestionsPayload;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
+import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 import com.nageoffer.ai.ragent.rag.core.source.CitationStatsCollector;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
@@ -61,6 +62,7 @@ public class StreamChatEventHandler implements StreamCallback {
     private final SseEmitterSender sender;
     private final String conversationId;
     private final ConversationMemoryService memoryService;
+    private final ConversationMessageService conversationMessageService;
     private final ConversationGroupService conversationGroupService;
     private final String taskId;
     private final String userId;
@@ -87,6 +89,7 @@ public class StreamChatEventHandler implements StreamCallback {
         this.conversationId = params.getConversationId();
         this.taskId = params.getTaskId();
         this.memoryService = params.getMemoryService();
+        this.conversationMessageService = params.getConversationMessageService();
         this.conversationGroupService = params.getConversationGroupService();
         this.taskManager = params.getTaskManager();
         this.evaluationService = params.getEvaluationService();
