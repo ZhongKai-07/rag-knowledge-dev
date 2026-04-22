@@ -37,6 +37,7 @@ import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
 import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
 import com.nageoffer.ai.ragent.rag.core.source.SourceCardBuilder;
+import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
 import com.nageoffer.ai.ragent.rag.dto.IntentGroup;
 import com.nageoffer.ai.ragent.rag.dto.RetrievalContext;
@@ -119,6 +120,7 @@ class RAGChatServiceImplSourcesTest {
         props.setEnabled(true);
         props.setMaxCards(8);
         props.setPreviewMaxChars(200);
+        props.setMinTopScore(0.55D);
         ReflectionTestUtils.setField(service, "ragSourcesProperties", props);
 
         // callback 工厂
@@ -160,7 +162,11 @@ class RAGChatServiceImplSourcesTest {
     // ---------- helpers ----------
 
     private static RetrievedChunk chunk(String id, String docId) {
-        return RetrievedChunk.builder().id(id).docId(docId).score(0.9f).text("preview").build();
+        return chunk(id, docId, 0.9f);
+    }
+
+    private static RetrievedChunk chunk(String id, String docId, float score) {
+        return RetrievedChunk.builder().id(id).docId(docId).score(score).text("preview").build();
     }
 
     private RetrievalContext ctxWithKbChunks(List<RetrievedChunk> chunks) {
@@ -348,5 +354,68 @@ class RAGChatServiceImplSourcesTest {
         // 正向：clarification 仍走流式返回（直接 callback.onContent + onComplete）
         verify(callback).onContent(eq("请补充您的问题细节"));
         verify(callback).onComplete();
+    }
+
+    @Test
+    void lowScoreKbEvidence_shouldSkipSourcesAndDisableSuggestions_butLlmStillStarts() {
+        List<RetrievedChunk> chunks = List.of(chunk("c-low", "d1", 0.50f));
+        RetrievalContext ctx = ctxWithKbChunks(chunks);
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+
+        service.streamChat("q", "cid-low", null, false, emitter);
+
+        ArgumentCaptor<SuggestionContext> suggestionCaptor = ArgumentCaptor.forClass(SuggestionContext.class);
+        verify(callback).updateSuggestionContext(suggestionCaptor.capture());
+        assertThat(suggestionCaptor.getValue().shouldGenerate()).isFalse();
+        assertThat(suggestionCaptor.getValue().topChunks()).containsExactlyElementsOf(chunks);
+
+        verify(sourceCardBuilder, never()).build(any(), anyInt(), anyInt());
+        verify(callback, never()).trySetCards(any());
+        verify(callback, never()).emitSources(any());
+        verify(llmService, times(1)).streamChat(any(ChatRequest.class), any(StreamCallback.class));
+    }
+
+    @Test
+    void thresholdScore_shouldEmitSourcesAndEnableSuggestions() {
+        List<RetrievedChunk> chunks = List.of(chunk("c-threshold", "d1", 0.55f));
+        RetrievalContext ctx = ctxWithKbChunks(chunks);
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+
+        SourceCard card = SourceCard.builder().index(1).docId("d1").docName("D1").topScore(0.55f).chunks(List.of()).build();
+        when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of(card));
+
+        service.streamChat("q", "cid-threshold", null, false, emitter);
+
+        ArgumentCaptor<SuggestionContext> suggestionCaptor = ArgumentCaptor.forClass(SuggestionContext.class);
+        verify(callback).updateSuggestionContext(suggestionCaptor.capture());
+        assertThat(suggestionCaptor.getValue().shouldGenerate()).isTrue();
+        assertThat(suggestionCaptor.getValue().topChunks()).containsExactlyElementsOf(chunks);
+
+        verify(sourceCardBuilder, times(1)).build(any(), anyInt(), anyInt());
+        verify(callback, times(1)).trySetCards(any());
+        verify(callback, times(1)).emitSources(any(SourcesPayload.class));
+        verify(llmService, times(1)).streamChat(any(ChatRequest.class), any(StreamCallback.class));
+    }
+
+    @Test
+    void higherScore_shouldEmitSourcesAndEnableSuggestions() {
+        List<RetrievedChunk> chunks = List.of(chunk("c-high", "d1", 0.65f));
+        RetrievalContext ctx = ctxWithKbChunks(chunks);
+        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+
+        SourceCard card = SourceCard.builder().index(1).docId("d1").docName("D1").topScore(0.65f).chunks(List.of()).build();
+        when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of(card));
+
+        service.streamChat("q", "cid-high", null, false, emitter);
+
+        ArgumentCaptor<SuggestionContext> suggestionCaptor = ArgumentCaptor.forClass(SuggestionContext.class);
+        verify(callback).updateSuggestionContext(suggestionCaptor.capture());
+        assertThat(suggestionCaptor.getValue().shouldGenerate()).isTrue();
+        assertThat(suggestionCaptor.getValue().topChunks()).containsExactlyElementsOf(chunks);
+
+        verify(sourceCardBuilder, times(1)).build(any(), anyInt(), anyInt());
+        verify(callback, times(1)).trySetCards(any());
+        verify(callback, times(1)).emitSources(any(SourcesPayload.class));
+        verify(llmService, times(1)).streamChat(any(ChatRequest.class), any(StreamCallback.class));
     }
 }

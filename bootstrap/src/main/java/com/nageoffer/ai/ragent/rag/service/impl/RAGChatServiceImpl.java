@@ -206,6 +206,7 @@ public class RAGChatServiceImpl implements RAGChatService {
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(3)
                 .toList();
+        boolean hasRelevantKbEvidence = hasRelevantKbEvidence(distinctChunks);
 
         boolean hasMcp = subIntents.stream()
                 .flatMap(si -> si.nodeScores().stream())
@@ -215,15 +216,20 @@ public class RAGChatServiceImpl implements RAGChatService {
                 rewriteResult.rewrittenQuestion(),
                 history,
                 topChunks,
-                !hasMcp && !topChunks.isEmpty()
+                !hasMcp && hasRelevantKbEvidence
         ));
 
         // ---- 回答来源事件推送（3 层闸门）----
         // 闸门 1：feature flag off → 跳过 sources（不影响回答路径）
         // 闸门 2：distinctChunks.isEmpty() → 跳过 builder 调用（MCP-Only / Mixed-but-no-KB 等）
         // 闸门 3：cards.isEmpty() → 不 trySet / 不 emit（findMetaByIds 过滤后无卡片）
+        // Current gates are:
+        // 1) feature flag on
+        // 2) hasRelevantKbEvidence=true (distinctChunks non-empty and maxScore >= minTopScore)
+        // 3) builder returns non-empty cards
+        // 4) trySetCards succeeds before emit
         List<SourceCard> cards = List.of(); // outer scope; stays empty unless gate-3 sets it
-        if (Boolean.TRUE.equals(ragSourcesProperties.getEnabled()) && !distinctChunks.isEmpty()) {
+        if (Boolean.TRUE.equals(ragSourcesProperties.getEnabled()) && hasRelevantKbEvidence) {
             cards = sourceCardBuilder.build(
                     distinctChunks,
                     ragSourcesProperties.getMaxCards(),
@@ -313,5 +319,21 @@ public class RAGChatServiceImpl implements RAGChatService {
                 .build();
 
         return llmService.streamChat(chatRequest, callback);
+    }
+
+    private boolean hasRelevantKbEvidence(List<RetrievedChunk> distinctChunks) {
+        if (CollUtil.isEmpty(distinctChunks)) {
+            return false;
+        }
+        double minTopScore = ragSourcesProperties.getMinTopScore() == null
+                ? 0.55D
+                : ragSourcesProperties.getMinTopScore();
+        double maxScore = distinctChunks.stream()
+                .map(RetrievedChunk::getScore)
+                .filter(Objects::nonNull)
+                .mapToDouble(Float::doubleValue)
+                .max()
+                .orElse(0.0D);
+        return maxScore >= minTopScore;
     }
 }

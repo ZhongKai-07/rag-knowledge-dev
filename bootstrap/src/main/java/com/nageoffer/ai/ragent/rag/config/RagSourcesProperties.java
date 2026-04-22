@@ -23,15 +23,13 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * 回答来源功能配置。
- * <p>
- * 默认 {@code enabled=false}，PR2~PR4 合并期间保持关闭，PR5 转为 true。
  */
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "rag.sources")
 public class RagSourcesProperties {
 
-    /** 功能总开关（默认关闭）。 */
+    /** 功能总开关。 */
     private Boolean enabled = false;
 
     /** Chunk preview 截断长度（按 codePoint 计算）。 */
@@ -39,4 +37,7 @@ public class RagSourcesProperties {
 
     /** SourceCard 列表条数上限。 */
     private Integer maxCards = 8;
+
+    /** 低相关闸门：只有 top score 达到该阈值时，才发 sources / suggestions。 */
+    private Double minTopScore = 0.55D;
 }

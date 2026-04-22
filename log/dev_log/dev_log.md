@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-04-22 | Authz/Dedup 修复 + relevance gate
+
+详情：[`2026-04-22-authz-dedup-fix-and-relevance-gate.md`](./2026-04-22-authz-dedup-fix-and-relevance-gate.md)
+
+**核心改动**：
+- 修复 `DeduplicationPostProcessor` 从原始 `results` 恢复 chunk 的问题，保证后续处理器不得恢复前序处理器已删除的数据。
+- `rag.sources.min-top-score` 默认 `0.55`，`sources` 与 `suggestions` 统一受 relevance gate 控制。
+- 新增 2 个后端测试文件并扩展 `RAGChatServiceImplSourcesTest`，覆盖 `0.50 / 0.55 / 0.65` 三档阈值行为和后处理链不变式。
+- 运行态确认本地 `colleteraltest` 索引缺 `metadata.kb_id`，需删除索引后重建并对该 KB 文档重新分块/向量化。
+
+---
+
 ## 2026-04-07 | feature/opensearch-and-rbac
 
 ### 一、实施计划执行（14 个 Task，全部完成）

@@ -25,15 +25,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * 去重后置处理器
- * <p>
- * 合并多个通道的结果并去重
- * 当同一个 Chunk 在多个通道中出现时，保留分数最高的
+ *
+ * <p>只允许在当前工作集 {@code chunks} 内做去重，不能从原始 {@code results}
+ * 中恢复已经被前序处理器删除的 chunk。
+ *
+ * <p>通道优先级映射使用 {@link IdentityHashMap}（对象引用），依赖前序处理器保持
+ * {@link RetrievedChunk} 引用稳定。若某个处理器改为 rebuild chunk 实例，需同步评估这里的优先级查表行为。
  */
 @Slf4j
 @Component
@@ -46,65 +50,86 @@ public class DeduplicationPostProcessor implements SearchResultPostProcessor {
 
     @Override
     public int getOrder() {
-        return 1;  // 最先执行
+        return 1;
     }
 
     @Override
     public boolean isEnabled(SearchContext context) {
-        return true;  // 始终启用
+        return true;
     }
 
     @Override
     public List<RetrievedChunk> process(List<RetrievedChunk> chunks,
                                         List<SearchChannelResult> results,
                                         SearchContext context) {
-        // 使用 LinkedHashMap 保持顺序并去重
+        if (chunks.isEmpty()) {
+            return chunks;
+        }
+
+        Map<RetrievedChunk, Integer> priorityByChunk = buildPriorityByChunk(results);
+        Map<RetrievedChunk, Integer> firstSeenByChunk = buildFirstSeenByChunk(chunks);
         Map<String, RetrievedChunk> chunkMap = new LinkedHashMap<>();
 
-        // 按通道优先级排序（优先级高的通道结果优先保留）
-        results.stream()
-                .sorted((r1, r2) -> Integer.compare(
-                        getChannelPriority(r1.getChannelType()),
-                        getChannelPriority(r2.getChannelType())
-                ))
-                .forEach(result -> {
-                    for (RetrievedChunk chunk : result.getChunks()) {
-                        String key = generateChunkKey(chunk);
-
-                        if (!chunkMap.containsKey(key)) {
-                            // 新 Chunk，直接添加
-                            chunkMap.put(key, chunk);
-                        } else {
-                            // 已存在，合并分数（取最高分）
-                            RetrievedChunk existing = chunkMap.get(key);
-                            if (chunk.getScore() > existing.getScore()) {
-                                chunkMap.put(key, chunk);
-                            }
-                        }
-                    }
-                });
+        for (RetrievedChunk chunk : chunks) {
+            String key = generateChunkKey(chunk);
+            RetrievedChunk existing = chunkMap.get(key);
+            if (existing == null || isBetterCandidate(chunk, existing, priorityByChunk, firstSeenByChunk)) {
+                chunkMap.put(key, chunk);
+            }
+        }
 
         return new ArrayList<>(chunkMap.values());
     }
 
-    /**
-     * 生成 Chunk 唯一键
-     */
+    private Map<RetrievedChunk, Integer> buildPriorityByChunk(List<SearchChannelResult> results) {
+        Map<RetrievedChunk, Integer> priorityByChunk = new IdentityHashMap<>();
+        for (SearchChannelResult result : results) {
+            int priority = getChannelPriority(result.getChannelType());
+            for (RetrievedChunk chunk : result.getChunks()) {
+                priorityByChunk.merge(chunk, priority, Math::min);
+            }
+        }
+        return priorityByChunk;
+    }
+
+    private Map<RetrievedChunk, Integer> buildFirstSeenByChunk(List<RetrievedChunk> chunks) {
+        Map<RetrievedChunk, Integer> firstSeen = new IdentityHashMap<>();
+        for (int i = 0; i < chunks.size(); i++) {
+            firstSeen.putIfAbsent(chunks.get(i), i);
+        }
+        return firstSeen;
+    }
+
+    private boolean isBetterCandidate(RetrievedChunk candidate, RetrievedChunk existing,
+                                      Map<RetrievedChunk, Integer> priorityByChunk,
+                                      Map<RetrievedChunk, Integer> firstSeenByChunk) {
+        int candidatePriority = priorityByChunk.getOrDefault(candidate, Integer.MAX_VALUE);
+        int existingPriority = priorityByChunk.getOrDefault(existing, Integer.MAX_VALUE);
+        if (candidatePriority != existingPriority) {
+            return candidatePriority < existingPriority;
+        }
+
+        float candidateScore = candidate.getScore() == null ? Float.NEGATIVE_INFINITY : candidate.getScore();
+        float existingScore = existing.getScore() == null ? Float.NEGATIVE_INFINITY : existing.getScore();
+        if (Float.compare(candidateScore, existingScore) != 0) {
+            return candidateScore > existingScore;
+        }
+
+        return firstSeenByChunk.getOrDefault(candidate, Integer.MAX_VALUE)
+                < firstSeenByChunk.getOrDefault(existing, Integer.MAX_VALUE);
+    }
+
     private String generateChunkKey(RetrievedChunk chunk) {
-        // 基于 id 或内容哈希生成唯一键
         return chunk.getId() != null
                 ? chunk.getId()
                 : String.valueOf(chunk.getText().hashCode());
     }
 
-    /**
-     * 获取通道优先级（数字越小优先级越高）
-     */
     private int getChannelPriority(SearchChannelType type) {
         return switch (type) {
-            case INTENT_DIRECTED -> 1;   // 意图检索优先级最高
-            case KEYWORD_ES -> 2;        // 关键词检索次之
-            case VECTOR_GLOBAL -> 3;     // 全局检索最低
+            case INTENT_DIRECTED -> 1;
+            case KEYWORD_ES -> 2;
+            case VECTOR_GLOBAL -> 3;
             default -> 99;
         };
     }

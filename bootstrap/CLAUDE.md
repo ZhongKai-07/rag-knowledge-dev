@@ -132,3 +132,5 @@ docker exec postgres psql -U postgres -d ragent -c "SQL语句"
 | `opensearch` | OpenSearch 地址、分析器、向量/文本权重 |
 | `rustfs` | 对象存储配置（S3 兼容） |
 | `sa-token` | 认证 Token 名称和有效期 |
+
+> **PR5 后补充口径（supersedes 上文"三层闸门"口径）**：`sources` / `suggestions` 的 relevance gate 已统一为 `hasRelevantKbEvidence = !distinctChunks.isEmpty() && maxScore >= rag.sources.min-top-score`（默认 0.55）。当前实际是 **4 层闸门**：(1) feature flag on → (2) `hasRelevantKbEvidence` → (3) `builder` 返回 cards 非空 → (4) `trySetCards` 成功才 `emitSources`。若本文上方仍写"三层闸门"，以此说明为准。
