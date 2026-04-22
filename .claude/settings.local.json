@@ -68,7 +68,16 @@
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__get_network_request",
       "Bash(git fetch:*)",
       "Bash(git stash:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git log *)",
+      "Bash(git ls-tree *)",
+      "Bash(git remote *)",
+      "Bash(git ls-remote *)",
+      "Bash(git update-ref *)",
+      "Bash(python -m markitdown \"E:\\\\AI Application\\\\智小北阶段性总结.pptx\")",
+      "Bash(pip install *)",
+      "Read(//tmp/**)",
+      "Bash(python -c ' *)"
     ]
   }
 }

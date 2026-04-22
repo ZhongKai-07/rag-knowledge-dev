@@ -1,245 +1,160 @@
-<mxfile host="app.diagrams.net" modified="2026-04-14T00:00:00.000Z" agent="claude-code" version="24.7.17">
-  <diagram id="aws-deploy" name="AWS 物理部署图">
-    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1200" math="0" shadow="0">
-      <root>
-        <mxCell id="0" />
-        <mxCell id="1" parent="0" />
-
-        <!-- Title -->
-        <mxCell id="title" value="HT KnowledgeBase — AWS 物理部署示意图" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="40" y="20" width="1620" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="subtitle" value="简化方案：去 RocketMQ（Spring Event 替代）；BDA 以 SNS Webhook 回调接入（虚线表示未来）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=2;fontColor=#666666" vertex="1" parent="1">
-          <mxGeometry x="40" y="48" width="1620" height="20" as="geometry" />
-        </mxCell>
-
-        <!-- User / Internet -->
-        <mxCell id="user" value="👤 End User&#10;(Browser / Mobile)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=12;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="60" y="100" width="140" height="60" as="geometry" />
-        </mxCell>
-
-        <!-- AWS Cloud outer box -->
-        <mxCell id="aws-cloud" value="AWS Cloud (Region: ap-east-1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F58536;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;dashed=0;" vertex="1" parent="1">
-          <mxGeometry x="240" y="90" width="1420" height="1080" as="geometry" />
-        </mxCell>
-
-        <!-- Route 53 -->
-        <mxCell id="route53" value="Route 53&#10;(DNS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="270" y="125" width="110" height="50" as="geometry" />
-        </mxCell>
-
-        <!-- CloudFront -->
-        <mxCell id="cloudfront" value="CloudFront&#10;(CDN + HTTPS 终结)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="410" y="125" width="150" height="50" as="geometry" />
-        </mxCell>
-
-        <!-- S3 Web -->
-        <mxCell id="s3-web" value="S3 Bucket&#10;ragent-web&#10;(React 静态资源)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="600" y="115" width="130" height="70" as="geometry" />
-        </mxCell>
-
-        <!-- VPC box -->
-        <mxCell id="vpc" value="VPC (10.0.0.0/16)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1565C0;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="270" y="220" width="1370" height="760" as="geometry" />
-        </mxCell>
-
-        <!-- Public Subnet -->
-        <mxCell id="public-subnet" value="Public Subnet (跨 AZ-a / AZ-b)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1976D2;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="300" y="260" width="1310" height="110" as="geometry" />
-        </mxCell>
-
-        <!-- ALB -->
-        <mxCell id="alb" value="Application Load Balancer&#10;(HTTPS, SSE idle=120s)&#10;/api/ragent/* + /webhook/bda" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="330" y="295" width="220" height="65" as="geometry" />
-        </mxCell>
-
-        <!-- NAT -->
-        <mxCell id="nat" value="NAT Gateway&#10;(出公网)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="1430" y="295" width="150" height="65" as="geometry" />
-        </mxCell>
-
-        <!-- Private App Subnet -->
-        <mxCell id="app-subnet" value="Private Subnet — App Tier (跨 AZ-a / AZ-b)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#3949AB;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="300" y="400" width="1310" height="230" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap ASG -->
-        <mxCell id="bootstrap" value="EC2 Auto Scaling Group&#10;━━━━━━━━━━━━&#10;Bootstrap (Spring Boot 9090)&#10;• 无状态 HTTP + SSE&#10;• Apache Tika 内嵌（当前）&#10;• Spring Event + @Async&#10;  (替代 RocketMQ)&#10;• 恢复 Job 扫 status=RUNNING&gt;10min&#10;• 优雅停机 drain 线程池" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F57F17;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="330" y="440" width="280" height="170" as="geometry" />
-        </mxCell>
-
-        <!-- MCP -->
-        <mxCell id="mcp" value="EC2: MCP Server&#10;━━━━━━━━━━━━&#10;• 内网仅对 Bootstrap 暴露&#10;• 不接 ALB&#10;• Model Context Protocol&#10;  工具调用后端" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F57F17;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="650" y="440" width="230" height="130" as="geometry" />
-        </mxCell>
-
-        <!-- In-process Spring Event annotation -->
-        <mxCell id="spring-event" value="🔁 进程内事件总线&#10;━━━━━━━━━━━━&#10;ApplicationEventPublisher&#10;→ @EventListener @Async&#10;━━━━━━━━━━━━&#10;• DocChunkRequestedEvent&#10;• BdaCompletedEvent (future)&#10;&#10;持久化态 = t_knowledge_document.status&#10;事件只是触发器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=0;" vertex="1" parent="1">
-          <mxGeometry x="920" y="440" width="240" height="170" as="geometry" />
-        </mxCell>
-
-        <!-- VPC Endpoint -->
-        <mxCell id="vpce-s3" value="VPC Endpoint&#10;(S3 Gateway)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CFD8DC;strokeColor=#455A64;fontSize=10;" vertex="1" parent="1">
-          <mxGeometry x="1200" y="460" width="130" height="50" as="geometry" />
-        </mxCell>
-
-        <mxCell id="vpce-bedrock" value="VPC Endpoint&#10;(Bedrock / BDA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CFD8DC;strokeColor=#455A64;fontSize=10;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="1200" y="540" width="130" height="50" as="geometry" />
-        </mxCell>
-
-        <!-- Private Data Subnet -->
-        <mxCell id="data-subnet" value="Private Subnet — Data Tier (Multi-AZ, 无公网出口)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2F1;strokeColor=#00695C;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="300" y="660" width="1310" height="190" as="geometry" />
-        </mxCell>
-
-        <!-- RDS -->
-        <mxCell id="rds" value="RDS for PostgreSQL&#10;━━━━━━━━━━━━&#10;Multi-AZ 主备&#10;• 业务 + 会话 + 链路 + 评测&#10;• 非 pgvector 模式" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;align=center;" vertex="1" parent="1">
-          <mxGeometry x="340" y="700" width="230" height="130" as="geometry" />
-        </mxCell>
-
-        <!-- OpenSearch -->
-        <mxCell id="opensearch" value="Amazon OpenSearch Service&#10;━━━━━━━━━━━━&#10;3 Data + 3 Master (跨 3 AZ)&#10;• 1 KB = 1 Index&#10;• 向量检索 + security_level 过滤" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;align=center;" vertex="1" parent="1">
-          <mxGeometry x="620" y="700" width="260" height="130" as="geometry" />
-        </mxCell>
-
-        <!-- ElastiCache -->
-        <mxCell id="redis" value="ElastiCache for Redis&#10;━━━━━━━━━━━━&#10;• kb_access: 缓存&#10;• kb_security_level: 缓存&#10;• Redisson 分布式锁" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;align=center;" vertex="1" parent="1">
-          <mxGeometry x="930" y="700" width="230" height="130" as="geometry" />
-        </mxCell>
-
-        <!-- Note: no RocketMQ -->
-        <mxCell id="no-mq" value="❌ 取消 RocketMQ&#10;━━━━━━━━━━━━&#10;改用 Spring Event&#10;+ DB 状态机&#10;+ 恢复补偿 Job" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="1200" y="700" width="190" height="130" as="geometry" />
-        </mxCell>
-
-        <!-- S3 docs (inside VPC area but separate box) -->
-        <mxCell id="s3-docs" value="S3 Bucket&#10;ragent-docs&#10;(用户上传原文件)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=11;align=center;" vertex="1" parent="1">
-          <mxGeometry x="350" y="880" width="180" height="80" as="geometry" />
-        </mxCell>
-
-        <!-- BDA (future, dashed) -->
-        <mxCell id="bda" value="AWS Bedrock Data Automation&#10;(BDA) — 未来替代 Tika&#10;━━━━━━━━━━━━&#10;异步任务：提交 jobId → 完成时 SNS 通知&#10;回调路径：SNS → ALB /webhook/bda&#10;→ Spring Event → 继续 Chunker/Embedder" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=1;dashPattern=6 4;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="620" y="880" width="380" height="80" as="geometry" />
-        </mxCell>
-
-        <!-- Bedrock LLM optional -->
-        <mxCell id="bedrock-llm" value="AWS Bedrock&#10;(可选 LLM Provider)&#10;Claude / Titan / Nova" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="1050" y="880" width="200" height="80" as="geometry" />
-        </mxCell>
-
-        <!-- External AI box -->
-        <mxCell id="external-ai" value="External AI Providers (公网经 NAT 出)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#AD1457;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="300" y="1000" width="1310" height="110" as="geometry" />
-        </mxCell>
-
-        <mxCell id="dashscope" value="阿里云 百炼&#10;(DashScope)&#10;dashscope.aliyuncs.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8BBD0;strokeColor=#AD1457;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="340" y="1035" width="200" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="siliconflow" value="SiliconFlow&#10;api.siliconflow.cn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8BBD0;strokeColor=#AD1457;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="580" y="1035" width="200" height="60" as="geometry" />
-        </mxCell>
-
-        <mxCell id="mcp-ext" value="第三方 MCP 工具&#10;(HTTP/SSE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8BBD0;strokeColor=#AD1457;fontSize=11;" vertex="1" parent="1">
-          <mxGeometry x="820" y="1035" width="200" height="60" as="geometry" />
-        </mxCell>
-
-        <!-- ===== Edges ===== -->
-
-        <!-- user → route53 → cloudfront -->
-        <mxCell id="e1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="user" target="cloudfront">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- cloudfront → s3-web -->
-        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" edge="1" parent="1" source="cloudfront" target="s3-web">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- cloudfront → ALB -->
-        <mxCell id="e3" value="/api/ragent/*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="cloudfront" target="alb">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- ALB → Bootstrap -->
-        <mxCell id="e4" value="HTTP / SSE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="alb" target="bootstrap">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → MCP -->
-        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;dashed=0;" edge="1" parent="1" source="bootstrap" target="mcp">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → Spring Event (annotation link) -->
-        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;html=1;dashed=1;strokeColor=#6A1B9A;" edge="1" parent="1" source="bootstrap" target="spring-event">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → RDS -->
-        <mxCell id="e7" value="JDBC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="bootstrap" target="rds">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → OpenSearch -->
-        <mxCell id="e8" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="bootstrap" target="opensearch">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → Redis -->
-        <mxCell id="e9" value="RESP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="bootstrap" target="redis">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → VPC Endpoint S3 → s3-docs -->
-        <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" edge="1" parent="1" source="bootstrap" target="vpce-s3">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e11" value="S3 API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="vpce-s3" target="s3-docs">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → NAT → external -->
-        <mxCell id="e12" value="via NAT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" edge="1" parent="1" source="bootstrap" target="nat">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" edge="1" parent="1" source="nat" target="dashscope">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" edge="1" parent="1" source="nat" target="siliconflow">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" edge="1" parent="1" source="nat" target="mcp-ext">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Bootstrap → VPCE Bedrock → BDA / Bedrock (future, dashed) -->
-        <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;dashed=1;strokeColor=#6A1B9A;" edge="1" parent="1" source="bootstrap" target="vpce-bedrock">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e17" value="submit BDA job" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;dashed=1;strokeColor=#6A1B9A;" edge="1" parent="1" source="vpce-bedrock" target="bda">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;dashed=1;strokeColor=#6A1B9A;" edge="1" parent="1" source="vpce-bedrock" target="bedrock-llm">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- BDA → SNS → ALB webhook (future) -->
-        <mxCell id="e19" value="SNS → POST /webhook/bda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;dashed=1;strokeColor=#6A1B9A;curved=1;" edge="1" parent="1" source="bda" target="alb">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- BDA reads S3 docs -->
-        <mxCell id="e20" value="read" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;dashed=1;strokeColor=#6A1B9A;" edge="1" parent="1" source="bda" target="s3-docs">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-
-        <!-- Legend -->
-        <mxCell id="legend" value="图例：&#10;━ 实线 = 当前方案    ┄ 虚线 = 未来阶段 (BDA / Bedrock)&#10;🟧 计算 (EC2)   🟩 托管数据   🟦 网络   ⬜ S3   🟪 Event / AI&#10;Spring Event 在 Bootstrap JVM 内，不跨实例：依赖 t_knowledge_document.status + 恢复 Job 兜底" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#9E9E9E;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" vertex="1" parent="1">
-          <mxGeometry x="60" y="1000" width="170" height="110" as="geometry" />
-        </mxCell>
-
-      </root>
-    </mxGraphModel>
-  </diagram>
+<mxfile host="65bd71144e">
+    <diagram id="aws-deploy" name="AWS 物理部署图">
+        <mxGraphModel dx="954" dy="688" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="HT KnowledgeBase — AWS 物理部署示意图" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="40" y="20" width="1620" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="简化方案：去 RocketMQ（Spring Event 替代）；BDA 以 SNS Webhook 回调接入（虚线表示未来）" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontStyle=2;fontColor=#666666" parent="1" vertex="1">
+                    <mxGeometry x="40" y="48" width="1620" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="user" value="👤 End User&#xa;(Browser / Mobile)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;fontSize=12;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="100" width="140" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="aws-cloud" value="AWS Cloud (Region: ap-east-1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#F58536;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;dashed=0;" parent="1" vertex="1">
+                    <mxGeometry x="240" y="90" width="1420" height="1080" as="geometry"/>
+                </mxCell>
+                <mxCell id="route53" value="Route 53&#xa;(DNS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#2E7D32;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="270" y="125" width="110" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="cloudfront" value="CloudFront&#xa;(CDN + HTTPS 终结)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="125" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3-web" value="S3 Bucket&#xa;ragent-web&#xa;(React 静态资源)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="115" width="130" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="vpc" value="VPC (10.0.0.0/16)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#1565C0;fontSize=13;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="270" y="220" width="1370" height="760" as="geometry"/>
+                </mxCell>
+                <mxCell id="public-subnet" value="Public Subnet (跨 AZ-a / AZ-b)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1976D2;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="260" width="1310" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="alb" value="Application Load Balancer&#xa;(HTTPS, SSE idle=120s)&#xa;/api/ragent/* + /webhook/bda" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="295" width="220" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="nat" value="NAT Gateway&#xa;(出公网)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1430" y="295" width="150" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="app-subnet" value="Private Subnet — App Tier (跨 AZ-a / AZ-b)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#3949AB;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="400" width="1310" height="230" as="geometry"/>
+                </mxCell>
+                <mxCell id="bootstrap" value="EC2 Auto Scaling Group&#xa;━━━━━━━━━━━━&#xa;Bootstrap (Spring Boot 9090)&#xa;• 无状态 HTTP + SSE&#xa;• Apache Tika 内嵌（当前）&#xa;• Spring Event + @Async&#xa;  (替代 RocketMQ)&#xa;• 恢复 Job 扫 status=RUNNING&gt;10min&#xa;• 优雅停机 drain 线程池" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F57F17;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="440" width="280" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="mcp" value="EC2: MCP Server&#xa;━━━━━━━━━━━━&#xa;• 内网仅对 Bootstrap 暴露&#xa;• 不接 ALB&#xa;• Model Context Protocol&#xa;  工具调用后端" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F57F17;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="440" width="230" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="spring-event" value="🔁 进程内事件总线&#xa;━━━━━━━━━━━━&#xa;ApplicationEventPublisher&#xa;→ @EventListener @Async&#xa;━━━━━━━━━━━━&#xa;• DocChunkRequestedEvent&#xa;• BdaCompletedEvent (future)&#xa;&#xa;持久化态 = t_knowledge_document.status&#xa;事件只是触发器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=0;" parent="1" vertex="1">
+                    <mxGeometry x="920" y="440" width="240" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="vpce-s3" value="VPC Endpoint&#xa;(S3 Gateway)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CFD8DC;strokeColor=#455A64;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1200" y="460" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="vpce-bedrock" value="VPC Endpoint&#xa;(Bedrock / BDA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CFD8DC;strokeColor=#455A64;fontSize=10;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="1200" y="540" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="data-subnet" value="Private Subnet — Data Tier (Multi-AZ, 无公网出口)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F2F1;strokeColor=#00695C;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="660" width="1310" height="190" as="geometry"/>
+                </mxCell>
+                <mxCell id="rds" value="RDS for PostgreSQL&#xa;━━━━━━━━━━━━&#xa;Multi-AZ 主备&#xa;• 业务 + 会话 + 链路 + 评测&#xa;• 非 pgvector 模式" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="340" y="700" width="230" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="opensearch" value="Amazon OpenSearch Service&#xa;━━━━━━━━━━━━&#xa;3 Data + 3 Master (跨 3 AZ)&#xa;• 1 KB = 1 Index&#xa;• 向量检索 + security_level 过滤" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="700" width="260" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="redis" value="ElastiCache for Redis&#xa;━━━━━━━━━━━━&#xa;• kb_access: 缓存&#xa;• kb_security_level: 缓存&#xa;• Redisson 分布式锁" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="930" y="700" width="230" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="no-mq" value="❌ 取消 RocketMQ&#xa;━━━━━━━━━━━━&#xa;改用 Spring Event&#xa;+ DB 状态机&#xa;+ 恢复补偿 Job" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="1200" y="700" width="190" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="s3-docs" value="S3 Bucket&#xa;ragent-docs&#xa;(用户上传原文件)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ECEFF1;strokeColor=#455A64;fontSize=11;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="880" width="180" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="bda" value="AWS Bedrock Data Automation&#xa;(BDA) — 未来替代 Tika&#xa;━━━━━━━━━━━━&#xa;异步任务：提交 jobId → 完成时 SNS 通知&#xa;回调路径：SNS → ALB /webhook/bda&#xa;→ Spring Event → 继续 Chunker/Embedder" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=1;dashPattern=6 4;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="880" width="380" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="bedrock-llm" value="AWS Bedrock&#xa;(可选 LLM Provider)&#xa;Claude / Titan / Nova" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#6A1B9A;fontSize=11;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="1050" y="880" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="external-ai" value="External AI Providers (公网经 NAT 出)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#AD1457;fontSize=12;fontStyle=1;verticalAlign=top;align=left;spacingLeft=10;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="1000" width="1310" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="dashscope" value="阿里云 百炼&#xa;(DashScope)&#xa;dashscope.aliyuncs.com" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8BBD0;strokeColor=#AD1457;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="340" y="1035" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="siliconflow" value="SiliconFlow&#xa;api.siliconflow.cn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8BBD0;strokeColor=#AD1457;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="1035" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="mcp-ext" value="第三方 MCP 工具&#xa;(HTTP/SSE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F8BBD0;strokeColor=#AD1457;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="1035" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;labelBackgroundColor=#ffffff;" parent="1" source="user" target="cloudfront" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" parent="1" source="cloudfront" target="s3-web" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="/api/ragent/*" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" parent="1" source="cloudfront" target="alb" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="HTTP / SSE" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" parent="1" source="alb" target="bootstrap" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;dashed=0;" parent="1" source="bootstrap" target="mcp" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=open;html=1;dashed=1;strokeColor=#6A1B9A;" parent="1" source="bootstrap" target="spring-event" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" value="JDBC" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" parent="1" source="bootstrap" target="rds" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" parent="1" source="bootstrap" target="opensearch" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" value="RESP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" parent="1" source="bootstrap" target="redis" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" parent="1" source="bootstrap" target="vpce-s3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e11" value="S3 API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" parent="1" source="vpce-s3" target="s3-docs" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e12" value="via NAT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;" parent="1" source="bootstrap" target="nat" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" parent="1" source="nat" target="dashscope" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" parent="1" source="nat" target="siliconflow" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;" parent="1" source="nat" target="mcp-ext" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;dashed=1;strokeColor=#6A1B9A;" parent="1" source="bootstrap" target="vpce-bedrock" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e17" value="submit BDA job" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;dashed=1;strokeColor=#6A1B9A;" parent="1" source="vpce-bedrock" target="bda" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;dashed=1;strokeColor=#6A1B9A;" parent="1" source="vpce-bedrock" target="bedrock-llm" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e19" value="SNS → POST /webhook/bda" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;dashed=1;strokeColor=#6A1B9A;curved=1;" parent="1" source="bda" target="alb" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e20" value="read" style="edgeStyle=orthogonalEdgeStyle;rounded=0;endArrow=classic;html=1;fontSize=10;dashed=1;strokeColor=#6A1B9A;" parent="1" source="bda" target="s3-docs" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="图例：&#xa;━ 实线 = 当前方案    ┄ 虚线 = 未来阶段 (BDA / Bedrock)&#xa;🟧 计算 (EC2)   🟩 托管数据   🟦 网络   ⬜ S3   🟪 Event / AI&#xa;Spring Event 在 Bootstrap JVM 内，不跨实例：依赖 t_knowledge_document.status + 恢复 Job 兜底" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#9E9E9E;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingTop=6;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="1000" width="170" height="110" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
 </mxfile>
