@@ -14,7 +14,7 @@ import { getKnowledgeBases, type KnowledgeBase } from "@/services/knowledgeServi
 
 export function ChatInput() {
   const [value, setValue] = React.useState("");
-  const [isFocused, setIsFocused] = React.useState(false);
+
   const [knowledgeBases, setKnowledgeBases] = React.useState<KnowledgeBase[]>([]);
   const isComposingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
@@ -78,10 +78,10 @@ export function ChatInput() {
     <div className="space-y-4">
       <div
         className={cn(
-          "relative flex flex-col rounded-2xl border bg-surface px-4 pt-3 pb-2 transition-all duration-200",
-          isFocused
-            ? "border-line-3 shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
-            : "border-line hover:border-line-3"
+          "relative flex flex-col rounded-2xl border bg-white px-4 pt-3 pb-2 transition-all duration-200",
+          "border-vio-line hover:border-vio-accent-subtle",
+          "focus-within:border-vio-accent focus-within:shadow-halo",
+          "focus-within:ring-2 focus-within:ring-vio-accent-subtle",
         )}
       >
         <div className="relative">
@@ -92,8 +92,6 @@ export function ChatInput() {
             placeholder={deepThinkingEnabled ? "输入需要深度分析的问题..." : "输入你的问题..."}
             className="max-h-40 min-h-[44px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 pr-2 text-[15px] text-ink-2 shadow-none placeholder:text-ink-4 focus-visible:ring-0"
             rows={1}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
             onCompositionStart={() => {
               isComposingRef.current = true;
             }}
@@ -121,10 +119,11 @@ export function ChatInput() {
             disabled={isStreaming}
             aria-pressed={deepThinkingEnabled}
             className={cn(
-              "rounded-lg border px-3 py-1.5 text-xs font-medium transition-all",
+              "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium",
+              "transition-colors",
               deepThinkingEnabled
-                ? "border-brand-faint bg-brand-subtle text-brand"
-                : "border-transparent bg-surface-3 text-ink-4 hover:bg-surface-4",
+                ? "border-vio-accent-subtle bg-[var(--vio-accent-mist)] text-vio-accent"
+                : "border-vio-line bg-transparent text-vio-ink/60 hover:bg-[var(--vio-accent-mist)] hover:text-vio-accent",
               isStreaming && "cursor-not-allowed opacity-60"
             )}
           >
@@ -191,7 +190,7 @@ export function ChatInput() {
               isStreaming
                 ? "bg-danger-subtle text-danger hover:bg-danger-border"
                 : hasContent
-                  ? "bg-brand-muted text-brand-fg hover:bg-brand"
+                  ? "bg-gradient-to-br from-[var(--vio-accent)] to-[var(--vio-accent-2)] text-white shadow-sm hover:shadow-halo"
                   : "cursor-not-allowed bg-surface-3 text-ink-5"
             )}
           >
