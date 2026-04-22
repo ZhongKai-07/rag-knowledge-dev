@@ -7,6 +7,7 @@ import { Sources } from "@/components/chat/Sources";
 import { ThinkingIndicator } from "@/components/chat/ThinkingIndicator";
 import { cn } from "@/lib/utils";
 import { useChatStore } from "@/stores/chatStore";
+import { CITATION_HIGHLIGHT_MS } from "@/utils/citationAst";
 import type { Message } from "@/types";
 
 interface MessageItemProps {
@@ -42,7 +43,7 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
       timerRef.current = window.setTimeout(() => {
         setHighlightedIndex(null);
         timerRef.current = null;
-      }, 1500);
+      }, CITATION_HIGHLIGHT_MS);
     },
     [message.sources]
   );
