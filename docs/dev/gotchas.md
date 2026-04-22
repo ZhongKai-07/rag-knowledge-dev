@@ -110,3 +110,19 @@
 3. 应归入哪一组？（按上方 7 大主题，找不到就新起一组）
 
 追加格式：`**症状 / 上下文**：...。**根因**：...。**规则 / 修复**：...`
+
+---
+
+## Violet Aurora Gradient Budget（2026-04）
+
+**规则**：`aurora.css` 里的 `.vio-aurora-*` 类只能在以下白名单内出现，违者 PR 必须被拒回：
+1. `WelcomeScreen` hero 渐变标题
+2. `WelcomeScreen` 角落 halo
+3. `ChatInput` / `WelcomeScreen` 输入框 focus 光晕
+4. `CitationBadge` n=1 主引用
+5. `Sidebar` HT logo monogram
+6. `Sidebar` "新建对话" 卡 halo + 流式光标
+
+**为什么**：历史教训 — 渐变随 PR 叠加会快速退化为 Canva 风彩虹。这 6 个点是经设计师论证的 signature moment，其他地方一律用实色 vio-accent 族。
+
+**执行**：code review 时搜索 `vio-aurora` 类的新增位置，对照上面白名单。
