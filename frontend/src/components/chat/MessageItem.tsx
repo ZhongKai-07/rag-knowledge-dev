@@ -63,8 +63,14 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
 
   if (isUser) {
     return (
-      <div className="flex">
-        <div className="user-message">
+      <div className="flex justify-end">
+        <div
+          className={cn(
+            "ml-auto max-w-[75%] rounded-[14px] rounded-br-[4px]",
+            "border border-vio-accent-subtle bg-[var(--vio-accent-mist)]",
+            "px-3.5 py-2.5 font-body text-sm text-vio-ink",
+          )}
+        >
           <p className="whitespace-pre-wrap break-words">{message.content}</p>
         </div>
       </div>
@@ -79,33 +85,33 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
           <ThinkingIndicator content={message.thinking} duration={message.thinkingDuration} />
         ) : null}
         {!isThinking && hasThinking ? (
-          <div className="overflow-hidden rounded-lg border border-[#BFDBFE] bg-[#DBEAFE]">
+          <div className="overflow-hidden rounded-lg border border-vio-accent-subtle bg-[var(--vio-accent-mist)]">
             <button
               type="button"
               onClick={() => setThinkingExpanded((prev) => !prev)}
-              className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-[#BFDBFE]/30"
+              className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-vio-accent-subtle/30"
             >
               <div className="flex flex-1 items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#BFDBFE]">
-                  <Brain className="h-4 w-4 text-[#2563EB]" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-vio-accent-subtle">
+                  <Brain className="h-4 w-4 text-vio-accent" />
                 </div>
-                <span className="text-sm font-medium text-[#2563EB]">深度思考</span>
+                <span className="text-sm font-medium text-vio-accent">深度思考</span>
                 {thinkingDuration ? (
-                  <span className="rounded-full bg-[#BFDBFE] px-2 py-0.5 text-xs text-[#2563EB]">
+                  <span className="rounded-full bg-vio-accent-subtle px-2 py-0.5 text-xs text-vio-accent">
                     {thinkingDuration}
                   </span>
                 ) : null}
               </div>
               <ChevronDown
                 className={cn(
-                  "h-4 w-4 text-[#3B82F6] transition-transform",
+                  "h-4 w-4 text-vio-accent-2 transition-transform",
                   thinkingExpanded && "rotate-180"
                 )}
               />
             </button>
             {thinkingExpanded ? (
-              <div className="border-t border-[#BFDBFE] px-4 pb-4">
-                <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[#1E40AF]">
+              <div className="border-t border-vio-accent-subtle px-4 pb-4">
+                <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-vio-ink/80">
                   {message.thinking}
                 </div>
               </div>
@@ -151,13 +157,13 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
             message.suggestedQuestions &&
             message.suggestedQuestions.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-xs text-muted-foreground">可能想问：</span>
+                <span className="text-xs text-vio-ink/50">可能想问：</span>
                 {message.suggestedQuestions.map((q, idx) => (
                   <button
                     key={idx}
                     type="button"
                     onClick={() => sendMessage(q)}
-                    className="rounded-full border border-border bg-background px-3 py-1 text-xs transition-colors hover:bg-accent hover:text-accent-foreground"
+                    className="rounded-full border border-vio-line bg-white px-3 py-1 text-xs transition-colors hover:border-vio-accent-subtle hover:bg-[var(--vio-accent-mist)] hover:text-vio-accent"
                   >
                     {q}
                   </button>
