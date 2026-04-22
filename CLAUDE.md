@@ -126,6 +126,7 @@ Upgrade scripts in `resources/database/`:
 - `upgrade_v1.5_to_v1.6.<env>.sql` — 给 `t_role` 加 `dept_id` 列并按环境回填（模板 `.template.sql` + 本地 `.local-dev.sql`；其他环境必须自建 `.<env>.sql`）
 - `upgrade_v1.6_to_v1.7.sql` — `t_role.dept_id SET NOT NULL`（前置校验空行）
 - `upgrade_v1.7_to_v1.8.sql` — 修 `t_knowledge_base.dept_id` 默认值 `'GLOBAL' → '1'`，并回填历史数据
+- `upgrade_v1.8_to_v1.9.sql` — 为 `t_message` 增加 `sources_json` 列（Answer Sources PR4 持久化）
 
 Full dev-environment wipe + rebuild (**dev only — destroys all data**):
 

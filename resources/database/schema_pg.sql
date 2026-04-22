@@ -163,6 +163,7 @@ CREATE TABLE t_message (
     content         TEXT        NOT NULL,
     thinking_content TEXT,
     thinking_duration BIGINT,
+    sources_json TEXT,
     create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted         SMALLINT    DEFAULT 0
@@ -580,6 +581,7 @@ COMMENT ON COLUMN t_message.role IS '角色：user/assistant';
 COMMENT ON COLUMN t_message.content IS '消息内容';
 COMMENT ON COLUMN t_message.thinking_content IS '深度思考内容（模型推理链）';
 COMMENT ON COLUMN t_message.thinking_duration IS '深度思考耗时（毫秒）';
+COMMENT ON COLUMN t_message.sources_json IS '答案引用来源快照（SourceCard[] 的 JSON 序列化），NULL 表示无引用';
 COMMENT ON COLUMN t_message.create_time IS '创建时间';
 COMMENT ON COLUMN t_message.update_time IS '更新时间';
 COMMENT ON COLUMN t_message.deleted IS '是否删除 0：正常 1：删除';
