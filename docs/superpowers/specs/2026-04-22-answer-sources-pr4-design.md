@@ -165,8 +165,15 @@ private List<SourceCard> sources;
  * 更新指定消息的 sources_json 列。messageId blank 时 no-op。
  * 其他异常由调用方 try/catch 降级处理。
  *
+ * <p><b>契约限制</b>：当前实现基于 {@code mapper.update(entity, lambdaUpdate)} +
+ * MyBatis Plus 默认 {@code NOT_NULL} 字段策略。传入 {@code json=null} 不会清空列，
+ * 而会被 MP 视作"跳过该字段"，UPDATE 实际为 no-op。PR4 的唯一调用方
+ * {@code StreamChatEventHandler.persistSourcesIfPresent} 只在 {@code cardsHolder}
+ * 非空时调用，因此 {@code json} 永远非空。若未来需要"显式清空"语义，
+ * 应改为 {@code LambdaUpdateWrapper.set(field, null)} 写法并同步扩测试。
+ *
  * @param messageId 消息 ID
- * @param json      SourceCard[] 的 JSON 序列化字符串；null 表示清空
+ * @param json      SourceCard[] 的 JSON 序列化字符串；调用方保证非空
  */
 void updateSourcesJson(String messageId, String json);
 ```
@@ -364,13 +371,25 @@ COMMENT ON COLUMN t_message.sources_json IS '答案引用来源快照（SourceCa
 
 ### 4.2 `schema_pg.sql`
 
-在 `CREATE TABLE t_message (...)` 块内加一行：
+**两处改动**（不是一处——此文件已有完整 t_message COMMENT 块，见 L575-585）：
+
+**(A) `CREATE TABLE t_message (...)` 块内加列**（L158 附近）：
 
 ```sql
 sources_json TEXT,
 ```
 
-位置：紧跟 `thinking_duration` 列定义；`COMMENT` 不在此文件（schema_pg.sql 为纯 DDL 风格，与 full_schema_pg.sql 职责划分）。
+位置：紧跟 `thinking_duration` 列定义。
+
+**(B) `-- t_message` COMMENT 块内加一行**（L575-585 附近）：
+
+```sql
+COMMENT ON COLUMN t_message.sources_json IS '答案引用来源快照（SourceCard[] 的 JSON 序列化），NULL 表示无引用';
+```
+
+位置：紧跟 `COMMENT ON COLUMN t_message.thinking_duration` 那行（或按该 table 既有 COMMENT 的字段顺序逻辑就位，保持可读）。
+
+**硬约束**：若实现者只改 CREATE TABLE 不补 COMMENT 块，`sources_json` 会成为 `t_message` 里**唯一**无 COMMENT 的列——违背仓库"所有业务列都带 COMMENT"惯例，造成注释漂移。
 
 ### 4.3 `full_schema_pg.sql`
 
@@ -397,7 +416,7 @@ sources_json TEXT,
 
 | 测试类 | 用例 |
 |---|---|
-| `ConversationMessageServiceSourcesTest`（新） | **写路径**：(1) `updateSourcesJson` 正常 → `mapper.update` 调用 1 次，entity 只带 `sourcesJson`（用 `ArgumentCaptor<ConversationMessageDO>` 抓取断言），wrapper 条件只断言"按 messageId 更新"这个核心契约（捕获 wrapper 断言 `getSqlSegment` 或 `getTargetSql` 里含 messageId；不断言 wrapper 内部 Lambda 元信息，避免测试脆）；(2) blank messageId → mapper 零交互。**读路径**：(3) `listMessages` + sources_json 有值 → VO.sources Jackson round-trip 等价；(4) `listMessages` + sources_json=`"not-a-json"` → VO.sources=null，不抛，log.warn 捕获（或放宽为"不 rethrow"）；(5) `listMessages` + sources_json=null → VO.sources=null |
+| `ConversationMessageServiceSourcesTest`（新） | **写路径**：(1) `updateSourcesJson` 正常 → `mapper.update` 调用 1 次，entity 只带 `sourcesJson`（用 `ArgumentCaptor<ConversationMessageDO>` 抓取并断言 `captured.getSourcesJson()` 为入参 JSON、其他字段为 null/default），wrapper 的 "按 messageId 更新" 核心契约分两层断言：**形状**用 `wrapper.getSqlSegment()` 验含 `id =` 谓词片段（不含 messageId 字面量，MP 生成的是占位符）；**绑定值**用 `wrapper.getParamNameValuePairs()` 取出占位符对应的实际绑定 value，断言等于 messageId。**不**用 `getTargetSql()`（此 API 非当前 MP 依赖版本的稳定断言点，且易落到完整 SQL 字符串上脆化）；(2) blank messageId → mapper 零交互。**读路径**：(3) `listMessages` + sources_json 有值 → VO.sources Jackson round-trip 等价；(4) `listMessages` + sources_json=`"not-a-json"` → VO.sources=null，不抛，log.warn 捕获（或放宽为"不 rethrow"）；(5) `listMessages` + sources_json=null → VO.sources=null |
 | `StreamChatEventHandlerPersistenceTest`（新） | (1) `cardsHolder` 未 set + messageId 非空 → `conversationMessageService.updateSourcesJson` **never called**；(2) `cardsHolder` 有值 + messageId 非空 → `updateSourcesJson` 调一次、传入的 JSON 能用同一 ObjectMapper 反序列化回等价 `List<SourceCard>`（语义正确性而非字节完全相等）；(3) messageId blank + holder 有值 → **never called**；(4) `updateSourcesJson` 抛 RuntimeException → `log.warn` 捕获，`updateTraceTokenUsage` / `mergeCitationStatsIntoTrace` / `saveEvaluationRecord` **仍被依次调用**，FINISH 事件 **仍被发送**（此用例是异常不阻塞链路的核心锁） |
 
 ### 5.2 前端单测（扩 `chatStore.test.ts`）
@@ -442,7 +461,7 @@ describe("selectSession mapping", () => {
 
 - **`StreamChatEventHandlerPersistenceTest`**：`traceId` 是 handler 构造期从 `RagTraceContext` 读取的 final 字段。必须在 `new StreamChatEventHandler(...)` 之前 `RagTraceContext.setTraceId("test-trace-id")`；`@AfterEach` 做 `RagTraceContext.clear()`。参照 PR3 的 `StreamChatEventHandlerCitationTest` setup 模式
 - **mock `ConversationMessageService`**：用 `@Mock` + `@InjectMocks` 或手工构造，注入到 `StreamChatHandlerParams.builder().conversationMessageService(mock).build()`
-- **mock `conversationMessageMapper`**：`ConversationMessageServiceSourcesTest` 里 mock `ConversationMessageMapper` 不 mock 整个 MyBatis 栈；用 `ArgumentCaptor<ConversationMessageDO>` 抓实际 entity 断言其 `sourcesJson`；用 `ArgumentCaptor<Wrapper<ConversationMessageDO>>` 抓 wrapper，但只断言通过 wrapper 调用 `getSqlSegment` / `getTargetSql` 包含 messageId 的核心条件，**不**过度断言 wrapper 的内部 Lambda 字段元信息
+- **mock `conversationMessageMapper`**：`ConversationMessageServiceSourcesTest` 里 mock `ConversationMessageMapper`，不 mock 整个 MyBatis 栈；用 `ArgumentCaptor<ConversationMessageDO>` 抓实际 entity 断言其 `sourcesJson`；用 `ArgumentCaptor<Wrapper<ConversationMessageDO>>` 抓 wrapper，**断言分两层**：(a) `wrapper.getSqlSegment()` 验包含 `id =` 谓词形状（不直接含 messageId 字面量，MP 生成的是 `#{ew.paramNameValuePairs.MPGENVAL1}` 占位符）；(b) `wrapper.getParamNameValuePairs()` 取出对应 key 的 value 断言等于 messageId。**不**用 `getTargetSql()`——该 API 非当前 MP 版本稳定断言点，且易在完整 SQL 字符串上脆化测试
 - **`log.warn` 捕获**：用 Logback ListAppender 捕获（项目已有测试用例模式，见 `RAGPromptServiceCitationTest` 或其他），或放宽为"仅断言没 rethrow"（更稳定）
 
 ---
