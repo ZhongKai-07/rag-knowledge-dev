@@ -19,14 +19,12 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
 
     // Option X：忠实渲染后端 cards 原序；后端已按 topScore desc clip 到 max-cards。
     // 前端不做 partition / cited-never-clipped 保护（cited ≤ cards.length 必然成立）。
-    const visible = cards;
-
-    if (visible.length === 0) return null;
+    if (cards.length === 0) return null;
 
     return (
       <div ref={ref} className="mt-3 space-y-1.5">
         <div className="text-xs font-medium text-muted-foreground">来源</div>
-        {visible.map(card => {
+        {cards.map(card => {
           const isExpanded = expanded.has(card.index);
           const isHighlighted = highlightedIndex === card.index;
           return (
