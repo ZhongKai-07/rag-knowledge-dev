@@ -46,7 +46,7 @@ export default function KbSharingSummary({ kbId }: Props) {
         <CardTitle className="text-base">共享管理</CardTitle>
         <Link
           to={`/admin/access?tab=sharing&kb=${kbId}`}
-          className="inline-flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-700"
+          className="inline-flex items-center gap-1 text-sm text-vio-accent hover:text-vio-accent"
         >
           在共享管理页修改
           <ArrowRight className="h-4 w-4" />

@@ -40,7 +40,7 @@ const SECURITY_OPTIONS = [
 const securityLevelBadgeClass = (level?: number | null) => {
   switch (level) {
     case 0: return "border-green-200 bg-green-50 text-green-700";
-    case 1: return "border-blue-200 bg-blue-50 text-blue-700";
+    case 1: return "border-[var(--vio-accent-subtle)] bg-[var(--vio-accent-mist)] text-vio-accent";
     case 2: return "border-amber-200 bg-amber-50 text-amber-700";
     case 3: return "border-red-200 bg-red-50 text-red-700";
     default: return "border-slate-200 bg-slate-50 text-slate-500";

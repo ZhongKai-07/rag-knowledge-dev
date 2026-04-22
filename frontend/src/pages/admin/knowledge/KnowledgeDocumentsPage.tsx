@@ -66,7 +66,7 @@ const SECURITY_OPTIONS = [
 const securityLevelBadgeClass = (level?: number | null) => {
   switch (level) {
     case 0: return "border-green-200 bg-green-50 text-green-700";
-    case 1: return "border-blue-200 bg-blue-50 text-blue-700";
+    case 1: return "border-[var(--vio-accent-subtle)] bg-[var(--vio-accent-mist)] text-vio-accent";
     case 2: return "border-amber-200 bg-amber-50 text-amber-700";
     case 3: return "border-red-200 bg-red-50 text-red-700";
     default: return "border-slate-200 bg-slate-50 text-slate-500";
@@ -513,7 +513,7 @@ export function KnowledgeDocumentsPage() {
                             onClick={() => handleToggleEnabled(doc)}
                             className={cn(
                               "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
-                              enabled ? "bg-blue-600" : "bg-slate-200"
+                              enabled ? "bg-[var(--vio-accent)]" : "bg-slate-200"
                             )}
                           >
                             <span
@@ -888,9 +888,9 @@ export function KnowledgeDocumentsPage() {
                       <div className="text-xs text-muted-foreground mb-1">其他</div>
                       <div className="text-lg font-semibold tabular-nums">{formatDuration(log.otherDuration)}</div>
                     </div>
-                    <div className="rounded-lg border bg-blue-50 p-3">
-                      <div className="text-xs text-blue-600 mb-1">总耗时</div>
-                      <div className="text-lg font-bold tabular-nums text-blue-600">{formatDuration(log.totalDuration)}</div>
+                    <div className="rounded-lg border bg-[var(--vio-accent-mist)] p-3">
+                      <div className="text-xs text-vio-accent mb-1">总耗时</div>
+                      <div className="text-lg font-bold tabular-nums text-vio-accent">{formatDuration(log.totalDuration)}</div>
                     </div>
                   </div>
 
@@ -1515,7 +1515,7 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
                             onClick={handleNoChunkToggle}
                             className={cn(
                               "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
-                              noChunk ? "bg-blue-600" : "bg-slate-200"
+                              noChunk ? "bg-[var(--vio-accent)]" : "bg-slate-200"
                             )}
                           >
                             <span
