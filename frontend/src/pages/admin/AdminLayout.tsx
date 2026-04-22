@@ -735,21 +735,26 @@ export function AdminLayout() {
         </header>
 
         <div className="admin-content">
-          <nav className="admin-breadcrumbs" aria-label="面包屑">
-            {breadcrumbs.map((item, index) => {
-              const isLast = index === breadcrumbs.length - 1;
-              return (
-                <span key={`${item.label}-${index}`} className="flex items-center gap-2">
-                  {item.to && !isLast ? (
-                    <Link to={item.to}>{item.label}</Link>
-                  ) : (
-                    <span className={isLast ? "text-slate-700" : undefined}>{item.label}</span>
-                  )}
-                  {!isLast && <span>/</span>}
-                </span>
-              );
-            })}
-          </nav>
+          {/* Breadcrumb as inline kicker — no full-width bar */}
+          <div className="px-8 pt-6 pb-2">
+            <div className="font-mono text-[9px] uppercase tracking-[2px] text-vio-accent-2">
+              {breadcrumbs.map((item, index) => {
+                const isLast = index === breadcrumbs.length - 1;
+                return (
+                  <span key={`${item.label}-${index}`}>
+                    {item.to && !isLast ? (
+                      <Link to={item.to} className="hover:text-vio-accent transition-colors">
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <span className={isLast ? "text-vio-ink/60" : undefined}>{item.label}</span>
+                    )}
+                    {!isLast && <span className="mx-1.5 text-vio-ink/30">/</span>}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
           <Outlet />
         </div>
       </div>
