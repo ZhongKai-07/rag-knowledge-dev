@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MessageItem } from "./MessageItem";
+import { CITATION_HIGHLIGHT_MS } from "@/utils/citationAst";
 import type { Message, SourceCard } from "@/types";
 
 // Mock useChatStore.sendMessage (MessageItem 依赖)
@@ -68,9 +69,9 @@ describe("<MessageItem /> citation interaction", () => {
     });
     // 点击后立即有 ring（Sources card 上的 div.ring-2，用 ring-\[#3B82F6\] 限定避免误匹配 focus-visible:ring-2）
     expect(container.querySelector("div[class*='ring-2']")).not.toBeNull();
-    // 前进 1500ms
+    // 前进 CITATION_HIGHLIGHT_MS（PR5 N-5 抽成常量 SSOT）
     act(() => {
-      vi.advanceTimersByTime(1500);
+      vi.advanceTimersByTime(CITATION_HIGHLIGHT_MS);
     });
     expect(container.querySelector("div[class*='ring-2']")).toBeNull();
   });

@@ -6,14 +6,11 @@ import { remarkCitations } from "./remarkCitations";
 import type { Root } from "mdast";
 
 function transform(markdown: string): Root {
-  const tree = unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .parse(markdown) as Root;
-  // 插件是 () => (tree) => void | tree；同步变换
-  const plugin = remarkCitations();
-  (plugin as any)(tree);
-  return tree;
+  // PR5 N-4：走完整 unified pipeline（.use(remarkCitations).runSync(...)），
+  // 插件在 unified context 下执行。之前的 `.parse()` + 手调插件形式让 plugin
+  // 绕过 context，未来若 remarkCitations 用到 context API 会 silently 失败。
+  const processor = unified().use(remarkParse).use(remarkGfm).use(remarkCitations);
+  return processor.runSync(processor.parse(markdown)) as Root;
 }
 
 function findAllCiteNodes(tree: any): Array<{ n?: number }> {

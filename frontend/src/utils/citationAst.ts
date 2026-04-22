@@ -18,3 +18,9 @@ export const CITATION = /\[\^(\d+)]/g;
 export const SKIP_PARENT_TYPES = new Set<string>([
   "inlineCode", "code", "link", "image", "linkReference",
 ]);
+
+/**
+ * 引用点击后 Sources 卡片高亮环的持续时间（毫秒）。
+ * PR3 引入为 MessageItem.tsx 里的 magic number，PR5 N-5 抽成常量 SSOT。
+ */
+export const CITATION_HIGHLIGHT_MS = 1500;

@@ -60,6 +60,7 @@ log/*.log
 log/error.log
 .claude/ralph-loop.local.md
 .claude/.ralph-loop.local.md
+.worktrees/
 
 ### Local screenshots / scratch images ###
 /*.png
