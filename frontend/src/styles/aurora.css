@@ -1,0 +1,79 @@
+/**
+ * Violet Aurora · Gradient utility classes
+ *
+ * ⚠️ 这些类只允许在 spec §4 定义的 6 个 signature moment 使用：
+ *   1. Hero "清晰的答案" 标题（.vio-aurora-text）
+ *   2. 欢迎屏角落 halo（.vio-aurora-halo）
+ *   3. 输入框 focus（.vio-aurora-focus）
+ *   4. 主 CitationBadge [^1]（.vio-aurora-chip）
+ *   5. Sidebar Logo monogram（.vio-aurora-fill）
+ *   6. "新建对话"卡 + 流式 cursor trail（.vio-aurora-halo）
+ *
+ * 新增使用位置必须在 spec §4 白名单中，否则 code review reject。
+ */
+
+.vio-aurora-text {
+  background: var(--vio-aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.vio-aurora-fill {
+  background: var(--vio-aurora);
+  color: #FFFFFF;
+}
+
+.vio-aurora-halo {
+  position: absolute;
+  inset: -40px;
+  background: radial-gradient(
+    circle at 30% 30%,
+    rgba(179,155,245,0.35) 0%,
+    rgba(255,184,212,0.25) 35%,
+    transparent 65%
+  );
+  filter: blur(30px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.vio-aurora-halo-2 {
+  position: absolute;
+  inset: -40px;
+  background: radial-gradient(
+    circle at 70% 70%,
+    rgba(157,195,255,0.30) 0%,
+    rgba(212,174,245,0.22) 40%,
+    transparent 70%
+  );
+  filter: blur(30px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.vio-aurora-chip {
+  background: var(--vio-aurora);
+  color: #FFFFFF;
+  box-shadow:
+    0 0 0 2px var(--vio-surface),
+    0 2px 6px rgba(139, 127, 239, 0.35);
+}
+
+.vio-aurora-focus:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--vio-surface),
+    0 0 0 4px var(--vio-accent-subtle),
+    0 8px 24px -8px rgba(139, 127, 239, 0.45);
+}
+
+/* 流式生成 cursor trail */
+.vio-aurora-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  vertical-align: text-bottom;
+  background: var(--vio-aurora);
+  animation: blink 1s step-end infinite;
+}
