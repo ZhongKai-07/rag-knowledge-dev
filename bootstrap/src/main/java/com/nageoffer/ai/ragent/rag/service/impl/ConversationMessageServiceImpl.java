@@ -118,4 +118,9 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
         ConversationSummaryDO conversationSummaryDO = BeanUtil.toBean(conversationSummary, ConversationSummaryDO.class);
         conversationSummaryMapper.insert(conversationSummaryDO);
     }
+
+    @Override
+    public void updateSourcesJson(String messageId, String json) {
+        // stub, will be implemented by a later task guided by failing test
+    }
 }
