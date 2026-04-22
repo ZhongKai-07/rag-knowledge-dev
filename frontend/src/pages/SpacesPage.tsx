@@ -113,40 +113,27 @@ export function SpacesPage() {
 
   const statCards = useMemo(
     () => [
-      {
-        label: "知识库",
-        value: kbCount,
-        icon: Database,
-        color: "text-blue-600",
-        bg: "bg-blue-50"
-      },
-      {
-        label: "总文档数",
-        value: totalDocs,
-        icon: FileText,
-        color: "text-emerald-600",
-        bg: "bg-emerald-50"
-      }
+      { label: "知识库",   value: kbCount,  icon: Database, color: "text-vio-accent",   bg: "bg-[var(--vio-accent-mist)]" },
+      { label: "总文档数", value: totalDocs, icon: FileText,  color: "text-vio-accent-2", bg: "bg-[var(--vio-accent-mist)]" }
     ],
     [kbCount, totalDocs]
   );
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
-      {/* Decorative background layers */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#F8FAFC] via-white to-brand-lighter" />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-40 [background-size:40px_40px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute -top-32 right-[-40px] h-72 w-72 rounded-full bg-gradient-radial from-brand-faint/60 via-transparent to-transparent blur-3xl animate-float" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-36 left-[-80px] h-80 w-80 rounded-full bg-gradient-radial from-[#FDE68A]/40 via-transparent to-transparent blur-3xl animate-float" />
+      {/* Violet Aurora background */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ backgroundColor: "var(--vio-surface)" }} />
+      <div className="vio-aurora-halo absolute -top-20 right-0 h-80 w-80" aria-hidden="true" />
+      <div className="vio-aurora-halo-2 absolute -bottom-20 left-0 h-80 w-80" aria-hidden="true" />
 
       {/* Top bar */}
-      <header className="relative sticky top-0 z-30 border-b border-line/60 bg-surface/80 backdrop-blur-md">
+      <header className="relative sticky top-0 z-30 border-b border-vio-line bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-bold text-brand-fg shadow-sm">
+            <div className="vio-aurora-fill flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm">
               HT
             </div>
-            <span className="text-base font-semibold text-ink">HT KnowledgeBase</span>
+            <span className="font-display text-base font-semibold text-vio-ink">HT KnowledgeBase</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -166,13 +153,13 @@ export function SpacesPage() {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-full border border-line bg-surface px-2.5 py-1.5 text-sm text-ink-3 shadow-sm transition-colors hover:bg-surface-2"
+                  className="flex items-center gap-2 rounded-full border border-vio-line bg-white px-2.5 py-1.5 text-sm text-vio-ink shadow-sm transition-colors hover:bg-[var(--vio-accent-mist)]"
                   aria-label="用户菜单"
                 >
                   <Avatar
                     name={user?.username || "用户"}
                     src={showAvatar ? avatarUrl : undefined}
-                    className="h-7 w-7 border-line bg-brand-lighter text-xs font-semibold text-brand"
+                    className="h-7 w-7 border-vio-line bg-[var(--vio-accent-subtle)] text-xs font-semibold text-vio-accent"
                   />
                   <span className="hidden sm:inline">{user?.username || "用户"}</span>
                 </button>
@@ -201,7 +188,7 @@ export function SpacesPage() {
             return (
               <div
                 key={card.label}
-                className="flex items-center gap-4 rounded-2xl border border-white/70 bg-white/70 p-5 shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-faint hover:shadow-md"
+                className="flex items-center gap-4 rounded-[14px] border border-vio-line bg-white p-5 shadow-paper transition-all hover:-translate-y-0.5 hover:border-vio-accent-subtle hover:shadow-halo"
               >
                 <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl shadow-sm ${card.bg}`}>
                   <Icon className={`h-5 w-5 ${card.color}`} />
@@ -219,8 +206,8 @@ export function SpacesPage() {
 
         {/* Section header */}
         <div className="mt-10 mb-5 flex items-center gap-3 animate-fade-up" style={{ animationDelay: "80ms", animationFillMode: "both" }}>
-          <h2 className="text-lg font-semibold text-ink">我的知识库</h2>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70 px-2.5 py-0.5 text-xs font-medium text-brand shadow-sm">
+          <h2 className="text-lg font-display font-medium text-vio-ink">我的知识库</h2>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-vio-line bg-[var(--vio-accent-mist)] px-2.5 py-0.5 text-xs font-medium text-vio-accent shadow-sm">
             <Database className="h-3 w-3" />
             {loading ? "..." : knowledgeBases.length}
           </span>
@@ -261,7 +248,7 @@ export function SpacesPage() {
                   key={kb.id}
                   type="button"
                   onClick={() => navigate(`/chat?kbId=${kb.id}`)}
-                  className="group flex cursor-pointer flex-col rounded-2xl border border-white/70 bg-white/70 p-5 text-left shadow-sm backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-faint hover:bg-surface hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ring"
+                  className="group flex cursor-pointer flex-col rounded-[16px] border border-vio-line bg-white p-5 text-left shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:border-vio-accent-subtle hover:shadow-halo focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vio-accent-subtle"
                 >
                   <div className="flex items-start gap-3">
                     <div
@@ -270,7 +257,7 @@ export function SpacesPage() {
                       {initial}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-ink group-hover:text-brand">
+                      <p className="truncate text-sm font-semibold text-vio-ink group-hover:text-vio-accent">
                         {kb.name}
                       </p>
                       <p className="mt-1 text-xs text-ink-4">
@@ -278,7 +265,7 @@ export function SpacesPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-line/60 pt-3 text-xs text-ink-4">
+                  <div className="mt-4 flex items-center justify-between border-t border-vio-line pt-3 text-xs text-vio-ink/50">
                     <span>创建于 {formatDate(kb.createTime)}</span>
                   </div>
                 </button>
