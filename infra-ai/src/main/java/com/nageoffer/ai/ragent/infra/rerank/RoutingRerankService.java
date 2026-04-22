@@ -21,6 +21,7 @@ import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.infra.enums.ModelCapability;
 import com.nageoffer.ai.ragent.infra.model.ModelRoutingExecutor;
 import com.nageoffer.ai.ragent.infra.model.ModelSelector;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Primary
+@Slf4j
 public class RoutingRerankService implements RerankService {
 
     private final ModelSelector selector;
@@ -52,11 +54,18 @@ public class RoutingRerankService implements RerankService {
 
     @Override
     public List<RetrievedChunk> rerank(String query, List<RetrievedChunk> candidates, int topN) {
+        log.info("[rerank-routing] entry: candidates={}, topN={}", candidates == null ? 0 : candidates.size(), topN);
         return executor.executeWithFallback(
                 ModelCapability.RERANK,
                 selector.selectRerankCandidates(),
                 target -> clientsByProvider.get(target.candidate().getProvider()),
-                (client, target) -> client.rerank(query, candidates, topN, target)
+                (client, target) -> {
+                    log.info("[rerank-routing] selected: provider={}, model={}, priority={}",
+                            target.candidate().getProvider(),
+                            target.candidate().getModel(),
+                            target.candidate().getPriority());
+                    return client.rerank(query, candidates, topN, target);
+                }
         );
     }
 }

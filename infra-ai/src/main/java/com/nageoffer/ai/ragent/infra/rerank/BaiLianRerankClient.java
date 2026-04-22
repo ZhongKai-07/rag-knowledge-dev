@@ -73,10 +73,14 @@ public class BaiLianRerankClient implements RerankClient {
             }
         }
 
-        if (topN <= 0 || dedup.size() <= topN) {
+        // 短路条件只保留 topN<=0。即使 dedup.size() <= topN，也必须调 API —— rerank 的核心职责
+        // 不只是"从多挑少"，更是"为每个 chunk 打绝对 relevance_score"，后者在任何情况下都不能省。
+        if (topN <= 0) {
+            log.info("[bailian-rerank] SKIP (topN<=0): dedup={}", dedup.size());
             return dedup;
         }
 
+        log.info("[bailian-rerank] CALLING API: dedup={}, topN={}", dedup.size(), topN);
         return doRerank(query, dedup, topN, target);
     }
 

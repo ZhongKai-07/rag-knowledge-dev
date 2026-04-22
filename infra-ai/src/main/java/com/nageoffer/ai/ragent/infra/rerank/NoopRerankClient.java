@@ -20,12 +20,14 @@ package com.nageoffer.ai.ragent.infra.rerank;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.infra.enums.ModelProvider;
 import com.nageoffer.ai.ragent.infra.model.ModelTarget;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class NoopRerankClient implements RerankClient {
 
     @Override
@@ -35,6 +37,8 @@ public class NoopRerankClient implements RerankClient {
 
     @Override
     public List<RetrievedChunk> rerank(String query, List<RetrievedChunk> candidates, int topN, ModelTarget target) {
+        log.info("[noop-rerank] NOOP client invoked (scores NOT updated): candidates={}, topN={}",
+                candidates == null ? 0 : candidates.size(), topN);
         if (candidates == null || candidates.isEmpty()) {
             return List.of();
         }

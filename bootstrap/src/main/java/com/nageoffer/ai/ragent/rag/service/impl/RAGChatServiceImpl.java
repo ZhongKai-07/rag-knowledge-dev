@@ -206,6 +206,14 @@ public class RAGChatServiceImpl implements RAGChatService {
                         Comparator.nullsLast(Comparator.reverseOrder())))
                 .limit(3)
                 .toList();
+        double maxScore = distinctChunks.stream()
+                .map(RetrievedChunk::getScore)
+                .filter(Objects::nonNull)
+                .mapToDouble(Float::doubleValue)
+                .max()
+                .orElse(-1D);
+        log.info("[sources-gate] distinctChunks={}, maxScore={}, minTopScore={}",
+                distinctChunks.size(), maxScore, ragSourcesProperties.getMinTopScore());
         boolean hasRelevantKbEvidence = hasRelevantKbEvidence(distinctChunks);
 
         boolean hasMcp = subIntents.stream()
