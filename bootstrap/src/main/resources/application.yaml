@@ -62,7 +62,7 @@ rag:
     timeout-ms: 5000
 
   sources:
-    enabled: false
+    enabled: true
     preview-max-chars: 200
     max-cards: 8
 
