@@ -18,9 +18,12 @@ AOP: 限流入队 + traceId 生成 + 链路追踪开始
    ├── KB 意图 → MultiChannelRetrievalEngine → 向量检索（过滤可访问 KB）→ 去重 → 重排
    └── MCP 意图 → MCPToolExecutor → 参数提取（LLM）→ 工具执行
  → 检索结果为空则短路返回"未检索到"
+ → (PR2) 三层闸门判定是否 build sources cards（flag / distinctChunks.isEmpty / cards.isEmpty）
+ → (PR2) SourceCardBuilder 聚合 → cardsHolder.trySet → callback.emitSources（同步 emit SOURCES 事件，在首个 MESSAGE 之前）
  → 上下文组装（RAGPromptService.buildStructuredMessages）
+   └─ (PR3) citation mode: cards 非空 + ctx.hasKb() → 内部派生 buildCitationEvidence (用 RetrievedChunk.text 全文) + appendCitationRule (动态白名单)
  → LLM 流式生成（SSE 推送，temperature 根据 MCP 动态调整）
- → onComplete: 回答写入记忆 + token 用量记录 + 评估数据采集
+ → onComplete: 回答写入记忆 + updateTraceTokenUsage (overwrite) → mergeCitationStatsIntoTrace (merge，PR3 新增，顺序硬性) + 评估数据采集
 AOP: 链路追踪结束 + 限流出队
 ```
 

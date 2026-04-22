@@ -224,6 +224,27 @@ curl -X PUT http://localhost:9201/_search/pipeline/ragent-hybrid-search-pipeline
 
 ---
 
+## 2026-04-22 | Answer Sources PR3 — Prompt 改造 + 引用渲染 + 质量埋点
+
+详情：[`2026-04-22-answer-sources-pr3.md`](./2026-04-22-answer-sources-pr3.md)
+
+**核心改动**：
+- 后端（5 改 + 4 测试）：`PromptContext.cards` 字段；`RAGPromptService` citation mode（内部派生 `resolvedKbEvidence = buildCitationEvidence(ctx)` + `resolvedSystemPrompt = appendCitationRule(base, cards)`，签名零变化）；新 `CitationStatsCollector`（静态工具，`scan(answer, cards) → (total, valid, invalid, coverage)`，`valid` 用 `indexSet.contains(n)` 非 `1..N`）；`StreamChatEventHandler.onComplete` 在 `updateTraceTokenUsage`（overwrite）**之后**插 `mergeCitationStatsIntoTrace()` 走 `mergeRunExtraData(traceId, Map)` 合写；`RAGChatServiceImpl.streamLLMResponse` 多接 `List<SourceCard> cards` 参数 threaded 进 `PromptContext`。
+- 前端（4 新 + 3 改）：`utils/citationAst.ts`（SSOT：CITATION 正则 + SKIP_PARENT_TYPES 5 元素）+ `utils/remarkCitations.ts`（mdast 三段 visit：footnoteReference→cite / footnoteDefinition→删 / text→CITATION 切片）；`CitationBadge.tsx`（蓝色 `<sup>`，`indexMap.get(n)` miss 降级为纯文本）；`Sources.tsx`（forwardRef，忠实渲染后端 cards 原序，`highlightedIndex` 触发 auto-expand）；`MarkdownRenderer` 以 `hasSources` **单一闸门对称 gate** `remarkPlugins` 和 `components.cite`（守 PR2 rollback 字节级契约）；`MessageItem` 承接 citation click → scrollIntoView + 1500ms 高亮 + unmount cleanup。
+- **架构 invariants**：(1) 零 ThreadLocal 新增（`onComplete` 用构造期 final traceId 字段）；(2) 后端 `indexSet.contains(n)` / 前端 `indexMap.get(n)` 永不用 `cards[n-1]`；(3) `mergeRunExtraData` 必须在 `updateTraceTokenUsage` 之后（`Mockito.InOrder` 锁）；(4) `remarkPlugins` 顺序硬固定 `[remarkGfm, remarkCitations]`；(5) `remarkCitations` 内部三段 visit 顺序（footnoteReference → footnoteDefinition → text）不能颠倒。
+- **SSE 契约零变化**：`citationStats` 落 `t_rag_trace_run.extra_data`，不走 SSE。
+- **feature flag**：`rag.sources.enabled=false` 默认；flag off 或 `hasSources=false` 时与 PR2 末态**字节级等价**，`MarkdownRenderer.test.tsx` case (a) 显式锁此契约。
+- Review round-1 补丁（commit `366a0b1`）：`CitationStatsCollector` SENTENCE 粗切注释 + 3 条测试补全（handler 非空无引用走完循环 / Sources 动态 rerender / MessageItem unmount cleanup）。
+- 测试总数：后端 18 新（7+6+4+1 扩）+ 前端 24 新 = 42 用例全绿。
+- **SRC-6 闭环**：本 PR §2.8 补 `streamChat_whenGuidanceClarificationPrompt_thenSkipSourcesEntirely` 锁 guidance 分支跳过 sources。
+- **SRC-9 新增 backlog**：`updateTraceTokenUsage` overwrite latent 坑（当前规避靠 InOrder 顺序）。
+
+**PR**：[#15](https://github.com/ZhongKai-07/rag-knowledge-dev/pull/15) → main（commit `c462de7`）；20 commits，+4453/-16 行（大部分是 spec + plan ~3000 行设计文档）。
+
+**Follow-ups**（留给 PR4/PR5）：N-3 `MarkdownRenderer.components` useMemo / N-4 `remarkCitations.test.ts` 改 unified pipeline / N-5 `CITATION_HIGHLIGHT_MS` 抽常量 / N-6 `Sources.visible` identity alias 清理。
+
+---
+
 ## 2026-04-19 | KB 删除级联回收
 
 详情：[`2026-04-19-kb-delete-cascade.md`](./2026-04-19-kb-delete-cascade.md)

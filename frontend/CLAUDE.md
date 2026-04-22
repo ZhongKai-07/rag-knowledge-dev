@@ -37,7 +37,9 @@ src/
 ├── App.tsx               ← `<RouterProvider>` + ErrorBoundary + Toast 的薄壳
 ├── router.tsx            ← 全部路由定义（React Router v6 createBrowserRouter）
 ├── utils/
-│   └── permissions.ts    ← 权限判断单一真相源（getPermissions 纯函数 + usePermissions hook）
+│   ├── permissions.ts    ← 权限判断单一真相源（getPermissions 纯函数 + usePermissions hook）
+│   ├── citationAst.ts    ← remarkCitations 共享常量 SSOT（CITATION 正则 + SKIP_PARENT_TYPES 5 元素）
+│   └── remarkCitations.ts ← mdast 三段 visit 插件（footnoteReference→cite / footnoteDefinition→删 / text→CITATION 切片）
 ├── router/
 │   └── guards.tsx        ← 路由守卫（RequireAuth / RequireAnyAdmin / RequireSuperAdmin / RequireMenuAccess）
 ├── pages/                ← 页面组件
@@ -61,7 +63,7 @@ src/
 ├── components/
 │   ├── ui/               ← 原子 UI（Radix UI 封装，shadcn/ui 模式）
 │   ├── layout/           ← MainLayout, Header, Sidebar
-│   ├── chat/             ← ChatInput, MessageItem, MarkdownRenderer 等
+│   ├── chat/             ← ChatInput, MessageItem, MarkdownRenderer, CitationBadge, Sources 等
 │   ├── session/          ← SessionList, SessionItem
 │   ├── admin/            ← CreateKnowledgeBaseDialog, SimpleLineChart
 │   └── common/           ← ErrorBoundary, Loading, Toast, Avatar
@@ -152,6 +154,11 @@ src/
 - **`KnowledgeChunksPage.tsx` 实际是文档详情页**：路由 `knowledge/:kbId/docs/:docId` 指向它（`router.tsx:124-125`），不是分块管理页。`KnowledgeDocumentsPage.tsx` 才是按 KB 分组的文档列表页。写涉及"文档详情"的改动时，改 `KnowledgeChunksPage.tsx`。
 - **Sidebar 在 `components/layout/Sidebar.tsx`**：不是 `components/chat/Sidebar.tsx`（后者不存在）。管理后台入口按钮（"管理后台"）用 `permissions.canSeeAdminMenu` 判断。
 - **chrome-devtools MCP "browser already running"**：上一次会话 Chrome 没干净退出（残留进程锁着 `~/.cache/chrome-devtools-mcp/chrome-profile`），`new_page` / `list_pages` 都会报错。修复：`powershell Stop-Process -Name chrome -Force` 后重试；会话被硬中断后几乎每次都会遇到。
+- **Answer Sources rollback 契约 — `hasSources` 必须对称 gate 两侧（PR3 起）**：`MarkdownRenderer.tsx` 里 `hasSources = Array.isArray(sources) && sources.length > 0` 这一个闸门必须**同时 gate** `remarkPlugins` 和 `components.cite` 两侧：`remarkPlugins = hasSources ? [remarkGfm, remarkCitations] : [remarkGfm]` + `components.cite` 只在 `hasSources=true` 时映射。任何一侧未 gate 都会在 flag off / sources 缺席场景下把字面 `[^n]`（教程 / 幻觉 marker）错误渲染成 `<sup>` 上标，破坏"flag off 等同 PR2"的字节级回滚契约。`MarkdownRenderer.test.tsx` 有显式锁此契约的 case。
+- **`remarkPlugins` 顺序硬固定 `[remarkGfm, remarkCitations]`**（PR3 起）：反了的话 remark-gfm 无法把已解析的定义块归并到 footnoteReference，`remarkCitations` 的 footnoteReference visit 走空。`remarkCitations` 内部三段 visit 顺序（footnoteReference → footnoteDefinition → text）也不能颠倒：第 2 步 splice 删除定义子树是第 3 步 text visit 不会误抓定义体内 `[^n]` 的前提。
+- **`[^n]` 渲染严禁字符串 preprocess**（PR3 起）：走 `remarkCitations` mdast 插件；`SKIP_PARENT_TYPES = {inlineCode, code, link, image, linkReference}` 硬约束，代码块 / 行内代码 / 链接 / 图片内的 `[^n]` 字面量保持原样不转 cite 节点。`citationAst.ts` 是 SSOT。
+- **前端 sources 判定用 `indexMap.get(n)` 永不用 `cards[n-1]`**（PR3 起）：`CitationBadge` 的 indexMap miss 时降级为纯 `<sup>[^n]</sup>` 无交互。`<Sources />` 忠实渲染后端 cards 原序，后端 `SourceCardBuilder` 已 clip 到 `max-cards=8`，前端不做 partition / 不做 cited-never-clipped 保护。
+- **`MessageItem` citation click 需 unmount cleanup**（PR3 起）：`handleCitationClick` 走 `setTimeout(1500ms)` 清 highlight，组件卸载时 `useEffect` cleanup 必须 `window.clearTimeout(timerRef.current)` 防止卸载后 setState。`MessageItem.test.tsx` 有 unmount timer cleanup 用例锁此行为。
 - **`tsc` 本地运行优先走 `node_modules/.bin/tsc --noEmit`**：`npx tsc` 在这个仓库偶尔会落到全局版 tsc 并报 "This is not the tsc command you are looking for" 同时 exit 0，看起来通过实际没跑。`npm run build`（走 vite）或 `.bin/tsc` 直调都能稳定检出类型错误。
 - **`npm run lint` 当前有 pre-existing break**（2026-04-21 确认）：ESLint 8.57.1 与 `plugin:react-refresh/recommended` 不兼容（后者的 flat-config `name` 属性被 legacy `.eslintrc.cjs` 拒绝）。**不是 PR2 引入的，在 clean branch 上也复现**。类型 gate 用 `./node_modules/.bin/tsc --noEmit`，测试 gate 用 `npm run test`，lint 修复另开任务。
 
@@ -183,7 +190,8 @@ src/
 | HTTP | Axios v1.7 |
 | 表格 | @tanstack/react-table v8 |
 | 表单 | react-hook-form + zod |
-| Markdown | react-markdown + remark-gfm |
+| Markdown | react-markdown + remark-gfm + unist-util-visit（PR3 起，remarkCitations 使用）|
+| Markdown 测试 | unified + remark-parse（devDeps，仅 remarkCitations.test 构造 mdast 树）|
 | 图表 | Recharts v3 |
 | 文件上传 | react-dropzone |
 | 虚拟滚动 | react-virtuoso |

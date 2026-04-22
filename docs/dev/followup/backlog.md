@@ -176,13 +176,9 @@
 **触发**：PR3 / PR4 用户层需要看到 KB 名称时再做。
 **优先级**：P3（additive，功能可推迟）。
 
-### SRC-6. 缺席矩阵"意图歧义 clarification" 行没显式单测
+### ~~SRC-6. 缺席矩阵"意图歧义 clarification" 行没显式单测~~ ✅ 已解决（2026-04-22 PR3）
 
-**位置**：`RAGChatServiceImplSourcesTest.java`
-**症状**：PR2 spec § 4 缺席矩阵 8 行里，`ctx.isEmpty()` / flag off / MCP-Only / cards empty / happy path / SystemOnly / trySet=false 都有单测，但"意图歧义 clarification"这一行没有。
-**现状**：结构上被 `RAGChatServiceImpl.java:168-172`（`guidanceDecision.isPrompt()` 早返回）隔离不会走到 sources 逻辑，但没有 Mockito 断言锁定。
-**修复**：10 行断言："当 `guidanceService.detectAmbiguity` 返回 prompt 结果，sourceCardBuilder.build never called + callback.emitSources never called"。
-**优先级**：P3（结构保护已有，断言补防御）。
+**处理**：PR3 §2.8 commit `6710085` 在 `RAGChatServiceImplSourcesTest` 追加 `streamChat_whenGuidanceClarificationPrompt_thenSkipSourcesEntirely` 测试（≤25 行）。当 `guidanceService.detectAmbiguity` 返回 prompt 结果，断言：(负向) `sourceCardBuilder` / `trySetCards` / `emitSources` / `llmService.streamChat` 均 `verifyNoInteractions` / `never()`；(正向) `callback.onContent(eq(prompt))` + `callback.onComplete` 各调用一次，确认 clarification 仍正常走流式返回。
 
 ### SRC-7. `npm run lint` 预存在 ESLint 破损
 

@@ -43,9 +43,10 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `MetadataFilterBuilder` | 按 kb 注入 `security_level` 过滤条件的可注入 bean（替代原 static `MultiChannelRetrievalEngine.buildMetadataFilters`）|
 | `VectorMetadataFields` | OpenSearch metadata 字段名常量单一真相源（`KB_ID` / `SECURITY_LEVEL` / `DOC_ID` / `CHUNK_INDEX`），避免字面量漂移 |
 | `SourceCardBuilder` | 按 `docId` 聚合 `List<RetrievedChunk>` → `List<SourceCard>` 的纯聚合 `@Service`。不理解业务分支（flag/推不推判定/SSE/落库/kbName 查询都不负责） |
-| `SourceCardsHolder` | set-once CAS 容器（`AtomicReference<List<SourceCard>>`）。编排层同步段 `trySet`，handler 异步 `onComplete`（PR4 才用）安全读快照，避开 ThreadLocal |
+| `SourceCardsHolder` | set-once CAS 容器（`AtomicReference<List<SourceCard>>`）。编排层同步段 `trySet`，handler 异步 `onComplete` 通过 `.get()` 读 `Optional` 快照（PR3 起 `mergeCitationStatsIntoTrace` 消费），避开 ThreadLocal |
+| `CitationStatsCollector` | 纯工具静态类（`rag/core/source/`）。`scan(answer, cards) → (total, valid, invalid, coverage)` record。`valid` 用 `indexSet.contains(n)` 非 `1..N` range（对齐前端 `indexMap.get(n)` 契约，支持未来非连续 index）；regex `CITATION = \[\^(\d+)]` + `SENTENCE = [^。！？]+[。！？]`；空输入 → `(0,0,0,0.0)` 不除零。SENTENCE 粗切对无终止标点尾段系统性低估 coverage |
 | `RagSourcesProperties` | `rag.sources.*` 配置（`enabled` / `previewMaxChars` / `maxCards`，PR2-PR4 期间默认 off，PR5 才翻 true） |
-| `RAGPromptService` | 根据检索结果和场景构建结构化 Prompt |
+| `RAGPromptService` | 根据检索结果和场景构建结构化 Prompt。PR3 起 `buildStructuredMessages` 内部派生 `citationMode = CollUtil.isNotEmpty(ctx.getCards()) && ctx.hasKb()`；私有 `buildCitationEvidence(ctx)` 正文从 `intentChunks.RetrievedChunk.getText()` 全文回收（**不**用 `SourceChunk.preview`）；私有 `appendCitationRule(base, cards)` 动态白名单（size=1 → `[^1]`，≥2 → `[^1] 至 [^N]`）。签名零变化，`cards==null||empty` → PR2 等价回归 |
 | `PromptTemplateUtils.fillSlots(template, Map)` | `{slot}` 模板填充工具（不要手写 `.replace()` 链） |
 | `VectorStoreService` | 向量存储接口（Milvus/OpenSearch/pgvector 三种实现） |
 | `DefaultIntentClassifier` | LLM 驱动的意图分类（Domain→Category→Topic 树） |
@@ -104,6 +105,8 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 - **回答来源 SSE 事件顺序**（2026-04-21 PR2）：`META → SOURCES → MESSAGE+ → FINISH → (SUGGESTIONS) → DONE`。`SOURCES` 由 `RAGChatServiceImpl` 在检索 + 聚合完成后、LLM 流启动前**同步 emit**（通过 `callback.emitSources(payload)`），**不走 handler 生命周期回调**。这保证 SSE 帧序：`sender.sendEvent` 同步，单个 `SseEmitter` 上 SOURCES 必然在首个 MESSAGE 之前到达。
 - **sources 推不推的判定锚点统一用 `distinctChunks.isEmpty()`**：不要用 `RetrievalContext.isEmpty()`（其定义是 `!hasMcp && !hasKb`，MCP-only 成功时 ctx 不 empty 但 KB chunks 为 0，会漏判），也不要用 `hasMcp`（会误伤 mixed KB+MCP 场景）。三层闸门：(1) `rag.sources.enabled=false` 或 (2) `distinctChunks.isEmpty()` → 不调 `SourceCardBuilder`；(3) builder 返回 `cards.isEmpty()` → 不 `trySet` / 不 `emit`。这三条都是"继续回答但跳过 sources"，**不是**"真早返回"（真早返回是 guidance/SystemOnly/`ctx.isEmpty()`）。
 - **orchestrator 决策，handler 机械发射**（PR2 起架构约定）：sources 的推不推 / flag 读取 / 三层闸门全在 `RAGChatServiceImpl`；`StreamChatEventHandler.emitSources(payload)` 是纯 delegate 到 `sender.sendEvent(SSEEventType.SOURCES.value(), payload)`，**不加 try/catch，不加业务分支**。后续改动保持边界：业务决策不要下沉到 handler，handler 的机械方法不要上浮到 orchestrator。
+- **`onComplete` 埋点顺序硬性**（PR3 起）：`updateTraceTokenUsage()`（overwrite 走 `updateRunExtraData(String)`）必须在 `mergeCitationStatsIntoTrace()`（merge 走 `mergeRunExtraData(Map)`）**之前**执行。颠倒会让 merge 结果被后续 overwrite 清掉。`StreamChatEventHandlerCitationTest` 用 `Mockito.InOrder` 锁此顺序。根治见 backlog SRC-9（把 `updateTraceTokenUsage` 也改成 merge 写）。`onComplete` 里 `traceId` 用构造期 `final` 字段，**不**在异步回调里读 `RagTraceContext.getTraceId()`（零 ThreadLocal 新增是 PR3 硬约束）。
+- **sources 判定锚点统一用 indexSet.contains(n)**（PR3 起后端侧）：`CitationStatsCollector.scan` 的 `valid` 判定走 `Set<Integer> validIndexes = cards.stream().map(SourceCard::getIndex).collect(toSet())` 的 `contains(n)`。**绝不**用 `cards[n-1]` 或 `1..N` range — 对齐前端 `indexMap.get(n)` 契约，保未来过滤后非连续 index 的语义不动。同理 `RAGPromptService.appendCitationRule` 当前用 `cards.size()` 作为 range 上界只在 `SourceCardBuilder` 保证 index 1..N 连续的前提下正确；若未来 cards 非连续必须改为 `max(card.index)`。
 
 ## 数据库访问
 

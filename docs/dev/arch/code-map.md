@@ -23,6 +23,10 @@ rag/                              ← RAG 核心域（最大，194 文件）
 │   ├── vector/                   ← 向量存储抽象（VectorStoreService/Admin 接口 + 3 种实现）
 │   ├── memory/                   ← 会话记忆（JDBC 存储 + 摘要）
 │   ├── prompt/                   ← Prompt 构建（RAGPromptService, ContextFormatter）
+│   │                                 PR3 起 RAGPromptService 内部私有 buildCitationEvidence + appendCitationRule（citation mode）
+│   ├── source/                   ← Answer Sources 聚合 + 质量埋点（PR2 起）
+│   │   ├── SourceCardBuilder     ← docId 聚合 → List<SourceCard>（纯聚合 @Service，按 topScore desc clip 到 max-cards）
+│   │   └── CitationStatsCollector ← PR3 静态工具，scan(answer, cards) → (total, valid, invalid, coverage) record
 │   ├── rewrite/                  ← 查询改写（QueryRewriteService）
 │   ├── guidance/                 ← 歧义引导（IntentGuidanceService）
 │   └── mcp/                      ← MCP 工具注册与执行
