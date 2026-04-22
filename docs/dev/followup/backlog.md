@@ -211,10 +211,47 @@
 
 ---
 
+### SRC-10. off-topic 问题仍展示低分 Sources 卡片（UX 反直觉）
+
+**位置**：`RAGChatServiceImpl.streamChat` 检索链 + `SourceCardBuilder`
+**症状**（2026-04-22 PR5 冒烟发现）：提一个完全 off-topic 的问题（如"太阳离地球有多远？"），LLM 正确识别"不相关"并在答案里声明"不属于华泰业务"+ 不产出 `[^n]`，但前端仍挂 2 张 Sources 卡（VMCSA 0.50 / GMRA 0.19）。
+**原因**：三层闸门按设计都过了——(1) flag on；(2) `distinctChunks` 非空（全局向量通道召回低分 chunk）；(3) `cards.isEmpty()=false`（按 docId 聚合后 2 个文档）。spec 契约上合规，但用户看到"答案说无关 + 还挂两张卡"会困惑。
+**修法候选**：
+- (a) **min-score threshold**（推荐）：`SourceCardBuilder` 或 `RagSourcesProperties` 加 `min-top-score: 0.6`（示例），`topScore < threshold` 的 docId 聚合直接丢。小改动，保守默认
+- (b) **citation-driven filtering**：LLM 答完如果 `citationTotal == 0`（answer 里根本无 `[^n]`），把 emitSources 压回或后推后清空。需要跨 orchestrator ↔ handler 边界，scope 大
+- (c) 接受现状 + UX 文案："以下是检索到的相关性较低的文档（AI 未采用）"
+**优先级**：P2（非安全 / 非功能阻塞，但生产用户层直接可见；(a) 半天可落，性价比高）。
+
+---
+
+### SEC-1. `MultiChannelRetrievalEngine` 疑似存在某个通道绕过 `AuthzPostProcessor`
+
+**位置**：`bootstrap/.../rag/core/retrieval/MultiChannelRetrievalEngine.java` + `AuthzPostProcessor`
+**症状**（2026-04-22 PR5 冒烟发现，捕获于 off-topic 问题的 trace 日志 `log/diagnostic/error_log/response_log.md`）：
+```
+AuthzPostProcessor: dropping chunk id=... – kbId is null/blank (non-OpenSearch backend?)
+... (连续 10 次)
+ERROR AuthzPostProcessor dropped 10 chunks – retriever filter failure detected. Scope type: Ids
+后置处理器 Authz 完成 - 输入: 10, 输出: 0, 变化: -10
+后置处理器 Deduplication 完成 - 输入: 0, 输出: 10, 变化: +10  ← ⚠️
+后置处理器 Rerank 完成 - 输入: 10, 输出: 10
+```
+Authz 全部 drop 之后，Deduplication 阶段"输入 0 输出 10"——去重按定义只能 ≤ 输入量。唯一解释：多通道架构下一个通道的 chunk **未经 Authz** 就进入了 Dedup 合并阶段。
+**潜在影响（安全红线）**：若真的存在通道绕过 Authz，则 `security_level` / `kbId` / `accessScope` fail-closed 三重防线对该通道**完全失效**——低权用户可能读到高密 chunk。
+**另一种可能**（较轻）：日志口径漂移——"输入 / 输出"记录的不是同一批 chunk，是多通道后处理器链各自跑完后 merge 阶段的记账混淆；实际安全控制正常，只是 log 误导。
+**待查**：
+1. 读 `MultiChannelRetrievalEngine` post-processor 链的挂载点，对每个 `RetrievalChannel` 确认 Authz 都挂了
+2. 如果确实挂了但日志仍显示绕过，查 Dedup 的实现是否错用了某个"未过滤"的源
+3. 同时 `kbId is null/blank (non-OpenSearch backend?)` 这条 WARN 本身说明 chunk metadata 缺 `kbId`——和 SL-1 / SRC-1 同族问题，即使 OpenSearch 后端也要查一下 index metadata 是否完整
+**优先级**：**P0**（安全嫌疑，PR5 合并后立刻查；即使最终定性为日志口径问题也要把日志改清楚）。
+
+---
+
 ## 🗂️ 引用
 
 - 审查来源：本地会话 2026-04-14 `/simplify`（3 个并行 agent：reuse / quality / efficiency）
 - 2026-04-21 新增 SRC-1~8：Answer Sources PR1+PR2 合并后记录的遗留项
 - 2026-04-22 新增 SRC-9：PR3 Answer Sources 合并前记录的 trace.extra_data overwrite 隐患
+- 2026-04-22 新增 SRC-10 + SEC-1：PR5 flag flip 后手动冒烟捕获的 off-topic UX + Authz 绕过嫌疑
 - 本轮已处理：参见 `log/dev_log/dev_log.md` 的 "2026-04-14" 条目
 - 本表不是 TODO 兜底，只记"有意识地留到下一轮"的东西。下一轮 feature 不必优先刷它。
