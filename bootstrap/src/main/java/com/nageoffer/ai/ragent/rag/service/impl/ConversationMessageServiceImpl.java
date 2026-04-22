@@ -121,6 +121,14 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
 
     @Override
     public void updateSourcesJson(String messageId, String json) {
-        // stub, will be implemented by a later task guided by failing test
+        if (StrUtil.isBlank(messageId)) {
+            return;
+        }
+        ConversationMessageDO update = ConversationMessageDO.builder()
+                .sourcesJson(json)
+                .build();
+        conversationMessageMapper.update(update,
+                Wrappers.lambdaUpdate(ConversationMessageDO.class)
+                        .eq(ConversationMessageDO::getId, messageId));
     }
 }
