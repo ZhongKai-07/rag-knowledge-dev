@@ -11,17 +11,34 @@ import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/pris
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useThemeStore } from "@/stores/themeStore";
+import { remarkCitations } from "@/utils/remarkCitations";
+import { CitationBadge } from "@/components/chat/CitationBadge";
+import type { SourceCard } from "@/types";
 
 interface MarkdownRendererProps {
   content: string;
+  sources?: SourceCard[];
+  onCitationClick?: (n: number) => void;
 }
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content, sources, onCitationClick }: MarkdownRendererProps) {
   const theme = useThemeStore((state) => state.theme);
+
+  const hasSources = Array.isArray(sources) && sources.length > 0;
+
+  const indexMap = React.useMemo(
+    () => new Map((sources ?? []).map((c) => [c.index, c])),
+    [sources]
+  );
+
+  const remarkPlugins = React.useMemo(
+    () => (hasSources ? [remarkGfm, remarkCitations] : [remarkGfm]),
+    [hasSources]
+  );
 
   return (
     <ReactMarkdown
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={remarkPlugins}
       components={{
         code({ inline, className, children, node, ...props }) {
           const match = /language-(\w+)/.exec(className || "");
@@ -161,7 +178,21 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
               {children}
             </ol>
           );
-        }
+        },
+        ...(hasSources ? {
+          cite({ node }: any) {
+            const raw = node?.properties?.["data-n"] ?? node?.properties?.dataN;
+            const n = Number(raw);
+            if (!Number.isFinite(n)) return null;
+            return (
+              <CitationBadge
+                n={n}
+                indexMap={indexMap}
+                onClick={onCitationClick ?? (() => {})}
+              />
+            );
+          },
+        } : {}),
       }}
       className="prose prose-gray max-w-none dark:prose-invert prose-headings:font-semibold prose-headings:text-[#1A1A1A] dark:prose-headings:text-[#EEEEEE] prose-p:text-[#333333] dark:prose-p:text-[#CCCCCC] prose-p:leading-relaxed prose-li:text-[#333333] dark:prose-li:text-[#CCCCCC] prose-strong:text-[#1A1A1A] dark:prose-strong:text-[#EEEEEE]"
     >

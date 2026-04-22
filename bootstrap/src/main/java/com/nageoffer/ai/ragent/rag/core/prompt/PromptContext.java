@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.rag.core.prompt;
 import cn.hutool.core.util.StrUtil;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.rag.core.intent.NodeScore;
+import com.nageoffer.ai.ragent.rag.dto.SourceCard;
 import lombok.Builder;
 import lombok.Data;
 
@@ -41,6 +42,8 @@ public class PromptContext {
     private List<NodeScore> kbIntents;
 
     private Map<String, List<RetrievedChunk>> intentChunks;
+
+    private List<SourceCard> cards;
 
     public boolean hasMcp() {
         return StrUtil.isNotBlank(mcpContext);

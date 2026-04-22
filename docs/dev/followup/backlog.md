@@ -205,9 +205,20 @@
 
 ---
 
+### SRC-9. `updateTraceTokenUsage` 的 overwrite 写法是 latent 坑
+
+**位置**：`StreamChatEventHandler.updateTraceTokenUsage`
+**症状**：走 `updateRunExtraData(traceId, String)` 覆盖写。任何在它**之前**已合入 `extra_data` 的字段都会被它清掉。
+**当前规避**：PR3 的 `mergeCitationStatsIntoTrace` 必须在 `updateTraceTokenUsage` **之后**执行；`RAGConfigProperties.suggestionsEnabled=false` 场景下无 `mergeSuggestionsIntoTrace` 抢跑。StreamChatEventHandlerCitationTest 用 Mockito InOrder 锁住了这个顺序。
+**根治**：把 `updateTraceTokenUsage` 改为 `mergeRunExtraData(traceId, Map.of("promptTokens", ..., "completionTokens", ..., "totalTokens", ...))`；非 PR3 scope。
+**优先级**：P3（latent，顺序依赖已规避；但将来任何新的"先合后写"字段都可能再踩）。
+
+---
+
 ## 🗂️ 引用
 
 - 审查来源：本地会话 2026-04-14 `/simplify`（3 个并行 agent：reuse / quality / efficiency）
 - 2026-04-21 新增 SRC-1~8：Answer Sources PR1+PR2 合并后记录的遗留项
+- 2026-04-22 新增 SRC-9：PR3 Answer Sources 合并前记录的 trace.extra_data overwrite 隐患
 - 本轮已处理：参见 `log/dev_log/dev_log.md` 的 "2026-04-14" 条目
 - 本表不是 TODO 兜底，只记"有意识地留到下一轮"的东西。下一轮 feature 不必优先刷它。
