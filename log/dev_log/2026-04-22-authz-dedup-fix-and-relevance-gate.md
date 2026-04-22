@@ -42,5 +42,5 @@
 ## 文档
 
 - `docs/dev/gotchas.md` 新增 OpenSearch mapping 升级必须显式重建索引的说明。
-- `docs/dev/followup/backlog.md` 顶部标记 `SEC-1` / `SRC-10` 已在当前分支解决。
-- PR 编号待创建后补充。
+- `docs/dev/followup/backlog.md` 顶部标记 `SEC-1` / `SRC-10` 已在 `main` 解决。
+- 直推 `main` 落地，commit `1e82b3a4`，未开 PR。

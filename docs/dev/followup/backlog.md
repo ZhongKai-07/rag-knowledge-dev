@@ -1,10 +1,10 @@
 # Deferred Follow-ups
 
-> Resolved in current branch:
+> Resolved on `main`:
 > - `SEC-1`: `DeduplicationPostProcessor` no longer revives chunks from raw `results`
 > - `SRC-10`: added `rag.sources.min-top-score=0.55`; low-relevance KB evidence no longer emits `sources` or `suggestions`
 > - Details: `log/dev_log/2026-04-22-authz-dedup-fix-and-relevance-gate.md`
-> - PR number pending creation
+> - Landed via direct commit to `main` (`1e82b3a4`); no PR opened for this fix
 
 由 2026-04-14 `/simplify` 三 agent 审查（91 commit 的 RBAC feature 分支）发现但未在那一轮处理的遗留项。
 按**真实优先级**排序，不是按提出顺序。动手前可逐条挑，不必刷全表。

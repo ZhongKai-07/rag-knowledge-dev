@@ -56,8 +56,11 @@ replay_pid*.log
 
 ### Tool / runtime artifacts ###
 .playwright-mcp/
+.playwright-cli/
+.trae/
 log/*.log
 log/error.log
+log/diagnostic/
 .claude/ralph-loop.local.md
 .claude/.ralph-loop.local.md
 .worktrees/
