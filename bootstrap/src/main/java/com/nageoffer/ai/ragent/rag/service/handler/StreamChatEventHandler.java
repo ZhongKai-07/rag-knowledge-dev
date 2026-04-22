@@ -18,6 +18,7 @@
 package com.nageoffer.ai.ragent.rag.service.handler;
 
 import cn.hutool.core.util.StrUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
 import com.nageoffer.ai.ragent.rag.dto.CompletionPayload;
 import com.nageoffer.ai.ragent.rag.dto.MessageDelta;
@@ -57,6 +58,7 @@ public class StreamChatEventHandler implements StreamCallback {
 
     private static final String TYPE_THINK = "think";
     private static final String TYPE_RESPONSE = "response";
+    private static final ObjectMapper SOURCES_MAPPER = new ObjectMapper();
 
     private final int messageChunkSize;
     private final SseEmitterSender sender;
@@ -188,6 +190,9 @@ public class StreamChatEventHandler implements StreamCallback {
         String messageId = memoryService.append(conversationId, UserContext.getUserId(),
                 ChatMessage.assistant(answer.toString()), null);
 
+        // 持久化 sources_json（必须在 updateTraceTokenUsage 之前，见 spec §2.7）
+        persistSourcesIfPresent(messageId);
+
         // 更新 Trace token 用量（overwrite 写，必须在 merge 之前）
         updateTraceTokenUsage();
 
@@ -305,6 +310,27 @@ public class StreamChatEventHandler implements StreamCallback {
             ));
         } catch (Exception e) {
             log.warn("合并引用统计到 trace.extra_data 失败", e);
+        }
+    }
+
+    /**
+     * 在 onComplete 中持久化 sources_json。holder 空或 messageId blank 时早返回。
+     * 任何异常仅 log.warn，不 rethrow，避免阻塞 onComplete 后续段（token 埋点 / citation merge
+     * / evaluation / FINISH / SUGGESTIONS / DONE）。
+     */
+    private void persistSourcesIfPresent(String messageId) {
+        if (StrUtil.isBlank(messageId)) {
+            return;
+        }
+        Optional<List<SourceCard>> cardsOpt = cardsHolder.get();
+        if (cardsOpt.isEmpty()) {
+            return;
+        }
+        try {
+            String json = SOURCES_MAPPER.writeValueAsString(cardsOpt.get());
+            conversationMessageService.updateSourcesJson(messageId, json);
+        } catch (Exception e) {
+            log.warn("持久化 sources_json 失败，messageId={}", messageId, e);
         }
     }
 
