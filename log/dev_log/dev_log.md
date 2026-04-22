@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-04-22 | PR1 — Rerank 短路旁路修复
+
+详情：[`2026-04-22-rerank-bypass-fix-pr1.md`](./2026-04-22-rerank-bypass-fix-pr1.md)
+
+**核心改动**：
+- `BaiLianRerankClient` 移除 `dedup.size() <= topN` 短路分支：`DEFAULT_TOP_K=10` 下每次命中，导致百炼 rerank API 从未被调用，所有 query 的 `maxScore` 都是上游 OpenSearch hybrid 的假分 `≈0.5`。
+- `rag.sources.min-top-score` 配合调整：`0.1 → 0.3`（rerank 产生真实 cross-encoder 分数后阈值有绝对语义）。
+- `RoutingRerankService` / `BaiLianRerankClient` / `NoopRerankClient` 保留 INFO 级诊断日志，未来 rerank 静默失败可一行定位。
+- `gotchas.md` 第 4 组新增一条 rerank 短路条目。
+- 验证数据：KYC `0.5 → 0.8119`，地球到太阳 `0.5 → 0.2187`，从"完全无区分"到"4× 差距"。
+- PR2（over-retrieve + rerank 架构，拆分 `retrievalTopK / rerankTopK`）未启动，待相关日志采样稳定后再定档。
+
+---
+
 ## 2026-04-22 | Authz/Dedup 修复 + relevance gate
 
 详情：[`2026-04-22-authz-dedup-fix-and-relevance-gate.md`](./2026-04-22-authz-dedup-fix-and-relevance-gate.md)
