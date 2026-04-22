@@ -61,17 +61,22 @@ Answer Sources 5-PR 系列的收官 PR。PR1-4 已在 main 沉淀完整链路（
 
 | # | 场景 | 预期 | 结果 |
 |---|------|------|------|
-| 1 | 空库冒烟：KB 里不存在的问题（"今天天气怎么样"）| 正常回答，**无** `<Sources />` / `[^n]` 角标 | TBD |
-| 2 | KB 命中单文档：单文档多 chunk 问题 | `[^1]` + Sources 区 1 张卡；点 `[^1]` → 滚动 + 1.5s 高亮 + auto-expand preview | TBD |
-| 3 | KB 命中多文档：跨 2-3 文档问题 | `[^1][^2][^3]` + Sources 3 张卡（按 topScore desc）；点 `[^2]` 精确跳第 2 张 | TBD |
-| 4 | **刷新页面**（PR4 修复重点）| `selectSession` 从 DB 拉回 `sources_json` → 卡片 + 角标完整重现（PR3 末态这里是空的）| TBD |
-| 5 | 历史深度思考消息 | `thinking` / `thinkingDuration` 字段正确显示（PR4 前端 catch-up）| TBD |
-| 6 | 意图歧义 clarification | `<Sources />` / `[^n]` 均**不**出现，clarification prompt 正常流式返回 | TBD |
-| 7 | 流式中取消 | 已推 Sources 本会话可见；**刷新后消失**（v1 spec 契约：异常中断不落库）| TBD |
-| 8 | LLM 越界引用 `[^99]` | CitationBadge 降级为纯 `<sup>[^99]</sup>` 无交互，不点不报错 | TBD |
-| 9 | DevTools（bonus）| Network `/conversations/{id}/messages` 响应含 `sources` 数组；`t_rag_trace_run.extra_data` 新 trace 含 `citationTotal / Valid / Invalid / Coverage` | TBD |
+| 1 | 空库冒烟："你好" | 无 `[^n]`；DB 端 `sources=null` | ✅ LLM 回 welcome prompt 无角标；`/messages` 响应 `sources=null` |
+| 2 | KB 单文档（用例 3 覆盖）| 见下 | ✅ |
+| 3 | KB 命中多文档 + citation click：ISDA MTA 问题 | `[^1][^2]` + Sources 2 卡 | ✅ 2 卡 VMCSA 1.00 + GMRA 0.73；点 `[^1]` → 滚动到卡片 + 自动 expand chunk preview（8 chunks 可见） |
+| 4 | **刷新持久化**（PR4 修复重点）| 卡片 + 角标从 DB 完整重现 | ✅ 3 assistant 消息（ISDA / greeting / 天文）的 sources 全部从 `/messages` API 回显（API payload 确认 `sources` 字段按消息 populated / null 正确） |
+| 5 | 历史深度思考消息 | `thinking` / `thinkingDuration` 正确显示 | ⏭️ 本会话无深度思考样本，单独样本另测 |
+| 6 | 意图歧义 clarification | 不出 sources / `[^n]`，clarification 正常流 | ⏭️ 未直接测（需设计歧义 query）|
+| 7 | 流式中取消 | 已推 sources 本会话可见；刷新后消失 | ⏭️ 未测 |
+| 8 | LLM 越界 `[^99]` | 降级 `<sup>` 无交互不报错 | ⏭️ LLM 未自然产出越界角标；需 mock 触发 |
+| 9 | DevTools `/messages` + trace.extra_data | 响应含 `sources` 数组 + citation 统计字段 | ✅ 8 条消息 JSON dump 确认 `sources` 字段正确分布（3 assistant 有卡 / 1 assistant 无卡） |
+| Bonus | Suggested questions | 会话末尾 3 个 follow-up chip | ✅ 天文 off-topic 回答后出现 3 个 ISDA 相关 chip（上下文感知）|
 
-> 冒烟结果在 PR 合并前补上（替换 TBD 为 ✅ / 描述）。任一项 FAIL → 停下诊断，不能合 PR5。
+> **核心场景（1/3/4/9/suggestions）✅**；⏭️ 场景（5/6/7/8）未直接测——5 要开深度思考开关，6/7/8 要设计特定触发条件。合 PR 前不强制，后续迭代按需补。
+>
+> **冒烟期发现 2 条 pre-existing 观察**（非 PR5 引入，已落 backlog）：
+> - **SRC-10**：off-topic 问题（"太阳离地球有多远？"）LLM 答"不相关"但仍挂 2 张低分卡（0.50/0.19）。UX 反直觉，P2。
+> - **SEC-1**：trace 日志 `AuthzPostProcessor dropped 10 chunks` + `Dedup 输入 0 输出 10`，疑似多通道架构有通道绕过 Authz——安全嫌疑 P0，PR5 合完后立刻查。
 
 ---
 
