@@ -500,7 +500,8 @@ select:focus:not(:focus-visible),
   }
 
   .admin-layout .admin-sidebar__item--active {
-    @apply bg-indigo-500/20 text-white;
+    background-color: rgba(91, 75, 232, 0.22); /* vio-accent/22 */
+    @apply text-white;
   }
 
   .admin-layout .admin-sidebar__item--group-active {
@@ -512,7 +513,7 @@ select:focus:not(:focus-visible),
   }
 
   .admin-layout .admin-sidebar__item-indicator.is-active {
-    @apply bg-indigo-400;
+    background-color: var(--vio-accent-2); /* #8B7FEF */
   }
 
   .admin-layout .admin-sidebar__item-indicator.is-group-active {
@@ -524,7 +525,7 @@ select:focus:not(:focus-visible),
   }
 
   .admin-layout .admin-sidebar__item--active .admin-sidebar__item-icon {
-    @apply text-indigo-300;
+    color: var(--vio-accent-2); /* #8B7FEF — light enough on dark sidebar */
   }
 
   .admin-layout .admin-sidebar__item--group-active .admin-sidebar__item-icon {
