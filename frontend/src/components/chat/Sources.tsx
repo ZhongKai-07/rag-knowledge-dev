@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import type { SourceCard } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +10,7 @@ interface Props {
 
 export const Sources = React.forwardRef<HTMLDivElement, Props>(
   function Sources({ cards, highlightedIndex }, ref) {
+    const { t } = useTranslation("chat");
     const [expanded, setExpanded] = React.useState<Set<number>>(new Set());
 
     // 高亮的卡片随 highlightedIndex 变化自动展开
@@ -23,7 +25,7 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
 
     return (
       <div ref={ref} className="mt-3 space-y-1.5">
-        <div className="text-xs font-medium text-muted-foreground">来源</div>
+        <div className="text-xs font-medium text-muted-foreground">{t("sources.label")}</div>
         {cards.map(card => {
           const isExpanded = expanded.has(card.index);
           const isHighlighted = highlightedIndex === card.index;
