@@ -3,7 +3,6 @@ import { differenceInCalendarDays, isValid } from "date-fns";
 import {
   ArrowLeft,
   BookOpen,
-  Bot,
   LogOut,
   MessageSquare,
   MoreHorizontal,
@@ -165,30 +164,31 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       <div
         className={cn(
-          "fixed inset-0 z-30 bg-slate-900/30 backdrop-blur-sm transition-opacity lg:hidden",
+          "fixed inset-0 z-30 bg-vio-ink/20 backdrop-blur-sm transition-opacity lg:hidden",
           isOpen ? "opacity-100" : "pointer-events-none opacity-0"
         )}
         onClick={onClose}
       />
       <aside
         className={cn(
-          "fixed left-0 top-0 z-40 flex h-screen w-[280px] flex-shrink-0 flex-col bg-surface-2 p-3 transition-transform lg:static lg:h-screen lg:translate-x-0",
+          "fixed left-0 top-0 z-40 flex h-screen w-[280px] flex-shrink-0 flex-col bg-[var(--vio-surface-2)] p-3 transition-transform lg:static lg:h-screen lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="border-b border-line-2 pb-3">
+        <div className="border-b border-vio-line pb-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-muted">
-              <Bot className="h-5 w-5 text-brand-fg" />
+            {/* Signature moment #5: HT monogram gradient fill */}
+            <div className="vio-aurora-fill flex h-10 w-10 items-center justify-center rounded-xl text-white font-display text-lg font-medium italic leading-none select-none">
+              HT
             </div>
             <div>
-              <p className="text-base font-semibold text-ink">HT KnowledgeBase</p>
-              <p className="text-xs text-ink-4">Powered by AI</p>
+              <p className="font-display text-base font-medium text-vio-ink">HT KnowledgeBase</p>
+              <p className="font-mono text-[10px] uppercase tracking-wider text-vio-ink/40">知识坊</p>
             </div>
           </div>
           <button
             type="button"
-            className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-ink-3 transition-colors hover:bg-line-2 hover:text-ink"
+            className="mt-2 flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-vio-ink/50 transition-colors hover:bg-[var(--vio-accent-mist)] hover:text-vio-accent"
             onClick={() => {
               navigate("/spaces");
               onClose();
@@ -199,61 +199,59 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
         <div className="py-3 space-y-4">
-          <div className="relative overflow-hidden rounded-2xl border border-brand-faint bg-gradient-to-br from-[#F0F9FF] via-white to-[#FEF3C7] p-3 shadow-[0_14px_30px_rgba(15,23,42,0.08)]">
-            <span
+          {/* Signature moment #6: new conversation card with aurora halo */}
+          <div className="relative overflow-hidden rounded-2xl border border-vio-line bg-white p-3 shadow-paper">
+            {/* corner halo — only appears on hover to avoid overdoing gradient */}
+            <div
               aria-hidden="true"
-              className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#BAE6FD]/70 blur-2xl"
-            />
-            <span
-              aria-hidden="true"
-              className="absolute -left-12 -bottom-10 h-28 w-28 rounded-full bg-[#FDE68A]/70 blur-2xl"
+              className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              style={{
+                background: "radial-gradient(circle at 70% 30%, rgba(179,155,245,0.4) 0%, transparent 65%)",
+                filter: "blur(20px)",
+              }}
             />
             <div className="relative">
               <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] font-semibold text-ink-3">快速开始</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-vio-ink/40">快速开始</span>
                 {activeKbName ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-brand">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--vio-accent-mist)] px-2 py-0.5 text-[10px] font-medium text-vio-accent">
                     <BookOpen className="h-2.5 w-2.5" />
                     {activeKbName}
                   </span>
-                ) : (
-                  <span className="rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-semibold text-brand">
-                    新内容
-                  </span>
-                )}
+                ) : null}
               </div>
               <button
                 type="button"
-                className="mt-2 flex w-full items-center gap-3 rounded-2xl bg-white/90 px-4 py-3 text-left shadow-[0_10px_20px_rgba(15,23,42,0.08)] transition-all hover:-translate-y-[1px] hover:shadow-[0_16px_30px_rgba(15,23,42,0.12)]"
+                className="mt-2 group flex w-full items-center gap-3 rounded-xl border border-vio-line bg-white px-4 py-2.5 text-left transition-all hover:border-vio-accent-subtle hover:shadow-halo"
                 onClick={() => {
                   createSession().catch(() => null);
                   navigate(chatPath);
                   onClose();
                 }}
               >
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-muted to-brand text-brand-fg shadow-[0_6px_14px_rgba(37,99,235,0.3)]">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--vio-accent)] to-[var(--vio-accent-2)] text-white shadow-sm">
                   <Plus className="h-4 w-4" />
                 </span>
                 <span className="flex-1">
-                  <span className="block text-sm font-semibold text-ink">新建对话</span>
-                  <span className="block text-xs text-ink-3">从空白开始</span>
+                  <span className="block text-sm font-medium text-vio-ink">新建对话</span>
+                  <span className="block font-mono text-[10px] text-vio-ink/40">从空白开始</span>
                 </span>
               </button>
             </div>
           </div>
-          <div className="rounded-2xl border border-brand-faint bg-surface p-3 shadow-[0_12px_26px_rgba(15,23,42,0.06)]">
+          <div className="rounded-xl border border-vio-line bg-white p-2.5">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-semibold text-ink-3">搜索对话</span>
-              <span className="text-[10px] text-ink-5">Ctrl / Cmd + K</span>
+              <span className="text-[11px] font-semibold text-vio-ink/50">搜索对话</span>
+              <span className="text-[10px] text-vio-ink/30">Ctrl / Cmd + K</span>
             </div>
             <div className="mt-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-4" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-vio-ink/40" />
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="搜索对话..."
-                  className="h-10 w-full rounded-xl border border-line bg-surface-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-4 focus:border-brand-ring focus:outline-none transition-colors"
+                  className="h-9 w-full rounded-lg border border-vio-line bg-[var(--vio-surface-2)] pl-9 pr-3 text-sm text-vio-ink placeholder:text-vio-ink/40 focus:border-vio-accent focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -276,17 +274,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <div>
                 {groupedSessions.map((group, index) => (
                   <div key={group.label} className={cn("flex flex-col", index === 0 ? "mt-0" : "mt-4")}>
-                    <p className="mb-1.5 pl-3 text-[12px] font-normal leading-[18px] text-ink-4">
+                    <p className="mb-1.5 pl-3 font-mono text-[10px] uppercase tracking-wider text-vio-ink/40">
                       {group.label}
                     </p>
                     {group.items.map((session) => (
                       <div
                         key={session.id}
                         className={cn(
-                          "group my-[1px] flex min-h-[40px] cursor-pointer select-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-[14px] leading-[22px] transition-colors duration-200",
+                          "group my-[1px] flex min-h-[38px] cursor-pointer select-none items-center justify-between gap-2 rounded-lg px-3 py-2 text-[14px] leading-[22px] transition-colors duration-200",
                           currentSessionId === session.id
-                            ? "bg-brand-subtle text-brand"
-                            : "text-ink-2 hover:bg-surface-3"
+                            ? "border-l-2 border-vio-accent bg-[var(--vio-accent-mist)] text-vio-accent"
+                            : "text-vio-ink/80 hover:bg-[var(--vio-accent-mist)]/50 hover:text-vio-ink"
                         )}
                         role="button"
                         tabIndex={0}
@@ -326,7 +324,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             onBlur={() => {
                               commitRename().catch(() => null);
                             }}
-                            className="h-6 flex-1 rounded-md border border-line bg-surface px-2 text-[14px] leading-[22px] text-ink-2 focus:border-brand focus:outline-none"
+                            className="h-6 flex-1 rounded-md border border-vio-line bg-white px-2 text-[14px] leading-[22px] text-vio-ink focus:border-vio-accent focus:outline-none"
                           />
                         ) : (
                           <span className="min-w-0 flex-1 truncate font-normal">
@@ -387,7 +385,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-5 bg-gradient-to-b from-transparent to-surface-2"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-5 bg-gradient-to-b from-transparent to-[var(--vio-surface-2)]"
           />
         </div>
         <div className="mt-auto pt-3">
@@ -395,10 +393,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 rounded-lg p-2 text-left transition-colors hover:bg-surface-3 data-[state=open]:bg-surface-4"
+                className="flex w-full items-center gap-2 rounded-lg p-2 text-left transition-colors hover:bg-[var(--vio-accent-mist)] data-[state=open]:bg-[var(--vio-accent-mist)]"
                 aria-label="用户菜单"
               >
-                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-brand-muted text-brand-fg">
+                <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[var(--vio-accent-subtle)] text-vio-accent">
                   {showAvatar ? (
                     <img
                       src={avatarUrl}
