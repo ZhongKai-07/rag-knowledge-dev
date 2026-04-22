@@ -1,5 +1,6 @@
 import * as React from "react";
 import { BookOpen, Brain, Check, Lightbulb, Send, Square } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 import { listSampleQuestions } from "@/services/sampleQuestionService";
@@ -37,6 +38,7 @@ const DEFAULT_PRESETS: PromptPreset[] = [
 ];
 
 export function WelcomeScreen() {
+  const { t } = useTranslation("chat");
   const [value, setValue] = React.useState("");
   const [isFocused, setIsFocused] = React.useState(false);
   const [promptPresets, setPromptPresets] = React.useState<PromptPreset[]>(DEFAULT_PRESETS);
@@ -150,19 +152,19 @@ export function WelcomeScreen() {
         >
           {/* Kicker */}
           <div className="font-mono text-[10px] uppercase tracking-[4px] text-vio-accent-2">
-            HT · 知识坊 · № 042
+            {t("welcome.kicker")}
           </div>
 
           {/* Signature moment #1: gradient-clip title */}
           <h1 className="mt-4 font-display text-5xl font-normal leading-[1.0] tracking-[-0.03em] text-vio-ink md:text-6xl">
-            把问题
+            {t("welcome.title_line_1")}
             <br />
-            变成{" "}
-            <span className="vio-aurora-text italic">清晰的答案</span>
+            {t("welcome.title_line_2_before")}{" "}
+            <span className="vio-aurora-text italic">{t("welcome.title_line_2_accent")}</span>
           </h1>
 
           <p className="mt-5 font-body text-sm text-vio-ink/60 tracking-wide">
-            结构化检索 · 多源互证 · 深度推理
+            {t("welcome.subtitle")}
           </p>
         </div>
 
@@ -185,7 +187,7 @@ export function WelcomeScreen() {
                 ref={textareaRef}
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
-                placeholder={deepThinkingEnabled ? "输入需要深度分析的问题..." : "输入你的问题..."}
+                placeholder={deepThinkingEnabled ? t("input.placeholder_deep") : t("input.placeholder")}
                 className="max-h-40 min-h-[52px] w-full resize-none border-0 bg-transparent px-2 pt-2 pb-2 text-[15px] text-vio-ink placeholder:text-vio-ink/40 focus:outline-none"
                 rows={1}
                 onFocus={() => setIsFocused(true)}
@@ -222,7 +224,7 @@ export function WelcomeScreen() {
                 )}
               >
                 <Brain className={cn("h-3.5 w-3.5", deepThinkingEnabled && "text-vio-accent")} />
-                深度思考
+                {t("input.deep_thinking")}
                 {deepThinkingEnabled && (
                   <span className="h-2 w-2 rounded-full bg-vio-accent animate-pulse" />
                 )}
@@ -233,7 +235,7 @@ export function WelcomeScreen() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={!hasContent && !isStreaming}
-                aria-label={isStreaming ? "停止生成" : "发送消息"}
+                aria-label={isStreaming ? t("stop") : t("input.send_aria")}
                 className={cn(
                   "ml-auto inline-flex items-center justify-center rounded-full p-2.5 transition-all duration-200",
                   isStreaming
@@ -252,7 +254,7 @@ export function WelcomeScreen() {
             <p className="mt-3 text-xs text-vio-accent">
               <span className="inline-flex items-center gap-1.5">
                 <Lightbulb className="h-3.5 w-3.5" />
-                深度思考模式已开启，AI将进行更深入的分析推理
+                {t("input.deep_thinking_on")}
               </span>
             </p>
           )}
