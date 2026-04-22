@@ -35,6 +35,19 @@ describe("<Sources />", () => {
     expect(screen.getAllByText("preview").length).toBeGreaterThan(0);
   });
 
+  it("auto-expands a different card when highlightedIndex changes on re-render", () => {
+    // 初始高亮 card 1 → 仅 card 1 的 2 个 chunk 展开（preview×2）
+    const { rerender } = render(
+      <Sources cards={[card(1), card(2)]} highlightedIndex={1} />
+    );
+    expect(screen.getAllByText("preview")).toHaveLength(2);
+
+    // 切到 card 2 → useEffect 触发 expanded.add(2)，
+    // 现有契约是 Set add 不移除 1，两张卡都保持展开（preview×4）
+    rerender(<Sources cards={[card(1), card(2)]} highlightedIndex={2} />);
+    expect(screen.getAllByText("preview")).toHaveLength(4);
+  });
+
   it("toggles card expansion on click", async () => {
     render(<Sources cards={[card(1)]} highlightedIndex={null} />);
     const headerBtn = screen.getByRole("button", { name: /员工|D1|\[\^1\]/ });

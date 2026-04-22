@@ -173,4 +173,24 @@ class StreamChatEventHandlerCitationTest {
                             && ((Double) m.get("citationCoverage")) == 0.0;
                 }));
     }
+
+    @Test
+    void onComplete_whenAnswerNonBlankButHasNoCitations_thenMergesAllZerosViaLoopPath() {
+        // 区别于 whenCardsSetButAnswerEmpty：那条用例走 scan 首行 StrUtil.isBlank 早返回；
+        // 本用例 answer 非空，实际走完 CITATION 匹配循环 + SENTENCE 循环，结果才应全 0。
+        holder.trySet(List.of(card(1), card(2)));
+        handler.onContent("一句话无引用。另一句仍无引用。");
+        applyTokenUsage(10, 20, 30);
+        handler.onComplete();
+
+        verify(traceRecordService).mergeRunExtraData(eq("test-trace-id"),
+                org.mockito.ArgumentMatchers.argThat(map -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> m = (Map<String, Object>) map;
+                    return ((Integer) m.get("citationTotal")) == 0
+                            && ((Integer) m.get("citationValid")) == 0
+                            && ((Integer) m.get("citationInvalid")) == 0
+                            && ((Double) m.get("citationCoverage")) == 0.0;
+                }));
+    }
 }

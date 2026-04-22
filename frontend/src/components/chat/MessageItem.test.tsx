@@ -84,4 +84,35 @@ describe("<MessageItem /> citation interaction", () => {
     render(<MessageItem message={makeMessage({ sources: undefined })} isLast={true} />);
     expect(screen.queryByText("来源")).toBeNull();
   });
+
+  it("clears the pending highlight timer when component unmounts mid-timeout", () => {
+    vi.useFakeTimers();
+    const clearTimeoutSpy = vi.spyOn(window, "clearTimeout");
+    const { container, unmount } = render(
+      <MessageItem message={makeMessage()} isLast={true} />
+    );
+    const badge = container.querySelector(
+      'button[aria-label*="引用"]'
+    ) as HTMLButtonElement;
+
+    // 点击后 timer 被 set（timerRef.current 为 setTimeout 返回值）
+    act(() => {
+      badge.click();
+    });
+    const clearsBeforeUnmount = clearTimeoutSpy.mock.calls.length;
+
+    // 卸载 → useEffect cleanup 必须 window.clearTimeout(timerRef.current)
+    unmount();
+
+    // 至少多一次 clearTimeout 调用（单元测试锁 cleanup 行为；允许其他 cleanup 顺带调，不锁死次数）
+    expect(clearTimeoutSpy.mock.calls.length).toBeGreaterThan(clearsBeforeUnmount);
+
+    // 再推进时间，不应触发 setHighlightedIndex → 不应有 React act warning 提示卸载后 state 更新
+    // 由于组件已卸载，这里仅验证不抛错
+    expect(() =>
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      })
+    ).not.toThrow();
+  });
 });

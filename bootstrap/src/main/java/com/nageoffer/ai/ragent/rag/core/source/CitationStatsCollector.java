@@ -51,6 +51,8 @@ public final class CitationStatsCollector {
             else invalid++;
         }
 
+        // SENTENCE 粗切只匹配以 。！？ 结尾的句子；answer 末尾若缺终止标点，该尾段不计入 totalSent，
+        // coverage 对"以未结尾语句收束"的 LLM 输出会系统性低估。读 trace.extra_data.citationCoverage 时需知此限。
         Matcher sm = SENTENCE.matcher(answer);
         int totalSent = 0, citedSent = 0;
         while (sm.find()) {
