@@ -1,0 +1,17 @@
+{
+  "brand_name": "华泰知识坊",
+  "brand_issue_label": "№ 042",
+  "actions": {
+    "save": "保存", "cancel": "取消", "delete": "删除",
+    "confirm": "确认", "close": "关闭", "back": "返回",
+    "refresh": "刷新", "search": "搜索", "new": "新建",
+    "edit": "编辑", "logout": "退出登录"
+  },
+  "language": {
+    "menu_label": "语言",
+    "zh-CN": "简体中文",
+    "zh-HK": "繁體中文（香港）",
+    "en": "English"
+  },
+  "nav": { "spaces": "知识空间", "chat": "聊天", "admin": "管理后台" }
+}

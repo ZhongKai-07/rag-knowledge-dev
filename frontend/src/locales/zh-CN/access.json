@@ -1,0 +1,4 @@
+{
+  "tabs": { "members": "成员", "sharing": "KB 共享", "roles": "角色", "departments": "部门" },
+  "role": { "delete": { "confirm_title": "删除角色？", "affected_users": "影响 {{count}} 名用户", "affected_kbs": "影响 {{count}} 个知识库" } }
+}

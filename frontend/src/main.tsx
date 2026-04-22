@@ -6,6 +6,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { useThemeStore } from "@/stores/themeStore";
 import "@/styles/globals.css";
 import "@/styles/aurora.css";
+import "./i18n";
 
 useThemeStore.getState().initialize();
 useAuthStore.getState().checkAuth();

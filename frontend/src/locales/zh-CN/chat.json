@@ -1,0 +1,25 @@
+{
+  "welcome": {
+    "kicker": "HT · 知识坊",
+    "title_line_1": "把问题",
+    "title_line_2_before": "变成",
+    "title_line_2_accent": "清晰的答案",
+    "subtitle": "结构化检索 · 多源互证 · 深度推理"
+  },
+  "input": {
+    "placeholder": "想问点什么...",
+    "deep_thinking": "深度思考",
+    "send_aria": "发送",
+    "hint_send": "Enter 发送",
+    "hint_newline": "Shift + Enter 换行"
+  },
+  "session": {
+    "new_chat": "新建对话", "new_chat_hint": "从空白开始",
+    "today": "今天", "yesterday": "昨天", "older": "更早",
+    "rename": "重命名", "delete": "删除",
+    "confirm_delete": "确定删除这条对话吗？"
+  },
+  "sources": { "label": "来源" },
+  "thinking": { "label": "深度思考" },
+  "stop": "停止生成"
+}

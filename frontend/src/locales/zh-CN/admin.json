@@ -1,0 +1,12 @@
+{
+  "sidebar": {
+    "dashboard": "Dashboard", "knowledge": "知识库管理",
+    "access": "权限中心", "intent_tree": "意图树",
+    "ingestion": "摄入任务", "traces": "追踪记录",
+    "evaluations": "评估数据", "settings": "设置"
+  },
+  "dashboard": {
+    "title": "数据总览",
+    "kpi": { "total_queries": "总问答次数", "active_users": "活跃用户", "success_rate": "成功率", "avg_latency": "平均时延" }
+  }
+}

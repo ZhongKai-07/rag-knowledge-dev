@@ -1,0 +1,7 @@
+{
+  "generic": "出了点问题，请稍后重试",
+  "network": "网络连接失败",
+  "unauthorized": "登录已失效，请重新登录",
+  "forbidden": "没有权限访问",
+  "not_found": "资源不存在"
+}
