@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Message, SourceCard, SourcesPayload } from "@/types";
 import { createStreamHandlers, useChatStore } from "./chatStore";
+import { listMessages } from "@/services/sessionService";
+
+vi.mock("@/services/sessionService", async (importActual) => {
+  const actual = await importActual<typeof import("@/services/sessionService")>();
+  return {
+    ...actual,
+    listMessages: vi.fn()
+  };
+});
 
 /**
  * 构造一个带占位 assistant message 的初始 store 状态。
@@ -123,5 +132,65 @@ describe("chatStore.onFinish sources preservation", () => {
     expect(finalMsg.id).toBe("db_1");
     expect(finalMsg.sources).toBeDefined();
     expect(finalMsg.sources?.[0].docId).toBe("d1");
+  });
+});
+
+describe("selectSession mapping", () => {
+  beforeEach(() => {
+    vi.mocked(listMessages).mockReset();
+    resetStore();
+  });
+
+  it("maps thinkingContent / thinkingDuration / sources from VO to Message", async () => {
+    const card: SourceCard = {
+      index: 1,
+      docId: "d1",
+      docName: "doc.pdf",
+      kbId: "kb1",
+      topScore: 0.9,
+      chunks: [{ chunkId: "c1", chunkIndex: 0, preview: "hi", score: 0.9 }]
+    };
+    vi.mocked(listMessages).mockResolvedValue([
+      {
+        id: "m1",
+        conversationId: "c_test",
+        role: "assistant",
+        content: "answer",
+        vote: null,
+        thinkingContent: "thinking...",
+        thinkingDuration: 3,
+        sources: [card]
+      }
+    ]);
+
+    useChatStore.setState((s) => ({ ...s, activeKbId: null }));
+    await useChatStore.getState().selectSession("c_test");
+
+    const messages = useChatStore.getState().messages;
+    expect(messages).toHaveLength(1);
+    expect(messages[0].thinking).toBe("thinking...");
+    expect(messages[0].thinkingDuration).toBe(3);
+    expect(messages[0].sources).toEqual([card]);
+  });
+
+  it("tolerates missing thinking/sources fields (undefined)", async () => {
+    vi.mocked(listMessages).mockResolvedValue([
+      {
+        id: "m1",
+        conversationId: "c_test",
+        role: "assistant",
+        content: "answer",
+        vote: null
+      }
+    ]);
+
+    useChatStore.setState((s) => ({ ...s, activeKbId: null }));
+    await useChatStore.getState().selectSession("c_test");
+
+    const messages = useChatStore.getState().messages;
+    expect(messages).toHaveLength(1);
+    expect(messages[0].thinking).toBeUndefined();
+    expect(messages[0].thinkingDuration).toBeUndefined();
+    expect(messages[0].sources).toBeUndefined();
   });
 });
