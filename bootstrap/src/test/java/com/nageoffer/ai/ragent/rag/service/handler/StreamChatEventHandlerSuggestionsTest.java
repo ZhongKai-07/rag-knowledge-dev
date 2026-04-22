@@ -23,6 +23,7 @@ import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
+import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,6 +54,7 @@ class StreamChatEventHandlerSuggestionsTest {
     private RagEvaluationService evaluationService;
     private RagTraceRecordService traceRecordService;
     private SuggestedQuestionsService suggestedQuestionsService;
+    private ConversationMessageService conversationMessageService;
     private ThreadPoolTaskExecutor executor;
     private RAGConfigProperties ragConfigProperties;
 
@@ -72,6 +74,7 @@ class StreamChatEventHandlerSuggestionsTest {
         evaluationService = mock(RagEvaluationService.class);
         traceRecordService = mock(RagTraceRecordService.class);
         suggestedQuestionsService = mock(SuggestedQuestionsService.class);
+        conversationMessageService = mock(ConversationMessageService.class);
 
         executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(1);
@@ -98,6 +101,7 @@ class StreamChatEventHandlerSuggestionsTest {
                 .suggestedQuestionsService(suggestedQuestionsService)
                 .suggestedQuestionsExecutor(executor)
                 .ragConfigProperties(ragConfigProperties)
+                .conversationMessageService(conversationMessageService)
                 .build();
         return new StreamChatEventHandler(params);
     }

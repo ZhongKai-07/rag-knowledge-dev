@@ -26,6 +26,7 @@ import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.dto.SourceCard;
 import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
+import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import org.junit.jupiter.api.AfterEach;
@@ -65,6 +66,7 @@ class StreamChatEventHandlerCitationTest {
     @Mock SuggestedQuestionsService suggestedQuestionsService;
     @Mock ThreadPoolTaskExecutor suggestedQuestionsExecutor;
     @Mock RAGConfigProperties ragConfigProperties;
+    @Mock ConversationMessageService conversationMessageService;
 
     private SourceCardsHolder holder;
     private StreamChatEventHandler handler;
@@ -97,6 +99,7 @@ class StreamChatEventHandlerCitationTest {
                 .suggestedQuestionsExecutor(suggestedQuestionsExecutor)
                 .ragConfigProperties(ragConfigProperties)
                 .cardsHolder(holder)
+                .conversationMessageService(conversationMessageService)
                 .build();
 
         handler = new StreamChatEventHandler(params);

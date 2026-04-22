@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -51,6 +52,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -147,6 +149,11 @@ class StreamChatEventHandlerPersistenceTest {
         assertEquals(1, roundtrip.get(0).getIndex());
         assertEquals("d1", roundtrip.get(0).getDocId());
         assertEquals(2, roundtrip.get(1).getIndex());
+        assertEquals("D1", roundtrip.get(0).getDocName());
+        assertEquals("kb", roundtrip.get(0).getKbId());
+        assertEquals(0.9f, roundtrip.get(0).getTopScore());
+        assertEquals(1, roundtrip.get(0).getChunks().size());
+        assertEquals("c", roundtrip.get(0).getChunks().get(0).getChunkId());
     }
 
     @Test
@@ -179,5 +186,9 @@ class StreamChatEventHandlerPersistenceTest {
         verify(traceRecordService, times(1)).mergeRunExtraData(eq("test-trace-id"), anyMap());
         // FINISH + META + MESSAGE 等事件仍被 emit（at-least-once — emit 次数取决于 messageChunkSize 分片）
         verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
+        // 锁 persist → merge 顺序（spec §2.7 invariant）
+        InOrder inOrder = inOrder(conversationMessageService, traceRecordService);
+        inOrder.verify(conversationMessageService).updateSourcesJson(anyString(), anyString());
+        inOrder.verify(traceRecordService).mergeRunExtraData(anyString(), anyMap());
     }
 }
