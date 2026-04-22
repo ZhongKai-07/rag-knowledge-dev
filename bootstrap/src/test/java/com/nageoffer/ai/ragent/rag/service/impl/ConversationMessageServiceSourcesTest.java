@@ -56,9 +56,7 @@ class ConversationMessageServiceSourcesTest {
     @BeforeEach
     void setUp() {
         // Initialize MP lambda cache so LambdaUpdateWrapper can resolve column metadata without Spring
-        TableInfoHelper.initTableInfo(
-                new MapperBuilderAssistant(new MybatisConfiguration(), ""),
-                ConversationMessageDO.class);
+        initTableInfo(ConversationMessageDO.class);
         service = new ConversationMessageServiceImpl(
                 conversationMessageMapper,
                 conversationSummaryMapper,
@@ -96,6 +94,8 @@ class ConversationMessageServiceSourcesTest {
                 "wrapper should contain 'id =' predicate, got: " + sqlSegment);
 
         // wrapper 绑定值：实际绑定的 value 是 messageId（cast to AbstractWrapper to access paramNameValuePairs）
+        // AbstractWrapper cast required: Wrapper<T> interface does not expose getParamNameValuePairs()
+        // in MP 3.5.14 — this reaches an internal API. Revisit this assertion on MP major-version upgrades.
         @SuppressWarnings("rawtypes")
         Map<String, Object> params = ((AbstractWrapper) wrapper).getParamNameValuePairs();
         assertTrue(params.values().contains(messageId),
@@ -109,5 +109,9 @@ class ConversationMessageServiceSourcesTest {
         service.updateSourcesJson(null, "[]");
 
         verifyNoInteractions(conversationMessageMapper);
+    }
+
+    private static void initTableInfo(Class<?> entityClass) {
+        TableInfoHelper.initTableInfo(new MapperBuilderAssistant(new MybatisConfiguration(), ""), entityClass);
     }
 }
