@@ -1,4 +1,5 @@
 import { api } from "@/services/api";
+import type { SourceCard } from "@/types";
 
 export interface ConversationVO {
   conversationId: string;
@@ -14,6 +15,9 @@ export interface ConversationMessageVO {
   content: string;
   vote: number | null;
   createTime?: string;
+  thinkingContent?: string;
+  thinkingDuration?: number;
+  sources?: SourceCard[];
 }
 
 export async function listSessions(kbId?: string) {

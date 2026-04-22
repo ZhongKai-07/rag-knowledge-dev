@@ -83,6 +83,12 @@ public class ConversationMessageDO {
     private Long thinkingDuration;
 
     /**
+     * 答案引用来源快照（SourceCard[] 的 JSON 序列化），NULL 表示无引用
+     */
+    @TableField(value = "sources_json", updateStrategy = FieldStrategy.NOT_NULL)
+    private String sourcesJson;
+
+    /**
      * 创建时间，自动填充
      */
     @TableField(fill = FieldFill.INSERT)

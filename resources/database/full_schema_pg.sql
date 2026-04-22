@@ -706,6 +706,7 @@ CREATE TABLE public.t_message (
     content text NOT NULL,
     thinking_content text,
     thinking_duration bigint,
+    sources_json text,
     create_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     update_time timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     deleted smallint DEFAULT 0
@@ -766,6 +767,13 @@ COMMENT ON COLUMN public.t_message.thinking_content IS '深度思考内容（模
 --
 
 COMMENT ON COLUMN public.t_message.thinking_duration IS '深度思考耗时（毫秒）';
+
+
+--
+-- Name: COLUMN t_message.sources_json; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.t_message.sources_json IS '答案引用来源快照（SourceCard[] 的 JSON 序列化），NULL 表示无引用';
 
 
 --

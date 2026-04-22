@@ -20,6 +20,8 @@ package com.nageoffer.ai.ragent.rag.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.rag.controller.vo.ConversationMessageVO;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationMessageDO;
@@ -27,12 +29,14 @@ import com.nageoffer.ai.ragent.rag.dao.entity.ConversationSummaryDO;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
 import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationSummaryMapper;
+import com.nageoffer.ai.ragent.rag.dto.SourceCard;
 import com.nageoffer.ai.ragent.rag.enums.ConversationMessageOrder;
 import com.nageoffer.ai.ragent.rag.service.MessageFeedbackService;
 import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 import com.nageoffer.ai.ragent.rag.service.bo.ConversationMessageBO;
 import com.nageoffer.ai.ragent.rag.service.bo.ConversationSummaryBO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -40,9 +44,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ConversationMessageServiceImpl implements ConversationMessageService {
+
+    private static final ObjectMapper SOURCES_MAPPER = new ObjectMapper();
+    private static final TypeReference<List<SourceCard>> SOURCES_TYPE = new TypeReference<>() {};
 
     private final ConversationMessageMapper conversationMessageMapper;
     private final ConversationSummaryMapper conversationSummaryMapper;
@@ -104,6 +112,7 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
                     .content(record.getContent())
                     .thinkingContent(record.getThinkingContent())
                     .thinkingDuration(record.getThinkingDuration())
+                    .sources(deserializeSources(record.getSourcesJson()))
                     .vote(votesByMessageId.get(record.getId()))
                     .createTime(record.getCreateTime())
                     .build();
@@ -117,5 +126,30 @@ public class ConversationMessageServiceImpl implements ConversationMessageServic
     public void addMessageSummary(ConversationSummaryBO conversationSummary) {
         ConversationSummaryDO conversationSummaryDO = BeanUtil.toBean(conversationSummary, ConversationSummaryDO.class);
         conversationSummaryMapper.insert(conversationSummaryDO);
+    }
+
+    @Override
+    public void updateSourcesJson(String messageId, String json) {
+        if (StrUtil.isBlank(messageId)) {
+            return;
+        }
+        ConversationMessageDO update = ConversationMessageDO.builder()
+                .sourcesJson(json)
+                .build();
+        conversationMessageMapper.update(update,
+                Wrappers.lambdaUpdate(ConversationMessageDO.class)
+                        .eq(ConversationMessageDO::getId, messageId));
+    }
+
+    private List<SourceCard> deserializeSources(String json) {
+        if (StrUtil.isBlank(json)) {
+            return null;
+        }
+        try {
+            return SOURCES_MAPPER.readValue(json, SOURCES_TYPE);
+        } catch (Exception e) {
+            log.warn("反序列化 sources_json 失败，降级为 null", e);
+            return null;
+        }
     }
 }

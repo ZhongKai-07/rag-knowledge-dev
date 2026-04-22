@@ -22,6 +22,7 @@ import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
+import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.Builder;
@@ -62,6 +63,11 @@ public class StreamChatHandlerParams {
      * 记忆服务
      */
     private final ConversationMemoryService memoryService;
+
+    /**
+     * 会话消息服务，用于持久化 sources_json
+     */
+    private final ConversationMessageService conversationMessageService;
 
     /**
      * 会话组服务

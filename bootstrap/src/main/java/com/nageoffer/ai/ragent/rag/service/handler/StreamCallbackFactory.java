@@ -22,6 +22,7 @@ import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
 import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
+import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
 import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class StreamCallbackFactory {
 
     private final AIModelProperties modelProperties;
     private final ConversationMemoryService memoryService;
+    private final ConversationMessageService conversationMessageService;
     private final ConversationGroupService conversationGroupService;
     private final StreamTaskManager taskManager;
     private final RagEvaluationService evaluationService;
@@ -65,6 +67,7 @@ public class StreamCallbackFactory {
                 .taskId(taskId)
                 .modelProperties(modelProperties)
                 .memoryService(memoryService)
+                .conversationMessageService(conversationMessageService)
                 .conversationGroupService(conversationGroupService)
                 .taskManager(taskManager)
                 .evaluationService(evaluationService)

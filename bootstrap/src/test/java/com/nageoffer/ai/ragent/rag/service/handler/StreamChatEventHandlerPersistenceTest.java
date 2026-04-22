@@ -17,8 +17,9 @@
 
 package com.nageoffer.ai.ragent.rag.service.handler;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
-import com.nageoffer.ai.ragent.infra.chat.TokenUsage;
 import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
 import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
 import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,20 +44,23 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
-import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-class StreamChatEventHandlerCitationTest {
+class StreamChatEventHandlerPersistenceTest {
 
     @Mock SseEmitter emitter;
     @Mock ConversationMemoryService memoryService;
@@ -68,28 +73,32 @@ class StreamChatEventHandlerCitationTest {
     @Mock RAGConfigProperties ragConfigProperties;
     @Mock ConversationMessageService conversationMessageService;
 
+    private static final ObjectMapper TEST_MAPPER = new ObjectMapper();
+    private static final TypeReference<List<SourceCard>> SOURCES_TYPE = new TypeReference<>() {};
+
     private SourceCardsHolder holder;
-    private StreamChatEventHandler handler;
 
     @BeforeEach
     void setUp() {
-        // MUST set traceId BEFORE constructing handler — handler reads it in ctor
         RagTraceContext.setTraceId("test-trace-id");
-
         holder = new SourceCardsHolder();
-
         when(memoryService.append(anyString(), any(), any(), any())).thenReturn("msg-1");
         when(ragConfigProperties.getSuggestionsEnabled()).thenReturn(false);
         when(taskManager.isCancelled(anyString())).thenReturn(false);
         when(conversationGroupService.findConversation(anyString(), any())).thenReturn(null);
+    }
 
-        AIModelProperties modelProps = new AIModelProperties();
+    @AfterEach
+    void tearDown() {
+        RagTraceContext.clear();
+    }
 
+    private StreamChatEventHandler newHandler() {
         StreamChatHandlerParams params = StreamChatHandlerParams.builder()
                 .emitter(emitter)
                 .conversationId("c-1")
                 .taskId("t-1")
-                .modelProperties(modelProps)
+                .modelProperties(new AIModelProperties())
                 .memoryService(memoryService)
                 .conversationGroupService(conversationGroupService)
                 .taskManager(taskManager)
@@ -101,13 +110,7 @@ class StreamChatEventHandlerCitationTest {
                 .cardsHolder(holder)
                 .conversationMessageService(conversationMessageService)
                 .build();
-
-        handler = new StreamChatEventHandler(params);
-    }
-
-    @AfterEach
-    void tearDown() {
-        RagTraceContext.clear();
+        return new StreamChatEventHandler(params);
     }
 
     private SourceCard card(int n) {
@@ -118,82 +121,74 @@ class StreamChatEventHandlerCitationTest {
                 .build();
     }
 
-    /**
-     * Option A — handler has public onTokenUsage(TokenUsage).
-     */
-    private void applyTokenUsage(int prompt, int completion, int total) {
-        handler.onTokenUsage(new TokenUsage(prompt, completion, total));
-    }
-
     @Test
-    void onComplete_whenCardsHolderUnset_thenMergeRunExtraDataNotCalled() {
-        handler.onContent("回答正文[^1]。");
-        applyTokenUsage(10, 20, 30);
+    void onComplete_whenCardsHolderEmpty_thenUpdateSourcesJsonNeverCalled() {
+        StreamChatEventHandler handler = newHandler();
+        handler.onContent("answer");
+
         handler.onComplete();
 
-        verify(traceRecordService, never()).mergeRunExtraData(anyString(), anyMap());
-        verify(traceRecordService).updateRunExtraData(eq("test-trace-id"), anyString());
+        verify(conversationMessageService, never()).updateSourcesJson(anyString(), anyString());
     }
 
     @Test
-    void onComplete_whenCardsHolderSetAndAnswerHasCitations_thenMergeCalledOnceWithFourKeys() {
+    void onComplete_whenCardsHolderSet_thenUpdateSourcesJsonCalledOnceWithEquivalentCards() throws Exception {
         holder.trySet(List.of(card(1), card(2)));
-        handler.onContent("句[^1]。句[^2]。越界[^99]。");
-        applyTokenUsage(5, 6, 11);
+
+        StreamChatEventHandler handler = newHandler();
+        handler.onContent("answer [^1]");
+
         handler.onComplete();
 
-        InOrder io = inOrder(traceRecordService);
-        io.verify(traceRecordService).updateRunExtraData(eq("test-trace-id"), anyString());
-        io.verify(traceRecordService).mergeRunExtraData(eq("test-trace-id"), anyMap());
+        ArgumentCaptor<String> jsonCaptor = ArgumentCaptor.forClass(String.class);
+        verify(conversationMessageService, times(1))
+                .updateSourcesJson(eq("msg-1"), jsonCaptor.capture());
 
-        verify(traceRecordService).mergeRunExtraData(eq("test-trace-id"),
-                org.mockito.ArgumentMatchers.argThat(map -> {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> m = (Map<String, Object>) map;
-                    return m.containsKey("citationTotal")
-                            && m.containsKey("citationValid")
-                            && m.containsKey("citationInvalid")
-                            && m.containsKey("citationCoverage")
-                            && ((Integer) m.get("citationTotal")) == 3
-                            && ((Integer) m.get("citationValid")) == 2
-                            && ((Integer) m.get("citationInvalid")) == 1;
-                }));
+        List<SourceCard> roundtrip = TEST_MAPPER.readValue(jsonCaptor.getValue(), SOURCES_TYPE);
+        assertEquals(2, roundtrip.size());
+        assertEquals(1, roundtrip.get(0).getIndex());
+        assertEquals("d1", roundtrip.get(0).getDocId());
+        assertEquals(2, roundtrip.get(1).getIndex());
+        assertEquals("D1", roundtrip.get(0).getDocName());
+        assertEquals("kb", roundtrip.get(0).getKbId());
+        assertEquals(0.9f, roundtrip.get(0).getTopScore());
+        assertEquals(1, roundtrip.get(0).getChunks().size());
+        assertEquals("c", roundtrip.get(0).getChunks().get(0).getChunkId());
     }
 
     @Test
-    void onComplete_whenCardsSetButAnswerEmpty_thenStillMergesAllZeros() {
+    void onComplete_whenMessageIdBlank_thenUpdateSourcesJsonNeverCalled() {
         holder.trySet(List.of(card(1)));
-        applyTokenUsage(0, 0, 0);
+        when(memoryService.append(anyString(), any(), any(), any())).thenReturn("");
+
+        StreamChatEventHandler handler = newHandler();
+        handler.onContent("answer");
+
         handler.onComplete();
 
-        verify(traceRecordService).mergeRunExtraData(eq("test-trace-id"),
-                org.mockito.ArgumentMatchers.argThat(map -> {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> m = (Map<String, Object>) map;
-                    return ((Integer) m.get("citationTotal")) == 0
-                            && ((Integer) m.get("citationValid")) == 0
-                            && ((Integer) m.get("citationInvalid")) == 0
-                            && ((Double) m.get("citationCoverage")) == 0.0;
-                }));
+        verify(conversationMessageService, never()).updateSourcesJson(anyString(), anyString());
     }
 
     @Test
-    void onComplete_whenAnswerNonBlankButHasNoCitations_thenMergesAllZerosViaLoopPath() {
-        // 区别于 whenCardsSetButAnswerEmpty：那条用例走 scan 首行 StrUtil.isBlank 早返回；
-        // 本用例 answer 非空，实际走完 CITATION 匹配循环 + SENTENCE 循环，结果才应全 0。
-        holder.trySet(List.of(card(1), card(2)));
-        handler.onContent("一句话无引用。另一句仍无引用。");
-        applyTokenUsage(10, 20, 30);
+    void onComplete_whenUpdateSourcesJsonThrows_thenSubsequentSegmentsStillRun() throws Exception {
+        holder.trySet(List.of(card(1)));
+        doThrow(new RuntimeException("db down"))
+                .when(conversationMessageService).updateSourcesJson(anyString(), anyString());
+
+        StreamChatEventHandler handler = newHandler();
+        handler.onContent("answer [^1]");
+
         handler.onComplete();
 
-        verify(traceRecordService).mergeRunExtraData(eq("test-trace-id"),
-                org.mockito.ArgumentMatchers.argThat(map -> {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> m = (Map<String, Object>) map;
-                    return ((Integer) m.get("citationTotal")) == 0
-                            && ((Integer) m.get("citationValid")) == 0
-                            && ((Integer) m.get("citationInvalid")) == 0
-                            && ((Double) m.get("citationCoverage")) == 0.0;
-                }));
+        // persist 被调一次（且抛了），但 onComplete 后续段仍执行：
+        verify(conversationMessageService, times(1)).updateSourcesJson(anyString(), anyString());
+        // mergeCitationStatsIntoTrace 仍跑（cardsHolder 非空 + traceRecordService 非空）
+        verify(traceRecordService, times(1)).mergeRunExtraData(eq("test-trace-id"), anyMap());
+        // FINISH + META + MESSAGE 等事件仍被 emit（at-least-once — emit 次数取决于 messageChunkSize 分片）
+        verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
+        // 锁 persist → merge 顺序（spec §2.7 invariant）
+        InOrder inOrder = inOrder(conversationMessageService, traceRecordService);
+        inOrder.verify(conversationMessageService).updateSourcesJson(anyString(), anyString());
+        inOrder.verify(traceRecordService).mergeRunExtraData(anyString(), anyMap());
     }
 }

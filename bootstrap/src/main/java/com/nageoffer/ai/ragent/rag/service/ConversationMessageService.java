@@ -50,4 +50,17 @@ public interface ConversationMessageService {
      * @param conversationSummary 对话摘要内容
      */
     void addMessageSummary(ConversationSummaryBO conversationSummary);
+
+    /**
+     * 更新指定消息的 sources_json 列。messageId blank 时 no-op。
+     * 其他异常由调用方 try/catch 降级处理。
+     *
+     * <p><b>契约限制</b>：当前实现基于 {@code mapper.update(entity, lambdaUpdate)} +
+     * MyBatis Plus 默认 {@code NOT_NULL} 字段策略。传入 {@code json=null} 不会清空列，
+     * 而会被 MP 视作"跳过该字段"，UPDATE 实际为 no-op。调用方保证 json 非空。
+     *
+     * @param messageId 消息 ID
+     * @param json      SourceCard[] 的 JSON 序列化字符串；调用方保证非空
+     */
+    void updateSourcesJson(String messageId, String json);
 }
