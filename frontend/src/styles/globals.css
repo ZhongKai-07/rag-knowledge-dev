@@ -166,10 +166,48 @@
   --gradient-light: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   --dsw-alias-brand-primary-invert: #93c5fd;
   --dsw-specific-sidebar-nav-item-active-accent: #eff6ff;
+
+  /* ===== Violet Aurora (P0) ===== */
+  --vio-surface:        #FCFBF7;
+  --vio-surface-2:      #F8F5EC;
+  --vio-ink:            #15141A;
+  --vio-line:           #EAE6DB;
+
+  --vio-accent:         #5B4BE8;
+  --vio-accent-2:       #8B7FEF;
+  --vio-accent-subtle:  #D4CEF5;
+  --vio-accent-mist:    #F3F0FB;
+
+  --vio-success:        #4C9F7A;
+  --vio-warning:        #D9A14E;
+  --vio-danger:         #D55757;
+
+  --vio-aurora: linear-gradient(
+    110deg,
+    #9DC3FF 0%,
+    #B39BF5 35%,
+    #D4AEF5 60%,
+    #FFB8D4 85%,
+    #FFD4B3 100%
+  );
+
+  /* locale-aware display font (切 lang 时自动 reassign) */
+  --font-display: "Fraunces", "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+  --font-body:    "Inter Tight", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-.dark {
-  color-scheme: light;
+html:lang(zh-CN) {
+  --font-display: "Fraunces", "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+  --font-body:    "Inter Tight", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+}
+html:lang(zh-HK) {
+  --font-display: "Fraunces", "Noto Serif CJK HK", "Songti HK", Georgia, serif;
+  --font-body:    "Inter Tight", "Noto Sans HK", ui-sans-serif, system-ui, sans-serif;
+}
+html:lang(en) {
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body:    "Inter Tight", ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -186,6 +224,8 @@ body {
   @apply bg-[#FAFAFA] text-gray-900 font-body antialiased min-h-screen;
   background-color: var(--bg-secondary);
   overflow: hidden;
+  font-feature-settings: "kern", "liga";
+  -webkit-font-smoothing: antialiased;
 }
 
 /* 只在键盘导航时显示 focus 光晕，鼠标点击后不显示 */
