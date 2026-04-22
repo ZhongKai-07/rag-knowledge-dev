@@ -197,3 +197,39 @@ src/
 | 虚拟滚动 | react-virtuoso |
 | 通知 | sonner |
 | 类名合并 | clsx + tailwind-merge |
+
+## Violet Aurora 设计系统（2026-04 起）
+
+全站视觉语言规范：`docs/superpowers/specs/2026-04-22-frontend-violet-aurora-design.md`
+
+### Token 速查
+
+| 用途 | CSS 变量 | Tailwind class |
+|------|----------|---------------|
+| 主背景 | `var(--vio-surface)` `#FCFBF7` | `bg-vio-surface` |
+| 侧边栏底 | `var(--vio-surface-2)` `#F8F5EC` | `bg-[var(--vio-surface-2)]` |
+| 主墨 | `var(--vio-ink)` `#15141A` | `text-vio-ink` |
+| 分隔线 | `var(--vio-line)` `#EAE6DB` | `border-vio-line` |
+| 主紫 | `var(--vio-accent)` `#5B4BE8` | `text-vio-accent` |
+| 次紫 | `var(--vio-accent-2)` `#8B7FEF` | `text-vio-accent-2` |
+| 浅紫 | `var(--vio-accent-subtle)` `#D4CEF5` | `bg-vio-accent-subtle` |
+| 雾底 | `var(--vio-accent-mist)` `#F3F0FB` | `bg-[var(--vio-accent-mist)]` |
+
+### Gradient Budget（硬约束）
+
+`.vio-aurora-*` 类**只允许**在以下 6 个 signature moment 出现：
+1. `WelcomeScreen` hero "清晰的答案" 标题（`.vio-aurora-text`）
+2. `WelcomeScreen` 两团角落 halo（`.vio-aurora-halo` / `.vio-aurora-halo-2`）
+3. `ChatInput` + `WelcomeScreen` focus 外发光（`.vio-aurora-focus`）
+4. 主 `CitationBadge` n=1（`.vio-aurora-chip`）
+5. `Sidebar` HT monogram logo（`.vio-aurora-fill`）
+6. `Sidebar` "新建对话" halo + 流式 cursor（`.vio-aurora-halo` + `.vio-aurora-cursor`）
+
+**新增使用位置必须先更新 spec §4 白名单；Code review 会严查。**
+
+### 字体
+
+- Display: `font-display`（Fraunces + Noto Serif CJK）— 标题、hero
+- Body: `font-body`（Inter Tight + Noto Sans CJK）— 正文、控件
+- Meta/Code: `font-mono`（JetBrains Mono）— label、期号、引用编号
+- `html[lang]` 自动切 CJK fallback（见 `globals.css :lang()` 规则）
