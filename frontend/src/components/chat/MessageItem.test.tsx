@@ -78,12 +78,13 @@ describe("<MessageItem /> citation interaction", () => {
 
   it("renders Sources when message.sources has entries", () => {
     render(<MessageItem message={makeMessage()} isLast={true} />);
-    expect(screen.getByText("来源")).toBeDefined();
+    // Without i18n provider, t("sources.label") falls back to the key itself
+    expect(screen.getByText("sources.label")).toBeDefined();
   });
 
   it("does not render Sources when message.sources is undefined", () => {
     render(<MessageItem message={makeMessage({ sources: undefined })} isLast={true} />);
-    expect(screen.queryByText("来源")).toBeNull();
+    expect(screen.queryByText("sources.label")).toBeNull();
   });
 
   it("clears the pending highlight timer when component unmounts mid-timeout", () => {

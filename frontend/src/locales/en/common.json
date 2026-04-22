@@ -1,3 +1,17 @@
 {
-  "_locale": "en"
+  "brand_name": "HT Knowledge Studio",
+  "brand_issue_label": "№ 042",
+  "actions": {
+    "save": "Save", "cancel": "Cancel", "delete": "Delete",
+    "confirm": "Confirm", "close": "Close", "back": "Back",
+    "refresh": "Refresh", "search": "Search", "new": "New",
+    "edit": "Edit", "logout": "Log out"
+  },
+  "language": {
+    "menu_label": "Language",
+    "zh-CN": "简体中文",
+    "zh-HK": "繁體中文",
+    "en": "English"
+  },
+  "nav": { "spaces": "Spaces", "chat": "Chat", "admin": "Admin" }
 }

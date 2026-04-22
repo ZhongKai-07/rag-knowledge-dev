@@ -1,1 +1,4 @@
-{}
+{
+  "tabs": { "members": "Members", "sharing": "KB Sharing", "roles": "Roles", "departments": "Departments" },
+  "role": { "delete": { "confirm_title": "Delete role?", "affected_users": "{{count}} users affected", "affected_kbs": "{{count}} knowledge bases affected" } }
+}

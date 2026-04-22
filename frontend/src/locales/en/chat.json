@@ -1,1 +1,34 @@
-{}
+{
+  "welcome": {
+    "kicker": "HT · KNOWLEDGE STUDIO",
+    "title_line_1": "Turn questions into",
+    "title_line_2_before": "",
+    "title_line_2_accent": "clear answers",
+    "subtitle": "Structured retrieval · multi-source grounding · deep reasoning"
+  },
+  "input": {
+    "placeholder": "Ask anything...",
+    "placeholder_deep": "Ask a question for deep analysis...",
+    "deep_thinking": "Deep thinking",
+    "deep_thinking_on": "Deep thinking mode on — AI will reason more thoroughly",
+    "send_aria": "Send",
+    "hint_send": "Enter to send",
+    "hint_newline": "Shift + Enter for newline"
+  },
+  "session": {
+    "new_chat": "New chat",
+    "new_chat_hint": "Start from scratch",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "older": "Older",
+    "7_days": "Last 7 days",
+    "30_days": "Last 30 days",
+    "search_placeholder": "Search conversations...",
+    "rename": "Rename",
+    "delete": "Delete",
+    "confirm_delete": "Delete this conversation?"
+  },
+  "sources": { "label": "Sources" },
+  "thinking": { "label": "Thinking deeply" },
+  "stop": "Stop"
+}

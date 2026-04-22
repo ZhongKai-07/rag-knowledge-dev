@@ -1,1 +1,15 @@
-{}
+{
+  "sidebar": {
+    "dashboard": "Dashboard", "knowledge": "Knowledge Bases",
+    "access": "Access Center", "intent_tree": "Intent Tree",
+    "ingestion": "Ingestion", "traces": "Traces",
+    "evaluations": "Evaluations", "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Overview",
+    "kpi": {
+      "total_queries": "Total Queries", "active_users": "Active Users",
+      "success_rate": "Success Rate", "avg_latency": "Avg Latency"
+    }
+  }
+}
