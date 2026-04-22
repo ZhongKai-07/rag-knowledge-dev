@@ -21,7 +21,6 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.conditions.AbstractWrapper;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.rag.controller.vo.ConversationMessageVO;
 import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
@@ -130,7 +129,6 @@ class ConversationMessageServiceSourcesTest {
     // ── Read-path helpers ───────────────────────────────────────────────────
 
     private static final ObjectMapper TEST_MAPPER = new ObjectMapper();
-    private static final TypeReference<List<SourceCard>> SOURCES_TYPE = new TypeReference<>() {};
 
     private ConversationDO stubConversation() {
         ConversationDO conv = new ConversationDO();
