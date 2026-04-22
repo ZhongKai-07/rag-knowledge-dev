@@ -85,7 +85,7 @@ public class ConversationMessageDO {
     /**
      * 答案引用来源快照（SourceCard[] 的 JSON 序列化），NULL 表示无引用
      */
-    @TableField("sources_json")
+    @TableField(value = "sources_json", updateStrategy = FieldStrategy.NOT_NULL)
     private String sourcesJson;
 
     /**
