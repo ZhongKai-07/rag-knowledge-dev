@@ -61,6 +61,10 @@ rag:
     max-output-tokens: 150
     timeout-ms: 5000
 
+  retrieval:
+    recall-top-k: 30
+    rerank-top-k: 10
+
   sources:
     enabled: true
     preview-max-chars: 200
