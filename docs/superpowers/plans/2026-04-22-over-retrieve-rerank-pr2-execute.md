@@ -55,7 +55,7 @@ PR1 遗留的可观测性日志保留在生产代码里（`RoutingRerankService`
 
 ## 开工前先拍板两件事（问用户）
 
-1. **分支 + worktree**：建议开 `feature/pr2-over-retrieve` + `.worktrees/pr2-over-retrieve` 独立工作区再动（前面一次在 main 直接改出过事故）。请用户确认。
+1. **分支**：建议开 `feature/pr2-over-retrieve` 独立工作区再动（前面一次在 main 直接改出过事故）。请用户确认。
 2. **验证当前工作区干净**：跑 `git status`，如果 `.claude/settings.json` 有本地修改，`git stash` 起来再开工。
 
 ## 环境 gotcha（会坑到你）
