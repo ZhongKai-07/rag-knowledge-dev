@@ -72,7 +72,6 @@ import java.util.List;
 import java.util.Objects;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.CHAT_SYSTEM_PROMPT_PATH;
-import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.DEFAULT_TOP_K;
 
 /**
  * RAG 对话服务默认实现
@@ -185,9 +184,9 @@ public class RAGChatServiceImpl implements RAGChatService {
             return;
         }
 
-        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K, accessScope, knowledgeBaseId);
+        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, accessScope, knowledgeBaseId);
         if (ctx.isEmpty()) {
-            String emptyReply = "未检索到���问题相关的文档��容。";
+            String emptyReply = "未检索到与问题相关的文档内容。";
             callback.onContent(emptyReply);
             callback.onComplete();
             return;
@@ -251,7 +250,10 @@ public class RAGChatServiceImpl implements RAGChatService {
             }
         }
 
-        evalCollector.setTopK(DEFAULT_TOP_K);
+        // 记录实际喂给 LLM 的 chunk 数（不是 config 默认值）。
+        // 这样对 IntentNode.topK override 场景、多 sub-question 聚合 + dedup 都是真值，
+        // 避免"配置写 10、实际 8 或 13"在评测里记错。
+        evalCollector.setTopK(distinctChunks.size());
         evalCollector.setChunks(distinctChunks.stream()
                 .map(EvaluationCollector.RetrievedChunkSnapshot::from)
                 .toList());

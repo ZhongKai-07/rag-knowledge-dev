@@ -58,26 +58,6 @@ public class RAGConstant {
     public static final double SCORE_MARGIN_RATIO = 0.75;
 
     /**
-     * 默认返回的 TopK
-     */
-    public static final int DEFAULT_TOP_K = 10;
-
-    /**
-     * 检索时的 TopK 扩展倍数
-     */
-    public static final int SEARCH_TOP_K_MULTIPLIER = 3;
-
-    /**
-     * 检索时的最小 TopK
-     */
-    public static final int MIN_SEARCH_TOP_K = 20;
-
-    /**
-     * Rerank 限制倍数
-     */
-    public static final int RERANK_LIMIT_MULTIPLIER = 2;
-
-    /**
      * 多通道检索占位符键
      * <p>
      * 当没有意图识别结果时，使用此键作为 intentChunks Map 的占位符

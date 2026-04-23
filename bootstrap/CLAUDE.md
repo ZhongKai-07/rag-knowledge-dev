@@ -37,7 +37,7 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 |----|------|
 | `RAGChatController` | SSE 流式聊天入口 `GET /rag/v3/chat` |
 | `RAGChatServiceImpl` | 问答主编排：记忆→改写→意图→检索→生成 |
-| `RetrievalEngine` | 多通道检索引擎（并行执行各检索通道） |
+| `RetrievalEngine` | 多通道检索引擎（并行执行各检索通道）。PR2 起 `retrieve(...)` 丢掉 `int topK` 参数，改为注入 `RagRetrievalProperties` + `RetrievalPlan(recallTopK, rerankTopK)` record 贯穿。`resolveSubQuestionPlan` 翻译 `IntentNode.topK` override（保留"最终保留数"语义）到 rerank 端。 |
 | `MultiChannelRetrievalEngine` | 意图导向 + 全局向量检索并行去重重排 |
 | `AuthzPostProcessor` | 检索后置纵深防御（order=0）：`kbId==null` / `AccessScope` / `security_level` 天花板三重 fail-closed；命中即 ERROR 日志 |
 | `MetadataFilterBuilder` | 按 kb 注入 `security_level` 过滤条件的可注入 bean（替代原 static `MultiChannelRetrievalEngine.buildMetadataFilters`）|
@@ -45,6 +45,7 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `SourceCardBuilder` | 按 `docId` 聚合 `List<RetrievedChunk>` → `List<SourceCard>` 的纯聚合 `@Service`。不理解业务分支（flag/推不推判定/SSE/落库/kbName 查询都不负责） |
 | `SourceCardsHolder` | set-once CAS 容器（`AtomicReference<List<SourceCard>>`）。编排层同步段 `trySet`，handler 异步 `onComplete` 通过 `.get()` 读 `Optional` 快照（PR3 起 `mergeCitationStatsIntoTrace` 消费），避开 ThreadLocal |
 | `CitationStatsCollector` | 纯工具静态类（`rag/core/source/`）。`scan(answer, cards) → (total, valid, invalid, coverage)` record。`valid` 用 `indexSet.contains(n)` 非 `1..N` range（对齐前端 `indexMap.get(n)` 契约，支持未来非连续 index）；regex `CITATION = \[\^(\d+)]` + `SENTENCE = [^。！？]+[。！？]`；空输入 → `(0,0,0,0.0)` 不除零。SENTENCE 粗切对无终止标点尾段系统性低估 coverage |
+| `RagRetrievalProperties` | `rag.retrieval.*` 配置（`recallTopK=30` / `rerankTopK=10`）。PR2 起拆分召回池与最终保留数，支撑 over-retrieve + rerank 漏斗。`@PostConstruct validate()` 校验 `recall >= rerank > 0` — 启动期 fail-stop。 |
 | `RagSourcesProperties` | `rag.sources.*` 配置（`enabled` / `previewMaxChars` / `maxCards`，2026-04-22 PR5 起默认 `enabled: true` 上线；`false` 仍是 hot-rollback 通道，字节级回到 PR4 末态） |
 | `RAGPromptService` | 根据检索结果和场景构建结构化 Prompt。PR3 起 `buildStructuredMessages` 内部派生 `citationMode = CollUtil.isNotEmpty(ctx.getCards()) && ctx.hasKb()`；私有 `buildCitationEvidence(ctx)` 正文从 `intentChunks.RetrievedChunk.getText()` 全文回收（**不**用 `SourceChunk.preview`）；私有 `appendCitationRule(base, cards)` 动态白名单（size=1 → `[^1]`，≥2 → `[^1] 至 [^N]`）。签名零变化，`cards==null||empty` → PR2 等价回归 |
 | `PromptTemplateUtils.fillSlots(template, Map)` | `{slot}` 模板填充工具（不要手写 `.replace()` 链） |
@@ -124,6 +125,7 @@ docker exec postgres psql -U postgres -d ragent -c "SQL语句"
 | `rag.query-rewrite` | 查询改写开关和历史消息轮数 |
 | `rag.rate-limit` | 全局并发限制 |
 | `rag.memory` | 会话记忆保留轮数、摘要开关、TTL |
+| `rag.retrieval` | 两阶段检索配置（`recall-top-k=30` / `rerank-top-k=10`）。PR2 起生效。`SearchChannelProperties.topKMultiplier` 已 `@Deprecated(forRemoval=true)`，不再读取。 |
 | `rag.search.channels` | 各检索通道的置信度阈值 |
 | `rag.sources` | 回答来源（Answer Sources）功能开关 + 卡片参数。2026-04-22 PR5 起默认 `enabled: true`；置 `false` 即 hot-rollback 回 PR4 末态（前端 `hasSources=false` 对称 gate + 后端 `SourceCardBuilder` 空输出 + `persistSourcesIfPresent` 空 guard 全链路字节级等价） |
 | `ai.chat.candidates` | 聊天模型候选列表（含优先级） |

@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -88,7 +89,6 @@ public class IntentDirectedSearchChannel implements SearchChannel {
         long startTime = System.currentTimeMillis();
 
         try {
-            // 提取 KB 意图
             List<NodeScore> kbIntents = extractKbIntents(context);
 
             if (CollUtil.isEmpty(kbIntents)) {
@@ -104,17 +104,23 @@ public class IntentDirectedSearchChannel implements SearchChannel {
 
             log.info("执行意图定向检索，识别出 {} 个 KB 意图", kbIntents.size());
 
-            // 并行检索所有意图对应的知识库
-            int topKMultiplier = properties.getChannels().getIntentDirected().getTopKMultiplier();
-            List<RetrievedChunk> allChunks = retrieveByIntents(
+            int recallTopK = context.getRecallTopK();
+            List<RetrievedChunk> fanOutChunks = parallelRetriever.executeParallelRetrieval(
                     context.getMainQuestion(),
                     kbIntents,
-                    context.getTopK(),
-                    topKMultiplier,
+                    recallTopK,
                     context
             );
 
-            // 计算置信度（基于意图分数）
+            // 通道级 sort+cap：多意图 fan-out 后可能多达 N*recallTopK 条，
+            // 按上游 score 降序取前 recallTopK，把"通道贡献给下游 rerank 的候选数"严格收口到 recallTopK。
+            List<RetrievedChunk> cappedChunks = fanOutChunks.stream()
+                    .sorted(Comparator.comparing(
+                            RetrievedChunk::getScore,
+                            Comparator.nullsLast(Comparator.reverseOrder())))
+                    .limit(recallTopK)
+                    .toList();
+
             double confidence = kbIntents.stream()
                     .mapToDouble(NodeScore::getScore)
                     .max()
@@ -122,13 +128,13 @@ public class IntentDirectedSearchChannel implements SearchChannel {
 
             long latency = System.currentTimeMillis() - startTime;
 
-            log.info("意图定向检索完成，检索到 {} 个 Chunk，置信度：{}，耗时 {}ms",
-                    allChunks.size(), confidence, latency);
+            log.info("意图定向检索完成，fan-out {} -> cap {} 个 Chunk，置信度：{}，耗时 {}ms",
+                    fanOutChunks.size(), cappedChunks.size(), confidence, latency);
 
             return SearchChannelResult.builder()
                     .channelType(SearchChannelType.INTENT_DIRECTED)
                     .channelName(getName())
-                    .chunks(allChunks)
+                    .chunks(cappedChunks)
                     .confidence(confidence)
                     .latencyMs(latency)
                     .metadata(Map.of("intentCount", kbIntents.size()))
@@ -169,17 +175,4 @@ public class IntentDirectedSearchChannel implements SearchChannel {
                 .toList();
     }
 
-    /**
-     * 根据意图列表并行检索
-     */
-    private List<RetrievedChunk> retrieveByIntents(String question,
-                                                   List<NodeScore> kbIntents,
-                                                   int fallbackTopK,
-                                                   int topKMultiplier,
-                                                   SearchContext context) {
-        // 使用模板方法执行并行检索，传入 SearchContext 用于 per-KB metadata 过滤
-        return parallelRetriever.executeParallelRetrieval(
-                question, kbIntents, fallbackTopK, topKMultiplier,
-                context);
-    }
 }

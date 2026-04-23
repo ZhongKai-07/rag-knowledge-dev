@@ -131,7 +131,8 @@ class DeduplicationPostProcessorTest {
         return SearchContext.builder()
                 .originalQuestion("q")
                 .rewrittenQuestion("q")
-                .topK(5)
+                .recallTopK(5)
+                .rerankTopK(5)
                 .accessScope(AccessScope.all())
                 .build();
     }

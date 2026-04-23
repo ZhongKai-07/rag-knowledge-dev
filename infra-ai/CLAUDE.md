@@ -71,7 +71,7 @@ Service 接口（业务调用入口）
 |----|------|
 | `RerankService` | 统一重排接口 |
 | `RoutingRerankService` | `@Primary` 路由实现 |
-| `BaiLianRerankClient` | 百炼重排实现 |
+| `BaiLianRerankClient` | 百炼重排实现。PR1 拆掉 `candidates.size() <= topN` 短路（短路让 API 被跳过）；PR2 加 `effectiveTopN = min(topN, candidates.size())` 防御 clamp（小 KB 候选 < rerankTopK 时 API 不依赖未定义行为）。保留 `[bailian-rerank]` 诊断日志。 |
 | `NoopRerankClient` | 空实现（测试/占位，直接返回原顺序） |
 
 ### 模型路由（model/）

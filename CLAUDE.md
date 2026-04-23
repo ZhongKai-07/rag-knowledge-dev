@@ -25,6 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **其他**：
 - `log/dev_log/dev_log.md` — 按日期的 PR/开发日志索引
+- `log/notes/` — 零散开发笔记（概念澄清 / 调试心路 / 小型 Q&A；见目录内 README 定位与不同于 dev_log、diagnostic 的边界）
 - `AGENTS.md`（根）— agent contract
 
 ## Build & Run Commands

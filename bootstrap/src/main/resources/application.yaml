@@ -61,6 +61,11 @@ rag:
     max-output-tokens: 150
     timeout-ms: 5000
 
+  # Two-stage retrieval: over-retrieve (recall-top-k candidates) then rerank to top-k
+  retrieval:
+    recall-top-k: 30
+    rerank-top-k: 10
+
   sources:
     enabled: true
     preview-max-chars: 200
@@ -106,10 +111,8 @@ rag:
     channels:
       vector-global:
         confidence-threshold: 0.6
-        top-k-multiplier: 3
       intent-directed:
         min-intent-score: 0.4
-        top-k-multiplier: 2
 
   trace:
     enabled: true
