@@ -58,11 +58,6 @@ public class RAGConstant {
     public static final double SCORE_MARGIN_RATIO = 0.75;
 
     /**
-     * 默认返回的 TopK
-     */
-    public static final int DEFAULT_TOP_K = 10;
-
-    /**
      * 多通道检索占位符键
      * <p>
      * 当没有意图识别结果时，使用此键作为 intentChunks Map 的占位符
