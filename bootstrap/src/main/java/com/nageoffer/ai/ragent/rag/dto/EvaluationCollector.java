@@ -37,6 +37,16 @@ public class EvaluationCollector {
 
     private List<RetrievedChunkSnapshot> chunks;
 
+    /**
+     * 评测记录：实际喂给 LLM 的 chunk 数（dedup 后 distinctChunks.size()）。
+     * <p>
+     * 不等于全局 rag.retrieval.rerank-top-k 配置值——IntentNode.topK override、多 sub-question
+     * 聚合 + dedup 会让实际数量与配置值分叉。评测口径采用"真值"：记录 prompt 阶段真实看到的
+     * chunk 数，方便后续 recall/precision 分析。
+     * <p>
+     * 命名保留 "topK" 是为避免数据库 schema migration。若将来需要分别评测召回和 rerank 两个
+     * 阶段，再在 t_rag_evaluation_record 加 recall_top_k 列。
+     */
     private int topK;
 
     private List<IntentSnapshot> intents;

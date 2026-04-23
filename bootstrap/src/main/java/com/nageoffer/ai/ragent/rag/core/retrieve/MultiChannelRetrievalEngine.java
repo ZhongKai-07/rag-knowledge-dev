@@ -22,6 +22,7 @@ import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceNode;
+import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannel;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
@@ -72,16 +73,16 @@ public class MultiChannelRetrievalEngine {
      * 执行多通道检索（仅 KB 场景）
      *
      * @param subIntents 子问题意图列表
-     * @param topK       期望返回的结果数量
+     * @param plan       {@link RetrievalPlan}，携带召回池大小 (recallTopK) 与 rerank 后保留数 (rerankTopK)
      * @return 检索到的 Chunk 列表
      */
     @RagTraceNode(name = "multi-channel-retrieval", type = "RETRIEVE_CHANNEL")
-    public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents, int topK,
+    public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents,
+                                                           RetrievalPlan plan,
                                                            AccessScope accessScope, String knowledgeBaseId) {
-        // 构建检索上下文
-        SearchContext context = buildSearchContext(subIntents, topK, accessScope);
+        SearchContext context = buildSearchContext(subIntents, plan, accessScope);
 
-        // 单知识库定向检索路径
+        // 单知识库定向检索路径（召回数直接用 recallTopK）
         if (knowledgeBaseId != null) {
             KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(knowledgeBaseId);
             if (kb == null || kb.getCollectionName() == null) {
@@ -89,7 +90,7 @@ public class MultiChannelRetrievalEngine {
             }
             RetrieveRequest req = RetrieveRequest.builder()
                     .query(context.getMainQuestion())
-                    .topK(topK)
+                    .topK(plan.recallTopK())
                     .collectionName(kb.getCollectionName())
                     .metadataFilters(metadataFilterBuilder.build(context, knowledgeBaseId))
                     .build();
@@ -105,13 +106,11 @@ public class MultiChannelRetrievalEngine {
             return executePostProcessors(List.of(singleResult), context);
         }
 
-        // 【阶段1：多通道并行检索】
         List<SearchChannelResult> channelResults = executeSearchChannels(context);
         if (CollUtil.isEmpty(channelResults)) {
             return List.of();
         }
 
-        // 【阶段2：后置处理器链】
         return executePostProcessors(channelResults, context);
     }
 
@@ -254,7 +253,8 @@ public class MultiChannelRetrievalEngine {
      * 下游 channel/postprocessor 直接 O(1) 查表；{@link AccessScope.All} 场景
      * (SUPER_ADMIN) 无需预解析, 由检索层全量放行。
      */
-    private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents, int topK,
+    private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents,
+                                              RetrievalPlan plan,
                                               AccessScope accessScope) {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
         Map<String, Integer> kbSecurityLevels;
@@ -268,7 +268,8 @@ public class MultiChannelRetrievalEngine {
                 .originalQuestion(question)
                 .rewrittenQuestion(question)
                 .intents(subIntents)
-                .topK(topK)
+                .recallTopK(plan.recallTopK())
+                .rerankTopK(plan.rerankTopK())
                 .accessScope(accessScope)
                 .kbSecurityLevels(kbSecurityLevels)
                 .build();

@@ -103,8 +103,11 @@ public class BaiLianRerankClient implements RerankClient {
         }
         input.add("documents", documentsArray);
 
+        // 防御性 clamp：候选数 < 请求 top_n 时，百炼 API 对 top_n>documents 的行为未验证；
+        // 直接 clamp 到候选数，避免依赖 API 的 fallback。上层是否截断由 caller 决定，这里只保证请求合法。
+        int effectiveTopN = Math.min(topN, candidates.size());
         JsonObject parameters = new JsonObject();
-        parameters.addProperty("top_n", topN);
+        parameters.addProperty("top_n", effectiveTopN);
         parameters.addProperty("return_documents", true);
 
         reqBody.add("input", input);
@@ -168,17 +171,17 @@ public class BaiLianRerankClient implements RerankClient {
 
             reranked.add(hit);
 
-            if (reranked.size() >= topN) {
+            if (reranked.size() >= effectiveTopN) {
                 break;
             }
         }
 
-        if (reranked.size() < topN) {
+        if (reranked.size() < effectiveTopN) {
             for (RetrievedChunk c : candidates) {
                 if (!reranked.contains(c)) {
                     reranked.add(c);
                 }
-                if (reranked.size() >= topN) {
+                if (reranked.size() >= effectiveTopN) {
                     break;
                 }
             }

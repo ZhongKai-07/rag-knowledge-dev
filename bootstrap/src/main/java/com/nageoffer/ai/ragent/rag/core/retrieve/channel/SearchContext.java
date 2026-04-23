@@ -19,7 +19,6 @@ package com.nageoffer.ai.ragent.rag.core.retrieve.channel;
 
 import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
-import lombok.Builder;
 import lombok.Data;
 
 import java.util.HashMap;
@@ -32,7 +31,6 @@ import java.util.Map;
  * 携带检索所需的所有信息，在多个通道之间传递
  */
 @Data
-@Builder
 public class SearchContext {
 
     /**
@@ -56,9 +54,18 @@ public class SearchContext {
     private List<SubQuestionIntent> intents;
 
     /**
-     * 期望返回的结果数量
+     * 召回阶段的候选数（向量检索每个目标返回这么多）。
+     * 由 {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties#getRecallTopK()} 或
+     * 意图节点 override 推导。必须 >= rerankTopK。
      */
-    private int topK;
+    private int recallTopK;
+
+    /**
+     * Rerank 后保留并喂给 LLM 的数量（最终 TopK）。
+     * 由 {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties#getRerankTopK()} 或
+     * {@link com.nageoffer.ai.ragent.rag.core.intent.IntentNode#getTopK()} override 推导。
+     */
+    private int rerankTopK;
 
     /**
      * 当前用户的检索访问范围（RBAC 单一状态源）。
@@ -77,8 +84,104 @@ public class SearchContext {
     /**
      * 扩展元数据
      */
-    @Builder.Default
     private Map<String, Object> metadata = new HashMap<>();
+
+    /**
+     * Builder-level fail-fast：配置错 (recallTopK < rerankTopK 或非正) 直接 IAE，
+     * 避免错配沉默流到 channel / rerank 后再爆。这是和
+     * {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties#validate()} 的第二道保险。
+     * <p>
+     * 不用 Lombok @Builder 是因为需要在 build() 内做校验；Lombok 生成的 build() 可以通过
+     * 继承覆盖，但依赖内部字段名 (metadata$value) 和 positional ctor 顺序，跨 Lombok 版本
+     * 脆弱。手写 builder 换来完全可控 + 零 Lombok 内部耦合。
+     */
+    public static SearchContextBuilder builder() {
+        return new SearchContextBuilder();
+    }
+
+    public static class SearchContextBuilder {
+        private String originalQuestion;
+        private String rewrittenQuestion;
+        private List<String> subQuestions;
+        private List<SubQuestionIntent> intents;
+        private int recallTopK;
+        private int rerankTopK;
+        private AccessScope accessScope;
+        private Map<String, Integer> kbSecurityLevels;
+        private Map<String, Object> metadata;
+
+        public SearchContextBuilder originalQuestion(String v) {
+            this.originalQuestion = v;
+            return this;
+        }
+
+        public SearchContextBuilder rewrittenQuestion(String v) {
+            this.rewrittenQuestion = v;
+            return this;
+        }
+
+        public SearchContextBuilder subQuestions(List<String> v) {
+            this.subQuestions = v;
+            return this;
+        }
+
+        public SearchContextBuilder intents(List<SubQuestionIntent> v) {
+            this.intents = v;
+            return this;
+        }
+
+        public SearchContextBuilder recallTopK(int v) {
+            this.recallTopK = v;
+            return this;
+        }
+
+        public SearchContextBuilder rerankTopK(int v) {
+            this.rerankTopK = v;
+            return this;
+        }
+
+        public SearchContextBuilder accessScope(AccessScope v) {
+            this.accessScope = v;
+            return this;
+        }
+
+        public SearchContextBuilder kbSecurityLevels(Map<String, Integer> v) {
+            this.kbSecurityLevels = v;
+            return this;
+        }
+
+        public SearchContextBuilder metadata(Map<String, Object> v) {
+            this.metadata = v;
+            return this;
+        }
+
+        public SearchContext build() {
+            if (recallTopK <= 0) {
+                throw new IllegalArgumentException(
+                        "SearchContext.recallTopK must be > 0, got: " + recallTopK);
+            }
+            if (rerankTopK <= 0) {
+                throw new IllegalArgumentException(
+                        "SearchContext.rerankTopK must be > 0, got: " + rerankTopK);
+            }
+            if (recallTopK < rerankTopK) {
+                throw new IllegalArgumentException(
+                        "SearchContext.recallTopK (" + recallTopK
+                                + ") must be >= rerankTopK (" + rerankTopK + ")");
+            }
+            SearchContext ctx = new SearchContext();
+            ctx.setOriginalQuestion(originalQuestion);
+            ctx.setRewrittenQuestion(rewrittenQuestion);
+            ctx.setSubQuestions(subQuestions);
+            ctx.setIntents(intents);
+            ctx.setRecallTopK(recallTopK);
+            ctx.setRerankTopK(rerankTopK);
+            ctx.setAccessScope(accessScope);
+            ctx.setKbSecurityLevels(kbSecurityLevels);
+            ctx.setMetadata(metadata != null ? metadata : new HashMap<>());
+            return ctx;
+        }
+    }
 
     /**
      * 获取主问题（优先使用重写后的问题）

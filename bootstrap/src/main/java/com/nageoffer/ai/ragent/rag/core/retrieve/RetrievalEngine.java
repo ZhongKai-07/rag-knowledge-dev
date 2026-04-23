@@ -35,6 +35,7 @@ import com.nageoffer.ai.ragent.rag.core.mcp.MCPTool;
 import com.nageoffer.ai.ragent.rag.core.mcp.MCPToolExecutor;
 import com.nageoffer.ai.ragent.rag.core.mcp.MCPToolRegistry;
 import com.nageoffer.ai.ragent.rag.core.prompt.ContextFormatter;
+import com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,7 +51,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
-import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.DEFAULT_TOP_K;
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.INTENT_MIN_SCORE;
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.MULTI_CHANNEL_KEY;
 
@@ -67,6 +67,7 @@ public class RetrievalEngine {
     private final MCPParameterExtractor mcpParameterExtractor;
     private final MCPToolRegistry mcpToolRegistry;
     private final MultiChannelRetrievalEngine multiChannelRetrievalEngine;
+    private final RagRetrievalProperties ragRetrievalProperties;
     @Qualifier("ragContextThreadPoolExecutor")
     private final Executor ragContextExecutor;
     @Qualifier("mcpBatchThreadPoolExecutor")
@@ -76,11 +77,10 @@ public class RetrievalEngine {
      * 检索方法：根据子问题意图列表执行检索，整合知识库和MCP工具的结果
      *
      * @param subIntents 子问题意图列表，包含每个子问题及其相关的意图节点和评分
-     * @param topK       需要返回的最相关结果数量，若 ≤0 则使用默认值
      * @return RetrievalContext 检索上下文，包含知识库上下文、MCP上下文和分组的检索块
      */
     @RagTraceNode(name = "retrieval-engine", type = "RETRIEVE")
-    public RetrievalContext retrieve(List<SubQuestionIntent> subIntents, int topK,
+    public RetrievalContext retrieve(List<SubQuestionIntent> subIntents,
                                      AccessScope accessScope, String knowledgeBaseId) {
         if (CollUtil.isEmpty(subIntents)) {
             return RetrievalContext.builder()
@@ -90,12 +90,14 @@ public class RetrievalEngine {
                     .build();
         }
 
-        int finalTopK = topK > 0 ? topK : DEFAULT_TOP_K;
+        int globalRecall = ragRetrievalProperties.getRecallTopK();
+        int globalRerank = ragRetrievalProperties.getRerankTopK();
+
         List<CompletableFuture<SubQuestionContext>> tasks = subIntents.stream()
                 .map(si -> CompletableFuture.supplyAsync(
                         () -> buildSubQuestionContext(
                                 si,
-                                resolveSubQuestionTopK(si, finalTopK),
+                                resolveSubQuestionPlan(si, globalRecall, globalRerank),
                                 accessScope,
                                 knowledgeBaseId
                         ),
@@ -129,12 +131,12 @@ public class RetrievalEngine {
                 .build();
     }
 
-    private SubQuestionContext buildSubQuestionContext(SubQuestionIntent intent, int topK,
+    private SubQuestionContext buildSubQuestionContext(SubQuestionIntent intent, RetrievalPlan plan,
                                                        AccessScope accessScope, String knowledgeBaseId) {
         List<NodeScore> kbIntents = filterKbIntents(intent.nodeScores());
         List<NodeScore> mcpIntents = filterMCPIntents(intent.nodeScores());
 
-        KbResult kbResult = retrieveAndRerank(intent, kbIntents, topK, accessScope, knowledgeBaseId);
+        KbResult kbResult = retrieveAndRerank(intent, kbIntents, plan, accessScope, knowledgeBaseId);
 
         String mcpContext = CollUtil.isNotEmpty(mcpIntents)
                 ? executeMcpAndMerge(intent.subQuestion(), mcpIntents)
@@ -144,19 +146,24 @@ public class RetrievalEngine {
     }
 
     /**
-     * 子问题实际 TopK 计算规则：
-     * 1. 命中 KB 意图节点且配置了节点级 topK：取最大值（多意图保守放大）
-     * 2. 没有任何可用节点级 topK：回退到全局 topK
+     * 子问题的 TopK 方案：
+     * 1. rerankTopK = max(kbIntents 中 node.topK) ?? globalRerankTopK
+     *    (IntentNode.topK 沿用"最终保留数"语义，不改已有节点配置和前端文案)
+     * 2. recallTopK = max(globalRecallTopK, rerankTopK)
+     *    (保证召回池 ≥ 最终保留数)
      */
-    private int resolveSubQuestionTopK(SubQuestionIntent intent, int fallbackTopK) {
-        return filterKbIntents(intent.nodeScores()).stream()
+    private RetrievalPlan resolveSubQuestionPlan(SubQuestionIntent intent,
+                                                  int globalRecall, int globalRerank) {
+        int effectiveRerank = filterKbIntents(intent.nodeScores()).stream()
                 .map(NodeScore::getNode)
                 .filter(Objects::nonNull)
                 .map(IntentNode::getTopK)
                 .filter(Objects::nonNull)
                 .filter(topK -> topK > 0)
                 .max(Integer::compareTo)
-                .orElse(fallbackTopK);
+                .orElse(globalRerank);
+        int effectiveRecall = Math.max(globalRecall, effectiveRerank);
+        return new RetrievalPlan(effectiveRecall, effectiveRerank);
     }
 
     private void appendSection(StringBuilder builder, String question, String context) {
@@ -200,12 +207,12 @@ public class RetrievalEngine {
         return contextFormatter.formatMcpContext(responses, mcpIntents);
     }
 
-    private KbResult retrieveAndRerank(SubQuestionIntent intent, List<NodeScore> kbIntents, int topK,
+    private KbResult retrieveAndRerank(SubQuestionIntent intent, List<NodeScore> kbIntents, RetrievalPlan plan,
                                         AccessScope accessScope, String knowledgeBaseId) {
         // 使用多通道检索引擎（是否启用全局检索由置信度阈值决定）
         List<SubQuestionIntent> subIntents = List.of(intent);
-        List<RetrievedChunk> chunks = multiChannelRetrievalEngine.retrieveKnowledgeChannels(subIntents, topK,
-                accessScope, knowledgeBaseId);
+        List<RetrievedChunk> chunks = multiChannelRetrievalEngine.retrieveKnowledgeChannels(
+                subIntents, plan, accessScope, knowledgeBaseId);
 
         if (CollUtil.isEmpty(chunks)) {
             return KbResult.empty();
@@ -227,7 +234,7 @@ public class RetrievalEngine {
             intentChunks.put(MULTI_CHANNEL_KEY, chunks);
         }
 
-        String groupedContext = contextFormatter.formatKbContext(kbIntents, intentChunks, topK);
+        String groupedContext = contextFormatter.formatKbContext(kbIntents, intentChunks, plan.rerankTopK());
         return new KbResult(groupedContext, intentChunks);
     }
 
@@ -291,5 +298,22 @@ public class RetrievalEngine {
                                       String kbContext,
                                       String mcpContext,
                                       Map<String, List<RetrievedChunk>> intentChunks) {
+    }
+
+    /**
+     * 单个子问题的 TopK 方案。
+     * <p>
+     * {@code rerankTopK} 来自 {@link IntentNode#getTopK()} override，fallback 到全局；
+     * {@code recallTopK} 取 {@code max(globalRecallTopK, rerankTopK)}，保证召回池永远 ≥ 最终保留数，
+     * 避免 rerank 想挑 N 但实际候选不足的情况。
+     */
+    public record RetrievalPlan(int recallTopK, int rerankTopK) {
+        public RetrievalPlan {
+            if (recallTopK < rerankTopK) {
+                throw new IllegalArgumentException(
+                        "RetrievalPlan.recallTopK (" + recallTopK
+                                + ") must be >= rerankTopK (" + rerankTopK + ")");
+            }
+        }
     }
 }

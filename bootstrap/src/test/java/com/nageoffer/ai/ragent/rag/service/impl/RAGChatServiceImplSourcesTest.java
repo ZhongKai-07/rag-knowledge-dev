@@ -202,7 +202,7 @@ class RAGChatServiceImplSourcesTest {
     void happyPath_emitSourcesBetweenRetrieveAndStreamChat() {
         List<RetrievedChunk> chunks = List.of(chunk("c1", "d1"));
         RetrievalContext ctx = ctxWithKbChunks(chunks);
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         SourceCard card = SourceCard.builder().index(1).docId("d1").docName("D1").topScore(0.9f).chunks(List.of()).build();
         when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of(card));
@@ -211,7 +211,7 @@ class RAGChatServiceImplSourcesTest {
 
         // retrieve → build → trySetCards → emitSources → llmService.streamChat
         InOrder io = inOrder(retrievalEngine, sourceCardBuilder, callback, llmService);
-        io.verify(retrievalEngine).retrieve(any(), anyInt(), any(), any());
+        io.verify(retrievalEngine).retrieve(any(), any(), any());
         io.verify(sourceCardBuilder).build(any(), eq(8), eq(200));
         io.verify(callback).trySetCards(any());
         io.verify(callback).emitSources(any(SourcesPayload.class));
@@ -233,7 +233,7 @@ class RAGChatServiceImplSourcesTest {
 
         List<RetrievedChunk> chunks = List.of(chunk("c1", "d1"));
         RetrievalContext ctx = ctxWithKbChunks(chunks);
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         service.streamChat("q", "cid-2", null, false, emitter);
 
@@ -247,7 +247,7 @@ class RAGChatServiceImplSourcesTest {
     @Test
     void emptyDistinctChunks_mcpOnlyScenario_shouldNotCallBuilder_butLlmStillStarts() {
         RetrievalContext ctx = ctxMcpOnly();
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         service.streamChat("q", "cid-3", null, false, emitter);
 
@@ -262,7 +262,7 @@ class RAGChatServiceImplSourcesTest {
     void emptyCards_shouldNotEmit_butLlmStillStarts() {
         List<RetrievedChunk> chunks = List.of(chunk("c1", "d1"));
         RetrievalContext ctx = ctxWithKbChunks(chunks);
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of());
 
@@ -278,7 +278,7 @@ class RAGChatServiceImplSourcesTest {
     @Test
     void ctxIsEmpty_shouldNotCallBuilder_andShouldNotStartLlm() {
         RetrievalContext ctx = ctxEmpty();
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         service.streamChat("q", "cid-5", null, false, emitter);
 
@@ -296,7 +296,7 @@ class RAGChatServiceImplSourcesTest {
         // 防御：若 holder 已被设置（理论上不应发生，但锁住行为）
         List<RetrievedChunk> chunks = List.of(chunk("c1", "d1"));
         RetrievalContext ctx = ctxWithKbChunks(chunks);
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         SourceCard card = SourceCard.builder().index(1).docId("d1").docName("D1").topScore(0.9f).chunks(List.of()).build();
         when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of(card));
@@ -360,7 +360,7 @@ class RAGChatServiceImplSourcesTest {
     void lowScoreKbEvidence_shouldSkipSourcesAndDisableSuggestions_butLlmStillStarts() {
         List<RetrievedChunk> chunks = List.of(chunk("c-low", "d1", 0.50f));
         RetrievalContext ctx = ctxWithKbChunks(chunks);
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         service.streamChat("q", "cid-low", null, false, emitter);
 
@@ -379,7 +379,7 @@ class RAGChatServiceImplSourcesTest {
     void thresholdScore_shouldEmitSourcesAndEnableSuggestions() {
         List<RetrievedChunk> chunks = List.of(chunk("c-threshold", "d1", 0.55f));
         RetrievalContext ctx = ctxWithKbChunks(chunks);
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         SourceCard card = SourceCard.builder().index(1).docId("d1").docName("D1").topScore(0.55f).chunks(List.of()).build();
         when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of(card));
@@ -401,7 +401,7 @@ class RAGChatServiceImplSourcesTest {
     void higherScore_shouldEmitSourcesAndEnableSuggestions() {
         List<RetrievedChunk> chunks = List.of(chunk("c-high", "d1", 0.65f));
         RetrievalContext ctx = ctxWithKbChunks(chunks);
-        when(retrievalEngine.retrieve(any(), anyInt(), any(), any())).thenReturn(ctx);
+        when(retrievalEngine.retrieve(any(), any(), any())).thenReturn(ctx);
 
         SourceCard card = SourceCard.builder().index(1).docId("d1").docName("D1").topScore(0.65f).chunks(List.of()).build();
         when(sourceCardBuilder.build(any(), anyInt(), anyInt())).thenReturn(List.of(card));

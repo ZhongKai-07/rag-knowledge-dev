@@ -21,6 +21,7 @@ import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannel;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
@@ -123,7 +124,7 @@ class MultiChannelRetrievalEnginePostProcessorChainTest {
 
         List<RetrievedChunk> output = engine.retrieveKnowledgeChannels(
                 List.of(new SubQuestionIntent("q", List.of())),
-                5,
+                new RetrievalPlan(5, 5),
                 AccessScope.all(),
                 null
         );

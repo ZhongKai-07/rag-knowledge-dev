@@ -53,21 +53,21 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
     }
 
     /**
-     * 执行并行检索（重载方法，支持动态 TopK 计算和 per-KB metadata 过滤）
+     * 并行检索每个意图的 KB，每个目标各自取 perIntentRecallTopK 个候选。
+     * 通道级 sort+cap 由 caller (IntentDirectedSearchChannel) 统一处理。
      */
     public List<RetrievedChunk> executeParallelRetrieval(String question,
                                                          List<NodeScore> targets,
-                                                         int fallbackTopK,
-                                                         int topKMultiplier,
+                                                         int perIntentRecallTopK,
                                                          SearchContext context) {
         List<IntentTask> intentTasks = targets.stream()
                 .map(nodeScore -> new IntentTask(
                         nodeScore,
-                        resolveIntentTopK(nodeScore, fallbackTopK, topKMultiplier),
+                        resolveIntentRecallTopK(nodeScore, perIntentRecallTopK),
                         metadataFilterBuilder.build(
                                 context, nodeScore.getNode().getKbId())))
                 .toList();
-        return super.executeParallelRetrieval(question, intentTasks, fallbackTopK);
+        return super.executeParallelRetrieval(question, intentTasks, perIntentRecallTopK);
     }
 
     @Override
@@ -103,22 +103,17 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
     }
 
     /**
-     * 计算单个意图节点检索 TopK
+     * 单意图召回数：优先 node.topK（已改语义为最终保留数，这里按最终保留数兜底放大到 perIntent recall），
+     * 否则用全局 perIntentRecallTopK。
      */
-    private int resolveIntentTopK(NodeScore nodeScore, int fallbackTopK, int topKMultiplier) {
-        int baseTopK = fallbackTopK;
+    private int resolveIntentRecallTopK(NodeScore nodeScore, int perIntentRecallTopK) {
         if (nodeScore != null && nodeScore.getNode() != null) {
             Integer nodeTopK = nodeScore.getNode().getTopK();
             if (nodeTopK != null && nodeTopK > 0) {
-                baseTopK = nodeTopK;
+                // node.topK 是"最终保留数"。召回至少放到与全局 recall 同等规模，保证 rerank 有挑选空间。
+                return Math.max(perIntentRecallTopK, nodeTopK);
             }
         }
-
-        if (topKMultiplier <= 0) {
-            log.warn("意图定向通道倍率配置异常: {}, 使用基础 TopK: {}", topKMultiplier, baseTopK);
-            return baseTopK;
-        }
-
-        return baseTopK * topKMultiplier;
+        return perIntentRecallTopK;
     }
 }

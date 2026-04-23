@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -64,10 +65,25 @@ public class RerankPostProcessor implements SearchResultPostProcessor {
             return chunks;
         }
 
+        int recallTopK = context.getRecallTopK();
+        int rerankTopK = context.getRerankTopK();
+
+        // 全局 sort + cap：把跨通道 dedup 后的候选按上游相对分排序，取前 recallTopK
+        // 送入 rerank。排序是必须的——dedup 后顺序不保证 score desc，直接 limit 会砍错。
+        List<RetrievedChunk> capped = chunks.stream()
+                .sorted(Comparator.comparing(
+                        RetrievedChunk::getScore,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(recallTopK)
+                .toList();
+
+        log.info("Rerank 入口：chunks={}, cappedToRecall={}, rerankTopK={}",
+                chunks.size(), capped.size(), rerankTopK);
+
         return rerankService.rerank(
                 context.getMainQuestion(),
-                chunks,
-                context.getTopK()
+                capped,
+                rerankTopK
         );
     }
 }

@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -124,22 +125,31 @@ public class VectorGlobalSearchChannel implements SearchChannel {
             }
 
             // 并行在所有 collection 中检索
-            int topKMultiplier = properties.getChannels().getVectorGlobal().getTopKMultiplier();
-            List<RetrievedChunk> allChunks = retrieveFromAllCollections(
+            int recallTopK = context.getRecallTopK();
+            List<RetrievedChunk> fanOutChunks = retrieveFromAllCollections(
                     context.getMainQuestion(),
                     kbs,
                     context,
-                    context.getTopK() * topKMultiplier
+                    recallTopK
             );
+
+            // 通道级 sort+cap：多 KB fan-out 后可能 N*recallTopK 条，按 score 降序取前 recallTopK。
+            List<RetrievedChunk> cappedChunks = fanOutChunks.stream()
+                    .sorted(Comparator.comparing(
+                            RetrievedChunk::getScore,
+                            Comparator.nullsLast(Comparator.reverseOrder())))
+                    .limit(recallTopK)
+                    .toList();
 
             long latency = System.currentTimeMillis() - startTime;
 
-            log.info("向量全局检索完成，检索到 {} 个 Chunk，耗时 {}ms", allChunks.size(), latency);
+            log.info("向量全局检索完成，fan-out {} -> cap {} 个 Chunk，耗时 {}ms",
+                    fanOutChunks.size(), cappedChunks.size(), latency);
 
             return SearchChannelResult.builder()
                     .channelType(SearchChannelType.VECTOR_GLOBAL)
                     .channelName(getName())
-                    .chunks(allChunks)
+                    .chunks(cappedChunks)
                     .confidence(0.7)  // 全局检索置信度中等
                     .latencyMs(latency)
                     .build();

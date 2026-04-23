@@ -63,9 +63,12 @@ public class SearchChannelProperties {
         private double confidenceThreshold = 0.6;
 
         /**
-         * TopK 倍数
-         * 全局检索时召回更多候选，后续通过 Rerank 筛选
+         * @deprecated since PR2 — retrieval topK amplification moved into
+         * {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties} (recallTopK / rerankTopK split).
+         * This field is no longer read by channel code; left in place only to avoid breaking existing yaml.
+         * Will be removed once all deployments drop the setting from their config.
          */
+        @Deprecated(forRemoval = true)
         private int topKMultiplier = 3;
     }
 
@@ -84,8 +87,12 @@ public class SearchChannelProperties {
         private double minIntentScore = 0.4;
 
         /**
-         * TopK 倍数
+         * @deprecated since PR2 — retrieval topK amplification moved into
+         * {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties} (recallTopK / rerankTopK split).
+         * This field is no longer read by channel code; left in place only to avoid breaking existing yaml.
+         * Will be removed once all deployments drop the setting from their config.
          */
+        @Deprecated(forRemoval = true)
         private int topKMultiplier = 2;
     }
 }
