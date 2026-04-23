@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-04-23 | PR2 — Over-retrieve + rerank 漏斗归位
+
+详情：[`2026-04-23-pr2-over-retrieve.md`](./2026-04-23-pr2-over-retrieve.md)
+
+**核心改动**：
+- 拆 `DEFAULT_TOP_K=10` → `recallTopK=30` + `rerankTopK=10`，新增 `RagRetrievalProperties`（`@PostConstruct` 三重校验），`RetrievalPlan` record 沿链路贯穿。
+- `SearchContext` 丢 Lombok `@Builder` 手写 builder（build() 内 IAE 兜底），双字段 `recallTopK` / `rerankTopK`。
+- 两 channel 丢 `topKMultiplier` 放大，channel 内部 `sort+cap(recallTopK)`；`RerankPostProcessor` 全局 `sort → limit(recallTopK) → rerank(rerankTopK)`，sort-before-limit 必须。
+- `BaiLianRerankClient.effectiveTopN = min(topN, candidates.size())` 防小 KB；`evalCollector.setTopK(distinctChunks.size())` 评测字段归真。
+- 死 yaml/常量全清；`SearchChannelProperties.topKMultiplier` 两字段 `@Deprecated(forRemoval=true)`。
+- 真实回归决定性证据：`[bailian-rerank] CALLING API: dedup=30, topN=10`（PR1 时是 `dedup=10, topN=10`）。KYC 0.8119 → 0.8541，地球 0.2187 → 0.2705。
+- 12 新测试 + 3 测试迁移 + CLAUDE.md 三处更新 + `log/notes/` 新目录 + `gotchas.md §4` 增强。
+- PR #18 Merge commit，4 commit 节奏保留（Task 1 base + Task 1 polish + 主体 + follow-up cleanup）。
+
+---
+
 ## 2026-04-22 | PR1 — Rerank 短路旁路修复
 
 详情：[`2026-04-22-rerank-bypass-fix-pr1.md`](./2026-04-22-rerank-bypass-fix-pr1.md)
