@@ -36,6 +36,18 @@ class RagRetrievalPropertiesTest {
     }
 
     @Test
+    void recallEqualToRerankPasses() {
+        RagRetrievalProperties props = new RagRetrievalProperties();
+        props.setRecallTopK(10);
+        props.setRerankTopK(10);
+
+        props.validate(); // must not throw — equality is allowed
+
+        assertThat(props.getRecallTopK()).isEqualTo(10);
+        assertThat(props.getRerankTopK()).isEqualTo(10);
+    }
+
+    @Test
     void recallLessThanRerankThrows() {
         RagRetrievalProperties props = new RagRetrievalProperties();
         props.setRecallTopK(5);
@@ -56,6 +68,14 @@ class RagRetrievalPropertiesTest {
 
         props.setRecallTopK(30);
         props.setRerankTopK(0);
+        assertThatThrownBy(props::validate).isInstanceOf(IllegalStateException.class);
+
+        props.setRecallTopK(-1);
+        props.setRerankTopK(10);
+        assertThatThrownBy(props::validate).isInstanceOf(IllegalStateException.class);
+
+        props.setRecallTopK(30);
+        props.setRerankTopK(-1);
         assertThatThrownBy(props::validate).isInstanceOf(IllegalStateException.class);
     }
 }

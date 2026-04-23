@@ -61,6 +61,7 @@ rag:
     max-output-tokens: 150
     timeout-ms: 5000
 
+  # Two-stage retrieval: over-retrieve (recall-top-k candidates) then rerank to top-k
   retrieval:
     recall-top-k: 30
     rerank-top-k: 10
