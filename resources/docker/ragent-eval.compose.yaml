@@ -1,0 +1,17 @@
+services:
+  ragent-eval:
+    build: ../../ragas
+    image: ragent-eval:latest
+    container_name: ragent-eval
+    ports:
+      - "9091:9091"
+    environment:
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      DASHSCOPE_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
+      EVALUATOR_CHAT_MODEL: qwen3.5-flash
+      EVALUATOR_EMBEDDING_MODEL: text-embedding-v3
+      SYNTHESIS_STRONG_MODEL: qwen-max
+      # 代理绕过（对齐项目 NO_PROXY 惯例）
+      NO_PROXY: localhost,127.0.0.1,ragent-eval
+      no_proxy: localhost,127.0.0.1,ragent-eval
+    restart: unless-stopped

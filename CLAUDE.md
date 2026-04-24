@@ -128,6 +128,7 @@ Upgrade scripts in `resources/database/`:
 - `upgrade_v1.6_to_v1.7.sql` — `t_role.dept_id SET NOT NULL`（前置校验空行）
 - `upgrade_v1.7_to_v1.8.sql` — 修 `t_knowledge_base.dept_id` 默认值 `'GLOBAL' → '1'`，并回填历史数据
 - `upgrade_v1.8_to_v1.9.sql` — 为 `t_message` 增加 `sources_json` 列（Answer Sources PR4 持久化）
+- `upgrade_v1.9_to_v1.10.sql` — 新增 eval 域 4 张表（`t_eval_gold_dataset / t_eval_gold_item / t_eval_run / t_eval_result`）
 
 Full dev-environment wipe + rebuild (**dev only — destroys all data**):
 

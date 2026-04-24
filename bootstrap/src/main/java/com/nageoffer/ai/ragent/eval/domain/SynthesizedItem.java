@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent;
+package com.nageoffer.ai.ragent.eval.domain;
 
-import org.mybatis.spring.annotation.MapperScan;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Ragent 核心应用启动类
+ * Python /synthesize 返回的单条合成结果。
+ * 仅包含 LLM 产出的三件套；chunk_text / doc_name 等由 Java 侧冻结。
  */
-@SpringBootApplication
-@EnableScheduling
-@MapperScan(basePackages = {
-        "com.nageoffer.ai.ragent.rag.dao.mapper",
-        "com.nageoffer.ai.ragent.ingestion.dao.mapper",
-        "com.nageoffer.ai.ragent.knowledge.dao.mapper",
-        "com.nageoffer.ai.ragent.user.dao.mapper",
-        "com.nageoffer.ai.ragent.eval.dao.mapper"
-})
-public class RagentApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(RagentApplication.class, args);
-    }
+public record SynthesizedItem(
+        @JsonProperty("source_chunk_id") String sourceChunkId,
+        String question,
+        String answer
+) {
 }

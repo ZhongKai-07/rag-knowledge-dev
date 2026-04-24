@@ -361,3 +361,21 @@ docker exec -i postgres psql -U postgres -d ragent < resources/database/fixture_
 然后按 `docs/dev/verification/pr3-curl-matrix.http` 逐条执行。
 
 > 两种模式**不可混合**。详见 `docs/superpowers/plans/2026-04-12-pr3-rbac-frontend-demo.md` Task S9。
+
+---
+
+## 12. 可选基础设施
+
+### ragent-eval（RAG 评估 Python 服务，可选）
+
+用于 Gold Set 合成与 RAGAS 四指标评估。开发环境默认不起，需要评估时再拉起。
+
+```bash
+# 先设 DASHSCOPE_API_KEY（或写进 .env）
+export DASHSCOPE_API_KEY=sk-xxx    # Windows PowerShell: $env:DASHSCOPE_API_KEY='sk-xxx'
+
+docker compose -f resources/docker/ragent-eval.compose.yaml up -d
+
+# 验证
+curl http://localhost:9091/health
+```

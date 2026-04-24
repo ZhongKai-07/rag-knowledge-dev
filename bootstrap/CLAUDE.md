@@ -31,6 +31,12 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 
 ## 各域关键类
 
+### eval 域（RAG 评估闭环）
+
+独立顶级域，详见 `eval/CLAUDE.md`。
+
+⚠️ **不要混淆**：`rag/service/impl/RagEvaluationServiceImpl.java` 是 legacy trace 留存（当前处于失效 `@Async` 状态，见 backlog EVAL-2），**不是**新评估域入口；新评估见 `eval/`。
+
 ### rag 域
 
 | 类 | 职责 |
