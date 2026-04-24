@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-04-24 | PR E1 — RAG 评估闭环地基（eval 域 + Python ragent-eval 微服务）
+
+详情：[`2026-04-24-eval-pr-e1-foundation.md`](./2026-04-24-eval-pr-e1-foundation.md)
+
+**核心改动**：
+- 新增独立顶级 `bootstrap/.../eval/` bounded context（**不**挂 `rag/` 下），含 4 张 `t_eval_*` 表（v1.10 schema）、4 DO + Mapper、`EvalProperties` / `EvalAsyncConfig`（`evalExecutor` 线程池，**不**用 `@EnableAsync`）/ `RagasEvalClient` 骨架
+- `ragas/` 目录从一次性脚本改造成 FastAPI 微服务 `ragent-eval`（:9091），端点 `/health` + `/synthesize`（PR E3 再加 `/evaluate`），Docker Compose 就位
+- `RagentApplication.@MapperScan` 加 `com.nageoffer.ai.ragent.eval.dao.mapper`，`EvalMapperScanTest` 用 `@SpringBootTest` 断言 4 个 bean 非 null（Gotcha #14 锁死）
+- 跨 HTTP 字段 Java ↔ Python 全部 `@JsonProperty` snake_case ↔ camelCase 显式映射
+- 零新增 ThreadLocal（`evalExecutor` 不用 TaskDecorator、`RagasEvalClient` 不读 `RagTraceContext`）
+- 硬约束文档化：依赖方向 `eval/ → rag.core / knowledge.*Port / framework.*`（✓），`rag/ → eval/` / `eval/` 直读 rag 表 ❌；SUPER_ADMIN-only 读 eval 结果（EVAL-3 redaction 前置）
+- 真实回归：`/synthesize` 真打百炼 qwen-max 返回自然 Q-A；`mvn spring-boot:run` 启动无 `UnsatisfiedDependencyException`；Java 4 tests + Python 7 tests 全绿
+- PR #19 Merge commit，15 commit 节奏保留（14 个 feat/docs + 1 个 fix ragas version shadowing）
+- **本 PR 只做地基，没有 Service / Controller / 前端入口**。合成真落库 + 审核 UI 是 PR E2；评估执行 + 看板是 PR E3。Backlog：EVAL-2（legacy `RagEvaluationServiceImpl.saveRecord` 失效 `@Async`）/ EVAL-3（eval 读接口 redaction）/ PR E3-spike（`AnswerPipeline` 抽离代价）
+
+---
+
 ## 2026-04-23 | PR2 — Over-retrieve + rerank 漏斗归位
 
 详情：[`2026-04-23-pr2-over-retrieve.md`](./2026-04-23-pr2-over-retrieve.md)

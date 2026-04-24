@@ -28,6 +28,15 @@
 **修复**：补 `ALTER TABLE t_user ADD CONSTRAINT fk_user_dept FOREIGN KEY (dept_id) REFERENCES sys_dept(id) ON DELETE RESTRICT;` 同理 `t_knowledge_base`。
 **注意**：需要检查历史数据是否有孤儿行，否则 ALTER 会失败。
 
+### EVAL-3. Eval 读接口 `security_level` redaction 缺失
+
+**位置**：`bootstrap/.../eval/` 未来的 Controller / Service（PR E2 起引入）+ `t_eval_result.retrieved_chunks`
+**症状**：评估运行以系统级 `AccessScope.all()` 跑（合法，需要跨 KB 全量 chunk 才能评估），落盘的 `retrieved_chunks` 字段含**跨 `security_level`** 的原文。PR E1 已通过 `eval/CLAUDE.md` 硬约束所有 eval 读接口 **SUPER_ADMIN-only**，但 PR E2+ 开放 `AnyAdmin` 读之前必须先做：
+- 查询侧按当前登录 principal 的 `security_level` 做 redaction（高密内容替换 `[REDACTED]`）
+- 或用 `eval_result_view_*` 分视图，接口根据 principal 路由
+**优先级**：🔴 PR E3 结果看板上线前必须，否则跨部门管理员可以通过评估结果泄漏高密 chunk 原文。
+**前置**：PR E2 提供 `GET /eval/runs/{id}/results` 之前就要定方案；PR E2 期间可以暂时只 SUPER_ADMIN 开放（已是 PR E1 的硬约束）。
+
 ---
 
 ## 🟠 性能 / 可扩展
@@ -79,6 +88,13 @@
 **症状**：`sendEvent(FINISH, payload)` 若抛（客户端已断、SSE 已关），控制流直接逃离 `onComplete`，`taskManager.unregister(taskId)` 不会被调用，条目残留在 `StreamTaskManager`。这是 2026-04-16 feature/suggested-questions 引入前就存在的行为，但由于新增了 `shouldGenerate` 分支，FINISH 之后要做的事更多，泄漏窗口被放大。
 **修复**：把 `sendEvent(FINISH, ...)` 包进 try/catch，失败时短路到 `sendDoneAndClose()`（保证 unregister + complete）。
 **优先级低**：只有客户端主动断连才会触发，生产上偶发。
+
+### EVAL-2. Legacy `RagEvaluationServiceImpl.saveRecord` 的 `@Async` 失效
+
+**位置**：`bootstrap/.../rag/service/impl/RagEvaluationServiceImpl.java:53`
+**症状**：方法上挂了 `@Async`，但 `RagentApplication` 没开 `@EnableAsync` —— 注解失效，`saveRecord` 实际上**同步**在请求线程里跑。当前没造成已观察到的问题，但如果未来有人"好心"加上 `@EnableAsync`，会同时激活项目里所有其他遗留 `@Async` 注解（未审计，可能连锁效应）。
+**修复方向**：删 `@Async` 注解，或按 PR E1 eval 域的模式：注入 `@Qualifier("...")` 的显式 executor + `.execute(Runnable)`；修之前先全局 `grep -r "@Async"` 评估影响面。
+**优先级低**：当前无功能影响，但埋坑，eval 域已用不同模式规避（见 `eval/CLAUDE.md` Gotcha #3）。
 
 ---
 
