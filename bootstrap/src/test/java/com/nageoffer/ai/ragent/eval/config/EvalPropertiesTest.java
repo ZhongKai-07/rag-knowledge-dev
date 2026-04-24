@@ -22,6 +22,7 @@ import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,17 +32,19 @@ class EvalPropertiesTest {
     @Test
     void bindsFromYamlLikeProperties() {
         var env = new StandardEnvironment();
-        env.getPropertySources().addFirst(new MapPropertySource("test", Map.of(
-                "rag.eval.python-service.url", "http://ragent-eval:9091",
-                "rag.eval.python-service.timeout-ms", "120000",
-                "rag.eval.python-service.max-retries", "2",
-                "rag.eval.synthesis.default-count", "50",
-                "rag.eval.synthesis.max-per-doc", "5",
-                "rag.eval.synthesis.strong-model", "qwen-max",
-                "rag.eval.run.batch-size", "5",
-                "rag.eval.run.per-item-timeout-ms", "30000",
-                "rag.eval.run.max-parallel-runs", "1"
-        )));
+        Map<String, Object> source = new HashMap<>();
+        source.put("rag.eval.python-service.url", "http://ragent-eval:9091");
+        source.put("rag.eval.python-service.timeout-ms", "120000");
+        source.put("rag.eval.python-service.max-retries", "2");
+        source.put("rag.eval.synthesis.default-count", "50");
+        source.put("rag.eval.synthesis.max-per-doc", "5");
+        source.put("rag.eval.synthesis.strong-model", "qwen-max");
+        source.put("rag.eval.synthesis.batch-size", "5");
+        source.put("rag.eval.synthesis.synthesis-timeout-ms", "600000");
+        source.put("rag.eval.run.batch-size", "5");
+        source.put("rag.eval.run.per-item-timeout-ms", "30000");
+        source.put("rag.eval.run.max-parallel-runs", "1");
+        env.getPropertySources().addFirst(new MapPropertySource("test", source));
         EvalProperties props = Binder.get(env).bind("rag.eval", EvalProperties.class).get();
 
         assertThat(props.getPythonService().getUrl()).isEqualTo("http://ragent-eval:9091");
@@ -49,6 +52,8 @@ class EvalPropertiesTest {
         assertThat(props.getSynthesis().getDefaultCount()).isEqualTo(50);
         assertThat(props.getSynthesis().getMaxPerDoc()).isEqualTo(5);
         assertThat(props.getSynthesis().getStrongModel()).isEqualTo("qwen-max");
+        assertThat(props.getSynthesis().getBatchSize()).isEqualTo(5);
+        assertThat(props.getSynthesis().getSynthesisTimeoutMs()).isEqualTo(600_000);
         assertThat(props.getRun().getBatchSize()).isEqualTo(5);
         assertThat(props.getRun().getMaxParallelRuns()).isEqualTo(1);
     }

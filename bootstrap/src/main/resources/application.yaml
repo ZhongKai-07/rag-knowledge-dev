@@ -127,6 +127,8 @@ rag:
       default-count: 50
       max-per-doc: 5
       strong-model: qwen-max
+      batch-size: 5
+      synthesis-timeout-ms: 600000
     run:
       batch-size: 5
       per-item-timeout-ms: 30000

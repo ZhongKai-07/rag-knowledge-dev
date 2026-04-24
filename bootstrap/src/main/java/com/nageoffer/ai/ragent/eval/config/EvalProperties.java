@@ -45,6 +45,10 @@ public class EvalProperties {
         private int defaultCount = 50;
         private int maxPerDoc = 5;
         private String strongModel = "qwen-max";
+        /** Java 端把 N 个 chunk 拆多少批送 Python，单批 timeout 受控于 synthesisTimeoutMs */
+        private int batchSize = 5;
+        /** 单次 /synthesize HTTP 调用的超时，远大于 pythonService.timeoutMs（120s）——LLM 批调用可能 6-10 分钟 */
+        private int synthesisTimeoutMs = 600_000;
     }
 
     @Data
