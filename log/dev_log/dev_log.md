@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-04-25 | PR E2 — RAG 评估闭环合成闭环
+
+详情：[`2026-04-25-eval-pr-e2-synthesis.md`](./2026-04-25-eval-pr-e2-synthesis.md)
+
+**核心改动**：
+- 跨域 port `framework.security.port.KbChunkSamplerPort` + impl `knowledge.KbChunkSamplerImpl`（`@Select` 固化 spec §6.1 SQL；Java 侧 per-doc dedup），替代直读 `t_knowledge_chunk`
+- 3 个 eval Service：`GoldDatasetService`（DRAFT/ACTIVE/ARCHIVED 状态机，`activate` 前置 `approved ≥ 1 AND pending == 0`，`delete` 走事务级联软删）/ `GoldDatasetSynthesisService`（`evalExecutor.execute` 异步 + `tracker.tryBegin` 原子占坑，分批调 Python `/synthesize`，`source_chunk_text` 字节级冻结 + Java 侧 blank q/a 二次校验）/ `GoldItemReviewService`（PENDING → APPROVED/REJECTED + edit，仅 DRAFT 态可改）
+- 2 个 Controller 全类级 `@SaCheckRole("SUPER_ADMIN")`（EVAL-3 落地前不降级）；`SynthesisProgressTracker` 进程内 `ConcurrentHashMap` + 前端 2s 轮询
+- 前端 `/admin/eval-suites` 单页三 Tab：黄金集完整（列表 / 创建 / 触发合成 / 进度 / 审核 / 激活 / 归档 / 删除，y/n/e 快捷键）+ 评估运行 / 趋势对比占位（PR E3 填实）；侧栏"质量评估"（`FlaskConical`）与 legacy "评测记录"（`ClipboardCheck`）并列
+- `EvalProperties.Synthesis` 加 `batchSize=5 / synthesisTimeoutMs=600_000`；`RagasEvalClient.synthesize` 走独立 timeout（与 `/health` 120s 分离）
+- 零新增 ThreadLocal / 不用 `@Async`；`principalUserId` 走方法参数
+- Java 单测：`KbChunkSamplerImplTest`（@SpringBootTest, 2）+ `GoldDatasetServiceImplTest` / `GoldDatasetSynthesisServiceImplTest` / `GoldItemReviewServiceImplTest`（纯 Mockito, 5+5+4）全绿
+- Codex review 收口：5 P1/P2 + 2 补充全部接纳（多构造器歧义 / tryBegin race / activate PENDING 锁 / mock id 填充 / argThat 签名 / 自绘 progress / ALL sentinel / blank 二次校验 / delete 级联）
+- **本 PR 不做**：`AnswerPipeline` / `ChatForEvalService` / `EvalRunExecutor` / 结果看板 / 查询侧 redaction（EVAL-3）。新 backlog：EVAL-4（合成可恢复性）/ EVAL-TOVO-AGG（list N+1）/ EVAL-retry / EVAL-BATCH-DOUBLECOUNT
+
+---
+
 ## 2026-04-24 | PR E1 — RAG 评估闭环地基（eval 域 + Python ragent-eval 微服务）
 
 详情：[`2026-04-24-eval-pr-e1-foundation.md`](./2026-04-24-eval-pr-e1-foundation.md)

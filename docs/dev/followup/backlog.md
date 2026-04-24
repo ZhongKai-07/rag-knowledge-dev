@@ -30,12 +30,50 @@
 
 ### EVAL-3. Eval 读接口 `security_level` redaction 缺失
 
-**位置**：`bootstrap/.../eval/` 未来的 Controller / Service（PR E2 起引入）+ `t_eval_result.retrieved_chunks`
-**症状**：评估运行以系统级 `AccessScope.all()` 跑（合法，需要跨 KB 全量 chunk 才能评估），落盘的 `retrieved_chunks` 字段含**跨 `security_level`** 的原文。PR E1 已通过 `eval/CLAUDE.md` 硬约束所有 eval 读接口 **SUPER_ADMIN-only**，但 PR E2+ 开放 `AnyAdmin` 读之前必须先做：
+**位置**：`bootstrap/.../eval/` 的 Controller / Service（PR E2 已类级 `@SaCheckRole("SUPER_ADMIN")`）+ `t_eval_result.retrieved_chunks`
+**症状**：评估运行以系统级 `AccessScope.all()` 跑（合法，需要跨 KB 全量 chunk 才能评估），落盘的 `retrieved_chunks` 字段含**跨 `security_level`** 的原文。PR E2 仍通过 `eval/CLAUDE.md` + Controller 类级注解硬约束所有 eval 读接口 **SUPER_ADMIN-only**，但 PR E3+ 开放 `AnyAdmin` 读之前必须先做：
 - 查询侧按当前登录 principal 的 `security_level` 做 redaction（高密内容替换 `[REDACTED]`）
 - 或用 `eval_result_view_*` 分视图，接口根据 principal 路由
 **优先级**：🔴 PR E3 结果看板上线前必须，否则跨部门管理员可以通过评估结果泄漏高密 chunk 原文。
-**前置**：PR E2 提供 `GET /eval/runs/{id}/results` 之前就要定方案；PR E2 期间可以暂时只 SUPER_ADMIN 开放（已是 PR E1 的硬约束）。
+**前置**：PR E3 提供 `GET /eval/runs/{id}/results` 之前就要定方案；PR E2 期间（已落地）所有 eval Controller 类级 `@SaCheckRole("SUPER_ADMIN")`。
+
+### EVAL-4. 合成任务可恢复性（PR E2 引入）
+
+**位置**：`bootstrap/.../eval/service/SynthesisProgressTracker.java`
+**症状**：`SynthesisProgressTracker` 进程内 `ConcurrentHashMap`，非持久化。后端重启后所有 RUNNING 状态丢失，部分 `t_eval_gold_item` 可能已落库。UI 按 `totalItemCount > 0` 隐藏"合成"按钮，用户只能 delete dataset 重来。
+**改进选项**：
+- 给 `t_eval_gold_dataset` 加 `sync_status` 列（migration + dataset-level 状态持久化）
+- 启动时扫 stale RUNNING 并标记 FAILED
+- 允许增量合成（需 per-chunk dedup）
+**优先级**：🟡 低。单机部署 + 运行时间 < 10 分钟场景不触发；真正需要 k8s 滚动更新 + 长批时再做。
+
+### EVAL-TOVO-AGG. `GoldDatasetServiceImpl.toVO()` 3×N 聚合查询
+
+**位置**：`GoldDatasetServiceImpl.toVO()` 调 `countAll / countApproved / countPending` 3 次 `selectCount`；`list()` 里 N 个 dataset 触发 3N 次。
+**症状**：20 dataset 的 list → 61 次 DB round-trip。admin 管理页低频所以现在能接受。
+**触发条件**：list 返回 > ~50 行，或 list 被放进热路径。
+**方案**：
+```sql
+SELECT dataset_id, review_status, COUNT(*) FROM t_eval_gold_item
+WHERE dataset_id IN (?, ?, ...) AND deleted = 0
+GROUP BY dataset_id, review_status
+```
+一次拉回后 Java 侧聚合到 `Map<String, StatusCounts>`。`detail()` 保留 3-call 无需改。
+**优先级**：🟢 低。tests 锁住了 3-count 语义，改时需同步更新 wrapper SQL-fragment 路由。
+
+### EVAL-retry. `RagasEvalClient` 缺失 HTTP retry
+
+**位置**：`RagasEvalClient.synthesize()` + `application.yaml` `rag.eval.python-service.max-retries: 2`（当前配置但未消费）。
+**症状**：`GoldDatasetSynthesisServiceImpl` 对整批 HTTP 异常的处理是 `failed += batch.size() + tracker.update + continue`。transient network blip 把整批标记失败，不可恢复。
+**方案**：在 `RagasEvalClient` 加 `RestClient` level retry interceptor（指数退避），消费 `max-retries` 配置；idempotent 语义（同一批重试同样返回 `SynthesizeResponse`，Python 侧已幂等）。
+**优先级**：🟡 中。PR E3 前先落，否则评估运行触发真 LLM 调用时 transient 故障成本更高。
+
+### EVAL-BATCH-DOUBLECOUNT. Synthesis `failed` 计数器可能 double-count
+
+**位置**：`GoldDatasetSynthesisServiceImpl.runSynthesisSync()` 最后一段。
+**症状**：Python 若在 `items` 里返回空 q/a（→ 内层 blank guard `failed++`）且同一 `chunk_id` 又出现在 `failed_chunk_ids`（外层 `failed += size()`），同一 chunk 被计两次。
+**修复**：维护 `Set<String> accountedInItems` 记录内层已处理的 chunk_id，外层累计前做 filter。
+**优先级**：🟢 低。Python 当前不会同时返回两处；Java 侧只是不信任契约的防御层。待真实 drift 出现再改。
 
 ---
 
