@@ -1,0 +1,8 @@
+tests/
+log/
+run_eval.py
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+requirements-dev.txt
