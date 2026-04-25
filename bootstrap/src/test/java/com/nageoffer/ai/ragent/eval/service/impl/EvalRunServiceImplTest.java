@@ -168,6 +168,7 @@ class EvalRunServiceImplTest {
         assertThat(succeeded.get()).isEqualTo(1);
         assertThat(rejected.get()).isEqualTo(7);
         verify(runMapper, times(1)).insert(any(EvalRunDO.class));
+        verify(evalExecutor, times(1)).execute(any(Runnable.class));
     }
 
     @Test
