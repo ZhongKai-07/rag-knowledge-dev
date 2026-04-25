@@ -1,6 +1,8 @@
 # Deferred Follow-ups
 
 > Resolved on `main`:
+> - `EVAL-3`: eval read endpoints `retrieved_chunks` go through `EvalResultRedactionService`; list/trend VOs structurally lack the field; current ceiling=`Integer.MAX_VALUE` (SUPER_ADMIN full read), AnyAdmin downgrade only requires switching the ceiling
+> - Landed in PR E3 (`feature/eval-e3-plan`)
 > - `SEC-1`: `DeduplicationPostProcessor` no longer revives chunks from raw `results`
 > - `SRC-10`: added `rag.sources.min-top-score=0.55`; low-relevance KB evidence no longer emits `sources` or `suggestions`
 > - Details: `log/dev_log/2026-04-22-authz-dedup-fix-and-relevance-gate.md`
@@ -27,15 +29,6 @@
 **症状**：`SysDeptServiceImpl.delete()` 本轮加了 `@Transactional` + `SELECT FOR UPDATE` 串行化 dept 自身的并发修改，但仍无法阻止**并发向已删除 dept 插入 user/KB**。
 **修复**：补 `ALTER TABLE t_user ADD CONSTRAINT fk_user_dept FOREIGN KEY (dept_id) REFERENCES sys_dept(id) ON DELETE RESTRICT;` 同理 `t_knowledge_base`。
 **注意**：需要检查历史数据是否有孤儿行，否则 ALTER 会失败。
-
-### EVAL-3. Eval 读接口 `security_level` redaction 缺失
-
-**位置**：`bootstrap/.../eval/` 的 Controller / Service（PR E2 已类级 `@SaCheckRole("SUPER_ADMIN")`）+ `t_eval_result.retrieved_chunks`
-**症状**：评估运行以系统级 `AccessScope.all()` 跑（合法，需要跨 KB 全量 chunk 才能评估），落盘的 `retrieved_chunks` 字段含**跨 `security_level`** 的原文。PR E2 仍通过 `eval/CLAUDE.md` + Controller 类级注解硬约束所有 eval 读接口 **SUPER_ADMIN-only**，但 PR E3+ 开放 `AnyAdmin` 读之前必须先做：
-- 查询侧按当前登录 principal 的 `security_level` 做 redaction（高密内容替换 `[REDACTED]`）
-- 或用 `eval_result_view_*` 分视图，接口根据 principal 路由
-**优先级**：🔴 PR E3 结果看板上线前必须，否则跨部门管理员可以通过评估结果泄漏高密 chunk 原文。
-**前置**：PR E3 提供 `GET /eval/runs/{id}/results` 之前就要定方案；PR E2 期间（已落地）所有 eval Controller 类级 `@SaCheckRole("SUPER_ADMIN")`。
 
 ### EVAL-4. 合成任务可恢复性（PR E2 引入）
 
