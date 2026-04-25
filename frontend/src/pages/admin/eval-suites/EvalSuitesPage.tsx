@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { GoldSetListTab } from "./tabs/GoldSetListTab";
 import { EvalRunsTab } from "./tabs/EvalRunsTab";
-import { TrendsPlaceholderTab } from "./tabs/placeholders/TrendsPlaceholderTab";
+import { EvalTrendsTab } from "./tabs/EvalTrendsTab";
 
 const VALID_TABS = ["gold-sets", "runs", "trends"] as const;
 type TabId = (typeof VALID_TABS)[number];
@@ -67,7 +67,7 @@ export function EvalSuitesPage() {
         <div className="p-4">
           {activeTab === "gold-sets" && <GoldSetListTab />}
           {activeTab === "runs" && <EvalRunsTab />}
-          {activeTab === "trends" && <TrendsPlaceholderTab />}
+          {activeTab === "trends" && <EvalTrendsTab />}
         </div>
       </div>
     </div>
