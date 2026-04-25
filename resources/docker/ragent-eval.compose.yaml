@@ -5,8 +5,11 @@ services:
     container_name: ragent-eval
     ports:
       - "9091:9091"
+    # 项目根目录的 .env（compose 默认查同级 .env，所以显式指 ../../.env）
+    env_file:
+      - ../../.env
     environment:
-      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
       DASHSCOPE_BASE_URL: https://dashscope.aliyuncs.com/compatible-mode/v1
       EVALUATOR_CHAT_MODEL: qwen3.5-flash
       EVALUATOR_EMBEDDING_MODEL: text-embedding-v3
