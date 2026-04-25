@@ -189,6 +189,8 @@ class EvalRunServiceImplTest {
         assertThat(inserted.getTriggeredBy()).isEqualTo("user-1");
         assertThat(inserted.getTotalItems()).isEqualTo(20);
         assertThat(inserted.getSystemSnapshot()).contains("recall_top_k");
+        assertThat(inserted.getCreatedBy()).isEqualTo("user-1");
+        assertThat(inserted.getUpdatedBy()).isEqualTo("user-1");
         assertThat(runId).isEqualTo(inserted.getId());
 
         verify(evalExecutor).execute(any(Runnable.class));

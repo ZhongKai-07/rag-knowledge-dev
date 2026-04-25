@@ -128,6 +128,8 @@ public class EvalRunServiceImpl implements EvalRunService {
                     .succeededItems(0)
                     .failedItems(0)
                     .systemSnapshot(snapshotBuilder.build())
+                    .createdBy(principalUserId)
+                    .updatedBy(principalUserId)
                     .build();
             runMapper.insert(run);
 
