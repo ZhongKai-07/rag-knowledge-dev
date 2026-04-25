@@ -42,7 +42,7 @@ import java.util.List;
  * 同步阻塞 RAG 编排，仅供 eval 域使用。
  *
  * <p>设计依据见 ADR {@code docs/dev/design/2026-04-25-answer-pipeline-spike-adr.md}。
- * 直接复用现有 7 个 service bean，不抽 AnswerPipeline。
+ * 直接复用现有 6 个 service bean，不抽 AnswerPipeline (kbReadAccess 不在此 service 注入——AccessScope 由调用方传入，见 P1-1)。
  *
  * <p>三处早返回映射到 {@link AnswerResult} 状态码（不像 streamChat 那样发 SSE）：
  * <ul>
