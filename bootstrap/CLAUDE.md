@@ -37,6 +37,16 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 
 ⚠️ **不要混淆**：`rag/service/impl/RagEvaluationServiceImpl.java` 是 legacy trace 留存（当前处于失效 `@Async` 状态，见 backlog EVAL-2），**不是**新评估域入口；新评估见 `eval/`。
 
+| 类 | 职责 |
+|----|------|
+| `KbChunkSamplerPort`（framework）+ `KbChunkSamplerImpl`（knowledge）| 跨域 chunk 采样 port；SQL 固化 spec §6.1，Java 侧 per-doc dedup |
+| `GoldDatasetService` | 数据集 CRUD + DRAFT/ACTIVE/ARCHIVED 状态机；`activate` 前置 `approved ≥ 1 AND pending == 0`；`delete` 走事务级联软删 item |
+| `GoldDatasetSynthesisService` | 异步合成编排：`trigger` 走 `evalExecutor` + `tracker.tryBegin` 原子占坑；批量调 Python；`source_chunk_text` 字节级冻结 |
+| `GoldItemReviewService` | PENDING → APPROVED/REJECTED + edit；仅 DRAFT 态可改 item |
+| `SynthesisProgressTracker` | 进程内 `ConcurrentHashMap<datasetId, SynthesisProgress>`；重启后 RUNNING 丢失（backlog EVAL-4） |
+| `RagasEvalClient` | Python HTTP 客户端；`synthesize` 走 `synthesisTimeoutMs`（默认 600s），`health` 走 `pythonService.timeoutMs`（120s） |
+| `GoldDatasetController` / `GoldItemController` | REST 入口，类级 `@SaCheckRole("SUPER_ADMIN")`（读写不分，EVAL-3 落地前不降级） |
+
 ### rag 域
 
 | 类 | 职责 |

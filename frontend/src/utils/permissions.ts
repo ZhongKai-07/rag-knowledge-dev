@@ -10,6 +10,7 @@ export type AdminMenuId =
   | "mappings"
   | "traces"
   | "evaluations"
+  | "eval-suites"
   | "sample-questions"
   | "access"
   | "settings";

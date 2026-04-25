@@ -56,3 +56,23 @@ eval/
 - 配置绑定：`EvalPropertiesTest`（纯 Binder，无 Spring context）
 - 线程池：`EvalAsyncConfigTest`（纯 bean 构造）
 - Mapper 装配：`EvalMapperScanTest`（`@SpringBootTest`）
+- 采样 port：`KbChunkSamplerImplTest`（`@SpringBootTest` + 真 PG fixture）
+- Dataset 状态机：`GoldDatasetServiceImplTest`（纯 Mockito + `TableInfoHelper.initTableInfo`）
+- 合成编排：`GoldDatasetSynthesisServiceImplTest`（纯 Mockito + 冻结快照断言）
+- 审核：`GoldItemReviewServiceImplTest`（纯 Mockito）
+
+## PR E2 已落地（2026-04-25）
+
+- **Gold Dataset 三态机**：`GoldDatasetService`（DRAFT → ACTIVE → ARCHIVED）；`activate()` 前置 `approved ≥ 1 AND pending == 0`（否则 PENDING 条目会被后续 `GoldItemReviewService.requireDraftDataset` 永久锁）；`delete()` 走 `@Transactional(rollbackFor=Exception.class)` 级联软删子 item，避免 orphan。
+- **合成闭环**：`GoldDatasetSynthesisService.trigger(datasetId, count, principalUserId)` 异步提交到 `evalExecutor`；`SynthesisProgressTracker.tryBegin()` 用 `putIfAbsent` 做原子占坑防并发 race；默认 batchSize=5 分批调 Python `/synthesize`；`synthesize` 单批 timeout 600s（`rag.eval.synthesis.synthesis-timeout-ms`），与 `pythonService.timeoutMs=120s` 分离。
+- **跨域 port**：`framework.security.port.KbChunkSamplerPort` + `knowledge.service.impl.KbChunkSamplerImpl`（`@Select` 固化 spec §6.1 SQL；Java 侧做 per-doc dedup），替代直读 `t_knowledge_chunk`。
+- **source_chunk_text 字节级冻结**：合成时 Java 侧 JOIN 查出 `chunk.content`，入库前不 trim/清洗/截断；Python 不返回该字段。`GoldItemReviewServiceImpl` 同样不允许改 source 快照字段。
+- **所有 controller `@SaCheckRole("SUPER_ADMIN")`**：`GoldDatasetController` + `GoldItemController` 类级控制，读写不分；EVAL-3 落地前不得降级。
+- **零新增 ThreadLocal**：`principalUserId` 纯方法参数；`evalExecutor.execute(Runnable)` 内不读 UserContext。
+- **前端 `/admin/eval-suites`**：单页三 Tab（黄金集完整实现 + 评估运行 / 趋势对比占位）；审核页 y/n/e 快捷键，侧栏"质量评估"（`FlaskConical` icon）与 legacy "评测记录"（`ClipboardCheck`）并列独立入口。
+
+## PR E2 已知边界（见 backlog EVAL-4）
+
+- `SynthesisProgressTracker` 进程内非持久；后端重启后 RUNNING 状态丢失，部分 `t_eval_gold_item` 可能已落库。UI 按 `totalItemCount > 0` 隐藏"合成"按钮，用户只能 delete dataset 重来。
+- `toVO()` 每 dataset 3 次 `selectCount`：在 list 返回 > ~50 行时值得改为单聚合 SQL（见 backlog EVAL-TOVO-AGG）。
+- HTTP batch 级 failure 目前 `failed += batch.size()`，transient blip 会把整批标失败；真正的 retry 策略见 backlog EVAL-retry（由 `RagasEvalClient` 消费 `pythonService.max-retries`）。

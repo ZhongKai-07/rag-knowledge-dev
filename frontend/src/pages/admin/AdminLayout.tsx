@@ -20,6 +20,7 @@ import {
   Settings,
   Upload,
   ShieldCheck,
+  FlaskConical,
   FolderKanban,
   Workflow
 } from "lucide-react";
@@ -142,6 +143,12 @@ const menuGroups: MenuGroup[] = [
         label: "评测记录",
         icon: ClipboardCheck
       },
+      {
+        menuId: "eval-suites",
+        path: "/admin/eval-suites",
+        label: "质量评估",
+        icon: FlaskConical
+      },
     ]
   },
   {
@@ -177,6 +184,7 @@ const breadcrumbMap: Record<string, string> = {
   ingestion: "数据通道",
   traces: "链路追踪",
   evaluations: "评测记录",
+  "eval-suites": "质量评估",
   "sample-questions": "示例问题",
   mappings: "关键词映射",
   settings: "系统设置",

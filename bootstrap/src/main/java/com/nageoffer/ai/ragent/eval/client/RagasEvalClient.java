@@ -24,6 +24,7 @@ import com.nageoffer.ai.ragent.eval.domain.SynthesizeResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -39,8 +40,12 @@ public class RagasEvalClient {
 
     private final EvalProperties evalProperties;
 
-    private RestClient buildClient() {
+    private RestClient buildClient(int timeoutMs) {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Math.min(timeoutMs, 10_000));
+        factory.setReadTimeout(timeoutMs);
         return RestClient.builder()
+                .requestFactory(factory)
                 .baseUrl(evalProperties.getPythonService().getUrl())
                 .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .requestInterceptor((request, body, execution) -> {
@@ -51,7 +56,7 @@ public class RagasEvalClient {
     }
 
     public SynthesizeResponse synthesize(SynthesizeRequest request) {
-        return buildClient()
+        return buildClient(evalProperties.getSynthesis().getSynthesisTimeoutMs())
                 .post()
                 .uri("/synthesize")
                 .body(request)
@@ -60,7 +65,7 @@ public class RagasEvalClient {
     }
 
     public HealthStatus health() {
-        return buildClient()
+        return buildClient(evalProperties.getPythonService().getTimeoutMs())
                 .get()
                 .uri("/health")
                 .retrieve()
