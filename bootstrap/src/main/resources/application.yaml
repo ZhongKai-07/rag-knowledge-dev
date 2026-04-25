@@ -120,7 +120,7 @@ rag:
 
   eval:
     python-service:
-      url: http://ragent-eval:9091
+      url: http://localhost:9091
       timeout-ms: 120000
       max-retries: 2
     synthesis:
