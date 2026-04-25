@@ -224,6 +224,43 @@ class EvalRunExecutorTest {
     }
 
     @Test
+    void computeMetricsSummary_tolerates_null_rows_from_mybatis_projection() {
+        // 实战 bug：MyBatis Plus + .select(metric...) projection 在所有列均为 NULL 的行
+        // 上把整 entity 映射为 null。computeMetricsSummary 必须跳过 null 元素，否则 NPE
+        // 经 runInternal 恢复块改写为 FAILED，丢失真实 succeeded/failed/metrics 数据
+        EvalRunDO run = EvalRunDO.builder().id("run-null-row").datasetId("d1").kbId("kb1").build();
+        when(runMapper.selectById("run-null-row")).thenReturn(run);
+        when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
+        when(chat.chatForEval(any(), any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
+
+        when(ragas.evaluate(any(), any())).thenAnswer(inv -> {
+            EvaluateRequest req = inv.getArgument(1);
+            List<EvaluateResponse.MetricResult> mrs = req.items().stream()
+                    .map(it -> new EvaluateResponse.MetricResult(it.resultId(),
+                            new BigDecimal("0.9"), null, null, null, null))
+                    .toList();
+            return new EvaluateResponse(mrs);
+        });
+        // 模拟 MyBatis 全 null 列行被映射为 null entity（混杂正常行）
+        EvalResultDO normal = EvalResultDO.builder().id("r1")
+                .faithfulness(new BigDecimal("0.9")).build();
+        ArrayList<EvalResultDO> rowsWithNull = new ArrayList<>();
+        rowsWithNull.add(normal);
+        rowsWithNull.add(null);
+        when(resultMapper.selectList(any())).thenReturn(rowsWithNull);
+
+        exec.runInternal("run-null-row");
+
+        ArgumentCaptor<EvalRunDO> upd = ArgumentCaptor.forClass(EvalRunDO.class);
+        verify(runMapper, atLeast(2)).updateById(upd.capture());
+        EvalRunDO last = upd.getAllValues().get(upd.getAllValues().size() - 1);
+        // 关键：未走到 recovery 标 FAILED；finalize 正常完成 status 由 succ/fail 决定
+        assertThat(last.getStatus()).isNotEqualTo("FAILED");
+        assertThat(last.getSucceededItems()).isEqualTo(2);
+        assertThat(last.getFailedItems()).isEqualTo(0);
+    }
+
+    @Test
     void uncaught_exception_in_run_marks_status_FAILED_via_recovery() {
         // 模拟收尾阶段抛 (e.g., computeMetricsSummary 选库异常)；外层 catch 必须把
         // status 标 FAILED 否则 t_eval_run 卡 RUNNING 永远不释放 max-parallel-runs

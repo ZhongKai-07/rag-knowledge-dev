@@ -248,14 +248,18 @@ public class EvalRunExecutor {
     }
 
     private String computeMetricsSummary(String runId) {
-        // .select() 投影：只拉 4 个 metric 列，避免读回 retrieved_chunks (TEXT，可能 MB 级)
+        // .select() 投影：拉 id + 4 个 metric 列。id 必带——MyBatis 在所有 SELECT 列均为 NULL 时
+        // 会把整行映射成 null entity（NPE in accumulate），id 非空保证 entity 不为 null。
+        // 避免读回 retrieved_chunks (TEXT，可能 MB 级)。
         List<EvalResultDO> rows = resultMapper.selectList(new LambdaQueryWrapper<EvalResultDO>()
-                .select(EvalResultDO::getFaithfulness, EvalResultDO::getAnswerRelevancy,
+                .select(EvalResultDO::getId,
+                        EvalResultDO::getFaithfulness, EvalResultDO::getAnswerRelevancy,
                         EvalResultDO::getContextPrecision, EvalResultDO::getContextRecall)
                 .eq(EvalResultDO::getRunId, runId));
         BigDecimal[] sum = new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
         int[] count = new int[4];
         for (EvalResultDO r : rows) {
+            if (r == null) continue; // 防御：MyBatis 在某些 projection 边界条件下可能返回 null 元素
             accumulate(sum, count, 0, r.getFaithfulness());
             accumulate(sum, count, 1, r.getAnswerRelevancy());
             accumulate(sum, count, 2, r.getContextPrecision());
