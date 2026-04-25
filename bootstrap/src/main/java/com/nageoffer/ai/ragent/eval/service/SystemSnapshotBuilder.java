@@ -51,6 +51,7 @@ public class SystemSnapshotBuilder {
     private final Environment environment;
 
     public String build() {
+        // Step 1: add the 8 RAG-behavior-affecting fields (hash inputs)
         ObjectNode node = MAPPER.createObjectNode();
         node.put("recall_top_k", retrievalProps.getRecallTopK());
         node.put("rerank_top_k", retrievalProps.getRerankTopK());
@@ -62,10 +63,15 @@ public class SystemSnapshotBuilder {
         node.put("chat_model", aiProps.getChat().getDefaultModel());
         node.put("embedding_model", aiProps.getEmbedding().getDefaultModel());
         node.put("rerank_model", aiProps.getRerank().getDefaultModel());
-        node.put("git_commit", environment.getProperty("git.commit.id.abbrev", "unknown"));
 
+        // Step 2: compute hash over the 8 RAG-behavior fields only
         String canonical = canonicalize(node);
         node.put("config_hash", "sha256:" + sha256Hex(canonical));
+
+        // Step 3: append git_commit as informational metadata (not a hash input;
+        // project lacks git-commit-id-maven-plugin so this always resolves to "unknown")
+        node.put("git_commit", environment.getProperty("git.commit.id.abbrev", "unknown"));
+
         try {
             return MAPPER.writeValueAsString(node);
         } catch (Exception e) {
@@ -77,7 +83,9 @@ public class SystemSnapshotBuilder {
         ObjectNode copy = node.deepCopy();
         copy.remove("config_hash");
         try {
-            return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(copy);
+            // Compact form: pretty-printer whitespace is Jackson-version dependent
+            // and could silently break hash stability across upgrades.
+            return MAPPER.writeValueAsString(copy);
         } catch (Exception e) {
             throw new IllegalStateException("canonicalize failed", e);
         }
