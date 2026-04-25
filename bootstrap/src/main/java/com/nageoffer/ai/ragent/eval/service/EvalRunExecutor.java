@@ -185,7 +185,7 @@ public class EvalRunExecutor {
             EvaluateResponse resp = ragasClient.evaluate(runId, new EvaluateRequest(items));
             Map<String, EvaluateResponse.MetricResult> byId = new HashMap<>();
             for (EvaluateResponse.MetricResult mr : resp.results()) {
-                byId.put(mr.goldItemId(), mr);
+                byId.put(mr.resultId(), mr);
             }
             int succ = 0;
             int fail = 0;

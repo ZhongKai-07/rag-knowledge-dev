@@ -27,7 +27,7 @@ import java.util.List;
 public record EvaluateRequest(List<Item> items) {
 
     public record Item(
-            @JsonProperty("gold_item_id") String goldItemId,
+            @JsonProperty("result_id") String resultId,
             String question,
             List<String> contexts,
             String answer,

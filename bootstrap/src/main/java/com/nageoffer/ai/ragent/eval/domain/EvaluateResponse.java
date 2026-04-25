@@ -30,7 +30,7 @@ import java.util.List;
 public record EvaluateResponse(List<MetricResult> results) {
 
     public record MetricResult(
-            @JsonProperty("gold_item_id") String goldItemId,
+            @JsonProperty("result_id") String resultId,
             BigDecimal faithfulness,
             @JsonProperty("answer_relevancy") BigDecimal answerRelevancy,
             @JsonProperty("context_precision") BigDecimal contextPrecision,

@@ -56,7 +56,7 @@ class RagasEvalClientEvaluateTest {
     void evaluate_serializes_request_and_parses_response() {
         String responseJson = """
                 {"results": [
-                    {"gold_item_id":"g1",
+                    {"result_id":"g1",
                      "faithfulness":0.92,"answer_relevancy":0.88,
                      "context_precision":0.81,"context_recall":0.85,
                      "error":null}
@@ -76,7 +76,7 @@ class RagasEvalClientEvaluateTest {
 
         assertThat(resp.results()).hasSize(1);
         EvaluateResponse.MetricResult mr = resp.results().get(0);
-        assertThat(mr.goldItemId()).isEqualTo("g1");
+        assertThat(mr.resultId()).isEqualTo("g1");
         assertThat(mr.faithfulness()).isEqualByComparingTo(new BigDecimal("0.92"));
         assertThat(mr.contextRecall()).isEqualByComparingTo(new BigDecimal("0.85"));
         assertThat(mr.error()).isNull();
@@ -85,7 +85,7 @@ class RagasEvalClientEvaluateTest {
                 .withHeader("X-Eval-Run-Id", equalTo("run-123")));
 
         String captured = wm.getAllServeEvents().get(0).getRequest().getBodyAsString();
-        assertThat(captured).contains("\"gold_item_id\":\"g1\"");
+        assertThat(captured).contains("\"result_id\":\"g1\"");
         assertThat(captured).contains("\"ground_truth\":\"X is Y\"");
     }
 
@@ -93,7 +93,7 @@ class RagasEvalClientEvaluateTest {
     void evaluate_propagates_per_item_error_field() {
         String responseJson = """
                 {"results": [
-                    {"gold_item_id":"g1","faithfulness":null,
+                    {"result_id":"g1","faithfulness":null,
                      "answer_relevancy":null,"context_precision":null,
                      "context_recall":null,"error":"openai 429"}
                 ]}

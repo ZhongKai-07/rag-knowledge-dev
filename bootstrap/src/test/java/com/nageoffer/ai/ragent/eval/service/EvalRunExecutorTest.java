@@ -101,7 +101,7 @@ class EvalRunExecutorTest {
         when(ragas.evaluate(eq("run-1"), any())).thenAnswer(inv -> {
             EvaluateRequest req = inv.getArgument(1);
             List<EvaluateResponse.MetricResult> mrs = req.items().stream()
-                    .map(it -> new EvaluateResponse.MetricResult(it.goldItemId(),
+                    .map(it -> new EvaluateResponse.MetricResult(it.resultId(),
                             new BigDecimal("0.9"), new BigDecimal("0.8"),
                             new BigDecimal("0.7"), new BigDecimal("0.6"), null))
                     .toList();
@@ -140,6 +140,8 @@ class EvalRunExecutorTest {
         verify(runMapper, atLeast(2)).updateById(upd.capture());
         EvalRunDO last = upd.getAllValues().get(upd.getAllValues().size() - 1);
         assertThat(last.getStatus()).isEqualTo("FAILED");
+        assertThat(last.getSucceededItems()).isEqualTo(0);
+        assertThat(last.getFailedItems()).isEqualTo(2);
     }
 
     @Test
@@ -171,10 +173,10 @@ class EvalRunExecutorTest {
         when(ragas.evaluate(any(), any())).thenAnswer(inv -> {
             EvaluateRequest req = inv.getArgument(1);
             List<EvaluateResponse.MetricResult> mrs = new ArrayList<>();
-            mrs.add(new EvaluateResponse.MetricResult(req.items().get(0).goldItemId(),
+            mrs.add(new EvaluateResponse.MetricResult(req.items().get(0).resultId(),
                     new BigDecimal("0.9"), new BigDecimal("0.8"),
                     new BigDecimal("0.7"), new BigDecimal("0.6"), null));
-            mrs.add(new EvaluateResponse.MetricResult(req.items().get(1).goldItemId(),
+            mrs.add(new EvaluateResponse.MetricResult(req.items().get(1).resultId(),
                     null, null, null, null, "openai 429"));
             return new EvaluateResponse(mrs);
         });
@@ -201,7 +203,7 @@ class EvalRunExecutorTest {
         when(ragas.evaluate(eq("run-3"), any())).thenAnswer(inv -> {
             EvaluateRequest req = inv.getArgument(1);
             List<EvaluateResponse.MetricResult> mrs = req.items().stream()
-                    .map(it -> new EvaluateResponse.MetricResult(it.goldItemId(),
+                    .map(it -> new EvaluateResponse.MetricResult(it.resultId(),
                             new BigDecimal("0.9"), new BigDecimal("0.8"),
                             new BigDecimal("0.7"), new BigDecimal("0.6"), null))
                     .toList();
