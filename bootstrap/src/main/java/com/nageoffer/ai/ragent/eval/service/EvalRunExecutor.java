@@ -73,93 +73,113 @@ public class EvalRunExecutor {
     public void runInternal(String runId) {
         MDC.put("evalRunId", runId);
         try {
-            EvalRunDO run = runMapper.selectById(runId);
-            if (run == null) {
-                log.error("[eval-run] runId={} not found, abort", runId);
-                return;
+            doRun(runId);
+        } catch (Exception e) {
+            log.error("[eval-run] runId={} crashed, marking FAILED", runId, e);
+            // Recovery: any uncaught exception (loop / flushBatch / finalize) leaves the row
+            // in RUNNING forever otherwise. Mark FAILED so UI can resume + max-parallel-runs frees.
+            try {
+                EvalRunDO crashed = runMapper.selectById(runId);
+                if (crashed != null && !"FAILED".equals(crashed.getStatus())) {
+                    crashed.setStatus("FAILED");
+                    crashed.setFinishedAt(new Date());
+                    crashed.setErrorMessage(e.getClass().getSimpleName() + ": " + e.getMessage());
+                    runMapper.updateById(crashed);
+                }
+            } catch (Exception inner) {
+                log.error("[eval-run] runId={} also failed to mark FAILED in recovery", runId, inner);
             }
-            run.setStatus("RUNNING");
-            run.setStartedAt(new Date());
-            runMapper.updateById(run);
+        } finally {
+            MDC.remove("evalRunId");
+        }
+    }
 
-            List<GoldItemDO> items = itemMapper.selectList(new LambdaQueryWrapper<GoldItemDO>()
-                    .eq(GoldItemDO::getDatasetId, run.getDatasetId())
-                    .eq(GoldItemDO::getReviewStatus, "APPROVED"));
+    private void doRun(String runId) {
+        EvalRunDO run = runMapper.selectById(runId);
+        if (run == null) {
+            log.error("[eval-run] runId={} not found, abort", runId);
+            return;
+        }
+        run.setStatus("RUNNING");
+        run.setStartedAt(new Date());
+        runMapper.updateById(run);
 
-            int batchSize = Math.max(1, props.getRun().getEvaluateBatchSize());
-            List<PendingResult> pending = new ArrayList<>();
-            int succeeded = 0;
-            int failed = 0;
-            // P1-1: executor 是唯一合法持有 AccessScope.all() 的调用者
-            AccessScope systemScope = AccessScope.all();
+        List<GoldItemDO> items = itemMapper.selectList(new LambdaQueryWrapper<GoldItemDO>()
+                .eq(GoldItemDO::getDatasetId, run.getDatasetId())
+                .eq(GoldItemDO::getReviewStatus, "APPROVED"));
 
-            for (GoldItemDO item : items) {
-                long t0 = System.currentTimeMillis();
-                AnswerResult ar;
-                try {
-                    ar = chatForEvalService.chatForEval(systemScope, run.getKbId(), item.getQuestion());
-                } catch (Exception e) {
-                    log.warn("[eval-run] runId={} chatForEval failed itemId={}", runId, item.getId(), e);
-                    insertFailedResult(runId, item, "chatForEval: " + e.getMessage(),
-                            (int) (System.currentTimeMillis() - t0));
-                    failed++;
-                    continue;
-                }
+        int batchSize = Math.max(1, props.getRun().getEvaluateBatchSize());
+        List<PendingResult> pending = new ArrayList<>();
+        int succeeded = 0;
+        int failed = 0;
+        // P1-1: executor 是唯一合法持有 AccessScope.all() 的调用者
+        AccessScope systemScope = AccessScope.all();
 
-                if (!(ar instanceof AnswerResult.Success success)) {
-                    String reason = ar.getClass().getSimpleName();
-                    insertFailedResult(runId, item, "skipped: " + reason,
-                            (int) (System.currentTimeMillis() - t0));
-                    failed++;
-                    continue;
-                }
-
-                List<RetrievedChunkSnapshot> snaps = success.chunks().stream()
-                        .map(EvalRunExecutor::toSnapshot)
-                        .toList();
-
-                EvalResultDO row = EvalResultDO.builder()
-                        .id(IdUtil.getSnowflakeNextIdStr())
-                        .runId(runId)
-                        .goldItemId(item.getId())
-                        .question(item.getQuestion())
-                        .groundTruthAnswer(item.getGroundTruthAnswer())
-                        .systemAnswer(success.answer())
-                        .retrievedChunks(toJson(snaps))
-                        .elapsedMs((int) (System.currentTimeMillis() - t0))
-                        .build();
-                resultMapper.insert(row);
-
-                pending.add(new PendingResult(row.getId(), item.getId(), item.getQuestion(),
-                        item.getGroundTruthAnswer(), success.answer(),
-                        snaps.stream().map(RetrievedChunkSnapshot::text).toList()));
-
-                if (pending.size() >= batchSize) {
-                    BatchOutcome out = flushBatch(runId, pending);
-                    succeeded += out.succeeded();
-                    failed += out.failed();
-                    pending.clear();
-                }
+        for (GoldItemDO item : items) {
+            long t0 = System.currentTimeMillis();
+            AnswerResult ar;
+            try {
+                ar = chatForEvalService.chatForEval(systemScope, run.getKbId(), item.getQuestion());
+            } catch (Exception e) {
+                log.warn("[eval-run] runId={} chatForEval failed itemId={}", runId, item.getId(), e);
+                insertFailedResult(runId, item, "chatForEval: " + e.getMessage(),
+                        (int) (System.currentTimeMillis() - t0));
+                failed++;
+                continue;
             }
-            if (!pending.isEmpty()) {
+
+            if (!(ar instanceof AnswerResult.Success success)) {
+                String reason = ar.getClass().getSimpleName();
+                insertFailedResult(runId, item, "skipped: " + reason,
+                        (int) (System.currentTimeMillis() - t0));
+                failed++;
+                continue;
+            }
+
+            List<RetrievedChunkSnapshot> snaps = success.chunks().stream()
+                    .map(EvalRunExecutor::toSnapshot)
+                    .toList();
+
+            EvalResultDO row = EvalResultDO.builder()
+                    .id(IdUtil.getSnowflakeNextIdStr())
+                    .runId(runId)
+                    .goldItemId(item.getId())
+                    .question(item.getQuestion())
+                    .groundTruthAnswer(item.getGroundTruthAnswer())
+                    .systemAnswer(success.answer())
+                    .retrievedChunks(toJson(snaps))
+                    .elapsedMs((int) (System.currentTimeMillis() - t0))
+                    .build();
+            resultMapper.insert(row);
+
+            pending.add(new PendingResult(row.getId(), item.getId(), item.getQuestion(),
+                    item.getGroundTruthAnswer(), success.answer(),
+                    snaps.stream().map(RetrievedChunkSnapshot::text).toList()));
+
+            if (pending.size() >= batchSize) {
                 BatchOutcome out = flushBatch(runId, pending);
                 succeeded += out.succeeded();
                 failed += out.failed();
                 pending.clear();
             }
-
-            run.setSucceededItems(succeeded);
-            run.setFailedItems(failed);
-            run.setMetricsSummary(computeMetricsSummary(runId));
-            run.setFinishedAt(new Date());
-            run.setStatus(decideStatus(succeeded, failed));
-            runMapper.updateById(run);
-
-            log.info("[eval-run] runId={} status={} succeeded={} failed={}",
-                    runId, run.getStatus(), succeeded, failed);
-        } finally {
-            MDC.remove("evalRunId");
         }
+        if (!pending.isEmpty()) {
+            BatchOutcome out = flushBatch(runId, pending);
+            succeeded += out.succeeded();
+            failed += out.failed();
+            pending.clear();
+        }
+
+        // 收尾在 try 之外抛任何异常都会被 runInternal 的 catch 捕获并标 FAILED
+        run.setSucceededItems(succeeded);
+        run.setFailedItems(failed);
+        run.setMetricsSummary(computeMetricsSummary(runId));
+        run.setFinishedAt(new Date());
+        run.setStatus(decideStatus(succeeded, failed));
+        runMapper.updateById(run);
+
+        log.info("[eval-run] runId={} status={} succeeded={} failed={}",
+                runId, run.getStatus(), succeeded, failed);
     }
 
     /**

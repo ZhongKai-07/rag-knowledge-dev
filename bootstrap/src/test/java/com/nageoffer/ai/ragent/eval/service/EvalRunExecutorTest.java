@@ -222,4 +222,22 @@ class EvalRunExecutorTest {
         assertThat(last.getSucceededItems()).isEqualTo(1);
         assertThat(last.getFailedItems()).isEqualTo(1);
     }
+
+    @Test
+    void uncaught_exception_in_run_marks_status_FAILED_via_recovery() {
+        // 模拟收尾阶段抛 (e.g., computeMetricsSummary 选库异常)；外层 catch 必须把
+        // status 标 FAILED 否则 t_eval_run 卡 RUNNING 永远不释放 max-parallel-runs
+        EvalRunDO run = EvalRunDO.builder().id("run-crash").datasetId("d1").kbId("kb1").build();
+        when(runMapper.selectById("run-crash")).thenReturn(run);
+        when(itemMapper.selectList(any())).thenThrow(new RuntimeException("DB connection lost"));
+
+        // 触发 (不应抛到调用方)
+        exec.runInternal("run-crash");
+
+        ArgumentCaptor<EvalRunDO> upd = ArgumentCaptor.forClass(EvalRunDO.class);
+        verify(runMapper, atLeast(2)).updateById(upd.capture());
+        EvalRunDO last = upd.getAllValues().get(upd.getAllValues().size() - 1);
+        assertThat(last.getStatus()).isEqualTo("FAILED");
+        assertThat(last.getErrorMessage()).contains("DB connection lost");
+    }
 }

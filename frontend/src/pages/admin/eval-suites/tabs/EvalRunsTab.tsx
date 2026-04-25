@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -20,7 +20,16 @@ const POLL_INTERVAL_MS = 2_000;
 
 export function EvalRunsTab() {
   const navigate = useNavigate();
-  const [datasetFilter, setDatasetFilter] = useState<string>("");
+  // Persist datasetFilter to URL so refresh / shareable links keep the filter
+  const [searchParams, setSearchParams] = useSearchParams();
+  const datasetFilter = searchParams.get("datasetId") ?? "";
+  const setDatasetFilter = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (v) next.set("datasetId", v);
+    else next.delete("datasetId");
+    setSearchParams(next, { replace: true });
+  };
+
   const [runs, setRuns] = useState<EvalRunSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);

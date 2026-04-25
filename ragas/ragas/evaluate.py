@@ -25,6 +25,7 @@
 """
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 import os
@@ -117,6 +118,61 @@ def _load_pypi_ragas_symbols():
 
 
 _pypi = _load_pypi_ragas_symbols()
+# PyPI ragas 顶层目录路径，运行评测时临时把 sys.path 顶部换成它，让 RAGAS 内部
+# 的 lazy `import ragas.prompt` / `import ragas.metrics._x` 能解析到 PyPI 而不是本地包。
+_PYPI_RAGAS_DIR = os.path.dirname(_pypi.pop("__pypi_dir__", "")) if "__pypi_dir__" in _pypi else None
+
+
+def _locate_pypi_dir() -> str:
+    import importlib.metadata as md
+
+    dist = md.distribution("ragas")
+    for f in (dist.files or []):
+        s = str(f).replace(os.sep, "/")
+        if s.endswith("ragas/__init__.py"):
+            return os.path.dirname(os.path.dirname(str(dist.locate_file(f))))
+    raise RuntimeError("PyPI ragas not locatable")
+
+
+_PYPI_SITE = _locate_pypi_dir()
+
+
+@contextlib.contextmanager
+def _pypi_ragas_active():
+    """在 with 块内让 sys.modules['ragas*'] 指向 PyPI ragas，退出时还原本地 ragas。
+
+    必要性：RAGAS 0.2.x 内部在 evaluate() 调用期间会 lazy `import ragas.prompt` /
+    `import ragas.metrics._faithfulness` 等。若 sys.modules['ragas'] 是本地包就 ModuleNotFoundError。
+    """
+    saved_path = list(sys.path)
+    saved_modules = {
+        k: v for k, v in sys.modules.items()
+        if k == "ragas" or k.startswith("ragas.")
+    }
+    try:
+        for k in list(sys.modules):
+            if k == "ragas" or k.startswith("ragas."):
+                del sys.modules[k]
+        new_path = [_PYPI_SITE]
+        for p in saved_path:
+            if not p or p == _PYPI_SITE:
+                continue
+            shadow = os.path.join(p, "ragas", "__init__.py")
+            pypi_init = os.path.join(_PYPI_SITE, "ragas", "__init__.py")
+            if os.path.isfile(shadow) and os.path.normcase(shadow) != os.path.normcase(pypi_init):
+                continue
+            new_path.append(p)
+        sys.path[:] = new_path
+        # 触发 PyPI ragas 重新进入 sys.modules
+        import ragas  # noqa: F401
+        yield
+    finally:
+        sys.path[:] = saved_path
+        for k in list(sys.modules):
+            if k == "ragas" or k.startswith("ragas."):
+                del sys.modules[k]
+        for k, v in saved_modules.items():
+            sys.modules[k] = v
 
 # 模块级符号；测试用 monkeypatch.setattr("ragas.evaluate._ragas_evaluate", ...) 替换。
 _ragas_evaluate = _pypi["evaluate"]
@@ -219,12 +275,13 @@ def run_evaluate(
     metrics = [_faithfulness, _answer_relevancy, _context_precision, _context_recall]
 
     try:
-        result = _ragas_evaluate(
-            dataset=dataset,
-            metrics=metrics,
-            llm=evaluator_llm,
-            embeddings=evaluator_embeddings,
-        )
+        with _pypi_ragas_active():
+            result = _ragas_evaluate(
+                dataset=dataset,
+                metrics=metrics,
+                llm=evaluator_llm,
+                embeddings=evaluator_embeddings,
+            )
         df = result.to_pandas()
     except Exception as e:  # noqa: BLE001 — 这里就是要兜底整批
         err = f"batch failed: {type(e).__name__}: {e}"
