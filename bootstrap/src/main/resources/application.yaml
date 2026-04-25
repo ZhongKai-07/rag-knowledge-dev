@@ -133,6 +133,8 @@ rag:
       batch-size: 5
       per-item-timeout-ms: 30000
       max-parallel-runs: 1
+      evaluate-batch-size: 5
+      evaluate-timeout-ms: 600000
 
 ai:
   providers:

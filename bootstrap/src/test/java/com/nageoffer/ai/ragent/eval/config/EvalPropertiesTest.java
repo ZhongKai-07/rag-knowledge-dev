@@ -57,4 +57,24 @@ class EvalPropertiesTest {
         assertThat(props.getRun().getBatchSize()).isEqualTo(5);
         assertThat(props.getRun().getMaxParallelRuns()).isEqualTo(1);
     }
+
+    @Test
+    void run_evaluate_fields_bind_from_yaml() {
+        var env = new StandardEnvironment();
+        Map<String, Object> source = new HashMap<>();
+        source.put("rag.eval.run.evaluate-batch-size", "7");
+        source.put("rag.eval.run.evaluate-timeout-ms", "900000");
+        env.getPropertySources().addFirst(new MapPropertySource("test", source));
+        EvalProperties props = Binder.get(env).bind("rag.eval", EvalProperties.class).get();
+
+        assertThat(props.getRun().getEvaluateBatchSize()).isEqualTo(7);
+        assertThat(props.getRun().getEvaluateTimeoutMs()).isEqualTo(900_000);
+    }
+
+    @Test
+    void run_evaluate_fields_default_values() {
+        EvalProperties props = new EvalProperties();
+        assertThat(props.getRun().getEvaluateBatchSize()).isEqualTo(5);
+        assertThat(props.getRun().getEvaluateTimeoutMs()).isEqualTo(600_000);
+    }
 }

@@ -56,5 +56,9 @@ public class EvalProperties {
         private int batchSize = 5;
         private int perItemTimeoutMs = 30_000;
         private int maxParallelRuns = 1;
+        /** 多少条 (question, contexts, answer, ground_truth) 一批送 Python /evaluate */
+        private int evaluateBatchSize = 5;
+        /** 单次 /evaluate HTTP 调用超时；4 指标 LLM 评估批量耗时较长 */
+        private int evaluateTimeoutMs = 600_000;
     }
 }
