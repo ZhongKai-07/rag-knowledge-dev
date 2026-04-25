@@ -133,7 +133,7 @@ public class EvalRunServiceImpl implements EvalRunService {
 
             evalExecutor.execute(() -> {
                 try {
-                    runExecutor.runInternal(runId, principalUserId);
+                    runExecutor.runInternal(runId);
                 } catch (Exception e) {
                     log.error("[eval-run] runId={} crashed", runId, e);
                 }

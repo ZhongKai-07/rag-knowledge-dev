@@ -12,6 +12,8 @@ import {
 import { listEvalRuns, getEvalRun } from "@/services/evalSuiteService";
 import type { EvalRunSummary, EvalRunDetail } from "@/services/evalSuiteService";
 import { SnapshotDiffViewer } from "../components/SnapshotDiffViewer";
+import { parseMetricsSummary } from "../utils";
+import { formatTimestamp } from "@/utils/helpers";
 import { toast } from "sonner";
 
 interface ChartRow {
@@ -40,14 +42,9 @@ export function EvalTrendsTab() {
 
   const chartData = useMemo<ChartRow[]>(() => {
     return runs.map((r) => {
-      let m: Record<string, number | null> = {};
-      try {
-        m = r.metricsSummary ? JSON.parse(r.metricsSummary) : {};
-      } catch {
-        // ignore
-      }
+      const m = parseMetricsSummary(r.metricsSummary);
       return {
-        ts: r.createTime?.slice(5, 16) || r.id.slice(-6),
+        ts: formatTimestamp(r.createTime ?? undefined) || r.id.slice(-6),
         faithfulness: m.faithfulness ?? null,
         answer_relevancy: m.answer_relevancy ?? null,
         context_precision: m.context_precision ?? null,
@@ -126,7 +123,7 @@ export function EvalTrendsTab() {
               <option value="">选 run A</option>
               {runs.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.id.slice(-6)} · {r.createTime?.slice(5, 16)}
+                  {r.id.slice(-6)} · {formatTimestamp(r.createTime ?? undefined)}
                 </option>
               ))}
             </select>
@@ -139,7 +136,7 @@ export function EvalTrendsTab() {
               <option value="">选 run B</option>
               {runs.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.id.slice(-6)} · {r.createTime?.slice(5, 16)}
+                  {r.id.slice(-6)} · {formatTimestamp(r.createTime ?? undefined)}
                 </option>
               ))}
             </select>

@@ -1,15 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { formatDateTime } from "@/utils/helpers";
 import { listEvalRuns, getEvalRun } from "@/services/evalSuiteService";
-import type { EvalRunSummary } from "@/services/evalSuiteService";
+import type { EvalRunSummary, RunStatus } from "@/services/evalSuiteService";
 import { StartRunDialog } from "../components/StartRunDialog";
 import { RunStatusBadge } from "../components/RunStatusBadge";
+import { fmt, parseMetricsSummary } from "../utils";
 
-const TERMINAL_STATUSES = new Set(["SUCCESS", "PARTIAL_SUCCESS", "FAILED", "CANCELLED"]);
+const TERMINAL_STATUSES = new Set<RunStatus>([
+  "SUCCESS",
+  "PARTIAL_SUCCESS",
+  "FAILED",
+  "CANCELLED"
+]);
 const POLL_INTERVAL_MS = 2_000;
 
 export function EvalRunsTab() {
@@ -44,35 +50,40 @@ export function EvalRunsTab() {
     [runs]
   );
 
+  // runsRef avoids re-registering the interval on every poll tick
+  const runsRef = useRef(runs);
+  useEffect(() => {
+    runsRef.current = runs;
+  }, [runs]);
+
   useEffect(() => {
     if (!hasRunning) return;
     const t = setInterval(async () => {
+      const current = runsRef.current;
       try {
-        const next: EvalRunSummary[] = [];
-        for (const r of runs) {
-          if (TERMINAL_STATUSES.has(r.status)) {
-            next.push(r);
-          } else {
-            const fresh = await getEvalRun(r.id);
-            next.push(fresh ? { ...r, ...fresh } : r);
-          }
-        }
-        setRuns(next);
+        // Parallelize per-run polls — sequential awaits would scale linearly with N runs
+        const next = await Promise.all(
+          current.map((r) =>
+            TERMINAL_STATUSES.has(r.status)
+              ? Promise.resolve(r)
+              : getEvalRun(r.id).then((fresh) => (fresh ? { ...r, ...fresh } : r))
+          )
+        );
+        // No-op guard: skip setRuns when nothing changed (avoids cascade re-render)
+        const changed = next.some((n, i) => n.status !== current[i].status);
+        if (changed) setRuns(next);
       } catch {
         // 单次轮询失败忽略
       }
     }, POLL_INTERVAL_MS);
     return () => clearInterval(t);
-  }, [hasRunning, runs]);
+  }, [hasRunning]);
 
-  const parseAvg = (m?: string | null) => {
-    if (!m) return null;
-    try {
-      return JSON.parse(m) as Record<string, number | null>;
-    } catch {
-      return null;
-    }
-  };
+  // Pre-parse metricsSummary once per runs change so row render isn't N JSON.parse
+  const parsedMetrics = useMemo(
+    () => runs.map((r) => parseMetricsSummary(r.metricsSummary)),
+    [runs]
+  );
 
   return (
     <div className="space-y-3">
@@ -120,8 +131,8 @@ export function EvalRunsTab() {
                 </td>
               </tr>
             ) : (
-              runs.map((r) => {
-                const avg = parseAvg(r.metricsSummary);
+              runs.map((r, idx) => {
+                const avg = parsedMetrics[idx];
                 return (
                   <tr
                     key={r.id}
@@ -137,9 +148,7 @@ export function EvalRunsTab() {
                       {r.succeededItems}/{r.totalItems}（失败 {r.failedItems}）
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      {avg
-                        ? `F=${fmt(avg.faithfulness)} AR=${fmt(avg.answer_relevancy)} CP=${fmt(avg.context_precision)} CR=${fmt(avg.context_recall)}`
-                        : "—"}
+                      {`F=${fmt(avg.faithfulness)} AR=${fmt(avg.answer_relevancy)} CP=${fmt(avg.context_precision)} CR=${fmt(avg.context_recall)}`}
                     </td>
                     <td className="px-3 py-2 text-xs">
                       {formatDateTime(r.createTime || "")}
@@ -155,15 +164,13 @@ export function EvalRunsTab() {
       <StartRunDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onStarted={(runId) => {
+        onStarted={(runId, datasetId) => {
           toast.success(`已触发 run ${runId}`);
-          reload(datasetFilter);
+          // Use the dialog's confirmed datasetId — filter input may have been cleared
+          setDatasetFilter(datasetId);
+          reload(datasetId);
         }}
       />
     </div>
   );
-}
-
-function fmt(n: number | null | undefined) {
-  return n == null ? "—" : n.toFixed(3);
 }

@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.eval.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.eval.domain.RetrievedChunkSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +32,7 @@ class EvalResultRedactionServiceTest {
 
     @BeforeEach
     void setUp() {
-        svc = new EvalResultRedactionService();
+        svc = new EvalResultRedactionService(new ObjectMapper());
     }
 
     private RetrievedChunkSnapshot snap(String id, Integer level, String text) {
@@ -73,5 +74,22 @@ class EvalResultRedactionServiceTest {
     @Test
     void null_input_returns_empty_list() {
         assertThat(svc.redact(null, 0)).isEmpty();
+    }
+
+    @Test
+    void redactFromJson_parses_and_redacts_in_one_call() {
+        String json = "[{\"chunk_id\":\"c1\",\"doc_id\":\"d1\",\"doc_name\":\"public.pdf\","
+                + "\"security_level\":3,\"text\":\"secret\",\"score\":0.9}]";
+        List<RetrievedChunkSnapshot> out = svc.redactFromJson(json, 1);
+        assertThat(out).hasSize(1);
+        assertThat(out.get(0).text()).isEqualTo("[REDACTED]");
+        assertThat(out.get(0).chunkId()).isEqualTo("c1");
+    }
+
+    @Test
+    void redactFromJson_blank_returns_empty_list() {
+        assertThat(svc.redactFromJson(null, 0)).isEmpty();
+        assertThat(svc.redactFromJson("", 0)).isEmpty();
+        assertThat(svc.redactFromJson("   ", 0)).isEmpty();
     }
 }

@@ -28,6 +28,7 @@ import type {
   EvalResult
 } from "@/services/evalSuiteService";
 import { RunStatusBadge } from "./components/RunStatusBadge";
+import { fmt, parseMetricsSummary } from "./utils";
 
 const METRIC_KEYS = [
   "faithfulness",
@@ -96,17 +97,23 @@ export function EvalRunDetailPage() {
     }
   };
 
-  const summary = useMemo(() => {
-    if (!run?.metricsSummary) return {} as Record<string, number | null>;
-    try {
-      return JSON.parse(run.metricsSummary) as Record<string, number | null>;
-    } catch {
-      return {};
-    }
-  }, [run]);
+  const summary = useMemo(
+    () => parseMetricsSummary(run?.metricsSummary),
+    [run]
+  );
 
   const sorted = useMemo(
     () => [...results].sort((a, b) => (a.faithfulness ?? 999) - (b.faithfulness ?? 999)),
+    [results]
+  );
+
+  // Pre-bucket once per results change instead of per render × 4 charts
+  const bucketsByMetric = useMemo(
+    () =>
+      Object.fromEntries(METRIC_KEYS.map((k) => [k, bucketize(results, k)])) as Record<
+        MetricKey,
+        ReturnType<typeof bucketize>
+      >,
     [results]
   );
 
@@ -151,7 +158,7 @@ export function EvalRunDetailPage() {
           <div key={k} className="rounded-lg border bg-white p-3">
             <div className="mb-2 text-xs text-slate-600">{METRIC_LABEL[k]} 分布</div>
             <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={bucketize(results, k)}>
+              <BarChart data={bucketsByMetric[k]}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="range" tick={{ fontSize: 10 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
@@ -277,6 +284,3 @@ function Section({
   );
 }
 
-function fmt(n: number | null | undefined) {
-  return n == null ? "—" : n.toFixed(3);
-}

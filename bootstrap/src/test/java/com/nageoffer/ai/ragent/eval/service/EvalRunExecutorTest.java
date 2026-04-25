@@ -19,6 +19,7 @@ package com.nageoffer.ai.ragent.eval.service;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.eval.client.RagasEvalClient;
 import com.nageoffer.ai.ragent.eval.config.EvalProperties;
 import com.nageoffer.ai.ragent.eval.dao.entity.EvalResultDO;
@@ -77,7 +78,8 @@ class EvalRunExecutorTest {
         ragas = mock(RagasEvalClient.class);
         props = new EvalProperties();
         props.getRun().setEvaluateBatchSize(2);
-        exec = new EvalRunExecutor(runMapper, itemMapper, resultMapper, chat, ragas, props);
+        ObjectMapper objectMapper = new ObjectMapper();
+        exec = new EvalRunExecutor(objectMapper, runMapper, itemMapper, resultMapper, chat, ragas, props);
     }
 
     private GoldItemDO item(String id, String q) {
@@ -117,7 +119,7 @@ class EvalRunExecutorTest {
                         .contextPrecision(new BigDecimal("0.7"))
                         .contextRecall(new BigDecimal("0.6")).build()));
 
-        exec.runInternal("run-1", "user-1");
+        exec.runInternal("run-1");
 
         ArgumentCaptor<EvalRunDO> upd = ArgumentCaptor.forClass(EvalRunDO.class);
         verify(runMapper, atLeast(2)).updateById(upd.capture());
@@ -134,7 +136,7 @@ class EvalRunExecutorTest {
         when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
         when(chat.chatForEval(any(), any(), any())).thenThrow(new RuntimeException("LLM 503"));
 
-        exec.runInternal("run-2", "user-1");
+        exec.runInternal("run-2");
 
         ArgumentCaptor<EvalRunDO> upd = ArgumentCaptor.forClass(EvalRunDO.class);
         verify(runMapper, atLeast(2)).updateById(upd.capture());
@@ -153,7 +155,7 @@ class EvalRunExecutorTest {
         when(ragas.evaluate(any(), any())).thenThrow(new RuntimeException("python 503"));
         when(resultMapper.selectList(any())).thenReturn(List.of());
 
-        exec.runInternal("run-eval-fail", "user-1");
+        exec.runInternal("run-eval-fail");
 
         ArgumentCaptor<EvalRunDO> upd = ArgumentCaptor.forClass(EvalRunDO.class);
         verify(runMapper, atLeast(2)).updateById(upd.capture());
@@ -182,7 +184,7 @@ class EvalRunExecutorTest {
         });
         when(resultMapper.selectList(any())).thenReturn(List.of());
 
-        exec.runInternal("run-per-item", "user-1");
+        exec.runInternal("run-per-item");
 
         ArgumentCaptor<EvalRunDO> upd = ArgumentCaptor.forClass(EvalRunDO.class);
         verify(runMapper, atLeast(2)).updateById(upd.capture());
@@ -211,7 +213,7 @@ class EvalRunExecutorTest {
         });
         when(resultMapper.selectList(any())).thenReturn(List.of());
 
-        exec.runInternal("run-3", "user-1");
+        exec.runInternal("run-3");
 
         ArgumentCaptor<EvalRunDO> upd = ArgumentCaptor.forClass(EvalRunDO.class);
         verify(runMapper, atLeast(2)).updateById(upd.capture());

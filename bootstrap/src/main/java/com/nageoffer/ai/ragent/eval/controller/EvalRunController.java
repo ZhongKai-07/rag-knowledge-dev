@@ -29,7 +29,6 @@ import com.nageoffer.ai.ragent.eval.dao.entity.EvalRunDO;
 import com.nageoffer.ai.ragent.eval.dao.mapper.EvalResultMapper;
 import com.nageoffer.ai.ragent.eval.domain.RetrievedChunkSnapshot;
 import com.nageoffer.ai.ragent.eval.service.EvalResultRedactionService;
-import com.nageoffer.ai.ragent.eval.service.EvalRunExecutor;
 import com.nageoffer.ai.ragent.eval.service.EvalRunService;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.Result;
@@ -100,11 +99,9 @@ public class EvalRunController {
                 .eq(EvalResultDO::getId, resultId)
                 .eq(EvalResultDO::getRunId, runId));
         if (r == null) return Results.success(null);
-        // EVAL-3 ceiling: SUPER_ADMIN-only → MAX_VALUE
-        int ceiling = Integer.MAX_VALUE;
-        // P1-3: retrieved_chunks 必经 redaction
-        List<RetrievedChunkSnapshot> redacted = redaction.redact(
-                EvalRunExecutor.parseChunks(r.getRetrievedChunks()), ceiling);
+        // EVAL-3 ceiling: SUPER_ADMIN-only → MAX_VALUE; controller 不知 retrieved_chunks JSON 格式
+        List<RetrievedChunkSnapshot> redacted =
+                redaction.redactFromJson(r.getRetrievedChunks(), Integer.MAX_VALUE);
         return Results.success(new EvalResultVO(r.getId(), r.getRunId(), r.getGoldItemId(),
                 r.getQuestion(), r.getGroundTruthAnswer(), r.getSystemAnswer(),
                 redacted, r.getFaithfulness(), r.getAnswerRelevancy(),

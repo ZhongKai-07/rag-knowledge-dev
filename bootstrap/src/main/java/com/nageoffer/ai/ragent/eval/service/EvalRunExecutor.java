@@ -19,7 +19,6 @@ package com.nageoffer.ai.ragent.eval.service;
 
 import cn.hutool.core.util.IdUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.eval.client.RagasEvalClient;
 import com.nageoffer.ai.ragent.eval.config.EvalProperties;
@@ -63,9 +62,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EvalRunExecutor {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final TypeReference<List<RetrievedChunkSnapshot>> SNAPSHOT_LIST_TYPE = new TypeReference<>() {};
-
+    private final ObjectMapper objectMapper;
     private final EvalRunMapper runMapper;
     private final GoldItemMapper itemMapper;
     private final EvalResultMapper resultMapper;
@@ -73,13 +70,7 @@ public class EvalRunExecutor {
     private final RagasEvalClient ragasClient;
     private final EvalProperties props;
 
-    /**
-     * 执行已 INSERT 的 run（status=PENDING）：调 chat、调 RAGAS、写 result、收尾。
-     *
-     * @param runId            雪花，已存在于 t_eval_run
-     * @param principalUserId  触发人，审计 / system AccessScope 兜底
-     */
-    public void runInternal(String runId, String principalUserId) {
+    public void runInternal(String runId) {
         MDC.put("evalRunId", runId);
         try {
             EvalRunDO run = runMapper.selectById(runId);
@@ -237,7 +228,10 @@ public class EvalRunExecutor {
     }
 
     private String computeMetricsSummary(String runId) {
+        // .select() 投影：只拉 4 个 metric 列，避免读回 retrieved_chunks (TEXT，可能 MB 级)
         List<EvalResultDO> rows = resultMapper.selectList(new LambdaQueryWrapper<EvalResultDO>()
+                .select(EvalResultDO::getFaithfulness, EvalResultDO::getAnswerRelevancy,
+                        EvalResultDO::getContextPrecision, EvalResultDO::getContextRecall)
                 .eq(EvalResultDO::getRunId, runId));
         BigDecimal[] sum = new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
         int[] count = new int[4];
@@ -283,20 +277,11 @@ public class EvalRunExecutor {
                 score);
     }
 
-    private static String toJson(Object obj) {
+    private String toJson(Object obj) {
         try {
-            return MAPPER.writeValueAsString(obj);
+            return objectMapper.writeValueAsString(obj);
         } catch (Exception e) {
             throw new IllegalStateException("json serialize failed", e);
-        }
-    }
-
-    public static List<RetrievedChunkSnapshot> parseChunks(String json) {
-        if (json == null || json.isBlank()) return List.of();
-        try {
-            return MAPPER.readValue(json, SNAPSHOT_LIST_TYPE);
-        } catch (Exception e) {
-            throw new IllegalStateException("parse retrieved_chunks failed", e);
         }
     }
 

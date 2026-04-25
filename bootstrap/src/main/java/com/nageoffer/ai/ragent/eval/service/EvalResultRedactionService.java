@@ -17,7 +17,10 @@
 
 package com.nageoffer.ai.ragent.eval.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.eval.domain.RetrievedChunkSnapshot;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -38,9 +41,14 @@ import java.util.List;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class EvalResultRedactionService {
 
     public static final String REDACTED = "[REDACTED]";
+
+    private static final TypeReference<List<RetrievedChunkSnapshot>> SNAPSHOT_LIST_TYPE = new TypeReference<>() {};
+
+    private final ObjectMapper objectMapper;
 
     public List<RetrievedChunkSnapshot> redact(List<RetrievedChunkSnapshot> chunks, int principalCeiling) {
         if (chunks == null) return List.of();
@@ -54,5 +62,24 @@ public class EvalResultRedactionService {
                     return c;
                 })
                 .toList();
+    }
+
+    /**
+     * Parses {@code t_eval_result.retrieved_chunks} JSON then redacts in one call.
+     *
+     * <p>Owns the parse-then-redact pipeline so callers (controller) never see the
+     * raw JSON / pre-redaction snapshots — zero-bypass guarantee for EVAL-3.
+     */
+    public List<RetrievedChunkSnapshot> redactFromJson(String json, int principalCeiling) {
+        return redact(parseChunks(json), principalCeiling);
+    }
+
+    private List<RetrievedChunkSnapshot> parseChunks(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(json, SNAPSHOT_LIST_TYPE);
+        } catch (Exception e) {
+            throw new IllegalStateException("parse retrieved_chunks failed", e);
+        }
     }
 }

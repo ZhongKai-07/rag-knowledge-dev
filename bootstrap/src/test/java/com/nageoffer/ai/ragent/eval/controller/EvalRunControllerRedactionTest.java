@@ -103,14 +103,14 @@ class EvalRunControllerRedactionTest {
                                 + "\"security_level\":3,\"text\":\"secret text\",\"score\":0.8}]")
                 .build();
         when(resultMapper.selectOne(any())).thenReturn(row);
-        when(redaction.redact(any(), anyInt())).thenReturn(List.of(
+        when(redaction.redactFromJson(any(), anyInt())).thenReturn(List.of(
                 new RetrievedChunkSnapshot("c1", "d1", "public.pdf", 0, "REDACTION_SENTINEL_TEXT", 0.9)));
 
         mvc.perform(get("/admin/eval/runs/run-1/results/r1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.retrievedChunks[0].text").value("REDACTION_SENTINEL_TEXT"));
 
-        verify(redaction, atLeastOnce()).redact(any(), anyInt());
+        verify(redaction, atLeastOnce()).redactFromJson(any(), anyInt());
     }
 
     @Test
@@ -121,7 +121,7 @@ class EvalRunControllerRedactionTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").doesNotExist());
 
-        verify(redaction, never()).redact(any(), anyInt());
+        verify(redaction, never()).redactFromJson(any(), anyInt());
     }
 
     @Test

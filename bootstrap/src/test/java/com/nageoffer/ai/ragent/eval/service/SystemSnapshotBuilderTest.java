@@ -61,7 +61,7 @@ class SystemSnapshotBuilderTest {
         when(ai.getEmbedding()).thenReturn(emb);
         when(ai.getRerank()).thenReturn(rr);
 
-        builder = new SystemSnapshotBuilder(retrieval, sources, ai, env);
+        builder = new SystemSnapshotBuilder(new ObjectMapper(), retrieval, sources, ai, env);
     }
 
     @Test
