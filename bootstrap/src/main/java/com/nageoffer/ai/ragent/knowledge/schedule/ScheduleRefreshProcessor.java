@@ -208,7 +208,7 @@ public class ScheduleRefreshProcessor {
                     return;
                 }
                 state.phase = Phase.CHUNK_STARTED;
-                UserContext.set(LoginUser.builder().username(SYSTEM_USER).build());
+                UserContext.set(LoginUser.builder().username(SYSTEM_USER).system(true).build());
                 try {
                     documentService.chunkDocument(runtimeDoc);
                 } finally {

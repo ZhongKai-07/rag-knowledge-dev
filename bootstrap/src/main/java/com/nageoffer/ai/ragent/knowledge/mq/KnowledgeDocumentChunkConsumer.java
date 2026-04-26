@@ -49,7 +49,7 @@ public class KnowledgeDocumentChunkConsumer implements RocketMQListener<MessageW
 
         log.info("[消费者] 开始消费文档分块任务，docId={}, keys={}", event.getDocId(), message.getKeys());
 
-        UserContext.set(LoginUser.builder().username(event.getOperator()).build());
+        UserContext.set(LoginUser.builder().username(event.getOperator()).system(true).build());
         try {
             documentService.executeChunk(event.getDocId());
         } finally {
