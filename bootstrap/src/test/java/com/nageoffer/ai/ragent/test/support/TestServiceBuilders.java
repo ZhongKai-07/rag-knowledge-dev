@@ -22,7 +22,10 @@ import com.nageoffer.ai.ragent.core.chunk.ChunkEmbeddingService;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategyFactory;
 import com.nageoffer.ai.ragent.core.parser.DocumentParserSelector;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort;
 import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
 import com.nageoffer.ai.ragent.infra.token.TokenCounterService;
 import com.nageoffer.ai.ragent.ingestion.dao.mapper.IngestionPipelineMapper;
@@ -65,23 +68,37 @@ public final class TestServiceBuilders {
 
     private TestServiceBuilders() {}
 
-    public static KnowledgeBaseServiceImpl knowledgeBaseService(KbAccessService kbAccessService) {
-        return knowledgeBaseService(kbAccessService, mock(KnowledgeBaseMapper.class));
+    public static KnowledgeBaseServiceImpl knowledgeBaseService(
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KbRoleBindingAdminPort kbRoleBindingAdmin) {
+        return knowledgeBaseService(
+                kbReadAccess,
+                kbManageAccess,
+                kbRoleBindingAdmin,
+                mock(KnowledgeBaseMapper.class));
     }
 
     public static KnowledgeBaseServiceImpl knowledgeBaseService(
-            KbAccessService kbAccessService, KnowledgeBaseMapper knowledgeBaseMapper) {
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KbRoleBindingAdminPort kbRoleBindingAdmin,
+            KnowledgeBaseMapper knowledgeBaseMapper) {
         return new KnowledgeBaseServiceImpl(
                 knowledgeBaseMapper,
                 mock(KnowledgeDocumentMapper.class),
                 mock(VectorStoreAdmin.class),
                 mock(FileStorageService.class),
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
+                kbRoleBindingAdmin,
                 mock(SysDeptMapper.class));
     }
 
     public static KnowledgeChunkServiceImpl knowledgeChunkService(
-            KbAccessService kbAccessService, KbMetadataReader kbMetadataReader) {
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KbMetadataReader kbMetadataReader) {
         return new KnowledgeChunkServiceImpl(
                 mock(KnowledgeChunkMapper.class),
                 mock(KnowledgeDocumentMapper.class),
@@ -90,16 +107,20 @@ public final class TestServiceBuilders {
                 mock(TokenCounterService.class),
                 mock(VectorStoreService.class),
                 mock(TransactionOperations.class),
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
                 kbMetadataReader);
     }
 
     public static KnowledgeDocumentServiceImpl knowledgeDocumentService(
-            KbAccessService kbAccessService, KnowledgeDocumentMapper documentMapper) {
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KnowledgeDocumentMapper documentMapper) {
         return new KnowledgeDocumentServiceImpl(
                 mock(KnowledgeBaseMapper.class),
                 documentMapper,
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
                 mock(DocumentParserSelector.class),
                 mock(ChunkingStrategyFactory.class),
                 mock(FileStorageService.class),
@@ -120,6 +141,11 @@ public final class TestServiceBuilders {
     }
 
     public static RoleServiceImpl roleService(KbAccessService kbAccessService) {
+        return roleService(kbAccessService, mock(KbManageAccessPort.class));
+    }
+
+    public static RoleServiceImpl roleService(
+            KbAccessService kbAccessService, KbManageAccessPort kbManageAccess) {
         return new RoleServiceImpl(
                 mock(RoleMapper.class),
                 mock(RoleKbRelationMapper.class),
@@ -127,6 +153,8 @@ public final class TestServiceBuilders {
                 mock(UserMapper.class),
                 mock(SysDeptMapper.class),
                 mock(KnowledgeBaseMapper.class),
-                kbAccessService);
+                kbAccessService,
+                kbManageAccess);
     }
+
 }

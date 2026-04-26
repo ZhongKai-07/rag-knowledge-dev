@@ -29,6 +29,7 @@ import com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin;
 import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
 import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
@@ -65,7 +66,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class KbAccessServiceImpl implements KbAccessService,
         CurrentUserProbe, KbReadAccessPort, KbManageAccessPort,
-        UserAdminGuard, SuperAdminInvariantGuard, KbAccessCacheAdmin {
+        KbRoleBindingAdminPort, UserAdminGuard, SuperAdminInvariantGuard, KbAccessCacheAdmin {
 
     private static final String CACHE_PREFIX = "kb_access:";
     private static final String DEPT_ADMIN_CACHE_PREFIX = "kb_access:dept:";

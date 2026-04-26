@@ -23,6 +23,8 @@ import com.nageoffer.ai.ragent.core.chunk.ChunkEmbeddingService;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategyFactory;
 import com.nageoffer.ai.ragent.core.parser.DocumentParserSelector;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.ingestion.dao.mapper.IngestionPipelineMapper;
 import com.nageoffer.ai.ragent.ingestion.engine.IngestionEngine;
 import com.nageoffer.ai.ragent.ingestion.service.IngestionPipelineService;
@@ -38,7 +40,6 @@ import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeDocumentServiceIm
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +69,8 @@ class KnowledgeDocumentServiceImplTest {
         initTableInfo(KnowledgeDocumentDO.class);
         knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
         documentMapper = mock(KnowledgeDocumentMapper.class);
-        KbAccessService kbAccessService = mock(KbAccessService.class);
+        KbReadAccessPort kbReadAccess = mock(KbReadAccessPort.class);
+        KbManageAccessPort kbManageAccess = mock(KbManageAccessPort.class);
         DocumentParserSelector parserSelector = mock(DocumentParserSelector.class);
         ChunkingStrategyFactory chunkingStrategyFactory = mock(ChunkingStrategyFactory.class);
         FileStorageService fileStorageService = mock(FileStorageService.class);
@@ -90,7 +92,8 @@ class KnowledgeDocumentServiceImplTest {
         service = new KnowledgeDocumentServiceImpl(
                 knowledgeBaseMapper,
                 documentMapper,
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
                 parserSelector,
                 chunkingStrategyFactory,
                 fileStorageService,

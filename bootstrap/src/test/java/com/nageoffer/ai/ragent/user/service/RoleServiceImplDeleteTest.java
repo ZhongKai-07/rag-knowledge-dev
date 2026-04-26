@@ -21,6 +21,7 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
@@ -80,7 +81,8 @@ class RoleServiceImplDeleteTest {
                 userMapper,
                 sysDeptMapper,
                 knowledgeBaseMapper,
-                kbAccessService);
+                kbAccessService,
+                mock(KbManageAccessPort.class));
     }
 
     /** 级联删 + 按受影响用户清缓存（去重）*/

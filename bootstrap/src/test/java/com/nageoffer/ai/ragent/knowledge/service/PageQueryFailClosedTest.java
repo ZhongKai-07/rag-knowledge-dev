@@ -40,8 +40,10 @@ import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
 import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionOperations;
 
@@ -54,7 +56,10 @@ class PageQueryFailClosedTest {
 
     @Test
     void pageQuery_returns_empty_page_when_scope_ids_is_empty() {
-        KnowledgeBaseServiceImpl service = buildKbService(mock(KbAccessService.class));
+        KnowledgeBaseServiceImpl service = buildKbService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class),
+                mock(KbRoleBindingAdminPort.class));
 
         KnowledgeBasePageRequest request = new KnowledgeBasePageRequest();
         request.setCurrent(1L);
@@ -68,7 +73,9 @@ class PageQueryFailClosedTest {
 
     @Test
     void documentSearch_returns_empty_list_when_scope_ids_is_empty() {
-        KnowledgeDocumentServiceImpl service = buildDocService(mock(KbAccessService.class));
+        KnowledgeDocumentServiceImpl service = buildDocService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class));
 
         // keyword must be non-blank — service short-circuits to empty for blank keyword
         // BEFORE the empty-scope check fires.
@@ -78,21 +85,29 @@ class PageQueryFailClosedTest {
                 "empty AccessScope.Ids must see empty search list");
     }
 
-    private static KnowledgeBaseServiceImpl buildKbService(KbAccessService kbAccessService) {
+    private static KnowledgeBaseServiceImpl buildKbService(
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KbRoleBindingAdminPort kbRoleBindingAdmin) {
         return new KnowledgeBaseServiceImpl(
                 mock(KnowledgeBaseMapper.class),
                 mock(KnowledgeDocumentMapper.class),
                 mock(VectorStoreAdmin.class),
                 mock(FileStorageService.class),
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
+                kbRoleBindingAdmin,
                 mock(SysDeptMapper.class));
     }
 
-    private static KnowledgeDocumentServiceImpl buildDocService(KbAccessService kbAccessService) {
+    private static KnowledgeDocumentServiceImpl buildDocService(
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess) {
         return new KnowledgeDocumentServiceImpl(
                 mock(KnowledgeBaseMapper.class),
                 mock(KnowledgeDocumentMapper.class),
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
                 mock(DocumentParserSelector.class),
                 mock(ChunkingStrategyFactory.class),
                 mock(FileStorageService.class),

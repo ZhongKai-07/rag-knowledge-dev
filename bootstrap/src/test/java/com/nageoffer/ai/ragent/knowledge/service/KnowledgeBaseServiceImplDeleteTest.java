@@ -22,6 +22,9 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
@@ -30,7 +33,6 @@ import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +55,9 @@ class KnowledgeBaseServiceImplDeleteTest {
     private KnowledgeDocumentMapper knowledgeDocumentMapper;
     private VectorStoreAdmin vectorStoreAdmin;
     private FileStorageService fileStorageService;
-    private KbAccessService kbAccessService;
+    private KbReadAccessPort kbReadAccess;
+    private KbManageAccessPort kbManageAccess;
+    private KbRoleBindingAdminPort kbRoleBindingAdmin;
     private SysDeptMapper sysDeptMapper;
     private KnowledgeBaseServiceImpl service;
 
@@ -64,14 +68,18 @@ class KnowledgeBaseServiceImplDeleteTest {
         knowledgeDocumentMapper = mock(KnowledgeDocumentMapper.class);
         vectorStoreAdmin = mock(VectorStoreAdmin.class);
         fileStorageService = mock(FileStorageService.class);
-        kbAccessService = mock(KbAccessService.class);
+        kbReadAccess = mock(KbReadAccessPort.class);
+        kbManageAccess = mock(KbManageAccessPort.class);
+        kbRoleBindingAdmin = mock(KbRoleBindingAdminPort.class);
         sysDeptMapper = mock(SysDeptMapper.class);
         service = new KnowledgeBaseServiceImpl(
                 knowledgeBaseMapper,
                 knowledgeDocumentMapper,
                 vectorStoreAdmin,
                 fileStorageService,
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
+                kbRoleBindingAdmin,
                 sysDeptMapper
         );
         UserContext.set(LoginUser.builder().username("tester").build());
@@ -90,7 +98,7 @@ class KnowledgeBaseServiceImplDeleteTest {
 
         assertEquals("知识库不存在", ex.getMessage());
         verify(knowledgeDocumentMapper, never()).selectCount(any());
-        verify(kbAccessService, never()).unbindAllRolesFromKb(any());
+        verify(kbRoleBindingAdmin, never()).unbindAllRolesFromKb(any());
         verify(vectorStoreAdmin, never()).dropVectorSpace(any());
         verify(fileStorageService, never()).deleteBucket(any());
     }
@@ -106,7 +114,7 @@ class KnowledgeBaseServiceImplDeleteTest {
 
         assertEquals("知识库不存在", ex.getMessage());
         verify(knowledgeDocumentMapper, never()).selectCount(any());
-        verify(kbAccessService, never()).unbindAllRolesFromKb(any());
+        verify(kbRoleBindingAdmin, never()).unbindAllRolesFromKb(any());
         verify(vectorStoreAdmin, never()).dropVectorSpace(any());
         verify(fileStorageService, never()).deleteBucket(any());
     }
@@ -124,7 +132,7 @@ class KnowledgeBaseServiceImplDeleteTest {
 
         assertEquals("当前知识库下还有文档，请删除文档", ex.getMessage());
         verify(knowledgeBaseMapper, never()).deleteById(any(KnowledgeBaseDO.class));
-        verify(kbAccessService, never()).unbindAllRolesFromKb(any());
+        verify(kbRoleBindingAdmin, never()).unbindAllRolesFromKb(any());
         verify(vectorStoreAdmin, never()).dropVectorSpace(any());
         verify(fileStorageService, never()).deleteBucket(any());
     }
@@ -137,12 +145,12 @@ class KnowledgeBaseServiceImplDeleteTest {
                 .deleted(0)
                 .build());
         when(knowledgeDocumentMapper.selectCount(any())).thenReturn(0L);
-        when(kbAccessService.unbindAllRolesFromKb("kb-1")).thenReturn(3);
+        when(kbRoleBindingAdmin.unbindAllRolesFromKb("kb-1")).thenReturn(3);
 
         service.delete("kb-1");
 
         verify(knowledgeBaseMapper).deleteById(any(KnowledgeBaseDO.class));
-        verify(kbAccessService).unbindAllRolesFromKb("kb-1");
+        verify(kbRoleBindingAdmin).unbindAllRolesFromKb("kb-1");
         verify(vectorStoreAdmin).dropVectorSpace(argThat(spaceId ->
                 "collection-1".equals(spaceId.getLogicalName())));
         verify(fileStorageService).deleteBucket("collection-1");

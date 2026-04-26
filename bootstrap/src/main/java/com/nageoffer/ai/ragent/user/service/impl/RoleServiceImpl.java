@@ -37,6 +37,7 @@ import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
@@ -64,6 +65,7 @@ public class RoleServiceImpl implements RoleService {
     private final SysDeptMapper sysDeptMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KbAccessService kbAccessService;
+    private final KbManageAccessPort kbManageAccess;
 
     @Override
     public String createRole(
@@ -405,7 +407,7 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     public List<KnowledgeBaseController.KbRoleBindingVO> getKbRoleBindings(String kbId) {
-        kbAccessService.checkKbRoleBindingAccess(kbId);
+        kbManageAccess.checkKbRoleBindingAccess(kbId);
         List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getKbId, kbId));
         if (relations.isEmpty()) {
@@ -447,7 +449,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional(rollbackFor = Exception.class)
     public void setKbRoleBindings(String kbId,
                                   List<KnowledgeBaseController.KbRoleBindingRequest> bindings) {
-        kbAccessService.checkKbRoleBindingAccess(kbId);
+        kbManageAccess.checkKbRoleBindingAccess(kbId);
         Set<String> affectedUserIds = new HashSet<>();
 
         // ① 删除前先收集旧绑定涉及的用户

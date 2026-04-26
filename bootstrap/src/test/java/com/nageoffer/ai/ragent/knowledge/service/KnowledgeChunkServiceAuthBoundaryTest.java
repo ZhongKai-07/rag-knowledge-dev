@@ -20,14 +20,15 @@ package com.nageoffer.ai.ragent.knowledge.service;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkBatchRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkPageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkUpdateRequest;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeChunkServiceImpl;
 import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,21 +43,23 @@ import static org.mockito.Mockito.when;
 
 /**
  * 服务层授权边界测试：验证 KnowledgeChunkService 的 6 个授权入口
- * 在 KbAccessService 抛出 ClientException 时如实向上传播。
+ * 在小权限 Port 抛出 ClientException 时如实向上传播。
  *
  * <p>额外覆盖 pageQuery 在 docId→kbId 解析失败时抛出 ClientException 的场景。
  */
 class KnowledgeChunkServiceAuthBoundaryTest {
 
-    private KbAccessService kbAccessService;
+    private KbReadAccessPort kbReadAccess;
+    private KbManageAccessPort kbManageAccess;
     private KbMetadataReader kbMetadataReader;
     private KnowledgeChunkServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        kbAccessService = mock(KbAccessService.class);
+        kbReadAccess = mock(KbReadAccessPort.class);
+        kbManageAccess = mock(KbManageAccessPort.class);
         kbMetadataReader = mock(KbMetadataReader.class);
-        service = TestServiceBuilders.knowledgeChunkService(kbAccessService, kbMetadataReader);
+        service = TestServiceBuilders.knowledgeChunkService(kbReadAccess, kbManageAccess, kbMetadataReader);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 
@@ -68,12 +71,12 @@ class KnowledgeChunkServiceAuthBoundaryTest {
     @Test
     void pageQuery_propagates_check_failure() {
         when(kbMetadataReader.getKbIdOfDoc("doc-1")).thenReturn("kb-1");
-        doThrow(new ClientException("denied")).when(kbAccessService).checkAccess("kb-1");
+        doThrow(new ClientException("denied")).when(kbReadAccess).checkReadAccess("kb-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.pageQuery("doc-1", new KnowledgeChunkPageRequest()));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkAccess("kb-1");
+        verify(kbReadAccess).checkReadAccess("kb-1");
     }
 
     @Test
@@ -89,53 +92,53 @@ class KnowledgeChunkServiceAuthBoundaryTest {
 
     @Test
     void create_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.create("doc-1", new KnowledgeChunkCreateRequest()));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
     void update_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.update("doc-1", "chunk-1", new KnowledgeChunkUpdateRequest()));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
     void delete_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class, () -> service.delete("doc-1", "chunk-1"));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
     void enableChunk_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.enableChunk("doc-1", "chunk-1", true));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
     void batchToggleEnabled_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
         KnowledgeChunkBatchRequest req = new KnowledgeChunkBatchRequest();
         req.setChunkIds(List.of("chunk-1"));
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.batchToggleEnabled("doc-1", req, true));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     private static void assertDeniedMessage(ClientException ex) {

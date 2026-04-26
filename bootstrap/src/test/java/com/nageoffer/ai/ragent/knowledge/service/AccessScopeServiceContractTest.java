@@ -22,6 +22,9 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBasePageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
@@ -31,7 +34,6 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeDocumentServiceImpl;
 import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -60,7 +62,11 @@ class AccessScopeServiceContractTest {
     @Test
     void knowledgeBasePageQuery_allScope_doesNotAddInClause() {
         KnowledgeBaseMapper mapper = mock(KnowledgeBaseMapper.class);
-        KnowledgeBaseServiceImpl service = TestServiceBuilders.knowledgeBaseService(mock(KbAccessService.class), mapper);
+        KnowledgeBaseServiceImpl service = TestServiceBuilders.knowledgeBaseService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class),
+                mock(KbRoleBindingAdminPort.class),
+                mapper);
         when(mapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                 .thenReturn(new Page<KnowledgeBaseDO>(1, 10, 0));
 
@@ -74,7 +80,11 @@ class AccessScopeServiceContractTest {
     @Test
     void knowledgeBasePageQuery_emptyIdsScope_shortCircuitsBeforeMapper() {
         KnowledgeBaseMapper mapper = mock(KnowledgeBaseMapper.class);
-        KnowledgeBaseServiceImpl service = TestServiceBuilders.knowledgeBaseService(mock(KbAccessService.class), mapper);
+        KnowledgeBaseServiceImpl service = TestServiceBuilders.knowledgeBaseService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class),
+                mock(KbRoleBindingAdminPort.class),
+                mapper);
 
         var result = service.pageQuery(pageRequest(), AccessScope.empty());
 
@@ -86,7 +96,11 @@ class AccessScopeServiceContractTest {
     @Test
     void knowledgeBasePageQuery_nonEmptyIdsScope_addsInClauseWithKbIds() {
         KnowledgeBaseMapper mapper = mock(KnowledgeBaseMapper.class);
-        KnowledgeBaseServiceImpl service = TestServiceBuilders.knowledgeBaseService(mock(KbAccessService.class), mapper);
+        KnowledgeBaseServiceImpl service = TestServiceBuilders.knowledgeBaseService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class),
+                mock(KbRoleBindingAdminPort.class),
+                mapper);
         when(mapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                 .thenReturn(new Page<KnowledgeBaseDO>(1, 10, 0));
 
@@ -103,7 +117,10 @@ class AccessScopeServiceContractTest {
     @Test
     void knowledgeDocumentSearch_allScope_doesNotAddInClause() {
         KnowledgeDocumentMapper mapper = mock(KnowledgeDocumentMapper.class);
-        KnowledgeDocumentServiceImpl service = TestServiceBuilders.knowledgeDocumentService(mock(KbAccessService.class), mapper);
+        KnowledgeDocumentServiceImpl service = TestServiceBuilders.knowledgeDocumentService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class),
+                mapper);
         when(mapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                 .thenReturn(new Page<KnowledgeDocumentDO>(1, 8, 0));
 
@@ -117,7 +134,10 @@ class AccessScopeServiceContractTest {
     @Test
     void knowledgeDocumentSearch_emptyIdsScope_shortCircuitsBeforeMapper() {
         KnowledgeDocumentMapper mapper = mock(KnowledgeDocumentMapper.class);
-        KnowledgeDocumentServiceImpl service = TestServiceBuilders.knowledgeDocumentService(mock(KbAccessService.class), mapper);
+        KnowledgeDocumentServiceImpl service = TestServiceBuilders.knowledgeDocumentService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class),
+                mapper);
 
         List<KnowledgeDocumentSearchVO> result = service.search("doc", 8, AccessScope.empty());
 
@@ -128,7 +148,10 @@ class AccessScopeServiceContractTest {
     @Test
     void knowledgeDocumentSearch_nonEmptyIdsScope_addsInClauseWithKbIds() {
         KnowledgeDocumentMapper mapper = mock(KnowledgeDocumentMapper.class);
-        KnowledgeDocumentServiceImpl service = TestServiceBuilders.knowledgeDocumentService(mock(KbAccessService.class), mapper);
+        KnowledgeDocumentServiceImpl service = TestServiceBuilders.knowledgeDocumentService(
+                mock(KbReadAccessPort.class),
+                mock(KbManageAccessPort.class),
+                mapper);
         when(mapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                 .thenReturn(new Page<KnowledgeDocumentDO>(1, 8, 0));
 
