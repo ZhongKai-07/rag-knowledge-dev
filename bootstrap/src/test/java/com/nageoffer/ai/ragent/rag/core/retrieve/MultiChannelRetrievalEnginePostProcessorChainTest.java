@@ -30,7 +30,7 @@ import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.DeduplicationPostProcessor;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -117,7 +117,7 @@ class MultiChannelRetrievalEnginePostProcessorChainTest {
                 List.of(dropAll, new DeduplicationPostProcessor()),
                 mock(RetrieverService.class),
                 mock(KnowledgeBaseMapper.class),
-                mock(KbAccessService.class),
+                mock(KbReadAccessPort.class),
                 mock(MetadataFilterBuilder.class),
                 directExecutor
         );
