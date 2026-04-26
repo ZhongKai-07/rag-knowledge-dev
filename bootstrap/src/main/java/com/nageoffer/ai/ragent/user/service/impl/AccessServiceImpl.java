@@ -22,6 +22,7 @@ import com.nageoffer.ai.ragent.framework.context.Permission;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
@@ -39,7 +40,6 @@ import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.AccessService;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -63,7 +63,7 @@ public class AccessServiceImpl implements AccessService {
     private final UserRoleMapper userRoleMapper;
     private final RoleKbRelationMapper roleKbRelationMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
-    private final KbAccessService kbAccessService;
+    private final KbReadAccessPort kbReadAccess;
     private final SysDeptService sysDeptService;
     private final KbMetadataReader kbMetadataReader;
 
@@ -134,14 +134,20 @@ public class AccessServiceImpl implements AccessService {
 
         // Step 1: 真相范围 —— 直接按目标用户的身份计算，不能用 getAccessibleKbIds
         // （该方法依赖 CALLER context 的 isSuperAdmin 判断，在 admin 查其他人时会漏算成"全量"）
-        Set<String> accessibleKbIds = computeTargetUserAccessibleKbIds(
+        Set<String> targetReadableKbIds = computeTargetUserAccessibleKbIds(
                 userId, user.getDeptId(), targetIsSuper, targetIsDeptAdmin);
-        if (accessibleKbIds.isEmpty()) {
+        if (targetReadableKbIds.isEmpty()) {
             return Collections.emptyList();
         }
 
         List<KnowledgeBaseDO> kbs = knowledgeBaseMapper.selectList(
-                Wrappers.lambdaQuery(KnowledgeBaseDO.class).in(KnowledgeBaseDO::getId, accessibleKbIds));
+                Wrappers.lambdaQuery(KnowledgeBaseDO.class).in(KnowledgeBaseDO::getId, targetReadableKbIds));
+        Map<String, Integer> levels = targetReadableKbIds.isEmpty()
+                ? Collections.emptyMap()
+                : kbReadAccess.getMaxSecurityLevelsForKbs(userId, targetReadableKbIds);
+        if (levels == null) {
+            levels = Collections.emptyMap();
+        }
 
         // Step 2: 显式 role 链（同时拿权限和 sourceRoleIds）
         Map<String, String> explicitPermByKb = new HashMap<>();
@@ -150,7 +156,7 @@ public class AccessServiceImpl implements AccessService {
             List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
                     Wrappers.lambdaQuery(RoleKbRelationDO.class)
                             .in(RoleKbRelationDO::getRoleId, roleIds)
-                            .in(RoleKbRelationDO::getKbId, accessibleKbIds));
+                            .in(RoleKbRelationDO::getKbId, targetReadableKbIds));
             for (RoleKbRelationDO rel : relations) {
                 explicitPermByKb.merge(rel.getKbId(), rel.getPermission(),
                         (a, b) -> maxPermission(a, b));
@@ -180,7 +186,7 @@ public class AccessServiceImpl implements AccessService {
                 effectivePerm = explicitPerm; // 可能为 null — 理论不应出现，因为范围已被锁
             }
 
-            Integer securityLevel = kbAccessService.getMaxSecurityLevelForKb(userId, kb.getId());
+            Integer securityLevel = levels.getOrDefault(kb.getId(), 0);
 
             out.add(UserKbGrantVO.builder()
                     .kbId(kb.getId())
@@ -312,7 +318,7 @@ public class AccessServiceImpl implements AccessService {
      * 按"目标用户"身份计算可访问 KB ID 集合。
      * <p>
      * 不直接复用 {@code getAccessibleKbIds}，因为它读 CALLER 的 UserContext。
-     * 这里改为复用同包共享的 RBAC helper，避免和 KbAccessServiceImpl 漂移出两套算法。
+     * 这里改为复用同包共享的 RBAC helper，避免漂移出两套算法。
      */
     private Set<String> computeTargetUserAccessibleKbIds(
             String userId,
@@ -322,7 +328,7 @@ public class AccessServiceImpl implements AccessService {
         if (targetIsSuper) {
             return kbMetadataReader.listAllKbIds();
         }
-        Set<String> result = KbAccessServiceImpl.computeRbacKbIdsFor(
+        Set<String> result = KbRbacAccessSupport.computeRbacKbIdsFor(
                 userId,
                 Permission.READ,
                 userRoleMapper,

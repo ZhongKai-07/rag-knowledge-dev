@@ -36,8 +36,10 @@ import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.enums.UserRole;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +54,9 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final UserRoleMapper userRoleMapper;
-    private final KbAccessService kbAccessService;
+    private final CurrentUserProbe currentUser;
+    private final UserAdminGuard userAdminGuard;
+    private final SuperAdminInvariantGuard superAdminGuard;
     private final UserProfileLoader userProfileLoader;
 
     @Override
@@ -64,7 +68,7 @@ public class UserServiceImpl implements UserService {
                 .like(StrUtil.isNotBlank(keyword), UserDO::getUsername, keyword)
                 .orderByDesc(UserDO::getUpdateTime);
 
-        if (!kbAccessService.isSuperAdmin() && kbAccessService.isDeptAdmin()) {
+        if (!currentUser.isSuperAdmin() && currentUser.isDeptAdmin()) {
             // DEPT_ADMIN only sees users from their dept; ignore any inbound deptId.
             LoginUser currentUser = UserContext.get();
             if (currentUser != null && currentUser.getDeptId() != null) {
@@ -88,7 +92,7 @@ public class UserServiceImpl implements UserService {
         Assert.notBlank(username, () -> new ClientException("用户名不能为空"));
         Assert.notBlank(password, () -> new ClientException("密码不能为空"));
 
-        kbAccessService.checkCreateUserAccess(requestParam.getDeptId(), requestParam.getRoleIds());
+        userAdminGuard.checkCreateUserAccess(requestParam.getDeptId(), requestParam.getRoleIds());
 
         if (DEFAULT_ADMIN_USERNAME.equalsIgnoreCase(username)) {
             throw new ClientException("默认管理员用户名不可用");
@@ -146,10 +150,10 @@ public class UserServiceImpl implements UserService {
 
         if (requestParam.getDeptId() != null
                 && !requestParam.getDeptId().equals(record.getDeptId())
-                && !kbAccessService.isSuperAdmin()) {
+                && !currentUser.isSuperAdmin()) {
             throw new ClientException("部门变更仅超级管理员可操作");
         }
-        if (requestParam.getDeptId() != null && kbAccessService.isSuperAdmin()) {
+        if (requestParam.getDeptId() != null && currentUser.isSuperAdmin()) {
             record.setDeptId(requestParam.getDeptId());
         }
 
@@ -158,8 +162,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void delete(String id) {
-        if (kbAccessService.isUserSuperAdmin(id)) {
-            int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+        if (currentUser.isUserSuperAdmin(id)) {
+            int after = superAdminGuard.simulateActiveSuperAdminCountAfter(
                     new SuperAdminMutationIntent.DeleteUser(id));
             if (after < 1) {
                 throw new ClientException("不能删除该用户：此操作会使系统失去最后一个 SUPER_ADMIN");

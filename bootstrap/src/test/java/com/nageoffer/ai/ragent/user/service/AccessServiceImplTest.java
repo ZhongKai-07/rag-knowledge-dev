@@ -24,6 +24,7 @@ import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
 import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
@@ -38,7 +39,6 @@ import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.SysDeptService;
 import com.nageoffer.ai.ragent.user.service.impl.AccessServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -57,8 +58,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /** P1.3a: GET /access/roles 单测 */
@@ -70,7 +74,7 @@ class AccessServiceImplTest {
     private UserRoleMapper userRoleMapper;
     private RoleKbRelationMapper roleKbRelationMapper;
     private KnowledgeBaseMapper knowledgeBaseMapper;
-    private KbAccessService kbAccessService;
+    private KbReadAccessPort kbReadAccess;
     private SysDeptService sysDeptService;
     private KbMetadataReader kbMetadataReader;
     private AccessServiceImpl service;
@@ -88,7 +92,7 @@ class AccessServiceImplTest {
         userRoleMapper = mock(UserRoleMapper.class);
         roleKbRelationMapper = mock(RoleKbRelationMapper.class);
         knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
-        kbAccessService = mock(KbAccessService.class);
+        kbReadAccess = mock(KbReadAccessPort.class);
         sysDeptService = mock(SysDeptService.class);
         kbMetadataReader = mock(KbMetadataReader.class);
         when(kbMetadataReader.filterExistingKbIds(any())).thenAnswer(invocation -> {
@@ -102,7 +106,7 @@ class AccessServiceImplTest {
                 userRoleMapper,
                 roleKbRelationMapper,
                 knowledgeBaseMapper,
-                kbAccessService,
+                kbReadAccess,
                 sysDeptService,
                 kbMetadataReader);
     }
@@ -172,6 +176,7 @@ class AccessServiceImplTest {
     // ---------- P1.3b: listUserKbGrants D13 四步算法覆盖 ----------
 
     /**
+     * PR2 改为批量版仅移除 KbAccessService 注入。caller-context 泄漏未修, admin-views-target 路径 PR3 KbAccessCalculator 覆盖。
      * DEPT_ADMIN 对本部门 KB：显式绑定 READ + implicit=true → effective=MANAGE（implicit 强升权）。
      * 同时验证 explicitPermission=READ 仍被保留（便于审计）。
      */
@@ -180,6 +185,8 @@ class AccessServiceImplTest {
         String userId = "u-ops-admin";
         String roleId = "role-ops-admin";
         String kbId = "kb-ops-1";
+        String missingLevelKbId = "kb-ops-2";
+        String unloadedAccessibleKbId = "kb-ops-unloaded";
         String deptId = "dept-ops";
 
         when(userMapper.selectById(userId)).thenReturn(
@@ -191,21 +198,26 @@ class AccessServiceImplTest {
         // 所有 RoleKbRelation 查询都返回同一显式绑定
         when(roleKbRelationMapper.selectList(any())).thenReturn(List.of(
                 RoleKbRelationDO.builder().roleId(roleId).kbId(kbId).permission("READ").build()));
-        when(kbMetadataReader.listKbIdsByDeptId(deptId)).thenReturn(Set.of(kbId));
+        when(kbMetadataReader.listKbIdsByDeptId(deptId)).thenReturn(Set.of(kbId, missingLevelKbId, unloadedAccessibleKbId));
         // 所有 KnowledgeBase 查询都返回本 KB（同部门 + 范围内 enrichment）
         when(knowledgeBaseMapper.selectList(any())).thenReturn(List.of(
-                KnowledgeBaseDO.builder().id(kbId).name("OPS-COB").deptId(deptId).build()));
-        when(kbAccessService.getMaxSecurityLevelForKb(userId, kbId)).thenReturn(3);
+                KnowledgeBaseDO.builder().id(kbId).name("OPS-COB").deptId(deptId).build(),
+                KnowledgeBaseDO.builder().id(missingLevelKbId).name("OPS-Missing-Level").deptId(deptId).build()));
+        when(kbReadAccess.getMaxSecurityLevelsForKbs(eq(userId), any())).thenReturn(Map.of(kbId, 3));
 
         List<UserKbGrantVO> out = service.listUserKbGrants(userId);
 
-        assertEquals(1, out.size());
-        UserKbGrantVO g = out.get(0);
+        assertEquals(2, out.size());
+        UserKbGrantVO g = out.stream().filter(grant -> kbId.equals(grant.getKbId())).findFirst().orElseThrow();
         assertEquals("MANAGE", g.getPermission());
         assertEquals("READ", g.getExplicitPermission()); // 审计字段保留显式来源
         assertTrue(g.isImplicit());
         assertEquals(List.of(roleId), g.getSourceRoleIds());
         assertEquals(3, g.getSecurityLevel());
+        UserKbGrantVO missing = out.stream().filter(grant -> missingLevelKbId.equals(grant.getKbId())).findFirst().orElseThrow();
+        assertEquals(0, missing.getSecurityLevel());
+        verify(kbReadAccess, times(1)).getMaxSecurityLevelsForKbs(eq(userId),
+                argThat(ids -> new HashSet<>(ids).equals(Set.of(kbId, missingLevelKbId, unloadedAccessibleKbId))));
     }
 
     /** 普通 USER 对有显式绑定的 KB：implicit=false，effective=explicit */
@@ -225,7 +237,7 @@ class AccessServiceImplTest {
                 RoleKbRelationDO.builder().roleId(roleId).kbId(kbId).permission("READ").build()));
         when(knowledgeBaseMapper.selectList(any())).thenReturn(List.of(
                 KnowledgeBaseDO.builder().id(kbId).name("OPS-COB").deptId("dept-ops").build()));
-        when(kbAccessService.getMaxSecurityLevelForKb(userId, kbId)).thenReturn(1);
+        when(kbReadAccess.getMaxSecurityLevelsForKbs(eq(userId), any())).thenReturn(Map.of(kbId, 1));
 
         List<UserKbGrantVO> out = service.listUserKbGrants(userId);
 
@@ -250,7 +262,7 @@ class AccessServiceImplTest {
         when(kbMetadataReader.listAllKbIds()).thenReturn(Set.of(kbId));
         when(knowledgeBaseMapper.selectList(any())).thenReturn(List.of(
                 KnowledgeBaseDO.builder().id(kbId).name("PWM-KB").deptId("dept-pwm").build()));
-        when(kbAccessService.getMaxSecurityLevelForKb(userId, kbId)).thenReturn(3);
+        when(kbReadAccess.getMaxSecurityLevelsForKbs(eq(userId), any())).thenReturn(Map.of(kbId, 3));
 
         List<UserKbGrantVO> out = service.listUserKbGrants(userId);
 
@@ -279,7 +291,7 @@ class AccessServiceImplTest {
                 RoleKbRelationDO.builder().roleId("r-manage").kbId(kbId).permission("MANAGE").build()));
         when(knowledgeBaseMapper.selectList(any())).thenReturn(List.of(
                 KnowledgeBaseDO.builder().id(kbId).name("KB-1").deptId("dept-ops").build()));
-        when(kbAccessService.getMaxSecurityLevelForKb(userId, kbId)).thenReturn(2);
+        when(kbReadAccess.getMaxSecurityLevelsForKbs(eq(userId), any())).thenReturn(Map.of(kbId, 2));
 
         List<UserKbGrantVO> out = service.listUserKbGrants(userId);
 

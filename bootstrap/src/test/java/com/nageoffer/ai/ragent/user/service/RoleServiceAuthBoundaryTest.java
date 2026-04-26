@@ -40,15 +40,13 @@ import static org.mockito.Mockito.verify;
  */
 class RoleServiceAuthBoundaryTest {
 
-    private KbAccessService kbAccessService;
     private KbManageAccessPort kbManageAccess;
     private RoleServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        kbAccessService = mock(KbAccessService.class);
         kbManageAccess = mock(KbManageAccessPort.class);
-        service = TestServiceBuilders.roleService(kbAccessService, kbManageAccess);
+        service = TestServiceBuilders.roleService(kbManageAccess);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 

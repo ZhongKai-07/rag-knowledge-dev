@@ -22,6 +22,8 @@ import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.request.ChangePasswordRequest;
 import com.nageoffer.ai.ragent.user.controller.request.UserCreateRequest;
@@ -30,7 +32,6 @@ import com.nageoffer.ai.ragent.user.controller.request.UserUpdateRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.CurrentUserVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserVO;
 import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
 import com.nageoffer.ai.ragent.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,8 @@ public class UserController {
 
     private final UserService userService;
     private final UserProfileLoader userProfileLoader;
-    private final KbAccessService kbAccessService;
+    private final CurrentUserProbe currentUser;
+    private final UserAdminGuard userAdminGuard;
 
     /**
      * 获取当前登录用户信息
@@ -82,7 +84,7 @@ public class UserController {
      */
     @GetMapping("/users")
     public Result<IPage<UserVO>> pageQuery(UserPageRequest requestParam) {
-        if (!kbAccessService.isSuperAdmin() && !kbAccessService.isDeptAdmin()) {
+        if (!currentUser.isSuperAdmin() && !currentUser.isDeptAdmin()) {
             throw new ClientException("无权访问用户列表");
         }
         return Results.success(userService.pageQuery(requestParam));
@@ -101,7 +103,7 @@ public class UserController {
      */
     @PutMapping("/users/{id}")
     public Result<Void> update(@PathVariable("id") String id, @RequestBody UserUpdateRequest requestParam) {
-        kbAccessService.checkUserManageAccess(id);
+        userAdminGuard.checkUserManageAccess(id);
         userService.update(id, requestParam);
         return Results.success();
     }
@@ -111,7 +113,7 @@ public class UserController {
      */
     @DeleteMapping("/users/{id}")
     public Result<Void> delete(@PathVariable("id") String id) {
-        kbAccessService.checkUserManageAccess(id);
+        userAdminGuard.checkUserManageAccess(id);
         userService.delete(id);
         return Results.success();
     }

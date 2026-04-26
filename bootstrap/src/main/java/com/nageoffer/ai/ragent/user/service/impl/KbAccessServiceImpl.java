@@ -159,51 +159,8 @@ public class KbAccessServiceImpl implements KbAccessService,
 
     /** RBAC 路径：user → roles → kb_relations → filter permission */
     private Set<String> computeRbacKbIds(String userId, Permission minPermission) {
-        return computeRbacKbIdsFor(userId, minPermission, userRoleMapper, roleKbRelationMapper, kbMetadataReader);
-    }
-
-    /** 共享 RBAC 真相源：user → roles → kb_relations → permission 过滤 → 过滤已删除 KB */
-    static Set<String> computeRbacKbIdsFor(
-            String userId,
-            Permission minPermission,
-            UserRoleMapper userRoleMapper,
-            RoleKbRelationMapper roleKbRelationMapper,
-            KbMetadataReader kbMetadataReader) {
-        // user → roles
-        List<UserRoleDO> userRoles = userRoleMapper.selectList(
-                Wrappers.lambdaQuery(UserRoleDO.class)
-                        .eq(UserRoleDO::getUserId, userId));
-        if (userRoles.isEmpty()) {
-            return new HashSet<>();
-        }
-
-        List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
-
-        // roles → kb_relations 过滤 permission >= minPermission
-        List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
-                Wrappers.lambdaQuery(RoleKbRelationDO.class)
-                        .in(RoleKbRelationDO::getRoleId, roleIds));
-        Set<String> kbIds = relations.stream()
-                .filter(r -> permissionSatisfies(r.getPermission(), minPermission))
-                .map(RoleKbRelationDO::getKbId)
-                .collect(Collectors.toCollection(HashSet::new));
-
-        // 过滤已删除的 KB
-        if (!kbIds.isEmpty()) {
-            kbIds = new HashSet<>(kbMetadataReader.filterExistingKbIds(kbIds));
-        }
-
-        return kbIds;
-    }
-
-    static boolean permissionSatisfies(String actual, Permission required) {
-        if (actual == null) return false;
-        try {
-            return Permission.valueOf(actual).ordinal() >= required.ordinal();
-        } catch (IllegalArgumentException e) {
-            log.warn("Unknown permission value in DB: {}", actual);
-            return false;
-        }
+        return KbRbacAccessSupport.computeRbacKbIdsFor(
+                userId, minPermission, userRoleMapper, roleKbRelationMapper, kbMetadataReader);
     }
 
     /** Null-safe dept equality. user==null or either deptId==null returns false. */

@@ -18,8 +18,9 @@
 package com.nageoffer.ai.ragent.user.controller;
 
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,14 +35,16 @@ import static org.mockito.Mockito.when;
 class RoleControllerMutationAuthzTest {
 
     private RoleService roleService;
-    private KbAccessService kbAccessService;
+    private CurrentUserProbe currentUser;
+    private UserAdminGuard userAdminGuard;
     private RoleController controller;
 
     @BeforeEach
     void setUp() {
         roleService = mock(RoleService.class);
-        kbAccessService = mock(KbAccessService.class);
-        controller = new RoleController(roleService, kbAccessService);
+        currentUser = mock(CurrentUserProbe.class);
+        userAdminGuard = mock(UserAdminGuard.class);
+        controller = new RoleController(roleService, currentUser, userAdminGuard);
     }
 
     @Test
@@ -54,7 +57,7 @@ class RoleControllerMutationAuthzTest {
 
         controller.createRole(request);
 
-        verify(kbAccessService).checkRoleMutation("dept-ops");
+        verify(userAdminGuard).checkRoleMutation("dept-ops");
         verify(roleService).createRole("OPS User", null, "USER", 1, "dept-ops");
     }
 
@@ -64,7 +67,7 @@ class RoleControllerMutationAuthzTest {
         request.setName("Escalation");
         request.setRoleType("SUPER_ADMIN");
         request.setDeptId("dept-ops");
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
+        when(currentUser.isSuperAdmin()).thenReturn(false);
 
         ClientException ex = assertThrows(ClientException.class, () -> controller.createRole(request));
 
@@ -88,7 +91,7 @@ class RoleControllerMutationAuthzTest {
 
         controller.updateRole("role-1", request);
 
-        verify(kbAccessService).checkRoleMutation("dept-ops");
+        verify(userAdminGuard).checkRoleMutation("dept-ops");
         verify(roleService).updateRole("role-1", "OPS User v2", null, "USER", null, "dept-pwm");
     }
 
@@ -96,7 +99,7 @@ class RoleControllerMutationAuthzTest {
     void deleteRole_deptAdminCannotDeleteSuperAdminRole() {
         when(roleService.getRoleById("role-super")).thenReturn(
                 RoleDO.builder().id("role-super").deptId("dept-ops").roleType("SUPER_ADMIN").build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
+        when(currentUser.isSuperAdmin()).thenReturn(false);
 
         ClientException ex = assertThrows(ClientException.class, () -> controller.deleteRole("role-super"));
 

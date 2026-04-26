@@ -38,6 +38,12 @@ public interface UserAdminGuard {
     void checkUserManageAccess(String targetUserId);
 
     /**
+     * 角色 CRUD / delete-preview 授权。
+     * SUPER_ADMIN 可操作任意角色;DEPT_ADMIN 仅可操作本部门且非 GLOBAL 的角色。
+     */
+    void checkRoleMutation(String roleDeptId);
+
+    /**
      * 分配角色授权。
      * SUPER_ADMIN 任何；DEPT_ADMIN 仅当 target.deptId == self.deptId 且 newRoleIds 无 SUPER_ADMIN 角色。
      */

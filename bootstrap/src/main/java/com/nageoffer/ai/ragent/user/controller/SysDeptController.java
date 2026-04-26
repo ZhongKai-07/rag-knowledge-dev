@@ -19,11 +19,11 @@ package com.nageoffer.ai.ragent.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.request.SysDeptCreateRequest;
 import com.nageoffer.ai.ragent.user.controller.request.SysDeptUpdateRequest;
 import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,17 +42,17 @@ import java.util.List;
 public class SysDeptController {
 
     private final SysDeptService sysDeptService;
-    private final KbAccessService kbAccessService;
+    private final UserAdminGuard userAdminGuard;
 
     @GetMapping("/sys-dept")
     public Result<List<SysDeptVO>> list(@RequestParam(value = "keyword", required = false) String keyword) {
-        kbAccessService.checkAnyAdminAccess();
+        userAdminGuard.checkAnyAdminAccess();
         return Results.success(sysDeptService.list(keyword));
     }
 
     @GetMapping("/sys-dept/{id}")
     public Result<SysDeptVO> getById(@PathVariable("id") String id) {
-        kbAccessService.checkAnyAdminAccess();
+        userAdminGuard.checkAnyAdminAccess();
         return Results.success(sysDeptService.getById(id));
     }
 

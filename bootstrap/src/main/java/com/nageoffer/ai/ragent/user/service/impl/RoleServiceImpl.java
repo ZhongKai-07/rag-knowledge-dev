@@ -37,9 +37,11 @@ import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin;
 import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -64,8 +66,10 @@ public class RoleServiceImpl implements RoleService {
     private final UserMapper userMapper;
     private final SysDeptMapper sysDeptMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
-    private final KbAccessService kbAccessService;
+    private final SuperAdminInvariantGuard superAdminGuard;
+    private final KbAccessCacheAdmin cacheAdmin;
     private final KbManageAccessPort kbManageAccess;
+    private final CurrentUserProbe currentUser;
 
     @Override
     public String createRole(
@@ -110,7 +114,7 @@ public class RoleServiceImpl implements RoleService {
         if (RoleType.SUPER_ADMIN.name().equals(existing.getRoleType())
                 && roleType != null
                 && !RoleType.SUPER_ADMIN.name().equals(roleType)) {
-            int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+            int after = superAdminGuard.simulateActiveSuperAdminCountAfter(
                     new SuperAdminMutationIntent.ChangeRoleType(roleId, roleType));
             if (after < 1) {
                 throw new ClientException("不能降级该角色：此操作会使系统失去最后一个 SUPER_ADMIN");
@@ -141,7 +145,7 @@ public class RoleServiceImpl implements RoleService {
     public void deleteRole(String roleId) {
         RoleDO role = roleMapper.selectById(roleId);
         if (role != null && RoleType.SUPER_ADMIN.name().equals(role.getRoleType())) {
-            int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+            int after = superAdminGuard.simulateActiveSuperAdminCountAfter(
                     new SuperAdminMutationIntent.DeleteRole(roleId));
             if (after < 1) {
                 throw new ClientException("不能删除该角色：此操作会使系统失去最后一个 SUPER_ADMIN");
@@ -164,7 +168,7 @@ public class RoleServiceImpl implements RoleService {
 
         // P1.4: 失效所有相关用户的 kb_access / kb_access:dept / kb_security_level 三条缓存。
         // 放在 DB 级联之后：DB 失败时缓存不被误清；缓存失败会让事务回滚（保守但安全）。
-        affectedUserIds.forEach(kbAccessService::evictCache);
+        affectedUserIds.forEach(cacheAdmin::evictCache);
     }
 
 
@@ -362,7 +366,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public void setUserRoles(String userId, List<String> roleIds) {
-        int after = kbAccessService.simulateActiveSuperAdminCountAfter(
+        int after = superAdminGuard.simulateActiveSuperAdminCountAfter(
                 new SuperAdminMutationIntent.ReplaceUserRoles(userId, roleIds));
         if (after < 1) {
             throw new ClientException("不能修改该用户角色：此操作会使系统失去最后一个 SUPER_ADMIN");
@@ -379,7 +383,7 @@ public class RoleServiceImpl implements RoleService {
             userRoleMapper.insert(userRole);
         }
 
-        kbAccessService.evictCache(userId);
+        cacheAdmin.evictCache(userId);
     }
 
     @Override
@@ -479,7 +483,7 @@ public class RoleServiceImpl implements RoleService {
                         : roleCeiling;
 
                 // DEPT_ADMIN 额外校验：不超自身天花板
-                if (!kbAccessService.isSuperAdmin()) {
+                if (!currentUser.isSuperAdmin()) {
                     int selfCeiling = UserContext.get().getMaxSecurityLevel();
                     if (level > selfCeiling) {
                         throw new ClientException("不可设置超过自身安全等级上限的绑定");
@@ -503,7 +507,7 @@ public class RoleServiceImpl implements RoleService {
         }
 
         // ④ 统一驱逐缓存
-        affectedUserIds.forEach(kbAccessService::evictCache);
+        affectedUserIds.forEach(cacheAdmin::evictCache);
     }
 
     private void evictCacheForRole(String roleId) {
@@ -511,7 +515,7 @@ public class RoleServiceImpl implements RoleService {
                 Wrappers.lambdaQuery(UserRoleDO.class)
                         .eq(UserRoleDO::getRoleId, roleId));
         for (UserRoleDO ur : userRoles) {
-            kbAccessService.evictCache(ur.getUserId());
+            cacheAdmin.evictCache(ur.getUserId());
         }
     }
 }
