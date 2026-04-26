@@ -34,9 +34,11 @@ import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -133,13 +135,24 @@ public class EvalRunServiceImpl implements EvalRunService {
                     .build();
             runMapper.insert(run);
 
-            evalExecutor.execute(() -> {
-                try {
-                    runExecutor.runInternal(runId);
-                } catch (Exception e) {
-                    log.error("[eval-run] runId={} crashed", runId, e);
-                }
-            });
+            try {
+                evalExecutor.execute(() -> {
+                    try {
+                        runExecutor.runInternal(runId);
+                    } catch (Exception e) {
+                        log.error("[eval-run] runId={} crashed", runId, e);
+                    }
+                });
+            } catch (TaskRejectedException e) {
+                EvalRunDO failed = new EvalRunDO();
+                failed.setId(runId);
+                failed.setStatus("FAILED");
+                failed.setFinishedAt(new Date());
+                failed.setErrorMessage("eval task rejected: " + e.getMessage());
+                failed.setUpdatedBy(principalUserId);
+                runMapper.updateById(failed);
+                throw new ClientException("eval task rejected: " + e.getMessage(), BaseErrorCode.CLIENT_ERROR);
+            }
             return runId;
         } finally {
             startRunLock.unlock();
