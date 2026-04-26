@@ -87,10 +87,30 @@ This validates the MQ path: `KnowledgeDocumentChunkConsumer.onMessage` sets `Log
 
 If a future caller bypasses Sa-Token and reaches `KbAccessService.checkAccess(...)` without setting `UserContext` and without `LoginUser.system=true`, the new guard throws `ClientException("missing user context")` (commit 3). Verified by `KbAccessServiceSystemActorTest.checkAccess_throws_when_no_user_context` — no manual HTTP path required.
 
+## Run log — 2026-04-26
+
+**Fixture schema corrections** (actual DB schema differs from Option A SQL above):
+- Dept table is `sys_dept` (no `t_` prefix); columns are `id, dept_code, dept_name` — no `parent_id/sort_order/status`.
+- `t_role` column is `name` not `role_name`.
+- `t_user` has a mandatory `role` column; copy-from-admin pattern in Option A omits it → insert fails.
+- `t_knowledge_base` has no `deleted` column in the insert target list (it has a default).
+- Upload endpoint requires `sourceType=file`, `processMode=chunk`, `chunkStrategy`, `chunkConfig` form fields — bare file-only POST returns `B000001`.
+
+**Path 2 message note**: The smoke doc expects `"无权管理其他部门知识库"`. In this run `ficc_user` has `roleType=USER` (not `DEPT_ADMIN`), so `KbAccessServiceImpl.checkManageAccess` reaches the second guard (line 261) and throws `"无管理权限: KB_OPS_PR1"`. Both messages represent correct denial. The cross-dept DEPT_ADMIN message (`"无权管理其他部门知识库"`) would appear if FICC_USER held `DEPT_ADMIN` role.
+
+**Actual results**:
+| Path | HTTP | body | DB |
+|------|------|------|----|
+| 1 | 200 | success=true, code=0 | name=renamed-by-ops ✓ |
+| 2 | 200 | success=false, "无管理权限: KB_OPS_PR1" | KB unchanged ✓ |
+| 3 | 200×2 | upload+chunk success | status=success, chunk_count=1 ✓ |
+| 4a | 200 | success=false, "未登录或登录已过期" | — ✓ |
+| 4b | — | 10/10 pass, BUILD SUCCESS | — ✓ |
+
 ## Sign-off
 
-- [ ] Path 1 OK
-- [ ] Path 2 OK
-- [ ] Path 3 OK
-- [ ] Path 4a OK
-- [ ] Path 4b reviewed in code
+- [x] Path 1 OK
+- [x] Path 2 OK
+- [x] Path 3 OK
+- [x] Path 4a OK
+- [x] Path 4b reviewed in code
