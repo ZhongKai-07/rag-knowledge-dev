@@ -8,7 +8,7 @@ import { listEvalRuns, getEvalRun } from "@/services/evalSuiteService";
 import type { EvalRunSummary, RunStatus } from "@/services/evalSuiteService";
 import { StartRunDialog } from "../components/StartRunDialog";
 import { RunStatusBadge } from "../components/RunStatusBadge";
-import { fmt, parseMetricsSummary } from "../utils";
+import { fmt, parseMetricsSummary, readStoredDatasetId, writeStoredDatasetId } from "../utils";
 
 const TERMINAL_STATUSES = new Set<RunStatus>([
   "SUCCESS",
@@ -20,7 +20,7 @@ const POLL_INTERVAL_MS = 2_000;
 
 export function EvalRunsTab() {
   const navigate = useNavigate();
-  // Persist datasetFilter to URL so refresh / shareable links keep the filter
+  // URL is source of truth, localStorage is fallback for first-visit / sidebar nav
   const [searchParams, setSearchParams] = useSearchParams();
   const datasetFilter = searchParams.get("datasetId") ?? "";
   const setDatasetFilter = (v: string) => {
@@ -28,7 +28,23 @@ export function EvalRunsTab() {
     if (v) next.set("datasetId", v);
     else next.delete("datasetId");
     setSearchParams(next, { replace: true });
+    writeStoredDatasetId(v);
   };
+
+  // Hydrate URL from localStorage when user lands without ?datasetId=;
+  // mirror to localStorage when user arrives with a datasetId in URL (e.g., shareable link)
+  useEffect(() => {
+    if (!datasetFilter) {
+      const stored = readStoredDatasetId();
+      if (!stored) return;
+      const next = new URLSearchParams(searchParams);
+      next.set("datasetId", stored);
+      setSearchParams(next, { replace: true });
+    } else {
+      writeStoredDatasetId(datasetFilter);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetFilter]);
 
   const [runs, setRuns] = useState<EvalRunSummary[]>([]);
   const [loading, setLoading] = useState(false);

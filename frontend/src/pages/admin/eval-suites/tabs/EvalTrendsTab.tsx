@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -12,7 +13,7 @@ import {
 import { listEvalRuns, getEvalRun } from "@/services/evalSuiteService";
 import type { EvalRunSummary, EvalRunDetail } from "@/services/evalSuiteService";
 import { SnapshotDiffViewer } from "../components/SnapshotDiffViewer";
-import { parseMetricsSummary } from "../utils";
+import { parseMetricsSummary, readStoredDatasetId, writeStoredDatasetId } from "../utils";
 import { formatTimestamp } from "@/utils/helpers";
 import { toast } from "sonner";
 
@@ -25,10 +26,34 @@ interface ChartRow {
 }
 
 export function EvalTrendsTab() {
-  const [datasetId, setDatasetId] = useState("");
+  // URL is source of truth, localStorage is fallback for first-visit
+  const [searchParams, setSearchParams] = useSearchParams();
+  const datasetId = searchParams.get("datasetId") ?? "";
+  const setDatasetId = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (v) next.set("datasetId", v);
+    else next.delete("datasetId");
+    setSearchParams(next, { replace: true });
+    writeStoredDatasetId(v);
+  };
   const [runs, setRuns] = useState<EvalRunSummary[]>([]);
   const [beforeRun, setBeforeRun] = useState<EvalRunDetail | null>(null);
   const [afterRun, setAfterRun] = useState<EvalRunDetail | null>(null);
+
+  // Hydrate URL from localStorage when user lands without ?datasetId=;
+  // mirror to localStorage when user arrives with datasetId in URL (e.g., shareable link)
+  useEffect(() => {
+    if (!datasetId) {
+      const stored = readStoredDatasetId();
+      if (!stored) return;
+      const next = new URLSearchParams(searchParams);
+      next.set("datasetId", stored);
+      setSearchParams(next, { replace: true });
+    } else {
+      writeStoredDatasetId(datasetId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetId]);
 
   useEffect(() => {
     if (!datasetId) {
