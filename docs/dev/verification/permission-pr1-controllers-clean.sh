@@ -9,6 +9,12 @@ set -euo pipefail
 PATTERN='kbAccessService\.(checkAccess|checkManageAccess|checkDocManageAccess|checkDocSecurityLevelAccess|checkKbRoleBindingAccess)\('
 TARGET='bootstrap/src/main/java/com/nageoffer/ai/ragent'
 
+if ! command -v rg >/dev/null 2>&1; then
+  echo "ERROR: ripgrep (rg) not found on PATH — cannot run PR1 grep gate." >&2
+  echo "       Install ripgrep or run: grep -rEn \"${PATTERN}\" \"${TARGET}\" --include=\"*Controller.java\"" >&2
+  exit 2
+fi
+
 if rg -n "${PATTERN}" "${TARGET}" -g '*Controller.java' --quiet; then
   echo "FAIL: kbAccessService.check* still present in controllers:"
   rg -n "${PATTERN}" "${TARGET}" -g '*Controller.java'
