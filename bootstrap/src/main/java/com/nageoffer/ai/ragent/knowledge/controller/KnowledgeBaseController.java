@@ -20,18 +20,18 @@ package com.nageoffer.ai.ragent.knowledge.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingMode;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
+import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseCreateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBasePageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseUpdateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.ChunkStrategyVO;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeBaseVO;
 import com.nageoffer.ai.ragent.framework.convention.Result;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
 import com.nageoffer.ai.ragent.framework.web.Results;
+import com.nageoffer.ai.ragent.knowledge.service.KbScopeResolver;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -44,7 +44,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
 /**
  * 知识库控制器
@@ -55,9 +54,8 @@ import java.util.Set;
 public class KnowledgeBaseController {
 
     private final KnowledgeBaseService knowledgeBaseService;
-    private final KbAccessService kbAccessService;
+    private final KbScopeResolver kbScopeResolver;
     private final RoleService roleService;
-    private final KbMetadataReader kbMetadataReader;
 
     /**
      * 创建知识库
@@ -99,32 +97,11 @@ public class KnowledgeBaseController {
      */
     @GetMapping("/knowledge-base")
     public Result<IPage<KnowledgeBaseVO>> pageQuery(KnowledgeBasePageRequest requestParam) {
-        if (UserContext.hasUser()) {
-            applyKbScope(requestParam);
-        }
-        return Results.success(knowledgeBaseService.pageQuery(requestParam));
-    }
-
-    private void applyKbScope(KnowledgeBasePageRequest requestParam) {
-        if ("owner".equalsIgnoreCase(requestParam.getScope())) {
-            if (kbAccessService.isSuperAdmin()) {
-                return;
-            }
-            if (kbAccessService.isDeptAdmin()) {
-                LoginUser current = UserContext.get();
-                String deptId = current != null ? current.getDeptId() : null;
-                requestParam.setAccessibleKbIds(
-                        deptId == null ? Set.of() : kbMetadataReader.listKbIdsByDeptId(deptId));
-                return;
-            }
-            requestParam.setAccessibleKbIds(Set.of());
-            return;
-        }
-
-        if (!kbAccessService.isSuperAdmin()) {
-            Set<String> accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
-            requestParam.setAccessibleKbIds(accessibleKbIds);
-        }
+        LoginUser user = UserContext.hasUser() ? UserContext.get() : null;
+        AccessScope scope = "owner".equalsIgnoreCase(requestParam.getScope())
+                ? kbScopeResolver.resolveForOwnerScope(user)
+                : kbScopeResolver.resolveForRead(user);
+        return Results.success(knowledgeBaseService.pageQuery(requestParam, scope));
     }
 
     /**

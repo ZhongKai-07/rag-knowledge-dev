@@ -17,11 +17,8 @@
 
 package com.nageoffer.ai.ragent.knowledge.controller.request;
 
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.Data;
-
-import java.util.Set;
 
 /**
  * 知识库分页查询请求
@@ -33,12 +30,6 @@ public class KnowledgeBasePageRequest extends Page {
      * 知识库名称（支持模糊匹配）
      */
     private String name;
-
-    /**
-     * RBAC: 当前用户可访问的知识库 ID 集合（null 表示不限）
-     */
-    @TableField(exist = false)
-    private Set<String> accessibleKbIds;
 
     /**
      * 列表口径：

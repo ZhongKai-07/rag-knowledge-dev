@@ -39,13 +39,13 @@ import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionOperations;
 
 import java.util.List;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -53,30 +53,29 @@ import static org.mockito.Mockito.mock;
 class PageQueryFailClosedTest {
 
     @Test
-    void pageQuery_returns_empty_page_when_accessibleKbIds_is_empty_non_null() {
+    void pageQuery_returns_empty_page_when_scope_ids_is_empty() {
         KnowledgeBaseServiceImpl service = buildKbService(mock(KbAccessService.class));
 
         KnowledgeBasePageRequest request = new KnowledgeBasePageRequest();
         request.setCurrent(1L);
         request.setSize(10L);
-        request.setAccessibleKbIds(Set.of());
 
-        IPage<KnowledgeBaseVO> page = service.pageQuery(request);
+        IPage<KnowledgeBaseVO> page = service.pageQuery(request, AccessScope.empty());
 
-        assertEquals(0, page.getTotal(), "USER with empty accessibleKbIds must see empty page");
+        assertEquals(0, page.getTotal(), "empty AccessScope.Ids must see empty page");
         assertEquals(0, page.getRecords().size(), "records must be empty");
     }
 
     @Test
-    void documentSearch_returns_empty_list_when_accessibleKbIds_is_empty_non_null() {
+    void documentSearch_returns_empty_list_when_scope_ids_is_empty() {
         KnowledgeDocumentServiceImpl service = buildDocService(mock(KbAccessService.class));
 
         // keyword must be non-blank — service short-circuits to empty for blank keyword
-        // BEFORE the empty-set check fires (see KnowledgeDocumentServiceImpl.search:668-670)
-        List<KnowledgeDocumentSearchVO> result = service.search("anything", 8, Set.of());
+        // BEFORE the empty-scope check fires.
+        List<KnowledgeDocumentSearchVO> result = service.search("anything", 8, AccessScope.empty());
 
         assertEquals(0, result.size(),
-                "USER with empty accessibleKbIds must see empty search list");
+                "empty AccessScope.Ids must see empty search list");
     }
 
     private static KnowledgeBaseServiceImpl buildKbService(KbAccessService kbAccessService) {

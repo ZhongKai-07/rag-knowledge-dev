@@ -21,11 +21,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBasePageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeBaseVO;
+import com.nageoffer.ai.ragent.knowledge.service.KbScopeResolver;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,6 @@ import org.mockito.ArgumentCaptor;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -45,18 +44,16 @@ import static org.mockito.Mockito.when;
 class KnowledgeBaseControllerScopeTest {
 
     private KnowledgeBaseService knowledgeBaseService;
-    private KbAccessService kbAccessService;
-    private KbMetadataReader kbMetadataReader;
+    private KbScopeResolver kbScopeResolver;
     private KnowledgeBaseController controller;
 
     @BeforeEach
     void setUp() {
         knowledgeBaseService = mock(KnowledgeBaseService.class);
-        kbAccessService = mock(KbAccessService.class);
+        kbScopeResolver = mock(KbScopeResolver.class);
         RoleService roleService = mock(RoleService.class);
-        kbMetadataReader = mock(KbMetadataReader.class);
-        controller = new KnowledgeBaseController(knowledgeBaseService, kbAccessService, roleService, kbMetadataReader);
-        when(knowledgeBaseService.pageQuery(any())).thenReturn(new Page<KnowledgeBaseVO>());
+        controller = new KnowledgeBaseController(knowledgeBaseService, kbScopeResolver, roleService);
+        when(knowledgeBaseService.pageQuery(any(), any())).thenReturn(new Page<KnowledgeBaseVO>());
     }
 
     @AfterEach
@@ -71,18 +68,21 @@ class KnowledgeBaseControllerScopeTest {
                 .deptId("dept-ops")
                 .roleTypes(Set.of(RoleType.DEPT_ADMIN))
                 .build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
-        when(kbAccessService.isDeptAdmin()).thenReturn(true);
-        when(kbMetadataReader.listKbIdsByDeptId("dept-ops")).thenReturn(Set.of("kb-ops-1"));
+        when(kbScopeResolver.resolveForOwnerScope(any()))
+                .thenReturn(AccessScope.ids(Set.of("kb-ops-1")));
 
         KnowledgeBasePageRequest request = new KnowledgeBasePageRequest();
         request.setScope("owner");
         controller.pageQuery(request);
 
-        ArgumentCaptor<KnowledgeBasePageRequest> captor = ArgumentCaptor.forClass(KnowledgeBasePageRequest.class);
-        verify(knowledgeBaseService).pageQuery(captor.capture());
-        assertEquals(Set.of("kb-ops-1"), captor.getValue().getAccessibleKbIds());
-        verify(kbAccessService, never()).getAccessibleKbIds("ops-admin");
+        ArgumentCaptor<LoginUser> userCaptor = ArgumentCaptor.forClass(LoginUser.class);
+        ArgumentCaptor<AccessScope> scopeCaptor = ArgumentCaptor.forClass(AccessScope.class);
+        verify(kbScopeResolver).resolveForOwnerScope(userCaptor.capture());
+        verify(kbScopeResolver, never()).resolveForRead(any());
+        verify(knowledgeBaseService).pageQuery(any(), scopeCaptor.capture());
+        assertEquals("ops-admin", userCaptor.getValue().getUserId());
+        AccessScope.Ids ids = (AccessScope.Ids) scopeCaptor.getValue();
+        assertEquals(Set.of("kb-ops-1"), ids.kbIds());
     }
 
     @Test
@@ -92,15 +92,18 @@ class KnowledgeBaseControllerScopeTest {
                 .deptId("dept-ops")
                 .roleTypes(Set.of(RoleType.DEPT_ADMIN))
                 .build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(false);
-        when(kbAccessService.getAccessibleKbIds("ops-admin")).thenReturn(Set.of("kb-ops-1", "kb-shared"));
+        when(kbScopeResolver.resolveForRead(any()))
+                .thenReturn(AccessScope.ids(Set.of("kb-ops-1", "kb-shared")));
 
         KnowledgeBasePageRequest request = new KnowledgeBasePageRequest();
         controller.pageQuery(request);
 
-        ArgumentCaptor<KnowledgeBasePageRequest> captor = ArgumentCaptor.forClass(KnowledgeBasePageRequest.class);
-        verify(knowledgeBaseService).pageQuery(captor.capture());
-        assertEquals(Set.of("kb-ops-1", "kb-shared"), captor.getValue().getAccessibleKbIds());
+        ArgumentCaptor<AccessScope> scopeCaptor = ArgumentCaptor.forClass(AccessScope.class);
+        verify(kbScopeResolver).resolveForRead(any());
+        verify(kbScopeResolver, never()).resolveForOwnerScope(any());
+        verify(knowledgeBaseService).pageQuery(any(), scopeCaptor.capture());
+        AccessScope.Ids ids = (AccessScope.Ids) scopeCaptor.getValue();
+        assertEquals(Set.of("kb-ops-1", "kb-shared"), ids.kbIds());
     }
 
     @Test
@@ -110,15 +113,15 @@ class KnowledgeBaseControllerScopeTest {
                 .deptId("1")
                 .roleTypes(Set.of(RoleType.SUPER_ADMIN))
                 .build());
-        when(kbAccessService.isSuperAdmin()).thenReturn(true);
+        when(kbScopeResolver.resolveForOwnerScope(any())).thenReturn(AccessScope.all());
 
         KnowledgeBasePageRequest request = new KnowledgeBasePageRequest();
         request.setScope("owner");
         controller.pageQuery(request);
 
-        ArgumentCaptor<KnowledgeBasePageRequest> captor = ArgumentCaptor.forClass(KnowledgeBasePageRequest.class);
-        verify(knowledgeBaseService).pageQuery(captor.capture());
-        assertNull(captor.getValue().getAccessibleKbIds());
-        verify(kbMetadataReader, never()).listKbIdsByDeptId(any());
+        ArgumentCaptor<AccessScope> scopeCaptor = ArgumentCaptor.forClass(AccessScope.class);
+        verify(kbScopeResolver).resolveForOwnerScope(any());
+        verify(knowledgeBaseService).pageQuery(any(), scopeCaptor.capture());
+        assertEquals(AccessScope.all(), scopeCaptor.getValue());
     }
 }

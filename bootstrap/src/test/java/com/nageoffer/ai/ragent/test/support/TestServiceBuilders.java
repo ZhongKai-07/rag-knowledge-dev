@@ -66,8 +66,13 @@ public final class TestServiceBuilders {
     private TestServiceBuilders() {}
 
     public static KnowledgeBaseServiceImpl knowledgeBaseService(KbAccessService kbAccessService) {
+        return knowledgeBaseService(kbAccessService, mock(KnowledgeBaseMapper.class));
+    }
+
+    public static KnowledgeBaseServiceImpl knowledgeBaseService(
+            KbAccessService kbAccessService, KnowledgeBaseMapper knowledgeBaseMapper) {
         return new KnowledgeBaseServiceImpl(
-                mock(KnowledgeBaseMapper.class),
+                knowledgeBaseMapper,
                 mock(KnowledgeDocumentMapper.class),
                 mock(VectorStoreAdmin.class),
                 mock(FileStorageService.class),

@@ -39,6 +39,7 @@ import com.nageoffer.ai.ragent.core.parser.ParserType;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.ingestion.dao.entity.IngestionPipelineDO;
 import com.nageoffer.ai.ragent.ingestion.dao.mapper.IngestionPipelineMapper;
 import com.nageoffer.ai.ragent.ingestion.domain.context.IngestionContext;
@@ -664,12 +665,11 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     @Override
-    public List<KnowledgeDocumentSearchVO> search(String keyword, int limit, Set<String> accessibleKbIds) {
+    public List<KnowledgeDocumentSearchVO> search(String keyword, int limit, AccessScope scope) {
         if (!StringUtils.hasText(keyword)) {
             return Collections.emptyList();
         }
-        // Fail-closed: non-admin user with empty accessible set → return empty list.
-        if (accessibleKbIds != null && accessibleKbIds.isEmpty()) {
+        if (scope instanceof AccessScope.Ids ids && ids.kbIds().isEmpty()) {
             return Collections.emptyList();
         }
 
@@ -678,9 +678,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         LambdaQueryWrapper<KnowledgeDocumentDO> qw = new LambdaQueryWrapper<KnowledgeDocumentDO>()
                 .eq(KnowledgeDocumentDO::getDeleted, 0)
                 .like(KnowledgeDocumentDO::getDocName, keyword)
-                .in(accessibleKbIds != null,
-                        KnowledgeDocumentDO::getKbId, accessibleKbIds)
                 .orderByDesc(KnowledgeDocumentDO::getUpdateTime);
+        if (scope instanceof AccessScope.Ids ids) {
+            qw.in(KnowledgeDocumentDO::getKbId, ids.kbIds());
+        } else if (!(scope instanceof AccessScope.All)) {
+            throw new IllegalStateException("Unsupported AccessScope: " + scope);
+        }
 
         IPage<KnowledgeDocumentDO> result = documentMapper.selectPage(mpPage, qw);
         List<KnowledgeDocumentSearchVO> records = result.getRecords().stream()

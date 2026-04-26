@@ -34,6 +34,7 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.exception.ServiceException;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
@@ -54,7 +55,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -263,19 +263,20 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     }
 
     @Override
-    public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam) {
-        // Fail-closed: non-admin user with empty accessible set → return empty page.
-        // null = admin pathway (controller skipped injection); empty set = user has zero access.
-        Set<String> accessibleKbIds = requestParam.getAccessibleKbIds();
-        if (accessibleKbIds != null && accessibleKbIds.isEmpty()) {
+    public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam, AccessScope scope) {
+        if (scope instanceof AccessScope.Ids ids && ids.kbIds().isEmpty()) {
             return new Page<>(requestParam.getCurrent(), requestParam.getSize(), 0);
         }
 
         LambdaQueryWrapper<KnowledgeBaseDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                 .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
-                .in(accessibleKbIds != null, KnowledgeBaseDO::getId, accessibleKbIds)
                 .eq(KnowledgeBaseDO::getDeleted, 0)
                 .orderByDesc(KnowledgeBaseDO::getUpdateTime);
+        if (scope instanceof AccessScope.Ids ids) {
+            queryWrapper.in(KnowledgeBaseDO::getId, ids.kbIds());
+        } else if (!(scope instanceof AccessScope.All)) {
+            throw new IllegalStateException("Unsupported AccessScope: " + scope);
+        }
 
         Page<KnowledgeBaseDO> page = new Page<>(requestParam.getCurrent(), requestParam.getSize());
         IPage<KnowledgeBaseDO> result = knowledgeBaseMapper.selectPage(page, queryWrapper);
