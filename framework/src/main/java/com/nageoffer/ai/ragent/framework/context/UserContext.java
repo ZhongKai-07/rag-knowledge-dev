@@ -89,4 +89,14 @@ public final class UserContext {
     public static boolean hasUser() {
         return CONTEXT.get() != null;
     }
+
+    /**
+     * 判断当前线程是否为显式系统态执行者（MQ 消费者 / 定时任务 / 框架级回调）。
+     * <p>仅在 LoginUser.system == true 时返回 true。
+     * <p>缺失 UserContext 或普通登录用户均返回 false。
+     */
+    public static boolean isSystem() {
+        LoginUser user = CONTEXT.get();
+        return user != null && user.isSystem();
+    }
 }

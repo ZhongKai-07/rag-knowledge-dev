@@ -68,4 +68,13 @@ public class LoginUser {
      * 用于向量检索过滤：{@code metadata.security_level <= maxSecurityLevel}。
      */
     private int maxSecurityLevel;
+
+    /**
+     * 系统态执行者标记。仅 MQ 消费者 / 定时任务 / 框架级回调入口允许显式置为 true，
+     * 在 KbAccessService.check* 层短路放行。
+     * <p>HTTP 入口忘记 attach user 不会落到此路径——guard 通过 isSystem()=false
+     * + getUserId()=null 抛 ClientException。
+     */
+    @lombok.Builder.Default
+    private boolean system = false;
 }

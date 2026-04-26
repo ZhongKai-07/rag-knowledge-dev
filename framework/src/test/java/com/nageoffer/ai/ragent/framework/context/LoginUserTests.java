@@ -56,4 +56,23 @@ class LoginUserTests {
         assertNull(user.getRoleTypes());
         assertEquals(0, user.getMaxSecurityLevel());
     }
+
+    @Test
+    void system_field_defaults_to_false() {
+        LoginUser user = LoginUser.builder()
+                .userId("3")
+                .username("normal")
+                .build();
+        assertFalse(user.isSystem());
+    }
+
+    @Test
+    void system_actor_built_explicitly() {
+        LoginUser sys = LoginUser.builder()
+                .username("op-name")
+                .system(true)
+                .build();
+        assertTrue(sys.isSystem());
+        assertEquals("op-name", sys.getUsername());
+    }
 }
