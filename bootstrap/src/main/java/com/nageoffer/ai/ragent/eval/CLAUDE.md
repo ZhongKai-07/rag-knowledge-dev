@@ -99,3 +99,14 @@ eval/
 - `EvalRunDetailPage` 直方图固定 5 桶；如需细粒度可加 props
 - `git_commit` 字段当前固定为 `"unknown"`（项目无 `git-commit-id-maven-plugin`）；不影响 hash semantics（已从 hash 输入剔除）但 trend 页 `SnapshotDiffViewer` 不会显示真 commit hash
 - T14（Python smoke + Spring Boot startup）+ T19（端到端 UI 验证）需要 docker compose + 百炼 API key + dev DB 含 ACTIVE dataset；这是 human-in-loop 验证，不在 agent 范围
+
+## PR E3 E2E session 修复（2026-04-26）
+
+T19 端到端验证发现 7 处 bug 已落地修复，不需要重做 plan。详见 `log/dev_log/2026-04-26-eval-pr-e3.md` 末尾"E2E session 发现 + 修复的 7 处 bug"表。关键 4 条：
+
+1. **`EvalRunServiceImpl` 显式 `.createdBy(...).updatedBy(...)`**（commit `d836e6c`）—— `MyMetaObjectHandler` 不填 *_by 字段，T8 missed；现已对齐 `GoldDatasetServiceImpl` 模板。
+2. **`EvalRunExecutor.runInternal` 加外层 try/catch + `computeMetricsSummary` projection 加 id**（commits `741f687` / `2d5c9d1`）—— 收尾抛 NPE 卡 RUNNING；MyBatis Plus 在 `.select()` 投影列全 NULL 时把整行映射为 null entity（实战 5+ 行命中）。新加测试 `computeMetricsSummary_tolerates_null_rows_from_mybatis_projection` 锁此防御。
+3. **`ragas/Dockerfile` `--loop asyncio` + `evaluate.py` `_pypi_ragas_active()` context manager**（commits `5835ed7` / `741f687`）—— uvloop 拒 `nest_asyncio.apply()`；本地 `ragas/` 包名 shadow PyPI ragas 致 `ModuleNotFoundError: ragas.prompt` / `ragas._analytics`。`_pypi_ragas_active()` 仅在 evaluate() 调用期临时把 `sys.modules['ragas*']` swap 到 PyPI，调用结束还原本地包供其他 import 路径用。
+4. **`compose env_file: ../../.env`**（commit `dbaec87`）—— `${DASHSCOPE_API_KEY}` 从 PowerShell shell 注入失败（user 终端没 export）；compose `env_file` 拉项目根 .env 是稳定的注入路径。
+
+E2E 验证 run `2048123251997319168` 落 **PARTIAL_SUCCESS** 9/15，4 metric 落库 + 4 卡 + 4 直方图 + drill-down redaction 全部跑通。已知边界 4 条（embedding 熔断 / DashScope embeddings shape / OpenSearch JsonParseException / Context Precision 收敛率低）已登记 backlog `EVAL-EMBED-RESILIENCE` / `EVAL-AR-EMBED` / `EVAL-OS-PARSE` / `EVAL-CP-LOWYIELD`。
