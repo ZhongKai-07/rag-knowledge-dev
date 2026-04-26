@@ -122,6 +122,14 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         return String.valueOf(kbDO.getId());
     }
 
+    /**
+     * Public write path with <b>no production caller</b> as of PR1. Deferred to a
+     * future PR — when an HTTP / MQ caller is introduced, add
+     * {@code kbAccessService.checkManageAccess(requestParam.getId())} as the
+     * first line to establish the trust boundary, mirroring rename/delete.
+     *
+     * <p>Spec: docs/superpowers/specs/2026-04-26-permission-pr1-controller-thinning-design.md §2.6
+     */
     @Override
     public void update(KnowledgeBaseUpdateRequest requestParam) {
         KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(requestParam.getId());
