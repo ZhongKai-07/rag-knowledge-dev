@@ -41,11 +41,13 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.exception.ServiceException;
+import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
 import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
 import com.nageoffer.ai.ragent.infra.token.TokenCounterService;
 import com.nageoffer.ai.ragent.knowledge.enums.DocumentStatus;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeChunkService;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -73,9 +75,18 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     private final TokenCounterService tokenCounterService;
     private final VectorStoreService vectorStoreService;
     private final TransactionOperations transactionOperations;
+    private final KbAccessService kbAccessService;
+    private final KbMetadataReader kbMetadataReader;
 
     @Override
     public IPage<KnowledgeChunkVO> pageQuery(String docId, KnowledgeChunkPageRequest requestParam) {
+        // 通过 KbMetadataReader 解析 docId→kbId 后做读权限校验，避免引入 KbAccessService 新接口
+        String kbId = kbMetadataReader.getKbIdOfDoc(docId);
+        if (kbId == null) {
+            throw new ClientException("文档不存在: " + docId);
+        }
+        kbAccessService.checkAccess(kbId);
+
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
 
@@ -92,6 +103,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public KnowledgeChunkVO create(String docId, KnowledgeChunkCreateRequest requestParam) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
         if (DocumentStatus.RUNNING.getCode().equals(documentDO.getStatus())) {
@@ -249,6 +261,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(String docId, String chunkId, KnowledgeChunkUpdateRequest requestParam) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
         if (DocumentStatus.RUNNING.getCode().equals(documentDO.getStatus())) {
@@ -297,6 +310,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(String docId, String chunkId) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
         if (DocumentStatus.RUNNING.getCode().equals(documentDO.getStatus())) {
@@ -325,6 +339,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void enableChunk(String docId, String chunkId, boolean enabled) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
         if (DocumentStatus.RUNNING.getCode().equals(documentDO.getStatus())) {
@@ -366,6 +381,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
 
     @Override
     public void batchToggleEnabled(String docId, KnowledgeChunkBatchRequest requestParam, boolean enabled) {
+        kbAccessService.checkDocManageAccess(docId);
         if (requestParam == null || CollUtil.isEmpty(requestParam.getChunkIds())) {
             throw new ClientException("请指定需要操作的 Chunk，全量启用/禁用请使用文档启用接口");
         }

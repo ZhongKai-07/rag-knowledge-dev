@@ -76,6 +76,7 @@ import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.rag.dto.StoredFileDTO;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.nageoffer.ai.ragent.knowledge.mq.SecurityLevelRefreshEvent;
@@ -106,6 +107,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper documentMapper;
+    private final KbAccessService kbAccessService;
     private final DocumentParserSelector parserSelector;
     private final ChunkingStrategyFactory chunkingStrategyFactory;
     private final FileStorageService fileStorageService;
@@ -132,6 +134,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     @Override
     public KnowledgeDocumentVO upload(String kbId, KnowledgeDocumentUploadRequest requestParam, MultipartFile file) {
+        kbAccessService.checkManageAccess(kbId);
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(kbId);
         Assert.notNull(kbDO, () -> new ClientException("知识库不存在"));
 
@@ -168,6 +171,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     @Override
     public void startChunk(String docId) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentChunkEvent event = KnowledgeDocumentChunkEvent.builder()
                 .docId(docId)
                 .operator(UserContext.getUsername())
@@ -431,6 +435,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(String docId) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
 
@@ -457,12 +462,15 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     public KnowledgeDocumentVO get(String docId) {
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
+        // 保留原 controller 的 fetch-then-check 形态：文档存在才校验所属 KB 的读权限
+        kbAccessService.checkAccess(documentDO.getKbId());
         return BeanUtil.toBean(documentDO, KnowledgeDocumentVO.class);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void update(String docId, KnowledgeDocumentUpdateRequest requestParam) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
 
@@ -577,6 +585,10 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateSecurityLevel(String docId, Integer newLevel) {
+        if (newLevel == null || newLevel < 0 || newLevel > 3) {
+            throw new ClientException("newLevel 必须在 0-3 之间");
+        }
+        kbAccessService.checkDocSecurityLevelAccess(docId, newLevel);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
 
@@ -638,6 +650,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     @Override
     public IPage<KnowledgeDocumentVO> page(String kbId, KnowledgeDocumentPageRequest requestParam) {
+        kbAccessService.checkAccess(kbId);
         Page<KnowledgeDocumentDO> pageParam = new Page<>(requestParam.getCurrent(), requestParam.getSize());
         LambdaQueryWrapper<KnowledgeDocumentDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeDocumentDO.class)
                 .eq(KnowledgeDocumentDO::getKbId, kbId)
@@ -702,6 +715,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     @Override
     public void enable(String docId, boolean enabled) {
+        kbAccessService.checkDocManageAccess(docId);
         KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
         Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
 
@@ -761,6 +775,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     @Override
     public IPage<KnowledgeDocumentChunkLogVO> getChunkLogs(String docId, Page<KnowledgeDocumentChunkLogVO> page) {
+        kbAccessService.checkDocManageAccess(docId);
         Page<KnowledgeDocumentChunkLogDO> mpPage = new Page<>(page.getCurrent(), page.getSize());
         LambdaQueryWrapper<KnowledgeDocumentChunkLogDO> qw = new LambdaQueryWrapper<KnowledgeDocumentChunkLogDO>()
                 .eq(KnowledgeDocumentChunkLogDO::getDocId, docId)

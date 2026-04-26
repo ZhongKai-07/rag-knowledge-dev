@@ -155,6 +155,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public void rename(String kbId, KnowledgeBaseUpdateRequest requestParam) {
+        kbAccessService.checkManageAccess(kbId);
         KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
         if (kb == null || kb.getDeleted() != null && kb.getDeleted() == 1) {
             throw new ClientException("知识库不存在");
@@ -186,6 +187,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(String kbId) {
+        kbAccessService.checkManageAccess(kbId);
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(kbId);
         if (kbDO == null || kbDO.getDeleted() != null && kbDO.getDeleted() == 1) {
             throw new ClientException("知识库不存在");
@@ -237,6 +239,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public KnowledgeBaseVO queryById(String kbId) {
+        kbAccessService.checkAccess(kbId);
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(kbId);
         if (kbDO == null || kbDO.getDeleted() != null && kbDO.getDeleted() == 1) {
             throw new ClientException("知识库不存在");

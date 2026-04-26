@@ -73,7 +73,6 @@ public class KnowledgeBaseController {
     @PutMapping("/knowledge-base/{kb-id}")
     public Result<Void> renameKnowledgeBase(@PathVariable("kb-id") String kbId,
                                             @RequestBody KnowledgeBaseUpdateRequest requestParam) {
-        kbAccessService.checkManageAccess(kbId);
         knowledgeBaseService.rename(kbId, requestParam);
         return Results.success();
     }
@@ -83,7 +82,6 @@ public class KnowledgeBaseController {
      */
     @DeleteMapping("/knowledge-base/{kb-id}")
     public Result<Void> deleteKnowledgeBase(@PathVariable("kb-id") String kbId) {
-        kbAccessService.checkManageAccess(kbId);
         knowledgeBaseService.delete(kbId);
         return Results.success();
     }
@@ -93,7 +91,6 @@ public class KnowledgeBaseController {
      */
     @GetMapping("/knowledge-base/{kb-id}")
     public Result<KnowledgeBaseVO> queryKnowledgeBase(@PathVariable("kb-id") String kbId) {
-        kbAccessService.checkAccess(kbId);
         return Results.success(knowledgeBaseService.queryById(kbId));
     }
 
@@ -144,14 +141,12 @@ public class KnowledgeBaseController {
 
     @GetMapping("/knowledge-base/{kb-id}/role-bindings")
     public Result<List<KbRoleBindingVO>> getKbRoleBindings(@PathVariable("kb-id") String kbId) {
-        kbAccessService.checkKbRoleBindingAccess(kbId);
         return Results.success(roleService.getKbRoleBindings(kbId));
     }
 
     @PutMapping("/knowledge-base/{kb-id}/role-bindings")
     public Result<Void> setKbRoleBindings(@PathVariable("kb-id") String kbId,
                                           @RequestBody List<KbRoleBindingRequest> bindings) {
-        kbAccessService.checkKbRoleBindingAccess(kbId);
         roleService.setKbRoleBindings(kbId, bindings);
         return Results.success();
     }
