@@ -865,9 +865,9 @@ CREATE TABLE t_eval_gold_dataset (
     updated_by     VARCHAR(20),
     create_time    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted        SMALLINT      NOT NULL DEFAULT 0,
-    CONSTRAINT uk_eval_gold_dataset_kb_name UNIQUE (kb_id, name, deleted)
+    deleted        SMALLINT      NOT NULL DEFAULT 0
 );
+CREATE UNIQUE INDEX uk_eval_gold_dataset_kb_name ON t_eval_gold_dataset (kb_id, name) WHERE deleted = 0;
 CREATE INDEX idx_eval_gold_dataset_kb ON t_eval_gold_dataset (kb_id);
 COMMENT ON TABLE t_eval_gold_dataset IS 'RAG 评估黄金集（按 KB 划分）';
 
