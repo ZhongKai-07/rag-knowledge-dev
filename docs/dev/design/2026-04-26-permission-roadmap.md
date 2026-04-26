@@ -28,9 +28,9 @@
 |---|---|
 | 业务路线 | enterprise doc Phase 1 末 / Phase 2 前——`role_kb_relation` 已落库，`max_security_level` 列已加；sharing UI / audit_log / access_request 未做 |
 | 架构状态 | 阶段 A 进行中——PR1 完成（controller thinning + system 显式态 + fail-closed 守卫）；`KbAccessService` god-service 仍在 RAG/KB/admin 多路径扩散，待 PR2 / PR3 退役 |
-| 已完成 | **PR1**（2026-04-26）— controller→service 边界下沉、`LoginUser.system` + `UserContext.isSystem()`、`bypassIfSystemOrAssertActor()` 守卫；20 个 service 入口、4 个参数化边界测试、`rg` 守门脚本均已落地 |
+| 已完成 | **PR1**（2026-04-26）— controller→service 边界下沉、`LoginUser.system` + `UserContext.isSystem()`、`bypassIfSystemOrAssertActor()` 守卫；20 个 service 入口、4 个参数化边界测试、`rg` 守门脚本均已落地。**PR1 follow-up housekeeping**（commit `de5f7f6`，2026-04-26）— gotcha 条目 + chunk service 5 个 internal helper javadoc 扩到 MQ/scheduled + 5 个 T3 missing-user-context 断言收紧 + `TestServiceBuilders` 共享工厂抽取（PR2 测试基建预备件）。**ArchUnit 锁 PR1**（commit `e1cde99`，2026-04-26）— `PermissionBoundaryArchTest` 把"controller 不得调 5 个 KB-scoped check"从 grep 守门提到 CI 强制；admin-gate 方法（`checkAnyAdminAccess` / `checkUserManageAccess` / `checkRoleMutation` / `checkAssignRolesAccess`）显式不在禁用列表内（保留 HTTP 入口程式化 `@SaCheckRole` 等价）|
 | 进行中 | （无）— 准备启动 PR2 |
-| 下一步 | **PR2** — `KbAccessService` 热路径退役 + `KbAccessCalculator` 提取 |
+| 下一步 | **PR2** — `KbScopeResolver` 引入 + `KbAccessService` 热路径退役（迁到 `KbReadAccessPort` / `KbManageAccessPort` / `CurrentUserProbe`）。`KbAccessCalculator` + caller-context 泄漏修复延后到 **PR3**（详见 §3 阶段 A） |
 
 ---
 
