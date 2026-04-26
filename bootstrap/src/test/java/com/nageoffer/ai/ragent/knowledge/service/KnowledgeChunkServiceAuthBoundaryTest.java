@@ -21,22 +21,16 @@ import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
-import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
-import com.nageoffer.ai.ragent.infra.token.TokenCounterService;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkBatchRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkPageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkUpdateRequest;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeChunkMapper;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeChunkServiceImpl;
-import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
+import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.support.TransactionOperations;
 
 import java.util.List;
 
@@ -62,7 +56,7 @@ class KnowledgeChunkServiceAuthBoundaryTest {
     void setUp() {
         kbAccessService = mock(KbAccessService.class);
         kbMetadataReader = mock(KbMetadataReader.class);
-        service = buildServiceWithMockedAccess(kbAccessService, kbMetadataReader);
+        service = TestServiceBuilders.knowledgeChunkService(kbAccessService, kbMetadataReader);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 
@@ -150,18 +144,4 @@ class KnowledgeChunkServiceAuthBoundaryTest {
         }
     }
 
-    private static KnowledgeChunkServiceImpl buildServiceWithMockedAccess(
-            KbAccessService kbAccessService,
-            KbMetadataReader kbMetadataReader) {
-        return new KnowledgeChunkServiceImpl(
-                mock(KnowledgeChunkMapper.class),
-                mock(KnowledgeDocumentMapper.class),
-                mock(KnowledgeBaseMapper.class),
-                mock(EmbeddingService.class),
-                mock(TokenCounterService.class),
-                mock(VectorStoreService.class),
-                mock(TransactionOperations.class),
-                kbAccessService,
-                kbMetadataReader);
-    }
 }

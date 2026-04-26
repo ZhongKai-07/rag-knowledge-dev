@@ -20,12 +20,7 @@ package com.nageoffer.ai.ragent.user.service;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
 import com.nageoffer.ai.ragent.user.service.impl.RoleServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +45,7 @@ class RoleServiceAuthBoundaryTest {
     @BeforeEach
     void setUp() {
         kbAccessService = mock(KbAccessService.class);
-        service = buildServiceWithMockedAccess(kbAccessService);
+        service = TestServiceBuilders.roleService(kbAccessService);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 
@@ -82,14 +77,4 @@ class RoleServiceAuthBoundaryTest {
         verify(kbAccessService).checkKbRoleBindingAccess("kb-1");
     }
 
-    private static RoleServiceImpl buildServiceWithMockedAccess(KbAccessService kbAccessService) {
-        return new RoleServiceImpl(
-                mock(RoleMapper.class),
-                mock(RoleKbRelationMapper.class),
-                mock(UserRoleMapper.class),
-                mock(UserMapper.class),
-                mock(SysDeptMapper.class),
-                mock(KnowledgeBaseMapper.class),
-                kbAccessService);
-    }
 }

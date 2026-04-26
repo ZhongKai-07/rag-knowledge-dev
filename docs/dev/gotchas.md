@@ -57,6 +57,7 @@
 - **KB-centric sharing API**: `GET/PUT /knowledge-base/{kb-id}/role-bindings` (note: hyphenated `kb-id` in path, not `kbId`). SUPER_ADMIN any KB, DEPT_ADMIN own-dept only. Uses `checkKbRoleBindingAccess()`.
 - **DEPT_ADMIN implicit MANAGE on same-dept KBs**: `checkManageAccess()` and `checkAccess()` both pass for `kb.dept_id == self.dept_id` without needing `role_kb_relation` entries. Cross-dept access requires explicit binding.
 - **RBAC changes that add new metadata-field filters require OS index rebuild**: AuthzPostProcessor fail-closes chunks missing the new field. Ship order is: (1) write path populates the field, (2) deploy, (3) `curl -X DELETE` each collection + re-run ingestion for all docs, (4) enable the reader-side check. Skipping step 3 makes authenticated sessions return empty answers.
+- **`bypassIfSystemOrAssertActor()` 翻转为 fail-closed（PR1 commit e9afef4）**：`KbAccessServiceImpl.bypassIfSystemOrAssertActor()`（`KbAccessServiceImpl.java:694`）在 PR1 后语义从"无用户 = 放行"翻转为"无用户 = `throw new ClientException("missing user context")`"。`UserContext.isSystem()` 仅当 `LoginUser.system=true` 显式置位才返回 `true`；仅缺失 user 而未显式置 system 的调用立即被拒。**MQ 消费者、`@Scheduled`、`@Async` 异步路径**在调入任何需要权限的 service 方法前，必须显式 `UserContext.set(LoginUser.builder()...system(true).build())`，否则 fail-closed 阻断整个异步流程。参见 `KbAccessServiceSystemActorTest`（T2a/T3）。
 
 ---
 

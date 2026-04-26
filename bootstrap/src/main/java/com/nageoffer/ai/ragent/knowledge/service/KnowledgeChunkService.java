@@ -51,7 +51,7 @@ public interface KnowledgeChunkService {
 
     /**
      * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
-     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * have already validated document / KB authorization. Do NOT expose to HTTP / MQ / scheduled task entry
      * without first establishing a controller-level or service-level authorization gate.
      *
      * <p>批量新增文档分片（默认不写入向量库）
@@ -63,7 +63,7 @@ public interface KnowledgeChunkService {
 
     /**
      * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
-     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * have already validated document / KB authorization. Do NOT expose to HTTP / MQ / scheduled task entry
      * without first establishing a controller-level or service-level authorization gate.
      *
      * <p>批量新增文档分片（可选同步写入向量库）
@@ -111,7 +111,7 @@ public interface KnowledgeChunkService {
 
     /**
      * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
-     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * have already validated document / KB authorization. Do NOT expose to HTTP / MQ / scheduled task entry
      * without first establishing a controller-level or service-level authorization gate.
      *
      * <p>根据文档 ID 批量更新所有分片的启用状态
@@ -124,7 +124,7 @@ public interface KnowledgeChunkService {
 
     /**
      * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
-     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * have already validated document / KB authorization. Do NOT expose to HTTP / MQ / scheduled task entry
      * without first establishing a controller-level or service-level authorization gate.
      *
      * <p>根据文档 ID 查询所有分片列表
@@ -136,7 +136,7 @@ public interface KnowledgeChunkService {
 
     /**
      * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
-     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * have already validated document / KB authorization. Do NOT expose to HTTP / MQ / scheduled task entry
      * without first establishing a controller-level or service-level authorization gate.
      *
      * <p>删除指定文档的所有分片

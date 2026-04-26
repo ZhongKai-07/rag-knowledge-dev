@@ -1,0 +1,127 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.nageoffer.ai.ragent.test.support;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nageoffer.ai.ragent.core.chunk.ChunkEmbeddingService;
+import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategyFactory;
+import com.nageoffer.ai.ragent.core.parser.DocumentParserSelector;
+import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
+import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
+import com.nageoffer.ai.ragent.infra.token.TokenCounterService;
+import com.nageoffer.ai.ragent.ingestion.dao.mapper.IngestionPipelineMapper;
+import com.nageoffer.ai.ragent.ingestion.engine.IngestionEngine;
+import com.nageoffer.ai.ragent.ingestion.service.IngestionPipelineService;
+import com.nageoffer.ai.ragent.knowledge.config.KnowledgeScheduleProperties;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeChunkMapper;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentChunkLogMapper;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
+import com.nageoffer.ai.ragent.knowledge.handler.RemoteFileFetcher;
+import com.nageoffer.ai.ragent.knowledge.service.KnowledgeChunkService;
+import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentScheduleService;
+import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
+import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeChunkServiceImpl;
+import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeDocumentServiceImpl;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
+import com.nageoffer.ai.ragent.rag.service.FileStorageService;
+import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
+import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.impl.RoleServiceImpl;
+import org.springframework.transaction.support.TransactionOperations;
+
+import static org.mockito.Mockito.mock;
+
+/**
+ * Shared factory methods for constructing service impls with mocked dependencies in auth-boundary
+ * tests. Centralises mock-construction so PR2+ tests (KbScopeResolver / new ports) can reuse the
+ * same wiring without duplicating the constructor argument shape.
+ *
+ * <p>IMPORTANT: constructor argument order and mock dependency list are intentionally kept
+ * identical to the inlined originals — do NOT reorder or trim mocks.
+ */
+public final class TestServiceBuilders {
+
+    private TestServiceBuilders() {}
+
+    public static KnowledgeBaseServiceImpl knowledgeBaseService(KbAccessService kbAccessService) {
+        return new KnowledgeBaseServiceImpl(
+                mock(KnowledgeBaseMapper.class),
+                mock(KnowledgeDocumentMapper.class),
+                mock(VectorStoreAdmin.class),
+                mock(FileStorageService.class),
+                kbAccessService,
+                mock(SysDeptMapper.class));
+    }
+
+    public static KnowledgeChunkServiceImpl knowledgeChunkService(
+            KbAccessService kbAccessService, KbMetadataReader kbMetadataReader) {
+        return new KnowledgeChunkServiceImpl(
+                mock(KnowledgeChunkMapper.class),
+                mock(KnowledgeDocumentMapper.class),
+                mock(KnowledgeBaseMapper.class),
+                mock(EmbeddingService.class),
+                mock(TokenCounterService.class),
+                mock(VectorStoreService.class),
+                mock(TransactionOperations.class),
+                kbAccessService,
+                kbMetadataReader);
+    }
+
+    public static KnowledgeDocumentServiceImpl knowledgeDocumentService(
+            KbAccessService kbAccessService, KnowledgeDocumentMapper documentMapper) {
+        return new KnowledgeDocumentServiceImpl(
+                mock(KnowledgeBaseMapper.class),
+                documentMapper,
+                kbAccessService,
+                mock(DocumentParserSelector.class),
+                mock(ChunkingStrategyFactory.class),
+                mock(FileStorageService.class),
+                mock(VectorStoreService.class),
+                mock(VectorStoreAdmin.class),
+                mock(KnowledgeChunkService.class),
+                mock(ObjectMapper.class),
+                mock(KnowledgeDocumentScheduleService.class),
+                mock(IngestionPipelineService.class),
+                mock(IngestionPipelineMapper.class),
+                mock(IngestionEngine.class),
+                mock(ChunkEmbeddingService.class),
+                mock(KnowledgeDocumentChunkLogMapper.class),
+                mock(TransactionOperations.class),
+                mock(MessageQueueProducer.class),
+                mock(KnowledgeScheduleProperties.class),
+                mock(RemoteFileFetcher.class));
+    }
+
+    public static RoleServiceImpl roleService(KbAccessService kbAccessService) {
+        return new RoleServiceImpl(
+                mock(RoleMapper.class),
+                mock(RoleKbRelationMapper.class),
+                mock(UserRoleMapper.class),
+                mock(UserMapper.class),
+                mock(SysDeptMapper.class),
+                mock(KnowledgeBaseMapper.class),
+                kbAccessService);
+    }
+}

@@ -119,26 +119,33 @@ class KbAccessServiceSystemActorTest {
     @Test
     void checkManageAccess_throws_when_no_user_context() {
         UserContext.clear();
-        assertThrows(ClientException.class, () -> service.checkManageAccess("kb-x"));
+        ClientException ex = assertThrows(ClientException.class,
+                () -> service.checkManageAccess("kb-x"));
+        assertContainsMissingUserContext(ex);
     }
 
     @Test
     void checkDocManageAccess_throws_when_no_user_context() {
         UserContext.clear();
-        assertThrows(ClientException.class, () -> service.checkDocManageAccess("doc-x"));
+        ClientException ex = assertThrows(ClientException.class,
+                () -> service.checkDocManageAccess("doc-x"));
+        assertContainsMissingUserContext(ex);
     }
 
     @Test
     void checkDocSecurityLevelAccess_throws_when_no_user_context() {
         UserContext.clear();
-        assertThrows(ClientException.class,
+        ClientException ex = assertThrows(ClientException.class,
                 () -> service.checkDocSecurityLevelAccess("doc-x", 1));
+        assertContainsMissingUserContext(ex);
     }
 
     @Test
     void checkKbRoleBindingAccess_throws_when_no_user_context() {
         UserContext.clear();
-        assertThrows(ClientException.class, () -> service.checkKbRoleBindingAccess("kb-x"));
+        ClientException ex = assertThrows(ClientException.class,
+                () -> service.checkKbRoleBindingAccess("kb-x"));
+        assertContainsMissingUserContext(ex);
     }
 
     private static void assertContainsMissingUserContext(ClientException ex) {

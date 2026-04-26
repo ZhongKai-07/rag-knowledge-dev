@@ -17,35 +17,20 @@
 
 package com.nageoffer.ai.ragent.knowledge.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nageoffer.ai.ragent.core.chunk.ChunkEmbeddingService;
-import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategyFactory;
-import com.nageoffer.ai.ragent.core.parser.DocumentParserSelector;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
-import com.nageoffer.ai.ragent.ingestion.dao.mapper.IngestionPipelineMapper;
-import com.nageoffer.ai.ragent.ingestion.engine.IngestionEngine;
-import com.nageoffer.ai.ragent.ingestion.service.IngestionPipelineService;
-import com.nageoffer.ai.ragent.knowledge.config.KnowledgeScheduleProperties;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentPageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUpdateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUploadRequest;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentChunkLogMapper;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
-import com.nageoffer.ai.ragent.knowledge.handler.RemoteFileFetcher;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeDocumentServiceImpl;
-import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
-import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
-import com.nageoffer.ai.ragent.rag.service.FileStorageService;
+import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.support.TransactionOperations;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
@@ -67,7 +52,7 @@ class KnowledgeDocumentServiceAuthBoundaryTest {
     void setUp() {
         kbAccessService = mock(KbAccessService.class);
         documentMapper = mock(KnowledgeDocumentMapper.class);
-        service = buildServiceWithMockedAccess(kbAccessService, documentMapper);
+        service = TestServiceBuilders.knowledgeDocumentService(kbAccessService, documentMapper);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 
@@ -170,31 +155,5 @@ class KnowledgeDocumentServiceAuthBoundaryTest {
         if (!"denied".equals(ex.getMessage())) {
             throw new AssertionError("Expected propagated denied message, got: " + ex.getMessage());
         }
-    }
-
-    private static KnowledgeDocumentServiceImpl buildServiceWithMockedAccess(
-            KbAccessService kbAccessService,
-            KnowledgeDocumentMapper documentMapper) {
-        return new KnowledgeDocumentServiceImpl(
-                mock(KnowledgeBaseMapper.class),
-                documentMapper,
-                kbAccessService,
-                mock(DocumentParserSelector.class),
-                mock(ChunkingStrategyFactory.class),
-                mock(FileStorageService.class),
-                mock(VectorStoreService.class),
-                mock(VectorStoreAdmin.class),
-                mock(KnowledgeChunkService.class),
-                mock(ObjectMapper.class),
-                mock(KnowledgeDocumentScheduleService.class),
-                mock(IngestionPipelineService.class),
-                mock(IngestionPipelineMapper.class),
-                mock(IngestionEngine.class),
-                mock(ChunkEmbeddingService.class),
-                mock(KnowledgeDocumentChunkLogMapper.class),
-                mock(TransactionOperations.class),
-                mock(MessageQueueProducer.class),
-                mock(KnowledgeScheduleProperties.class),
-                mock(RemoteFileFetcher.class));
     }
 }

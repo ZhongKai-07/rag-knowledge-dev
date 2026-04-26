@@ -21,12 +21,8 @@ import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseUpdateRequest;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
-import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
-import com.nageoffer.ai.ragent.rag.service.FileStorageService;
-import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
+import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +48,7 @@ class KnowledgeBaseServiceAuthBoundaryTest {
     @BeforeEach
     void setUp() {
         kbAccessService = mock(KbAccessService.class);
-        service = buildServiceWithMockedAccess(kbAccessService);
+        service = TestServiceBuilders.knowledgeBaseService(kbAccessService);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 
@@ -95,13 +91,4 @@ class KnowledgeBaseServiceAuthBoundaryTest {
         verify(kbAccessService).checkAccess("kb-1");
     }
 
-    private static KnowledgeBaseServiceImpl buildServiceWithMockedAccess(KbAccessService kbAccessService) {
-        return new KnowledgeBaseServiceImpl(
-                mock(KnowledgeBaseMapper.class),
-                mock(KnowledgeDocumentMapper.class),
-                mock(VectorStoreAdmin.class),
-                mock(FileStorageService.class),
-                kbAccessService,
-                mock(SysDeptMapper.class));
-    }
 }
