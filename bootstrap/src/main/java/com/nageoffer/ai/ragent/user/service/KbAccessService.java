@@ -25,18 +25,25 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 知识库访问权限服务。
+ * 知识库访问权限服务(god-service,@Deprecated 缓冲接口)。
  *
- * <p>统一承载三种判断：
+ * <p>PR2 完成 RAG/KB/user 域迁移,本接口保留作过渡 deprecated 缓冲。 新代码请注入 framework.security.port 下 8 个具体 port:
  * <ul>
- *     <li>"当前用户能访问哪些知识库"（{@link #getAccessibleKbIds}）</li>
- *     <li>"当前用户对某 KB 有读权限吗"（{@link #checkAccess}）</li>
- *     <li>"当前用户对某 KB 有管理权吗"（{@link #checkManageAccess}）</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe}</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort}</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort}</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard}</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard}</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin}</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader}</li>
+ *   <li>{@link com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort}</li>
  * </ul>
  *
- * <p>所有方法都从 {@code UserContext} 读取当前用户。{@link com.nageoffer.ai.ragent.framework.context.RoleType#SUPER_ADMIN}
- * 在实现里统一放行，调用方不用再手动判 {@code "admin".equals(...)}。
+ * <p>PR3 + sharing PR D7 完成后开 cleanup PR 物理移除本接口及实现 implements。
+ *
+ * <p>Spec: docs/superpowers/specs/2026-04-27-permission-pr2-kbaccessservice-retirement-design.md §2.2
  */
+@Deprecated(forRemoval = false)
 public interface KbAccessService {
 
     /**
