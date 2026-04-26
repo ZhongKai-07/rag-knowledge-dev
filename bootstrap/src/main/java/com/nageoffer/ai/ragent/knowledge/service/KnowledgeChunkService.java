@@ -50,7 +50,11 @@ public interface KnowledgeChunkService {
     KnowledgeChunkVO create(String docId, KnowledgeChunkCreateRequest requestParam);
 
     /**
-     * 批量新增文档分片（默认不写入向量库）
+     * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
+     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * without first establishing a controller-level or service-level authorization gate.
+     *
+     * <p>批量新增文档分片（默认不写入向量库）
      *
      * @param docId         文档 ID
      * @param requestParams 批量新增分片请求参数列表
@@ -58,7 +62,11 @@ public interface KnowledgeChunkService {
     void batchCreate(String docId, List<KnowledgeChunkCreateRequest> requestParams);
 
     /**
-     * 批量新增文档分片（可选同步写入向量库）
+     * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
+     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * without first establishing a controller-level or service-level authorization gate.
+     *
+     * <p>批量新增文档分片（可选同步写入向量库）
      *
      * @param docId         文档 ID
      * @param requestParams 批量新增分片请求参数列表
@@ -102,7 +110,11 @@ public interface KnowledgeChunkService {
     void batchToggleEnabled(String docId, KnowledgeChunkBatchRequest requestParam, boolean enabled);
 
     /**
-     * 根据文档 ID 批量更新所有分片的启用状态
+     * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
+     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * without first establishing a controller-level or service-level authorization gate.
+     *
+     * <p>根据文档 ID 批量更新所有分片的启用状态
      *
      * @param docId   文档 ID
      * @param kbId    知识库 ID（用于日志，避免重复查询）
@@ -111,7 +123,11 @@ public interface KnowledgeChunkService {
     void updateEnabledByDocId(String docId, String kbId, boolean enabled);
 
     /**
-     * 根据文档 ID 查询所有分片列表
+     * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
+     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * without first establishing a controller-level or service-level authorization gate.
+     *
+     * <p>根据文档 ID 查询所有分片列表
      *
      * @param docId 文档 ID
      * @return 分片列表
@@ -119,7 +135,11 @@ public interface KnowledgeChunkService {
     List<KnowledgeChunkVO> listByDocId(String docId);
 
     /**
-     * 删除指定文档的所有分片
+     * <p><b>Internal method.</b> Caller (KnowledgeDocumentService / chunk pipeline) must
+     * have already validated document / KB authorization. Do NOT expose to HTTP entry
+     * without first establishing a controller-level or service-level authorization gate.
+     *
+     * <p>删除指定文档的所有分片
      *
      * @param docId 文档 ID
      */

@@ -212,8 +212,7 @@ public class KbAccessServiceImpl implements KbAccessService,
 
     @Override
     public void checkAccess(String kbId) {
-        // 系统态（MQ 消费者、定时任务）—— 没有登录态，直接放行
-        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+        if (bypassIfSystemOrAssertActor()) {
             return;
         }
         if (isSuperAdmin()) {
@@ -239,7 +238,7 @@ public class KbAccessServiceImpl implements KbAccessService,
 
     @Override
     public void checkManageAccess(String kbId) {
-        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+        if (bypassIfSystemOrAssertActor()) {
             return;
         }
         if (isSuperAdmin()) {
@@ -600,8 +599,8 @@ public class KbAccessServiceImpl implements KbAccessService,
 
     @Override
     public void checkDocManageAccess(String docId) {
-        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
-            return; // 系统态
+        if (bypassIfSystemOrAssertActor()) {
+            return;
         }
         if (isSuperAdmin()) {
             return;
@@ -664,6 +663,9 @@ public class KbAccessServiceImpl implements KbAccessService,
 
     @Override
     public void checkKbRoleBindingAccess(String kbId) {
+        if (bypassIfSystemOrAssertActor()) {
+            return;
+        }
         if (isSuperAdmin()) {
             return;
         }
@@ -678,6 +680,25 @@ public class KbAccessServiceImpl implements KbAccessService,
         if (!sameDept(current, kbDeptId)) {
             throw new ClientException("DEPT_ADMIN 只能管理本部门知识库的角色绑定");
         }
+    }
+
+    /**
+     * 显式区分系统态与缺失登录态。
+     * <ul>
+     *   <li>UserContext.isSystem() == true → 返回 true，调用方 early return（MQ/定时任务）</li>
+     *   <li>无 UserContext / userId 为空 → 抛 ClientException("missing user context")</li>
+     *   <li>正常用户 → 返回 false，调用方继续走原决策路径</li>
+     * </ul>
+     * 系统态以 LoginUser.system == true 为唯一信号；缺失上下文不退化为放行。
+     */
+    private boolean bypassIfSystemOrAssertActor() {
+        if (UserContext.isSystem()) {
+            return true;
+        }
+        if (!UserContext.hasUser() || UserContext.getUserId() == null) {
+            throw new ClientException("missing user context");
+        }
+        return false;
     }
 
     /**

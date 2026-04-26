@@ -40,6 +40,7 @@ import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentScheduleServic
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import com.nageoffer.ai.ragent.rag.service.FileStorageService;
+import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,7 @@ class KnowledgeDocumentServiceImplFindMetaTest {
 
         KnowledgeBaseMapper knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
         documentMapper = mock(KnowledgeDocumentMapper.class);
+        KbAccessService kbAccessService = mock(KbAccessService.class);
         DocumentParserSelector parserSelector = mock(DocumentParserSelector.class);
         ChunkingStrategyFactory chunkingStrategyFactory = mock(ChunkingStrategyFactory.class);
         FileStorageService fileStorageService = mock(FileStorageService.class);
@@ -91,6 +93,7 @@ class KnowledgeDocumentServiceImplFindMetaTest {
         service = new KnowledgeDocumentServiceImpl(
                 knowledgeBaseMapper,
                 documentMapper,
+                kbAccessService,
                 parserSelector,
                 chunkingStrategyFactory,
                 fileStorageService,
