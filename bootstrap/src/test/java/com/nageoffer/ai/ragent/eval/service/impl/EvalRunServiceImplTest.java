@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.core.task.TaskRejectedException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -194,5 +196,27 @@ class EvalRunServiceImplTest {
         assertThat(runId).isEqualTo(inserted.getId());
 
         verify(evalExecutor).execute(any(Runnable.class));
+    }
+
+    @Test
+    void startRun_marks_inserted_run_failed_when_executor_rejects_task() {
+        GoldDatasetDO ds = GoldDatasetDO.builder().id("d1").kbId("kb1").status("ACTIVE").build();
+        when(datasetMapper.selectById("d1")).thenReturn(ds);
+        when(itemMapper.selectCount(any())).thenReturn(20L);
+
+        ArgumentCaptor<EvalRunDO> insertedCap = ArgumentCaptor.forClass(EvalRunDO.class);
+        when(runMapper.insert(insertedCap.capture())).thenReturn(1);
+        doThrow(new TaskRejectedException("queue full"))
+                .when(evalExecutor).execute(any(Runnable.class));
+
+        assertThatThrownBy(() -> svc.startRun("d1", "user-1"))
+                .isInstanceOf(ClientException.class)
+                .hasMessageContaining("eval task rejected");
+
+        ArgumentCaptor<EvalRunDO> failedCap = ArgumentCaptor.forClass(EvalRunDO.class);
+        verify(runMapper).updateById(failedCap.capture());
+        assertThat(failedCap.getValue().getId()).isEqualTo(insertedCap.getValue().getId());
+        assertThat(failedCap.getValue().getStatus()).isEqualTo("FAILED");
+        assertThat(failedCap.getValue().getErrorMessage()).contains("queue full");
     }
 }
