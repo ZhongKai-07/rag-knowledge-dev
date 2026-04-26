@@ -43,6 +43,8 @@
 - **Seed data is not blank**: `init_data_pg.sql` wires admin user with `dept_id='1'` (GLOBAL), role `超级管理员` (`role_type=SUPER_ADMIN`, `max_security_level=3`), and `t_user_role` linking them. A fresh DB with `schema_pg.sql + init_data_pg.sql` already has a fully-privileged admin — not a "no dept / no role / max=0" user.
 - **`@TableField(typeHandler = ...)` only fires in entity-based CRUD** (`insert` / `updateById` / `selectById`). `LambdaUpdateWrapper.set(col, val)` binds via default JDBC type mapping (`String → VARCHAR`) regardless of annotation — for jsonb columns (e.g. `t_knowledge_document.chunk_config`) this raises `column X is of type jsonb but expression is of type character varying`. Fix: use `updateById(entity)` for non-null values; secondary `LambdaUpdateWrapper.set(col, null)` for NULL clearing (NULL bindings don't trigger jsonb type mismatch). See `KnowledgeDocumentServiceImpl.update` for the hybrid pattern.
 - **Migration filename rule**: Pure DDL migrations (`ALTER TABLE`, `ADD COLUMN`, `SET NOT NULL`) keep generic `upgrade_vX_to_vY.sql`. Any migration with data-dependent `UPDATE` (id mappings, snowflake-keyed backfills, role→dept assignments) MUST carry `.<env>.sql` suffix (`upgrade_vX_to_vY.local-dev.sql`). Generic filename + env-specific UPDATEs silently matches zero rows on other envs — no error until the follow-up `SET NOT NULL` migration pre-check fails.
+- **MyBatis Plus `.select()` projection 全 NULL 行映射为 null entity**: `LambdaQueryWrapper.select(col1, col2, ...)` 投影出的结果集，**当某行所有被选列均为 NULL 且未选 id**，MyBatis 会把整 row 映射成 `null`（不是 fields-all-null 的 entity）。下游 `for (E r : list) { r.getX() }` 直接 NPE。**修法**：projection 必须包含 id 这种"绝不为 NULL"的列；防御性 `if (r == null) continue;` 作 belt-and-suspenders。**实战栈**：`EvalRunExecutor.computeMetricsSummary`（PR E3 E2E 实际命中 5+ 行 4 metric 全 NULL）。
+- **`MyMetaObjectHandler` 仅填 createTime/updateTime/deleted，不填 *_by**: 项目 metaObjectHandler 没注 `createdBy/updatedBy` 自动填充，DO 入库时调用方必须显式 `.createdBy(principalUserId).updatedBy(...)`，否则 NOT NULL 列违反 PSQLException。**实战栈**：`EvalRunServiceImpl` PR E3 T8 missed，`GoldDatasetServiceImpl` 是参考模板。
 
 ---
 
@@ -91,6 +93,7 @@
   - ① 用 `useRef` 读取 `pendingRoleId`，E#1 deps 只留 `selectedDeptId + loadRoles`；
   - ② 定位完成后 `setSearchParams(next, { replace: true })` 从 URL 删掉 `roleId` 参数。
   规则：任何承担 deep link 参数定位的 tab，参数消费完立刻 clear，否则和常驻的 state effect 会互相拉扯。新增 deep-link tab 必须 review 这两条。
+- **Tab filter 跨刷新 / 跨 session 持久化：URL 是 SSOT，localStorage 是 fallback (2026-04-26 PR E3 EvalRunsTab/EvalTrendsTab)**：用户从侧栏直进 `?tab=runs`（无 datasetId）或刷新 trends 页时本地 `useState` 即丢。**模式**：`useSearchParams` 持有 datasetId（URL = SSOT，可 share link / 浏览器历史）+ `localStorage` 仅在首次访问 / 直进 tab 没 URL 参数时灌回；任何 set 同时写两边。`utils.ts` 的 `readStoredDatasetId/writeStoredDatasetId` swallow 掉隐身 / 配额异常（不影响 URL 路径）。**反模式**：把 localStorage 作 SSOT，URL 只是同步器——会破坏 share link 语义。
 
 ---
 

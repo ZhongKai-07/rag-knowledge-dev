@@ -20,4 +20,6 @@ EXPOSE 9091
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:9091/health').read()"
 
-CMD ["uvicorn", "ragas.app:app", "--host", "0.0.0.0", "--port", "9091"]
+# --loop asyncio (NOT uvloop): RAGAS 0.2.x calls nest_asyncio.apply() at import time,
+# which fails on uvloop ("Can't patch loop of type <class 'uvloop.Loop'>").
+CMD ["uvicorn", "ragas.app:app", "--host", "0.0.0.0", "--port", "9091", "--loop", "asyncio"]

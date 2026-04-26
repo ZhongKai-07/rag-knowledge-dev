@@ -1,6 +1,8 @@
 # Deferred Follow-ups
 
 > Resolved on `main`:
+> - `EVAL-3`: eval read endpoints `retrieved_chunks` go through `EvalResultRedactionService`; list/trend VOs structurally lack the field; current ceiling=`Integer.MAX_VALUE` (SUPER_ADMIN full read), AnyAdmin downgrade only requires switching the ceiling
+> - Landed in PR E3 (`feature/eval-e3-plan`)
 > - `SEC-1`: `DeduplicationPostProcessor` no longer revives chunks from raw `results`
 > - `SRC-10`: added `rag.sources.min-top-score=0.55`; low-relevance KB evidence no longer emits `sources` or `suggestions`
 > - Details: `log/dev_log/2026-04-22-authz-dedup-fix-and-relevance-gate.md`
@@ -27,15 +29,6 @@
 **症状**：`SysDeptServiceImpl.delete()` 本轮加了 `@Transactional` + `SELECT FOR UPDATE` 串行化 dept 自身的并发修改，但仍无法阻止**并发向已删除 dept 插入 user/KB**。
 **修复**：补 `ALTER TABLE t_user ADD CONSTRAINT fk_user_dept FOREIGN KEY (dept_id) REFERENCES sys_dept(id) ON DELETE RESTRICT;` 同理 `t_knowledge_base`。
 **注意**：需要检查历史数据是否有孤儿行，否则 ALTER 会失败。
-
-### EVAL-3. Eval 读接口 `security_level` redaction 缺失
-
-**位置**：`bootstrap/.../eval/` 的 Controller / Service（PR E2 已类级 `@SaCheckRole("SUPER_ADMIN")`）+ `t_eval_result.retrieved_chunks`
-**症状**：评估运行以系统级 `AccessScope.all()` 跑（合法，需要跨 KB 全量 chunk 才能评估），落盘的 `retrieved_chunks` 字段含**跨 `security_level`** 的原文。PR E2 仍通过 `eval/CLAUDE.md` + Controller 类级注解硬约束所有 eval 读接口 **SUPER_ADMIN-only**，但 PR E3+ 开放 `AnyAdmin` 读之前必须先做：
-- 查询侧按当前登录 principal 的 `security_level` 做 redaction（高密内容替换 `[REDACTED]`）
-- 或用 `eval_result_view_*` 分视图，接口根据 principal 路由
-**优先级**：🔴 PR E3 结果看板上线前必须，否则跨部门管理员可以通过评估结果泄漏高密 chunk 原文。
-**前置**：PR E3 提供 `GET /eval/runs/{id}/results` 之前就要定方案；PR E2 期间（已落地）所有 eval Controller 类级 `@SaCheckRole("SUPER_ADMIN")`。
 
 ### EVAL-4. 合成任务可恢复性（PR E2 引入）
 
@@ -74,6 +67,38 @@ GROUP BY dataset_id, review_status
 **症状**：Python 若在 `items` 里返回空 q/a（→ 内层 blank guard `failed++`）且同一 `chunk_id` 又出现在 `failed_chunk_ids`（外层 `failed += size()`），同一 chunk 被计两次。
 **修复**：维护 `Set<String> accountedInItems` 记录内层已处理的 chunk_id，外层累计前做 filter。
 **优先级**：🟢 低。Python 当前不会同时返回两处；Java 侧只是不信任契约的防御层。待真实 drift 出现再改。
+
+### EVAL-EMBED-RESILIENCE. eval 高并发触发 embedding 路由熔断（PR E3 E2E 引入）
+
+**位置**：`infra-ai/.../ModelSelector.buildModelTarget` line 157（`healthStore.isOpen` 过滤）+ `ModelRoutingExecutor.executeWithFallback` line 47（empty targets throw）。
+**症状**：eval 跑批 15 item × 多次 embed 调用，若 siliconflow 失败（欠费 / quota / 400）2 次→ OPEN 30s；fallback 到 ollama 若本地未启动也失败→ 也 OPEN；两候选同 OPEN 时 selectEmbeddingCandidates() 返 `[]` → throw `No Embedding model candidates available`，后续 item 全 failed 直到熔断半开。
+**根因**：`failure-threshold: 2` 太敏感 + 候选只 2 个；缺指数退避 retry。
+**方案**：(a) `RoutingEmbeddingService` 加 retry-with-backoff（同 `EVAL-retry` 模式）；(b) eval-only 把 `failure-threshold` 调到 5 或在 eval 路径用专用 quota 池；(c) 第 3 候选（百炼 embedding）补齐多样性。
+**优先级**：🟡 中。eval 跑批时可见，普通用户聊天高频也会触发只是不易察觉。
+
+### EVAL-AR-EMBED. DashScope embeddings 形状错误致 answer_relevancy 整批 NaN
+
+**位置**：Python ragent-eval 容器调 DashScope `text-embedding-v3` API。
+**症状**：`BadRequestError: Value error, contents is neither str nor list of str.: input.contents`。RAGAS `answer_relevancy` 内部需要 embedding 计算 question/answer 余弦相似度——embedding call 失败 → 该 metric 整批 NaN，`_safe_float` 转 None。其他 3 个 metric 不受影响（按 RAGAS per-metric 容错）。
+**根因**：RAGAS 0.2.x `LangchainEmbeddingsWrapper` + `langchain-openai` 0.2.x 对 DashScope 兼容模式下 embedding `input` 字段格式有歧义（list[list[str]] vs list[str]）。
+**方案**：升级 langchain-openai / RAGAS 版本，或在 ragas/Dockerfile 装 ragas[dashscope] adapter；或自写 embedding wrapper 显式控制 payload 形状。
+**优先级**：🟡 中。当前 4 metric 缺 1（25% 数据丢失），趋势页 AR 折线常空。
+
+### EVAL-OS-PARSE. OpenSearch 部分查询返 HTML 致 JsonParseException（pre-existing）
+
+**位置**：`OpenSearchRetrieverService.doSearch` line 127 `objectMapper.readValue`。
+**症状**：`com.fasterxml.jackson.core.JsonParseException: Unexpected character ('<' (code 60))`。OpenSearch 在某些查询条件下返 HTML 错误页（疑似 auth 重定向 / 5xx 报错页），ObjectMapper 读到 `<` 就崩。
+**根因**：未知，疑似 `opscobtest2` 索引 mapping 兼容性 / 大请求体超限 / 偶发 502。
+**方案**：先在 `doSearch` 上加 `Content-Type: application/json` 强校验 + 错误响应 raw body 打日志；再排查 OpenSearch server log。
+**优先级**：🟡 中。pre-existing（PR E3 之外），但 eval 跑批时显著放大命中率（每 item 多次检索）。
+
+### EVAL-CP-LOWYIELD. Context Precision 收敛率异常低
+
+**位置**：RAGAS `context_precision` metric 在 `EvalRunExecutorTest` 实战 run。
+**症状**：15 item PARTIAL_SUCCESS run 中，5 item 跑出 faithfulness、9 item 跑出 context_recall、但仅 1 item 跑出 context_precision（faith vs CP 应高度相关，差 5 倍异常）。
+**根因（怀疑）**：CP 内部 LLM grader prompt 长度问题 / 子任务超时 / output 解析失败把指标打 NaN。需要看 ragent-eval 容器日志中 `context_precision` 的具体 RAGAS Job 错误。
+**方案**：先抓 CP 失败 item 的 RAGAS 内部 trace；可能要单独跑 RAGAS CLI 复现 + 逐项排查。
+**优先级**：🟢 低。属于 RAGAS 内部行为调优，不阻塞 eval 闭环；趋势页可正常用其他 3 metric。
 
 ---
 

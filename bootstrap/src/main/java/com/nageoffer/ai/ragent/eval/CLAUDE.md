@@ -76,3 +76,37 @@ eval/
 - `SynthesisProgressTracker` 进程内非持久；后端重启后 RUNNING 状态丢失，部分 `t_eval_gold_item` 可能已落库。UI 按 `totalItemCount > 0` 隐藏"合成"按钮，用户只能 delete dataset 重来。
 - `toVO()` 每 dataset 3 次 `selectCount`：在 list 返回 > ~50 行时值得改为单聚合 SQL（见 backlog EVAL-TOVO-AGG）。
 - HTTP batch 级 failure 目前 `failed += batch.size()`，transient blip 会把整批标失败；真正的 retry 策略见 backlog EVAL-retry（由 `RagasEvalClient` 消费 `pythonService.max-retries`）。
+
+## PR E3 已落地（2026-04-26）
+
+- **AnswerPipeline 不抽**（ADR `docs/dev/design/2026-04-25-answer-pipeline-spike-adr.md`）：`ChatForEvalService`（`rag/core/`）直接组合现有 6 个 RAG service bean（`queryRewriteService` / `intentResolver` / `guidanceService` / `retrievalEngine` / `promptBuilder` / `llmService`）。`streamChat` 字节级不变。
+- **三态状态机**：`SUCCESS`（全成）/ `PARTIAL_SUCCESS`（黄）/ `FAILED`（红），由 `EvalRunExecutor.decideStatus(succeeded, failed)` 强制。`flushBatch` 返 `BatchOutcome(succ, fail)` record；HTTP 整批失败 + per-item error 非空 + per-item missing 三类全部进 `failed_items`（review P1-2）。
+- **`max-parallel-runs=1` 硬 enforce**（review P1-4）：`EvalRunServiceImpl.startRun` 用 `ReentrantLock startRunLock` 包住 SELECT COUNT + INSERT + executor.execute；并发 startRun 不会越过 count 检查。多实例部署需在 `t_eval_run` 加部分唯一索引，类字段注释里给方案。
+- **`AccessScope.all()` 唯一合法持有者**（review P1-1，spec §15.3）：`EvalRunExecutor.runInternal` 显式构造 `AccessScope systemScope = AccessScope.all()` 并传给 `chatForEvalService.chatForEval(scope, kbId, q)`；`ChatForEvalService` 永不自造 scope。其他入口必须传调用 principal 的真实 scope。
+- **`system_snapshot` 单一真相源**：`SystemSnapshotBuilder` 写入 `recall_top_k / rerank_top_k / sources_enabled / sources_min_top_score / eval_sources_disabled / chat_model / embedding_model / rerank_model`，附 sha256 `config_hash` 便于 dedup（hash 仅基于 8 个 RAG-behavior 字段，不含 `git_commit` 元数据）。`eval_sources_disabled=true` 是常量声明 eval 链路 `cards=List.of()` 关闭 citation；新加任何影响 RAG 的配置必须同步加字段（review checklist 必查）。
+- **EVAL-3 redaction 落地**：`EvalResultRedactionService` 是 result 读端点的硬合并门禁。当前所有 controller 类级 `@SaCheckRole("SUPER_ADMIN")` + `Integer.MAX_VALUE` ceiling = 全读。未来放 AnyAdmin 只需把 ceiling 换成 `UserContext.getMaxSecurityLevel()`，不改 service 契约。`securityLevel == null` 视为 0（最低密级，永远可读）。
+- **API split（review P1-3）**：list `/runs/{runId}/results` 返 `EvalResultSummaryVO[]`（`.select()` projection 不带 chunks）；drill-down `/runs/{runId}/results/{resultId}` 返 `EvalResultVO`（经 redaction 的 chunks）。`EvalResultSummaryVO` 类型上不含 `retrievedChunks` 字段——契约即门禁，零绕过路径。drill-down 端点 `selectOne(eq(id, resultId).eq(runId, runId))` 双 filter 防 URL 错位拉到别 run 的结果。
+- **零 ThreadLocal 新增**：`MDC.put("evalRunId", runId)` 仅做日志关联（非业务状态），方法 finally `MDC.remove`；`X-Eval-Run-Id` HTTP header 透传到 Python 侧。
+- **DTO field naming**：Java→Python `/evaluate` 字段是 `result_id`（`EvaluateRequest.Item.resultId` / `EvaluateResponse.MetricResult.resultId`），不是 `gold_item_id`——它carries the `EvalResultDO` snowflake，便于 batch 内多条同 goldItem 也能精确回填指标。
+- **Python `/evaluate`**：4 metric（faith / ans-rel / ctx-prec / ctx-rec）；单条失败 `error` 字段填充不抛；空 items 短路。本地 `ragas` 包名与 PyPI 同名 → `evaluate.py` 用 `_load_pypi_ragas_symbols()` 在 module load 时手工剥离 `sys.modules` shadowing 后导入 PyPI ragas API。
+- **前端**：`EvalRunsTab` 替换 placeholder（含 RUNNING 行 2s 轮询）；`EvalRunDetailPage` 4 卡 + 4 直方图 + per-item 表 + drill-down 抽屉（实际用 Dialog——sheet 组件不在 UI 库）；`EvalTrendsTab` recharts 折线 + `SnapshotDiffViewer` JSON diff。
+- **测试**：`ChatForEvalServiceTest` 5 / `SystemSnapshotBuilderTest` 3 / `RetrievedChunkSnapshot` n.a. / `EvaluateRequest/Response` n.a. / `EvalPropertiesTest` 3 / `RagasEvalClientEvaluateTest` 2 (WireMock) / `RoutingLLMServiceSyncFallbackTest` 2 (infra-ai) / `EvalRunServiceImplTest` 5 (incl 8-thread concurrent) / `EvalRunExecutorTest` 5 / `EvalResultRedactionServiceTest` 5 / `EvalRunControllerRedactionTest` 5 (standalone MockMvc) / `test_evaluate.py` 4 (Python pytest)。
+
+## PR E3 已知边界
+
+- `evaluate` HTTP 失败→整 batch 标失败（无 retry，复用 backlog EVAL-retry 后续修；同模式合成侧 PR E2 已记录）
+- `metricsSummary` 是 single-pass 累加；后续若加 quantile / 标准差需扩 schema
+- `EvalRunDetailPage` 直方图固定 5 桶；如需细粒度可加 props
+- `git_commit` 字段当前固定为 `"unknown"`（项目无 `git-commit-id-maven-plugin`）；不影响 hash semantics（已从 hash 输入剔除）但 trend 页 `SnapshotDiffViewer` 不会显示真 commit hash
+- T14（Python smoke + Spring Boot startup）+ T19（端到端 UI 验证）需要 docker compose + 百炼 API key + dev DB 含 ACTIVE dataset；这是 human-in-loop 验证，不在 agent 范围
+
+## PR E3 E2E session 修复（2026-04-26）
+
+T19 端到端验证发现 7 处 bug 已落地修复，不需要重做 plan。详见 `log/dev_log/2026-04-26-eval-pr-e3.md` 末尾"E2E session 发现 + 修复的 7 处 bug"表。关键 4 条：
+
+1. **`EvalRunServiceImpl` 显式 `.createdBy(...).updatedBy(...)`**（commit `d836e6c`）—— `MyMetaObjectHandler` 不填 *_by 字段，T8 missed；现已对齐 `GoldDatasetServiceImpl` 模板。
+2. **`EvalRunExecutor.runInternal` 加外层 try/catch + `computeMetricsSummary` projection 加 id**（commits `741f687` / `2d5c9d1`）—— 收尾抛 NPE 卡 RUNNING；MyBatis Plus 在 `.select()` 投影列全 NULL 时把整行映射为 null entity（实战 5+ 行命中）。新加测试 `computeMetricsSummary_tolerates_null_rows_from_mybatis_projection` 锁此防御。
+3. **`ragas/Dockerfile` `--loop asyncio` + `evaluate.py` `_pypi_ragas_active()` context manager**（commits `5835ed7` / `741f687`）—— uvloop 拒 `nest_asyncio.apply()`；本地 `ragas/` 包名 shadow PyPI ragas 致 `ModuleNotFoundError: ragas.prompt` / `ragas._analytics`。`_pypi_ragas_active()` 仅在 evaluate() 调用期临时把 `sys.modules['ragas*']` swap 到 PyPI，调用结束还原本地包供其他 import 路径用。
+4. **`compose env_file: ../../.env`**（commit `dbaec87`）—— `${DASHSCOPE_API_KEY}` 从 PowerShell shell 注入失败（user 终端没 export）；compose `env_file` 拉项目根 .env 是稳定的注入路径。
+
+E2E 验证 run `2048123251997319168` 落 **PARTIAL_SUCCESS** 9/15，4 metric 落库 + 4 卡 + 4 直方图 + drill-down redaction 全部跑通。已知边界 4 条（embedding 熔断 / DashScope embeddings shape / OpenSearch JsonParseException / Context Precision 收敛率低）已登记 backlog `EVAL-EMBED-RESILIENCE` / `EVAL-AR-EMBED` / `EVAL-OS-PARSE` / `EVAL-CP-LOWYIELD`。

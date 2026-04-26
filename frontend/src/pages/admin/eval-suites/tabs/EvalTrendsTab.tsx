@@ -1,0 +1,179 @@
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  CartesianGrid
+} from "recharts";
+import { listEvalRuns, getEvalRun } from "@/services/evalSuiteService";
+import type { EvalRunSummary, EvalRunDetail } from "@/services/evalSuiteService";
+import { SnapshotDiffViewer } from "../components/SnapshotDiffViewer";
+import { parseMetricsSummary, readStoredDatasetId, writeStoredDatasetId } from "../utils";
+import { formatTimestamp } from "@/utils/helpers";
+import { toast } from "sonner";
+
+interface ChartRow {
+  ts: string;
+  faithfulness: number | null;
+  answer_relevancy: number | null;
+  context_precision: number | null;
+  context_recall: number | null;
+}
+
+export function EvalTrendsTab() {
+  // URL is source of truth, localStorage is fallback for first-visit
+  const [searchParams, setSearchParams] = useSearchParams();
+  const datasetId = searchParams.get("datasetId") ?? "";
+  const setDatasetId = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (v) next.set("datasetId", v);
+    else next.delete("datasetId");
+    setSearchParams(next, { replace: true });
+    writeStoredDatasetId(v);
+  };
+  const [runs, setRuns] = useState<EvalRunSummary[]>([]);
+  const [beforeRun, setBeforeRun] = useState<EvalRunDetail | null>(null);
+  const [afterRun, setAfterRun] = useState<EvalRunDetail | null>(null);
+
+  // Hydrate URL from localStorage when user lands without ?datasetId=;
+  // mirror to localStorage when user arrives with datasetId in URL (e.g., shareable link)
+  useEffect(() => {
+    if (!datasetId) {
+      const stored = readStoredDatasetId();
+      if (!stored) return;
+      const next = new URLSearchParams(searchParams);
+      next.set("datasetId", stored);
+      setSearchParams(next, { replace: true });
+    } else {
+      writeStoredDatasetId(datasetId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [datasetId]);
+
+  useEffect(() => {
+    if (!datasetId) {
+      setRuns([]);
+      return;
+    }
+    listEvalRuns(datasetId)
+      .then((rs) => setRuns(rs.filter((r) => r.metricsSummary).reverse()))
+      .catch((e) => toast.error(`加载失败：${(e as Error).message}`));
+  }, [datasetId]);
+
+  const chartData = useMemo<ChartRow[]>(() => {
+    return runs.map((r) => {
+      const m = parseMetricsSummary(r.metricsSummary);
+      return {
+        ts: formatTimestamp(r.createTime ?? undefined) || r.id.slice(-6),
+        faithfulness: m.faithfulness ?? null,
+        answer_relevancy: m.answer_relevancy ?? null,
+        context_precision: m.context_precision ?? null,
+        context_recall: m.context_recall ?? null
+      };
+    });
+  }, [runs]);
+
+  const handleSelectBefore = async (id: string) => {
+    if (!id) {
+      setBeforeRun(null);
+      return;
+    }
+    try {
+      setBeforeRun(await getEvalRun(id));
+    } catch (e: unknown) {
+      toast.error(`加载 run 失败：${(e as Error).message}`);
+    }
+  };
+
+  const handleSelectAfter = async (id: string) => {
+    if (!id) {
+      setAfterRun(null);
+      return;
+    }
+    try {
+      setAfterRun(await getEvalRun(id));
+    } catch (e: unknown) {
+      toast.error(`加载 run 失败：${(e as Error).message}`);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <input
+          className="rounded border px-2 py-1 text-sm"
+          placeholder="datasetId..."
+          value={datasetId}
+          onChange={(e) => setDatasetId(e.target.value)}
+        />
+      </div>
+
+      {chartData.length > 0 ? (
+        <div className="rounded-lg border bg-white p-3">
+          <div className="mb-2 text-sm font-medium">4 指标趋势</div>
+          <ResponsiveContainer width="100%" height={260}>
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="ts" tick={{ fontSize: 10 }} />
+              <YAxis domain={[0, 1]} tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="faithfulness" stroke="#6366f1" />
+              <Line type="monotone" dataKey="answer_relevancy" stroke="#10b981" />
+              <Line type="monotone" dataKey="context_precision" stroke="#f59e0b" />
+              <Line type="monotone" dataKey="context_recall" stroke="#ef4444" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="rounded-lg border bg-slate-50 p-6 text-center text-sm text-slate-400">
+          {datasetId ? "暂无评估运行" : "请先输入 datasetId"}
+        </div>
+      )}
+
+      {runs.length >= 2 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-sm">
+            <span>对比：</span>
+            <select
+              className="rounded border px-2 py-1"
+              value={beforeRun?.id || ""}
+              onChange={(e) => handleSelectBefore(e.target.value)}
+            >
+              <option value="">选 run A</option>
+              {runs.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.id.slice(-6)} · {formatTimestamp(r.createTime ?? undefined)}
+                </option>
+              ))}
+            </select>
+            <span>→</span>
+            <select
+              className="rounded border px-2 py-1"
+              value={afterRun?.id || ""}
+              onChange={(e) => handleSelectAfter(e.target.value)}
+            >
+              <option value="">选 run B</option>
+              {runs.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.id.slice(-6)} · {formatTimestamp(r.createTime ?? undefined)}
+                </option>
+              ))}
+            </select>
+          </div>
+          {(beforeRun || afterRun) && (
+            <SnapshotDiffViewer
+              before={beforeRun?.systemSnapshot}
+              after={afterRun?.systemSnapshot}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-04-26 | PR E3 — RAG 评估闭环（trigger → real RAG → RAGAS 4 指标 → 看板/趋势）
+
+详情：[`2026-04-26-eval-pr-e3.md`](./2026-04-26-eval-pr-e3.md)
+
+**核心改动**：
+- `ChatForEvalService`（`rag/core/`）同步 RAG 编排，复用 6 个现有 service bean；`AccessScope` 由调用方注入（P1-1）；`cards=List.of()` 关闭 citation；返回 `AnswerResult` sealed type（Success / EmptyContext / SystemOnlySkipped / AmbiguousIntentSkipped）
+- `EvalRunService` + `EvalRunServiceImpl`：校验 ACTIVE+APPROVED → 建 run + snapshot → 提交 evalExecutor；`ReentrantLock startRunLock` 硬 enforce `max-parallel-runs`（P1-4，并发 startRun 不越过 count 检查）
+- `EvalRunExecutor`：三态状态机（SUCCESS / PARTIAL_SUCCESS / FAILED）；`flushBatch` 返 `BatchOutcome(succ, fail)` record；HTTP 整批失败 / per-item error / per-item missing 三类全部进 `failed_items`（P1-2）；显式 `AccessScope.all()`（spec §15.3 唯一合法持有者）；`MDC.put("evalRunId", runId)` 日志关联
+- `SystemSnapshotBuilder`：单一真相源 8 个 RAG-behavior 字段 + sha256 `config_hash`；`eval_sources_disabled=true` 常量；`git_commit` 仅作元数据不进 hash
+- **EVAL-3 redaction 落地**：`EvalResultRedactionService` 硬合并门禁；当前 ceiling=`Integer.MAX_VALUE`（SUPER_ADMIN 全读），AnyAdmin 放开仅切 ceiling
+- `EvalRunController` 5 endpoints；list `EvalResultSummaryVO` 类型上不含 `retrievedChunks` 字段（契约即门禁）；drill-down `selectOne(eq(id).eq(runId))` 双 filter
+- Python `/evaluate` RAGAS 4 metric（faith / ans-rel / ctx-prec / ctx-rec）；DTO 字段名 `result_id`（不是 `gold_item_id`）便于 batch 回填
+- 前端：`EvalRunsTab` 替换 placeholder（含 RUNNING 2s 轮询）+ `EvalRunDetailPage`（4 metric 卡 + 4 直方图 + per-item 表 + drill-down 抽屉）+ `EvalTrendsTab`（recharts 折线 + `SnapshotDiffViewer` JSON diff）
+- 零 ThreadLocal 新增；`streamChat` 字节级不变（不改 RAGChatServiceImpl）
+
+---
+
 ## 2026-04-25 | PR E2 — RAG 评估闭环合成闭环
 
 详情：[`2026-04-25-eval-pr-e2-synthesis.md`](./2026-04-25-eval-pr-e2-synthesis.md)

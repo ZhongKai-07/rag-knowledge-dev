@@ -21,6 +21,7 @@ import { QueryTermMappingPage } from "@/pages/admin/query-term-mapping/QueryTerm
 import { RagEvaluationPage } from "@/pages/admin/evaluations/RagEvaluationPage";
 import { EvalSuitesPage } from "@/pages/admin/eval-suites/EvalSuitesPage";
 import { GoldSetReviewPage } from "@/pages/admin/eval-suites/tabs/GoldSetReviewPage";
+import { EvalRunDetailPage } from "@/pages/admin/eval-suites/EvalRunDetailPage";
 import { AccessCenterPage } from "@/pages/admin/access/AccessCenterPage";
 import { useAuthStore } from "@/stores/authStore";
 import { RequireAuth, RequireAnyAdmin, RequireSuperAdmin, RequireMenuAccess } from "@/router/guards";
@@ -152,6 +153,10 @@ export const router = createBrowserRouter([
       {
         path: "eval-suites/datasets/:datasetId/review",
         element: <RequireSuperAdmin><GoldSetReviewPage /></RequireSuperAdmin>
+      },
+      {
+        path: "eval-suites/runs/:runId",
+        element: <RequireSuperAdmin><EvalRunDetailPage /></RequireSuperAdmin>
       },
       {
         path: "access",

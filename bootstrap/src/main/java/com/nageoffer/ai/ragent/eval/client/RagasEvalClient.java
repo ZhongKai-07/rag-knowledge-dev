@@ -19,6 +19,8 @@ package com.nageoffer.ai.ragent.eval.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.nageoffer.ai.ragent.eval.config.EvalProperties;
+import com.nageoffer.ai.ragent.eval.domain.EvaluateRequest;
+import com.nageoffer.ai.ragent.eval.domain.EvaluateResponse;
 import com.nageoffer.ai.ragent.eval.domain.SynthesizeRequest;
 import com.nageoffer.ai.ragent.eval.domain.SynthesizeResponse;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +64,16 @@ public class RagasEvalClient {
                 .body(request)
                 .retrieve()
                 .body(SynthesizeResponse.class);
+    }
+
+    public EvaluateResponse evaluate(String runId, EvaluateRequest request) {
+        return buildClient(evalProperties.getRun().getEvaluateTimeoutMs())
+                .post()
+                .uri("/evaluate")
+                .header("X-Eval-Run-Id", runId)
+                .body(request)
+                .retrieve()
+                .body(EvaluateResponse.class);
     }
 
     public HealthStatus health() {

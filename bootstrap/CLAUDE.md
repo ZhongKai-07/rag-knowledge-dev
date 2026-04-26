@@ -44,8 +44,15 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `GoldDatasetSynthesisService` | 异步合成编排：`trigger` 走 `evalExecutor` + `tracker.tryBegin` 原子占坑；批量调 Python；`source_chunk_text` 字节级冻结 |
 | `GoldItemReviewService` | PENDING → APPROVED/REJECTED + edit；仅 DRAFT 态可改 item |
 | `SynthesisProgressTracker` | 进程内 `ConcurrentHashMap<datasetId, SynthesisProgress>`；重启后 RUNNING 丢失（backlog EVAL-4） |
-| `RagasEvalClient` | Python HTTP 客户端；`synthesize` 走 `synthesisTimeoutMs`（默认 600s），`health` 走 `pythonService.timeoutMs`（120s） |
-| `GoldDatasetController` / `GoldItemController` | REST 入口，类级 `@SaCheckRole("SUPER_ADMIN")`（读写不分，EVAL-3 落地前不降级） |
+| `RagasEvalClient` | Python HTTP 客户端；`synthesize` 走 `synthesisTimeoutMs`（默认 600s），`health` 走 `pythonService.timeoutMs`（120s）；PR E3 起加 `evaluate(runId, req)` 走 `evaluateTimeoutMs`（默认 600s） + `X-Eval-Run-Id` header |
+| `GoldDatasetController` / `GoldItemController` | REST 入口，类级 `@SaCheckRole("SUPER_ADMIN")`（读写不分） |
+| `ChatForEvalService`（rag/core/）| PR E3：同步 RAG 编排，复用 6 个现有 service bean；不挂 `@ChatRateLimit` / `@RagTraceRoot`；返回 `AnswerResult`；`AccessScope` 由调用方注入（P1-1） |
+| `AnswerResult`（rag/core/）| PR E3：sealed interface — `Success` / `EmptyContext` / `SystemOnlySkipped` / `AmbiguousIntentSkipped` |
+| `EvalRunService` / `EvalRunServiceImpl` | PR E3：校验 ACTIVE+APPROVED → 建 run + snapshot → 提交 evalExecutor；`ReentrantLock startRunLock` 硬 enforce `max-parallel-runs`（P1-4） |
+| `EvalRunExecutor` | PR E3：三态状态机；per-item 失败不阻断；满 `evaluateBatchSize=5` 调 Python `/evaluate`；`MDC.put(evalRunId)`；显式 `AccessScope.all()`（spec §15.3 唯一合法持有者） |
+| `SystemSnapshotBuilder` | PR E3：单一真相源——retrieval / sources / chat / embedding / rerank + sha256 config_hash + `eval_sources_disabled=true` 常量。`git_commit` 仅作元数据，不进 hash |
+| `EvalResultRedactionService` | PR E3：EVAL-3 硬合并门禁——超 ceiling 的 chunk text 替换 `[REDACTED]`；`securityLevel == null` 视为 0 |
+| `EvalRunController` | PR E3：5 endpoints（POST runs / GET runs / GET run / GET results 摘要 / GET drill-down）；类级 `@SaCheckRole("SUPER_ADMIN")`；drill-down 必经 redaction，list / 趋势 VO 结构上不含 `retrievedChunks` 字段 |
 
 ### rag 域
 
