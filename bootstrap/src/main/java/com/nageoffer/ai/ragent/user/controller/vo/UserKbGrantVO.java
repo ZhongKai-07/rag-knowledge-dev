@@ -42,7 +42,7 @@ public class UserKbGrantVO {
     private String permission;
     /** 仅来自显式 role 链的权限；null 表示同部门 DEPT_ADMIN 隐式命中，无显式绑定。审计/调试用。 */
     private String explicitPermission;
-    /** 该 KB 密级上限（getMaxSecurityLevelForKb） */
+    /** 该 KB 密级上限（calculator.computeMaxSecurityLevels） */
     private Integer securityLevel;
     /** 给出 explicitPermission 的角色 ID 列表；implicit 命中时为空数组 */
     private List<String> sourceRoleIds;

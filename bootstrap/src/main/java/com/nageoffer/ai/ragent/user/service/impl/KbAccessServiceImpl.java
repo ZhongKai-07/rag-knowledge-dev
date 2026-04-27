@@ -56,7 +56,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -253,64 +252,6 @@ public class KbAccessServiceImpl implements KbAccessService,
 
         userIds.forEach(this::evictCache);
         return affectedRows;
-    }
-
-    @Override
-    public Integer getMaxSecurityLevelForKb(String userId, String kbId) {
-        if (userId == null || kbId == null) {
-            return 0;
-        }
-
-        // SUPER_ADMIN: always max
-        LoginUser current = UserContext.get();
-        if (current != null && current.getRoleTypes() != null
-                && current.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
-            return 3;
-        }
-
-        // DEPT_ADMIN implicit access to same-dept KBs: use role ceiling
-        if (current != null && current.getRoleTypes() != null
-                && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
-            String kbDeptId = kbMetadataReader.getKbDeptId(kbId);
-            if (kbDeptId != null && sameDept(current, kbDeptId)) {
-                return current.getMaxSecurityLevel();
-            }
-        }
-
-        // Regular path: check Redis Hash cache
-        String cacheKey = KB_SECURITY_LEVEL_CACHE_PREFIX + userId;
-        RBucket<Map<String, Integer>> bucket = redissonClient.getBucket(cacheKey);
-        Map<String, Integer> cached = bucket.get();
-        if (cached != null && cached.containsKey(kbId)) {
-            return cached.get(kbId);
-        }
-
-        // Compute from DB
-        List<UserRoleDO> userRoles = userRoleMapper.selectList(
-                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
-        List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
-
-        int level = 0;
-        if (!roleIds.isEmpty()) {
-            List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
-                    Wrappers.lambdaQuery(RoleKbRelationDO.class)
-                            .in(RoleKbRelationDO::getRoleId, roleIds)
-                            .eq(RoleKbRelationDO::getKbId, kbId));
-            for (RoleKbRelationDO rel : relations) {
-                if (rel.getMaxSecurityLevel() != null && rel.getMaxSecurityLevel() > level) {
-                    level = rel.getMaxSecurityLevel();
-                }
-            }
-        }
-
-        // Write to cache (hash entry)
-        if (cached == null) {
-            cached = new HashMap<>();
-        }
-        cached.put(kbId, level);
-        bucket.set(cached, CACHE_TTL);
-
-        return level;
     }
 
     @Override

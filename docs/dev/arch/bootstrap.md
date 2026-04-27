@@ -150,7 +150,7 @@ KnowledgeDocumentChunkConsumer @IdempotentConsume
 | --- | --- | --- |
 | `getAccessibleKbIds(userId)` | 返回可访问 KB 集合 | Redis `kb_access:{userId}` / `kb_access:dept:{userId}` |
 | `checkAccess(kbId)` / `checkManageAccess(kbId)` | 单 KB 读/管权限 | — |
-| `getMaxSecurityLevelForKb(userId, kbId)` | 按 KB 解析安全等级 | Redis Hash `kb_security_level:{userId}` |
+| `getMaxSecurityLevelsForKbs(kbIds)` / `KbAccessCalculator.computeMaxSecurityLevels(subject, kbIds)` | 批量解析 KB 安全等级（current-user / target-aware 分流） | — |
 | `validateRoleAssignment(roleIds)` | DEPT_ADMIN 分配约束 | — |
 | `simulateActiveSuperAdminCountAfter(intent)` | Last-SUPER_ADMIN 守护 | — |
 
