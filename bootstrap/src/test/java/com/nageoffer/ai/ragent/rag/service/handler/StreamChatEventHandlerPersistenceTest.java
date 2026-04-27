@@ -98,6 +98,7 @@ class StreamChatEventHandlerPersistenceTest {
                 .emitter(emitter)
                 .conversationId("c-1")
                 .taskId("t-1")
+                .userId("user-1")
                 .modelProperties(new AIModelProperties())
                 .memoryService(memoryService)
                 .conversationGroupService(conversationGroupService)

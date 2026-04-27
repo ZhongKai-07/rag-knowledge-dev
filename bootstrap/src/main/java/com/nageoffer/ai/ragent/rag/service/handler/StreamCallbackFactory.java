@@ -60,11 +60,13 @@ public class StreamCallbackFactory {
      */
     public StreamChatEventHandler createChatEventHandler(SseEmitter emitter,
                                                          String conversationId,
-                                                         String taskId) {
+                                                         String taskId,
+                                                         String userId) {
         StreamChatHandlerParams params = StreamChatHandlerParams.builder()
                 .emitter(emitter)
                 .conversationId(conversationId)
                 .taskId(taskId)
+                .userId(userId)
                 .modelProperties(modelProperties)
                 .memoryService(memoryService)
                 .conversationMessageService(conversationMessageService)

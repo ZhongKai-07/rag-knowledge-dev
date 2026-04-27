@@ -107,16 +107,16 @@ public class RAGChatServiceImpl implements RAGChatService {
                 ? IdUtil.getSnowflakeNextIdStr()
                 : RagTraceContext.getTaskId();
         log.info("开始流式对话，会话ID：{}，任务ID：{}", actualConversationId, taskId);
+        String userId = UserContext.getUserId();
         boolean thinkingEnabled = Boolean.TRUE.equals(deepThinking);
 
-        StreamChatEventHandler callback = callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
+        StreamChatEventHandler callback = callbackFactory.createChatEventHandler(
+                emitter, actualConversationId, taskId, userId);
 
         // 初始化评测数据采集器
         EvaluationCollector evalCollector = new EvaluationCollector();
         evalCollector.setOriginalQuery(question);
         RagTraceContext.setEvalCollector(evalCollector);
-
-        String userId = UserContext.getUserId();
 
         // RBAC: resolve access scope (single source of truth for retrieval).
         // 未登录 → AccessScope.empty() (fail-closed), 不再复用 null 语义。

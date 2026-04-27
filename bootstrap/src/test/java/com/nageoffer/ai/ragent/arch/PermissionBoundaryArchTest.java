@@ -20,32 +20,24 @@ package com.nageoffer.ai.ragent.arch;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 
+import java.lang.reflect.Parameter;
 import java.util.Set;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * Locks PR1 (#24, a24ea4b) controller-thinning invariant: no class in any controller
- * package may invoke one of the 5 KB-resource-scoped {@code KbAccessService.check*}
- * methods that PR1 moved from controllers into the service layer. Authorization for
- * KB resources must live at the service public user-entry (per
- * docs/dev/design/2026-04-26-permission-roadmap.md §2 Invariant A — service public
- * user-entry is the unique authorization boundary for KB-scoped resources).
- *
- * <p>Pre-PR1 baseline was guarded by docs/dev/verification/permission-pr1-controllers-clean.sh
- * (manual grep on PR review). This rule promotes the guard to CI: regression fails the build.
- *
- * <p>Admin-gate methods ({@code checkAnyAdminAccess}, {@code checkUserManageAccess},
- * {@code checkRoleMutation}, {@code checkAssignRolesAccess}) are intentionally NOT
- * banned — they legitimately remain at HTTP entry as programmatic {@code @SaCheckRole}
- * equivalents (see docs/dev/gotchas.md §3: "every controller needs explicit
- * authorization … programmatic kbAccessService checks").
+ * Permission boundary architecture guards for the staged permission roadmap.
  */
 @AnalyzeClasses(
         packages = "com.nageoffer.ai.ragent",
@@ -53,12 +45,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 public class PermissionBoundaryArchTest {
 
     /**
-     * Five KB-resource-scoped check methods that PR1 (#24, a24ea4b) moved from
-     * controllers into the service layer. Admin-gate methods like
-     * {@code checkAnyAdminAccess}, {@code checkUserManageAccess},
-     * {@code checkRoleMutation}, {@code checkAssignRolesAccess} are intentionally
-     * NOT in this list — they remain at HTTP entry as programmatic {@code @SaCheckRole}
-     * equivalents (see docs/dev/gotchas.md §3).
+     * KB-resource-scoped check methods that must live in service-layer user entry points.
+     * Admin-gate methods intentionally remain allowed at HTTP entry.
      */
     private static final Set<String> KB_SCOPED_CHECK_METHODS = Set.of(
             "checkAccess",
@@ -72,13 +60,36 @@ public class PermissionBoundaryArchTest {
             noClasses()
                     .that().resideInAPackage("..controller..")
                     .should().callMethodWhere(kbScopedCheckMethod())
-                    .because("PR1 (#24) moved KB-scoped authorization (5 methods) "
-                            + "from controllers into the service layer. Authorization "
-                            + "for KB resources must live at the service public user-entry "
-                            + "(roadmap §2 Invariant A). Admin-gate methods "
-                            + "(checkAnyAdminAccess / checkUserManageAccess / checkRoleMutation / "
-                            + "checkAssignRolesAccess) are explicitly allowed at HTTP entry "
-                            + "and are NOT in this list — see docs/dev/gotchas.md §3.");
+                    .because("PR1 moved KB-scoped authorization from controllers into service user-entry points. "
+                            + "Admin-gate methods are intentionally not in this list.");
+
+    @ArchTest
+    static final ArchRule rag_handler_package_no_user_context =
+            noClasses()
+                    .that().resideInAPackage("..rag.service.handler..")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.nageoffer.ai.ragent.framework.context.UserContext")
+                    .because("PR3-4 injects request userId into stream handler params; async handlers "
+                            + "must not read UserContext ThreadLocal.");
+
+    @ArchTest
+    static final ArchRule kb_access_calculator_no_user_context =
+            noClasses()
+                    .that().haveFullyQualifiedName("com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator")
+                    .should().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.nageoffer.ai.ragent.framework.context.UserContext")
+                    .orShould().dependOnClassesThat()
+                    .haveFullyQualifiedName("com.nageoffer.ai.ragent.framework.context.LoginUser")
+                    .because("PR3-1 keeps KbAccessCalculator pure: callers pass KbAccessSubject "
+                            + "instead of ThreadLocal or LoginUser state.");
+
+    @ArchTest
+    static final ArchRule kb_read_access_port_no_userid_param =
+            methods()
+                    .that().areDeclaredIn(com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort.class)
+                    .should(notHaveStringParameterNamedUserId())
+                    .because("PR3-2 keeps KbReadAccessPort current-user only; user id must not be "
+                            + "threaded through read-port signatures.");
 
     private static DescribedPredicate<JavaMethodCall> kbScopedCheckMethod() {
         return new DescribedPredicate<JavaMethodCall>(
@@ -88,6 +99,25 @@ public class PermissionBoundaryArchTest {
                 JavaClass owner = call.getTarget().getOwner();
                 return owner.isAssignableTo(KbAccessService.class)
                         && KB_SCOPED_CHECK_METHODS.contains(call.getTarget().getName());
+            }
+        };
+    }
+
+    private static ArchCondition<JavaMethod> notHaveStringParameterNamedUserId() {
+        return new ArchCondition<JavaMethod>("not have a String parameter named userId") {
+            @Override
+            public void check(JavaMethod method, ConditionEvents events) {
+                for (Parameter parameter : method.reflect().getParameters()) {
+                    boolean violation = parameter.getType().equals(String.class)
+                            && "userId".equals(parameter.getName());
+                    if (violation) {
+                        events.add(SimpleConditionEvent.violated(method,
+                                method.getFullName() + " declares String parameter named userId"));
+                        return;
+                    }
+                }
+                events.add(SimpleConditionEvent.satisfied(method,
+                        method.getFullName() + " has no String parameter named userId"));
             }
         };
     }

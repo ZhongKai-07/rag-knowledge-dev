@@ -122,7 +122,7 @@ class RAGChatServiceImplSourcesTest {
         ReflectionTestUtils.setField(service, "ragSourcesProperties", props);
 
         // callback 工厂
-        lenient().when(callbackFactory.createChatEventHandler(any(), any(), any())).thenReturn(callback);
+        lenient().when(callbackFactory.createChatEventHandler(any(), any(), any(), any())).thenReturn(callback);
 
         // 记忆、改写、意图
         lenient().when(memoryService.loadAndAppend(any(), any(), any(), any())).thenReturn(List.<ChatMessage>of());
