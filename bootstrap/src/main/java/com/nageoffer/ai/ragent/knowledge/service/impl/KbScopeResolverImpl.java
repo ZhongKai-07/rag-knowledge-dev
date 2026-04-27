@@ -44,7 +44,7 @@ public class KbScopeResolverImpl implements KbScopeResolver {
         if (hasRole(user, RoleType.SUPER_ADMIN)) {
             return AccessScope.all();
         }
-        return kbReadAccess.getAccessScope(user.getUserId(), Permission.READ);
+        return kbReadAccess.getAccessScope(Permission.READ);
     }
 
     @Override

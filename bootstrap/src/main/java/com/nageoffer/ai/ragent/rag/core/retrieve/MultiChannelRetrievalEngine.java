@@ -259,7 +259,7 @@ public class MultiChannelRetrievalEngine {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
         Map<String, Integer> kbSecurityLevels;
         if (accessScope instanceof AccessScope.Ids ids && !ids.kbIds().isEmpty() && UserContext.hasUser()) {
-            kbSecurityLevels = kbReadAccess.getMaxSecurityLevelsForKbs(UserContext.getUserId(), ids.kbIds());
+            kbSecurityLevels = kbReadAccess.getMaxSecurityLevelsForKbs(ids.kbIds());
         } else {
             kbSecurityLevels = Collections.emptyMap();
         }

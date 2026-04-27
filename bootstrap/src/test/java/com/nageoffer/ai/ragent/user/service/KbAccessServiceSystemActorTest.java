@@ -31,6 +31,8 @@ import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.impl.KbAccessServiceImpl;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessSubjectFactory;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,9 +61,11 @@ class KbAccessServiceSystemActorTest {
         RoleMapper roleMapper = mock(RoleMapper.class);
         SysDeptMapper sysDeptMapper = mock(SysDeptMapper.class);
         kbMetadataReader = mock(KbMetadataReader.class);
+        KbAccessSubjectFactory subjectFactory = mock(KbAccessSubjectFactory.class);
+        KbAccessCalculator calculator = mock(KbAccessCalculator.class);
         service = new KbAccessServiceImpl(
                 userRoleMapper, roleKbRelationMapper, redissonClient,
-                userMapper, roleMapper, sysDeptMapper, kbMetadataReader);
+                userMapper, roleMapper, sysDeptMapper, kbMetadataReader, subjectFactory, calculator);
     }
 
     @AfterEach

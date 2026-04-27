@@ -122,7 +122,7 @@ public class RAGChatServiceImpl implements RAGChatService {
         // 未登录 → AccessScope.empty() (fail-closed), 不再复用 null 语义。
         AccessScope accessScope;
         if (UserContext.hasUser() && userId != null) {
-            accessScope = kbReadAccess.getAccessScope(userId, Permission.READ);
+            accessScope = kbReadAccess.getAccessScope(Permission.READ);
         } else {
             accessScope = AccessScope.empty();
         }

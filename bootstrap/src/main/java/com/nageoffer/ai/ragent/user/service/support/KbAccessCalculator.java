@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * {@code UserProfileLoader}（ArchUnit 守门）。所有主体信息通过 {@link KbAccessSubject}
  * 由调用方传入。
  *
- * <p>取代 PR2 的 {@code KbRbacAccessSupport} 静态工具 + {@code KbAccessServiceImpl}
+ * <p>取代 PR2 的静态 RBAC 工具 + {@code KbAccessServiceImpl}
  * 的 {@code computeDeptAdminAccessibleKbIds} 私有 + {@code getMaxSecurityLevelsForKbs}
  * 偷读 ThreadLocal 的实现段（spec §0.1）。
  */
