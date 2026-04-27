@@ -21,44 +21,29 @@ import com.nageoffer.ai.ragent.framework.context.Permission;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * 知识库读取侧权限端口。
- * RAG 检索路径和知识库列表查询的授权入口。
+ * 知识库读取侧权限端口（PR3 起 current-user only）。
+ * RAG 检索路径和知识库列表查询的授权入口；admin-views-target 路径不走此 port。
  */
 public interface KbReadAccessPort {
 
     /**
-     * 获取当前用户的访问范围。
+     * 获取**当前登录用户**的访问范围。
      * SUPER_ADMIN 返回 {@link AccessScope.All}；其他角色返回 {@link AccessScope.Ids}。
-     * 未登录时调用方应传入 empty Ids（不调用此方法）。
-     *
-     * @param userId        当前用户 ID
-     * @param minPermission 最低所需权限
+     * 调用方应在调用前自行守 {@code UserContext.hasUser()},否则实现层抛 ClientException。
      */
-    AccessScope getAccessScope(String userId, Permission minPermission);
+    AccessScope getAccessScope(Permission minPermission);
 
     /**
-     * 校验当前用户对指定 KB 的 READ 权限，无权抛 ClientException。
+     * 校验当前用户对指定 KB 的 READ 权限,无权抛 ClientException。
      * SUPER_ADMIN 和系统态直接放行。
      */
     void checkReadAccess(String kbId);
 
     /**
-     * 批量解析当前用户对一组 KB 的最高安全等级。
+     * 批量解析**当前登录用户**对一组 KB 的最高安全等级。
      * 返回 map 仅包含 kbIds 中用户实际拥有访问权的 KB。
-     *
-     * @param userId 当前用户 ID
-     * @param kbIds  待解析的 KB ID 集合
      */
-    Map<String, Integer> getMaxSecurityLevelsForKbs(String userId, Collection<String> kbIds);
-
-    /**
-     * @deprecated 迁移过渡用，新代码改用 {@link #getAccessScope}
-     */
-    @Deprecated
-    default Set<String> getAccessibleKbIds(String userId) {
-        throw new UnsupportedOperationException("use getAccessScope()");
-    }
+    Map<String, Integer> getMaxSecurityLevelsForKbs(Collection<String> kbIds);
 }

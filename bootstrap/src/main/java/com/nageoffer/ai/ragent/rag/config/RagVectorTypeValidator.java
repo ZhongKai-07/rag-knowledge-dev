@@ -22,13 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Locale;
+
 /**
  * 向量库类型配置校验器。
  * <p>
- * 非 opensearch 配置时打印 WARN: Milvus/Pg 实现不回填 {@code RetrievedChunk.kbId} /
- * {@code securityLevel} / {@code docId} / {@code chunkIndex}; AuthzPostProcessor 对缺
- * {@code kbId} 的 chunk 在认证会话里 fail-closed, "回答来源"功能下 source 卡片永远为空。
- * 开发/测试环境可用，不建议生产。
+ * 当前生产前提是 OpenSearch：Milvus / pg 的权限过滤与 sources 元数据仍未补齐。
+ * 非 OpenSearch 后端必须显式打开 dev override，否则启动期 fail-fast。
  */
 @Slf4j
 @Component
@@ -37,16 +37,36 @@ public class RagVectorTypeValidator {
     @Value("${rag.vector.type:opensearch}")
     private String vectorType;
 
+    @Value("${rag.vector.allow-incomplete-backend:false}")
+    private boolean allowIncomplete;
+
     @PostConstruct
     public void validate() {
-        if (!"opensearch".equalsIgnoreCase(vectorType)) {
-            log.warn("RAG vector backend is '{}' (not opensearch). " +
-                            "AuthzPostProcessor will fail-close all chunks where kbId is null " +
-                            "in authenticated sessions; answer-sources feature (PR1+) will show " +
-                            "empty source cards because docId/chunkIndex are not backfilled either. " +
-                            "This is a dev-only configuration — do NOT use in production without " +
-                            "equivalent authz + source metadata support.",
-                    vectorType);
+        String normalized = vectorType == null ? "" : vectorType.trim().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty()) {
+            throw new IllegalStateException("rag.vector.type must not be blank. Use opensearch, milvus, or pg.");
         }
+        if ("opensearch".equals(normalized)) {
+            return;
+        }
+        if (!isKnownIncompleteBackend(normalized)) {
+            throw new IllegalStateException("RAG vector backend '" + normalized + "' is not recognized. " +
+                    "Supported rag.vector.type values are opensearch, milvus, and pg.");
+        }
+        if (allowIncomplete) {
+            log.warn("RAG vector backend '{}' is incomplete. rag.vector.allow-incomplete-backend=true " +
+                            "allows local/dev startup only; do not use this in production until backlog SL-1 " +
+                            "adds equivalent authz filters and source metadata support.",
+                    normalized);
+            return;
+        }
+        throw new IllegalStateException("RAG vector backend '" + normalized + "' is not ready for production. " +
+                "Only opensearch currently supports the required authz filters and source metadata. " +
+                "Set rag.vector.allow-incomplete-backend=true only for local/dev verification, or complete " +
+                "backlog SL-1 before enabling milvus/pg.");
+    }
+
+    private boolean isKnownIncompleteBackend(String normalized) {
+        return "milvus".equals(normalized) || "pg".equals(normalized);
     }
 }

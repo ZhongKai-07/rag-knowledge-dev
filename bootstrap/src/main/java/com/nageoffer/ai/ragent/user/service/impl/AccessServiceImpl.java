@@ -19,10 +19,7 @@ package com.nageoffer.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nageoffer.ai.ragent.framework.context.Permission;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
-import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
@@ -41,6 +38,9 @@ import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.AccessService;
 import com.nageoffer.ai.ragent.user.service.SysDeptService;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessSubject;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessSubjectFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -63,9 +63,9 @@ public class AccessServiceImpl implements AccessService {
     private final UserRoleMapper userRoleMapper;
     private final RoleKbRelationMapper roleKbRelationMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
-    private final KbReadAccessPort kbReadAccess;
+    private final KbAccessSubjectFactory subjectFactory;
+    private final KbAccessCalculator calculator;
     private final SysDeptService sysDeptService;
-    private final KbMetadataReader kbMetadataReader;
 
     @Override
     public List<AccessRoleVO> listRoles(String deptId, boolean includeGlobal) {
@@ -79,7 +79,6 @@ public class AccessServiceImpl implements AccessService {
 
         List<RoleDO> roles;
         if (deptIds.isEmpty()) {
-            // 无过滤条件 = 返回全部
             roles = roleMapper.selectList(Wrappers.lambdaQuery(RoleDO.class));
         } else {
             roles = roleMapper.selectList(
@@ -120,31 +119,20 @@ public class AccessServiceImpl implements AccessService {
             throw new ClientException("目标用户不存在");
         }
 
-        // Step 2 依赖：先拿目标用户的所有角色 + 角色→类型映射
-        List<UserRoleDO> userRoles = userRoleMapper.selectList(
-                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
-        Set<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).collect(Collectors.toSet());
-        List<RoleDO> targetRoles = roleIds.isEmpty()
-                ? Collections.emptyList()
-                : roleMapper.selectList(Wrappers.lambdaQuery(RoleDO.class).in(RoleDO::getId, roleIds));
-        boolean targetIsSuper = targetRoles.stream()
-                .anyMatch(r -> RoleType.SUPER_ADMIN.name().equals(r.getRoleType()));
-        boolean targetIsDeptAdmin = targetRoles.stream()
-                .anyMatch(r -> RoleType.DEPT_ADMIN.name().equals(r.getRoleType()));
-
-        // Step 1: 真相范围 —— 直接按目标用户的身份计算，不能用 getAccessibleKbIds
-        // （该方法依赖 CALLER context 的 isSuperAdmin 判断，在 admin 查其他人时会漏算成"全量"）
-        Set<String> targetReadableKbIds = computeTargetUserAccessibleKbIds(
-                userId, user.getDeptId(), targetIsSuper, targetIsDeptAdmin);
+        KbAccessSubject target = subjectFactory.forTargetUser(userId);
+        Set<String> targetReadableKbIds = calculator.computeAccessibleKbIds(target, Permission.READ);
         if (targetReadableKbIds.isEmpty()) {
             return Collections.emptyList();
         }
 
         List<KnowledgeBaseDO> kbs = knowledgeBaseMapper.selectList(
                 Wrappers.lambdaQuery(KnowledgeBaseDO.class).in(KnowledgeBaseDO::getId, targetReadableKbIds));
-        Map<String, Integer> levels = kbReadAccess.getMaxSecurityLevelsForKbs(userId, targetReadableKbIds);
+        Map<String, Integer> levels = calculator.computeMaxSecurityLevels(target, targetReadableKbIds);
 
-        // Step 2: 显式 role 链（同时拿权限和 sourceRoleIds）
+        List<UserRoleDO> userRoles = userRoleMapper.selectList(
+                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
+        Set<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).collect(Collectors.toSet());
+
         Map<String, String> explicitPermByKb = new HashMap<>();
         Map<String, List<String>> sourceRoleIdsByKb = new HashMap<>();
         if (!roleIds.isEmpty()) {
@@ -153,35 +141,25 @@ public class AccessServiceImpl implements AccessService {
                             .in(RoleKbRelationDO::getRoleId, roleIds)
                             .in(RoleKbRelationDO::getKbId, targetReadableKbIds));
             for (RoleKbRelationDO rel : relations) {
-                explicitPermByKb.merge(rel.getKbId(), rel.getPermission(),
-                        (a, b) -> maxPermission(a, b));
+                explicitPermByKb.merge(rel.getKbId(), rel.getPermission(), AccessServiceImpl::maxPermission);
                 sourceRoleIdsByKb.computeIfAbsent(rel.getKbId(), k -> new ArrayList<>()).add(rel.getRoleId());
             }
         }
 
-        // Step 3: implicit 独立判（与显式不互斥）
-        String userDeptId = user.getDeptId();
-
-        // Step 5: 取密级
         List<UserKbGrantVO> out = new ArrayList<>(kbs.size());
         for (KnowledgeBaseDO kb : kbs) {
             String explicitPerm = explicitPermByKb.get(kb.getId());
             List<String> sourceIds = sourceRoleIdsByKb.getOrDefault(kb.getId(), Collections.emptyList());
-            boolean implicit = targetIsDeptAdmin
-                    && userDeptId != null
-                    && userDeptId.equals(kb.getDeptId());
-            // Step 4: effective
-            // SUPER_ADMIN 默认 MANAGE（与 getAccessibleKbIds 保持口径一致；explicit 列表通常为空）
+            boolean implicit = target.isDeptAdmin()
+                    && target.deptId() != null
+                    && target.deptId().equals(kb.getDeptId());
+
             String effectivePerm;
-            if (targetIsSuper) {
-                effectivePerm = Permission.MANAGE.name();
-            } else if (implicit) {
+            if (target.isSuperAdmin() || implicit) {
                 effectivePerm = Permission.MANAGE.name();
             } else {
-                effectivePerm = explicitPerm; // 可能为 null — 理论不应出现，因为范围已被锁
+                effectivePerm = explicitPerm;
             }
-
-            Integer securityLevel = levels.getOrDefault(kb.getId(), 0);
 
             out.add(UserKbGrantVO.builder()
                     .kbId(kb.getId())
@@ -189,7 +167,7 @@ public class AccessServiceImpl implements AccessService {
                     .deptId(kb.getDeptId())
                     .permission(effectivePerm)
                     .explicitPermission(explicitPerm)
-                    .securityLevel(securityLevel)
+                    .securityLevel(levels.getOrDefault(kb.getId(), 0))
                     .sourceRoleIds(sourceIds)
                     .implicit(implicit)
                     .build());
@@ -207,10 +185,11 @@ public class AccessServiceImpl implements AccessService {
         String roleDeptName = null;
         if (role.getDeptId() != null && !role.getDeptId().isBlank()) {
             SysDeptDO dept = sysDeptMapper.selectById(role.getDeptId());
-            if (dept != null) roleDeptName = dept.getDeptName();
+            if (dept != null) {
+                roleDeptName = dept.getDeptName();
+            }
         }
 
-        // 持有该角色的用户
         List<UserRoleDO> userRoles = userRoleMapper.selectList(
                 Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getRoleId, roleId));
         Set<String> userIds = userRoles.stream().map(UserRoleDO::getUserId).collect(Collectors.toSet());
@@ -219,21 +198,22 @@ public class AccessServiceImpl implements AccessService {
                 : userMapper.selectList(Wrappers.lambdaQuery(UserDO.class).in(UserDO::getId, userIds));
 
         Set<String> userDeptIds = users.stream()
-                .map(UserDO::getDeptId).filter(id -> id != null && !id.isBlank())
+                .map(UserDO::getDeptId)
+                .filter(id -> id != null && !id.isBlank())
                 .collect(Collectors.toSet());
 
-        // 共享到的 KB
         List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
                 Wrappers.lambdaQuery(RoleKbRelationDO.class).eq(RoleKbRelationDO::getRoleId, roleId));
         Set<String> kbIds = relations.stream().map(RoleKbRelationDO::getKbId).collect(Collectors.toSet());
         List<KnowledgeBaseDO> kbs = kbIds.isEmpty()
                 ? Collections.emptyList()
-                : knowledgeBaseMapper.selectList(Wrappers.lambdaQuery(KnowledgeBaseDO.class).in(KnowledgeBaseDO::getId, kbIds));
+                : knowledgeBaseMapper.selectList(
+                        Wrappers.lambdaQuery(KnowledgeBaseDO.class).in(KnowledgeBaseDO::getId, kbIds));
         Set<String> kbDeptIds = kbs.stream()
-                .map(KnowledgeBaseDO::getDeptId).filter(id -> id != null && !id.isBlank())
+                .map(KnowledgeBaseDO::getDeptId)
+                .filter(id -> id != null && !id.isBlank())
                 .collect(Collectors.toSet());
 
-        // 一次性拿所有相关部门名
         Set<String> allDeptIds = new HashSet<>();
         allDeptIds.addAll(userDeptIds);
         allDeptIds.addAll(kbDeptIds);
@@ -281,11 +261,14 @@ public class AccessServiceImpl implements AccessService {
     @Override
     public List<SysDeptVO> listDepartmentsTree() {
         List<SysDeptVO> depts = sysDeptService.list(null);
-        // GLOBAL（id='1'）排第一，其余按名称稳定排序
         return depts.stream()
                 .sorted((a, b) -> {
-                    if (SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(a.getId())) return -1;
-                    if (SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(b.getId())) return 1;
+                    if (SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(a.getId())) {
+                        return -1;
+                    }
+                    if (SysDeptServiceImpl.GLOBAL_DEPT_ID.equals(b.getId())) {
+                        return 1;
+                    }
                     String an = a.getDeptName() == null ? "" : a.getDeptName();
                     String bn = b.getDeptName() == null ? "" : b.getDeptName();
                     return an.compareTo(bn);
@@ -293,7 +276,6 @@ public class AccessServiceImpl implements AccessService {
                 .toList();
     }
 
-    /** READ &lt; WRITE &lt; MANAGE — 取更高权限（null 兜底成 READ） */
     private static String maxPermission(String a, String b) {
         Permission pa = parsePermission(a);
         Permission pb = parsePermission(b);
@@ -301,37 +283,13 @@ public class AccessServiceImpl implements AccessService {
     }
 
     private static Permission parsePermission(String p) {
-        if (p == null) return Permission.READ;
+        if (p == null) {
+            return Permission.READ;
+        }
         try {
             return Permission.valueOf(p);
         } catch (IllegalArgumentException e) {
             return Permission.READ;
         }
-    }
-
-    /**
-     * 按"目标用户"身份计算可访问 KB ID 集合。
-     * <p>
-     * 不直接复用 {@code getAccessibleKbIds}，因为它读 CALLER 的 UserContext。
-     * 这里改为复用同包共享的 RBAC helper，避免漂移出两套算法。
-     */
-    private Set<String> computeTargetUserAccessibleKbIds(
-            String userId,
-            String userDeptId,
-            boolean targetIsSuper,
-            boolean targetIsDeptAdmin) {
-        if (targetIsSuper) {
-            return kbMetadataReader.listAllKbIds();
-        }
-        Set<String> result = KbRbacAccessSupport.computeRbacKbIdsFor(
-                userId,
-                Permission.READ,
-                userRoleMapper,
-                roleKbRelationMapper,
-                kbMetadataReader);
-        if (targetIsDeptAdmin && userDeptId != null && !userDeptId.isBlank()) {
-            result.addAll(kbMetadataReader.listKbIdsByDeptId(userDeptId));
-        }
-        return result;
     }
 }

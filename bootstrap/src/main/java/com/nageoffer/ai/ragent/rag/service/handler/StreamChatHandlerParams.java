@@ -54,6 +54,8 @@ public class StreamChatHandlerParams {
      */
     private final String taskId;
 
+    private final String userId;
+
     /**
      * 模型配置
      */

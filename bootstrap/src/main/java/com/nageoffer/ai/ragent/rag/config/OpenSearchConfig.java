@@ -31,7 +31,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Slf4j
 @Configuration
-@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch")
+@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch", matchIfMissing = true)
 @EnableConfigurationProperties(OpenSearchProperties.class)
 public class OpenSearchConfig {
 

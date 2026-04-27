@@ -97,7 +97,7 @@ KB 共享管理（AnyAdmin，按 KB dept 归属）:
 权限校验（贯穿所有业务链路）:
   新代码（2026-04-18 后）：注入 framework/security/port/ 下的细粒度端口
     CurrentUserProbe.isSuperAdmin() / isDeptAdmin()
-    KbReadAccessPort.getAccessibleKbIds(userId) / getMaxSecurityLevelForKb(userId, kbId)
+    KbReadAccessPort.getAccessScope(p) / getMaxSecurityLevelsForKbs(kbIds)
     KbManageAccessPort.checkManageAccess(kbId)
   旧代码：KbAccessService 上帝接口（@Deprecated），47 个调用点分批迁移中
   底层逻辑：查 t_user_role → 查 t_role_kb_relation → 返回可访问 kbId 集合 / 安全等级

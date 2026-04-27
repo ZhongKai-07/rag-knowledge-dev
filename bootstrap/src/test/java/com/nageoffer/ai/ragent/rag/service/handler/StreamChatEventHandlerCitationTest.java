@@ -89,6 +89,7 @@ class StreamChatEventHandlerCitationTest {
                 .emitter(emitter)
                 .conversationId("c-1")
                 .taskId("t-1")
+                .userId("user-1")
                 .modelProperties(modelProps)
                 .memoryService(memoryService)
                 .conversationGroupService(conversationGroupService)

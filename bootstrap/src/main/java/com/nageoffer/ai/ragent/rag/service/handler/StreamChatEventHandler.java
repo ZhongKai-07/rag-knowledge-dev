@@ -24,7 +24,6 @@ import com.nageoffer.ai.ragent.rag.dto.CompletionPayload;
 import com.nageoffer.ai.ragent.rag.dto.MessageDelta;
 import com.nageoffer.ai.ragent.rag.dto.MetaPayload;
 import com.nageoffer.ai.ragent.rag.enums.SSEEventType;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.web.SseEmitterSender;
 import com.nageoffer.ai.ragent.infra.chat.StreamCallback;
@@ -97,7 +96,7 @@ public class StreamChatEventHandler implements StreamCallback {
         this.evaluationService = params.getEvaluationService();
         this.traceRecordService = params.getTraceRecordService();
         this.traceId = RagTraceContext.getTraceId();
-        this.userId = UserContext.getUserId();
+        this.userId = params.getUserId();
         this.suggestedQuestionsService = params.getSuggestedQuestionsService();
         this.suggestedQuestionsExecutor = params.getSuggestedQuestionsExecutor();
         this.ragConfigProperties = params.getRagConfigProperties();
@@ -187,7 +186,7 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId)) {
             return;
         }
-        String messageId = memoryService.append(conversationId, UserContext.getUserId(),
+        String messageId = memoryService.append(conversationId, userId,
                 ChatMessage.assistant(answer.toString()), null);
 
         // 持久化 sources_json（必须在 updateTraceTokenUsage 之前，见 spec §2.7）

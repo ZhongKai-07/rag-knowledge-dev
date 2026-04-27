@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch")
+@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch", matchIfMissing = true)
 public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
 
     private static final String PIPELINE_NAME = "ragent-hybrid-search-pipeline";

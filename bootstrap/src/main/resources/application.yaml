@@ -44,6 +44,7 @@ milvus:
 rag:
   vector:
     type: opensearch  # 可选 milvus / pg / opensearch
+    # allow-incomplete-backend: false  # dev override; set true to allow milvus/pg, otherwise startup fails (PR3-6)
 
   default:
     collection-name: rag_default_store

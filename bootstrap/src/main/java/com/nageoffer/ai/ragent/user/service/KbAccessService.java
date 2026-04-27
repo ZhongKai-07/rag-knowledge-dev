@@ -91,19 +91,8 @@ public interface KbAccessService {
     int unbindAllRolesFromKb(String kbId);
 
     /**
-     * 获取用户对指定 KB 的最高安全等级。
-     * <ul>
-     *   <li>SUPER_ADMIN → 3</li>
-     *   <li>DEPT_ADMIN 且 kb.dept_id == self.dept_id → MAX(自身角色天花板)</li>
-     *   <li>其他 → MAX(t_role_kb_relation.max_security_level) through user's roles</li>
-     *   <li>无权限 → 0（防御性兜底，不应到达检索阶段）</li>
-     * </ul>
-     */
-    Integer getMaxSecurityLevelForKb(String userId, String kbId);
-
-    /**
      * 批量解析当前用户对一组 KB 的最高安全等级。
-     * 用于检索热路径：单次 DB 查询替代 N 次 {@link #getMaxSecurityLevelForKb} 调用。
+     * 用于检索热路径：单次 DB 查询替代 N 次 single-KB 计算。
      * 返回 map 仅包含 kbIds 中、用户实际拥有访问权的 KB；调用方未命中应当作 null/未授权处理。
      */
     Map<String, Integer> getMaxSecurityLevelsForKbs(String userId, Collection<String> kbIds);

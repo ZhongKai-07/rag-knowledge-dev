@@ -43,6 +43,9 @@ import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
 import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessSubject;
+import com.nageoffer.ai.ragent.user.service.support.KbAccessSubjectFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -53,7 +56,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -81,33 +83,11 @@ public class KbAccessServiceImpl implements KbAccessService,
     private final RoleMapper roleMapper;
     private final SysDeptMapper sysDeptMapper;
     private final KbMetadataReader kbMetadataReader;
+    private final KbAccessSubjectFactory subjectFactory;
+    private final KbAccessCalculator calculator;
 
     @Override
     public Set<String> getAccessibleKbIds(String userId, Permission minPermission) {
-        // SUPER_ADMIN 全量，不走缓存
-        if (isSuperAdmin()) {
-            return kbMetadataReader.listAllKbIds();
-        }
-
-        // DEPT_ADMIN: RBAC 授权 KB ∪ 同部门 KB；READ 路径走缓存（kb_access:dept:{userId}）
-        if (isDeptAdmin()) {
-            boolean cacheable = minPermission == Permission.READ;
-            String cacheKey = DEPT_ADMIN_CACHE_PREFIX + userId;
-            if (cacheable) {
-                RBucket<Set<String>> bucket = redissonClient.getBucket(cacheKey);
-                Set<String> cached = bucket.get();
-                if (cached != null) {
-                    return cached;
-                }
-            }
-            Set<String> result = computeDeptAdminAccessibleKbIds(userId, minPermission);
-            if (cacheable) {
-                redissonClient.getBucket(cacheKey).<Set<String>>set(result, CACHE_TTL);
-            }
-            return result;
-        }
-
-        // USER 走 PR1 原有缓存路径
         boolean cacheable = minPermission == Permission.READ;
         String cacheKey = CACHE_PREFIX + userId;
         if (cacheable) {
@@ -117,7 +97,9 @@ public class KbAccessServiceImpl implements KbAccessService,
                 return cached;
             }
         }
-        Set<String> result = computeRbacKbIds(userId, minPermission);
+        // PR3: deprecated target-aware service path is based on userId, not caller UserContext.
+        KbAccessSubject subject = subjectFactory.forTargetUser(userId);
+        Set<String> result = calculator.computeAccessibleKbIds(subject, minPermission);
         if (cacheable) {
             redissonClient.getBucket(cacheKey).<Set<String>>set(result, CACHE_TTL);
         }
@@ -132,35 +114,27 @@ public class KbAccessServiceImpl implements KbAccessService,
     }
 
     @Override
-    public AccessScope getAccessScope(String userId, Permission minPermission) {
-        if (isSuperAdmin()) {
+    public AccessScope getAccessScope(Permission minPermission) {
+        KbAccessSubject subject = subjectFactory.currentOrThrow();
+        if (subject.isSuperAdmin()) {
             return AccessScope.all();
         }
-        return AccessScope.ids(getAccessibleKbIds(userId, minPermission));
+        return AccessScope.ids(calculator.computeAccessibleKbIds(subject, minPermission));
     }
 
     @Override
     public void checkReadAccess(String kbId) {
-        checkAccess(kbId);
-    }
-
-    /** DEPT_ADMIN 的可见 KB = RBAC 授权 KB ∪ 本部门所有 KB */
-    private Set<String> computeDeptAdminAccessibleKbIds(String userId, Permission minPermission) {
-        Set<String> rbacKbs = computeRbacKbIds(userId, minPermission);
-        LoginUser user = UserContext.get();
-        String deptId = user.getDeptId();
-        if (deptId == null) {
-            log.warn("DEPT_ADMIN 用户未挂载部门, userId={}", userId);
-            return rbacKbs;
+        if (bypassIfSystemOrAssertActor()) {
+            return;
         }
-        rbacKbs.addAll(kbMetadataReader.listKbIdsByDeptId(deptId));
-        return rbacKbs;
-    }
-
-    /** RBAC 路径：user → roles → kb_relations → filter permission */
-    private Set<String> computeRbacKbIds(String userId, Permission minPermission) {
-        return KbRbacAccessSupport.computeRbacKbIdsFor(
-                userId, minPermission, userRoleMapper, roleKbRelationMapper, kbMetadataReader);
+        KbAccessSubject subject = subjectFactory.currentOrThrow();
+        if (subject.isSuperAdmin()) {
+            return;
+        }
+        if (!calculator.computeAccessibleKbIds(subject, Permission.READ).contains(kbId)) {
+            log.warn("权限拒绝: userId={}, kbId={}, action=READ", subject.userId(), kbId);
+            throw new ClientException("无权访问该知识库: " + kbId);
+        }
     }
 
     /** Null-safe dept equality. user==null or either deptId==null returns false. */
@@ -281,108 +255,21 @@ public class KbAccessServiceImpl implements KbAccessService,
     }
 
     @Override
-    public Integer getMaxSecurityLevelForKb(String userId, String kbId) {
-        if (userId == null || kbId == null) {
-            return 0;
-        }
-
-        // SUPER_ADMIN: always max
-        LoginUser current = UserContext.get();
-        if (current != null && current.getRoleTypes() != null
-                && current.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
-            return 3;
-        }
-
-        // DEPT_ADMIN implicit access to same-dept KBs: use role ceiling
-        if (current != null && current.getRoleTypes() != null
-                && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)) {
-            String kbDeptId = kbMetadataReader.getKbDeptId(kbId);
-            if (kbDeptId != null && sameDept(current, kbDeptId)) {
-                return current.getMaxSecurityLevel();
-            }
-        }
-
-        // Regular path: check Redis Hash cache
-        String cacheKey = KB_SECURITY_LEVEL_CACHE_PREFIX + userId;
-        RBucket<Map<String, Integer>> bucket = redissonClient.getBucket(cacheKey);
-        Map<String, Integer> cached = bucket.get();
-        if (cached != null && cached.containsKey(kbId)) {
-            return cached.get(kbId);
-        }
-
-        // Compute from DB
-        List<UserRoleDO> userRoles = userRoleMapper.selectList(
-                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
-        List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
-
-        int level = 0;
-        if (!roleIds.isEmpty()) {
-            List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
-                    Wrappers.lambdaQuery(RoleKbRelationDO.class)
-                            .in(RoleKbRelationDO::getRoleId, roleIds)
-                            .eq(RoleKbRelationDO::getKbId, kbId));
-            for (RoleKbRelationDO rel : relations) {
-                if (rel.getMaxSecurityLevel() != null && rel.getMaxSecurityLevel() > level) {
-                    level = rel.getMaxSecurityLevel();
-                }
-            }
-        }
-
-        // Write to cache (hash entry)
-        if (cached == null) {
-            cached = new HashMap<>();
-        }
-        cached.put(kbId, level);
-        bucket.set(cached, CACHE_TTL);
-
-        return level;
-    }
-
-    @Override
     public Map<String, Integer> getMaxSecurityLevelsForKbs(String userId, Collection<String> kbIds) {
         if (userId == null || kbIds == null || kbIds.isEmpty()) {
             return Collections.emptyMap();
         }
-        LoginUser current = UserContext.hasUser() ? UserContext.get() : null;
+        KbAccessSubject subject = subjectFactory.forTargetUser(userId);
+        return calculator.computeMaxSecurityLevels(subject, kbIds);
+    }
 
-        // SUPER_ADMIN: every requested KB → max ceiling 3
-        if (current != null && current.getRoleTypes() != null
-                && current.getRoleTypes().contains(RoleType.SUPER_ADMIN)) {
-            Map<String, Integer> result = new HashMap<>(kbIds.size() * 2);
-            for (String kbId : kbIds) {
-                if (kbId != null) result.put(kbId, 3);
-            }
-            return result;
+    @Override
+    public Map<String, Integer> getMaxSecurityLevelsForKbs(Collection<String> kbIds) {
+        if (kbIds == null || kbIds.isEmpty()) {
+            return Collections.emptyMap();
         }
-
-        Map<String, Integer> result = new HashMap<>();
-
-        // RBAC bindings: 2 queries (user→roles, roles+kbs→relations) for the whole batch
-        List<UserRoleDO> userRoles = userRoleMapper.selectList(
-                Wrappers.lambdaQuery(UserRoleDO.class).eq(UserRoleDO::getUserId, userId));
-        if (!userRoles.isEmpty()) {
-            List<String> roleIds = userRoles.stream().map(UserRoleDO::getRoleId).toList();
-            List<RoleKbRelationDO> relations = roleKbRelationMapper.selectList(
-                    Wrappers.lambdaQuery(RoleKbRelationDO.class)
-                            .in(RoleKbRelationDO::getRoleId, roleIds)
-                            .in(RoleKbRelationDO::getKbId, kbIds));
-            for (RoleKbRelationDO rel : relations) {
-                Integer level = rel.getMaxSecurityLevel() == null ? 0 : rel.getMaxSecurityLevel();
-                result.merge(rel.getKbId(), level, Math::max);
-            }
-        }
-
-        // DEPT_ADMIN implicit access to same-dept KBs overrides RBAC ceiling
-        if (current != null && current.getRoleTypes() != null
-                && current.getRoleTypes().contains(RoleType.DEPT_ADMIN)
-                && current.getDeptId() != null) {
-            int deptCeiling = current.getMaxSecurityLevel();
-            Set<String> sameDeptKbIds = kbMetadataReader.filterKbIdsByDept(kbIds, current.getDeptId());
-            for (String kbId : sameDeptKbIds) {
-                result.merge(kbId, deptCeiling, Math::max);
-            }
-        }
-        return result;
+        KbAccessSubject subject = subjectFactory.currentOrThrow();
+        return calculator.computeMaxSecurityLevels(subject, kbIds);
     }
 
     @Override

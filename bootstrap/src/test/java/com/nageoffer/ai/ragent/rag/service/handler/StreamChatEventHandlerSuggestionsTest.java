@@ -92,6 +92,7 @@ class StreamChatEventHandlerSuggestionsTest {
                 .emitter(recordingEmitter)
                 .conversationId("conv-1")
                 .taskId("task-1")
+                .userId("user-1")
                 .modelProperties(modelProps)
                 .memoryService(memoryService)
                 .conversationGroupService(conversationGroupService)

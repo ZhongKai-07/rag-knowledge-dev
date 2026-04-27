@@ -83,7 +83,7 @@ class KbScopeResolverImplTest {
     @Test
     void resolveForRead_regularUser_delegatesToReadPort() {
         AccessScope expected = AccessScope.ids(Set.of("kb-1", "kb-2"));
-        when(kbReadAccess.getAccessScope("user-1", Permission.READ)).thenReturn(expected);
+        when(kbReadAccess.getAccessScope(Permission.READ)).thenReturn(expected);
 
         AccessScope scope = resolver.resolveForRead(LoginUser.builder()
                 .userId("user-1")
@@ -91,7 +91,7 @@ class KbScopeResolverImplTest {
                 .build());
 
         assertEquals(expected, scope);
-        verify(kbReadAccess).getAccessScope("user-1", Permission.READ);
+        verify(kbReadAccess).getAccessScope(Permission.READ);
         verifyNoInteractions(kbMetadataReader);
     }
 
