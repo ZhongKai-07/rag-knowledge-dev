@@ -70,9 +70,9 @@ public class UserServiceImpl implements UserService {
 
         if (!currentUser.isSuperAdmin() && currentUser.isDeptAdmin()) {
             // DEPT_ADMIN only sees users from their dept; ignore any inbound deptId.
-            LoginUser currentUser = UserContext.get();
-            if (currentUser != null && currentUser.getDeptId() != null) {
-                wrapper.eq(UserDO::getDeptId, currentUser.getDeptId());
+            LoginUser callerUser = UserContext.get();
+            if (callerUser != null && callerUser.getDeptId() != null) {
+                wrapper.eq(UserDO::getDeptId, callerUser.getDeptId());
             }
         } else if (requestedDeptId != null) {
             // SUPER_ADMIN can narrow by dept via the new access-center tree navigation (P1.3d).

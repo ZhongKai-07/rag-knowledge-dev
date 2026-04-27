@@ -142,12 +142,7 @@ public class AccessServiceImpl implements AccessService {
 
         List<KnowledgeBaseDO> kbs = knowledgeBaseMapper.selectList(
                 Wrappers.lambdaQuery(KnowledgeBaseDO.class).in(KnowledgeBaseDO::getId, targetReadableKbIds));
-        Map<String, Integer> levels = targetReadableKbIds.isEmpty()
-                ? Collections.emptyMap()
-                : kbReadAccess.getMaxSecurityLevelsForKbs(userId, targetReadableKbIds);
-        if (levels == null) {
-            levels = Collections.emptyMap();
-        }
+        Map<String, Integer> levels = kbReadAccess.getMaxSecurityLevelsForKbs(userId, targetReadableKbIds);
 
         // Step 2: 显式 role 链（同时拿权限和 sourceRoleIds）
         Map<String, String> explicitPermByKb = new HashMap<>();
