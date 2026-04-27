@@ -99,6 +99,7 @@ PR3 改契约：
 │   - 实现 7 ports + KbAccessService(@Deprecated)                     │
 │   - 内部注入 KbAccessSubjectFactory + KbAccessCalculator             │
 │   - port 方法体: subject = factory.currentOrThrow();                 │
+│                  // getAccessScope 保留 SUPER_ADMIN→AccessScope.all  │
 │                  return calculator.computeXxx(subject, ...);         │
 │   - 不再直接读 UserContext 做 RBAC 决策                              │
 ├─────────────────────────────────────────────────────────────────────┤
@@ -177,7 +178,7 @@ PR3 改契约：
 
 | 方法 | 当前 | 改为 |
 |---|---|---|
-| `getAccessScope(userId, p)` `:135` | 自己读 `isSuperAdmin()` + 调 `getAccessibleKbIds(userId, p)` | 删除 userId 参数；方法体 `KbAccessSubject s = subjectFactory.currentOrThrow(); return AccessScope.ids(calculator.computeAccessibleKbIds(s, p));` SUPER_ADMIN 分支由 calculator 内部处理 |
+| `getAccessScope(userId, p)` `:135` | 自己读 `isSuperAdmin()` + 调 `getAccessibleKbIds(userId, p)` | 删除 userId 参数；方法体 `KbAccessSubject s = subjectFactory.currentOrThrow(); return s.isSuperAdmin() ? AccessScope.all() : AccessScope.ids(calculator.computeAccessibleKbIds(s, p));` —— **SUPER_ADMIN 分支必须保留 `AccessScope.all()` sentinel**，`AccessScope.All` 是 sealed 类型且全仓 8+ 处 `instanceof AccessScope.All` 短路（`SpacesController:56` / `KnowledgeBaseServiceImpl:281` / `KnowledgeDocumentServiceImpl:686` / `MultiChannelRetrievalEngine:253` 等）依赖此契约。calculator 内部可同时支持 SUPER_ADMIN 物化全集（admin-views-target 报表需要真实 KB 列表），但 **port 出口语义不变** |
 | `getMaxSecurityLevelsForKbs(userId, kbIds)` `:342` | 偷读 UserContext | 删除 userId 参数；方法体 `KbAccessSubject s = subjectFactory.currentOrThrow(); return calculator.computeMaxSecurityLevels(s, kbIds);` |
 | `getAccessibleKbIds(userId, p)` `:86`（KbAccessService 接口的 deprecated 方法）| 方法体内 `isSuperAdmin()` / `isDeptAdmin()` 读 caller context（与 `getMaxSecurityLevelsForKbs` 同等 leak） | **保留签名**（KbAccessService 仍 @Deprecated 接口，PR2 决定保留实现作为 port 委托者）；方法体改为 **永远** `subjectFactory.forTargetUser(userId)` 路径——即使 caller-as-self 也走 `UserProfileLoader.load(userId)` 加载快照。`isSuperAdmin/isDeptAdmin` 决策迁入 calculator 内部基于 subject 字段。**性能取舍**：caller-as-self 多一次 JOIN，但本方法是 deprecated 接口的死路，热路径走 port `getAccessScope(p)`，不受影响。Redis 缓存逻辑（`:109-124`）保留——cache key 已按 `userId` 索引，写入的是 target 真值，反而修正了原 leak 期间被污染的缓存形态 |
 | `getAccessibleKbIds(userId)` `:128` | 调 `getAccessibleKbIds(userId, READ)` | 不变 |
@@ -280,9 +281,31 @@ ChunkServiceImpl 等仅用 `checkReadAccess(kbId)` 的测试**零改动**。
 
 #### 2.4.1 `bootstrap/.../rag/service/handler/StreamChatHandlerParams.java`
 
-加 `String userId` 字段（builder + getter）。orchestrator 构造 params 时显式传入。
+加 `String userId` 字段（builder + getter）。factory 构造 params 时显式传入。
 
-#### 2.4.2 `bootstrap/.../rag/service/handler/StreamChatEventHandler.java`
+#### 2.4.2 `bootstrap/.../rag/service/handler/StreamCallbackFactory.java`
+
+**真正的构造点**——`StreamChatEventHandler` 由 factory 在 `createChatEventHandler(...)` 内 new，RAGChatServiceImpl 仅持有 factory 引用。改 factory 方法签名接受 `userId`，并在 builder 链上传入：
+
+```diff
+  public StreamChatEventHandler createChatEventHandler(SseEmitter emitter,
+                                                       String conversationId,
+-                                                      String taskId) {
++                                                      String taskId,
++                                                      String userId) {
+      StreamChatHandlerParams params = StreamChatHandlerParams.builder()
+              .emitter(emitter)
+              .conversationId(conversationId)
+              .taskId(taskId)
++             .userId(userId)
+              .modelProperties(modelProperties)
+              // ...
+              .build();
+      return new StreamChatEventHandler(params);
+  }
+```
+
+#### 2.4.3 `bootstrap/.../rag/service/handler/StreamChatEventHandler.java`
 
 ```diff
 - import com.nageoffer.ai.ragent.framework.context.UserContext;
@@ -304,19 +327,27 @@ ChunkServiceImpl 等仅用 `checkReadAccess(kbId)` 的测试**零改动**。
   }
 ```
 
-#### 2.4.3 `bootstrap/.../rag/service/impl/RAGChatServiceImpl.java`
+#### 2.4.4 `bootstrap/.../rag/service/impl/RAGChatServiceImpl.java`
+
+orchestrator 在 `:119` 已有 `String userId = UserContext.getUserId();`，改 factory 调用透传：
 
 ```diff
-  // 构造 StreamChatHandlerParams 处
-  StreamChatHandlerParams params = StreamChatHandlerParams.builder()
-          // ...
-+         .userId(userId)                        // :119 处已有 String userId = UserContext.getUserId();
-          .build();
+  // 调 factory 处（约 line 200-210，构造 callback 现场）
+- StreamChatEventHandler handler = streamCallbackFactory.createChatEventHandler(
+-     emitter, conversationId, taskId);
++ StreamChatEventHandler handler = streamCallbackFactory.createChatEventHandler(
++     emitter, conversationId, taskId, userId);
 ```
 
-#### 2.4.4 ArchUnit 规则（commit 4 c5）
+注：实施期需 grep 一次 `createChatEventHandler` 全调用面，更新所有 caller（包括测试 fixture）。
 
-新增或扩展 `framework/test/java/.../PermissionBoundaryArchTest.java`：
+#### 2.4.5 ArchUnit 规则（commit 4 c5）
+
+**位置**：扩展现有 `bootstrap/src/test/java/com/nageoffer/ai/ragent/arch/PermissionBoundaryArchTest.java`（PR1 commit `e1cde994` 落地的同一文件，已 `@AnalyzeClasses(packages = "com.nageoffer.ai.ragent")`，能扫到 bootstrap + framework + infra-ai 全部业务类）。**不**放 framework 模块——framework 测试当前不依赖 ArchUnit，且 `PermissionBoundaryArchTest` 引用 `KbAccessService` 这种 bootstrap 类型，搬到 framework 会破依赖方向。
+
+`KbAccessServiceRetirementArchTest`（PR2 commit `ea8d93bd`）也在同一 package，可作 PR3 规则的姊妹文件参考。
+
+新增 3 条规则到 `PermissionBoundaryArchTest`：
 
 ```java
 @ArchTest
@@ -347,59 +378,83 @@ static final ArchRule kb_read_access_port_no_userid_param =
         .because("PR3-2: Port 签名 current-user only");
 ```
 
-`notHaveStringParameterNamedUserId()` 是自定义 `ArchCondition<JavaMethod>`——遍历方法参数，对类型为 `String` 且名为 `userId` 的参数 fail。
+`notHaveStringParameterNamedUserId()` 是自定义 `ArchCondition<JavaMethod>`——遍历方法参数，对类型为 `String` 且名为 `userId` 的参数 fail。实施细节交给 writing-plans。
 
-#### 2.4.5 测试
+#### 2.4.6 测试
 
 `StreamChatEventHandlerThreadLocalTest`（可能新增或扩展现有 `StreamChatEventHandlerCitationTest`）：
 
 - 用 `Mockito.InOrder` 验证 `onComplete()` 内调用顺序：`persistSourcesIfPresent` → `updateTraceTokenUsage` → `mergeCitationStatsIntoTrace`（PR3 onComplete 顺序硬约束已写入 bootstrap CLAUDE.md）
 - 验证 `memoryService.append` 收到的 userId == 构造期注入值（即使在测试中 ThreadLocal 已 clear，append 仍收到正确 userId）
+- **factory 签名兼容性**：`StreamCallbackFactoryTest` 验证 `createChatEventHandler(emitter, conversationId, taskId, userId)` 把 `userId` 传到 params builder 上，且 returned handler 的 `memoryService.append` 调用收到该 userId（防止 factory 落参漏写）
 
-### 2.5 `VectorBackendCapabilityValidator`（commit 5）
+### 2.5 `RagVectorTypeValidator` 升级为 fail-fast（commit 5）
 
-#### 2.5.1 新文件
+#### 2.5.1 现状（既有文件，不新增）
 
-`bootstrap/.../infra/config/VectorBackendCapabilityValidator.java`：
+`bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/config/RagVectorTypeValidator.java` **已存在**——`@PostConstruct` 在非 OpenSearch 后端时仅 `log.warn`。PR3 **就地升级**该类，不在 `infra/config` 新建重复 validator。理由：
 
-```java
-@Component
-@RequiredArgsConstructor
-@Slf4j
-public class VectorBackendCapabilityValidator implements ApplicationRunner {
+- 双 validator 并存会产生分裂行为（一个 warn、一个 throw），文档/测试归属不清
+- 现有类已挂 `@Component` + 有 javadoc 描述 dev-only 语义；PR3 只需把 `log.warn` 升级为可选 fail-fast
+- 包路径 `rag/config` 与 `rag.vector.type` 配置归属一致，比 `infra/config` 更准
 
-    @Value("${rag.vector.type:opensearch}")
-    private String vectorType;
+#### 2.5.2 改动
 
-    @Value("${rag.vector.allow-incomplete-backend:false}")
-    private boolean allowIncomplete;
+```diff
+  @Slf4j
+  @Component
+  public class RagVectorTypeValidator {
 
-    @Override
-    public void run(ApplicationArguments args) {
-        if ("opensearch".equalsIgnoreCase(vectorType)) {
-            return;
-        }
-        if (allowIncomplete) {
-            log.warn(
-                "rag.vector.type={} 不是 opensearch,但 allow-incomplete-backend=true,"
-              + "权限/security_level 过滤可能不完整。仅 dev 用,禁勿生产。", vectorType);
-            return;
-        }
-        throw new IllegalStateException(
-            "rag.vector.type=" + vectorType + " 不被支持。"
-          + "当前生产仅支持 opensearch;dev 临时使用其他后端需 rag.vector.allow-incomplete-backend=true。"
-          + "见 docs/dev/followup/backlog.md SL-1");
-    }
-}
+      @Value("${rag.vector.type:opensearch}")
+      private String vectorType;
+
++     @Value("${rag.vector.allow-incomplete-backend:false}")
++     private boolean allowIncomplete;
+
+      @PostConstruct
+      public void validate() {
+-         if (!"opensearch".equalsIgnoreCase(vectorType)) {
+-             log.warn("RAG vector backend is '{}' (not opensearch). " + ... );
++         if ("opensearch".equalsIgnoreCase(vectorType)) {
++             return;
++         }
++         if (allowIncomplete) {
++             log.warn(
++                 "rag.vector.type={} 不是 opensearch,但 allow-incomplete-backend=true,"
++               + "权限/security_level 过滤可能不完整。仅 dev 用,禁勿生产。",
++                 vectorType);
++             return;
++         }
++         throw new IllegalStateException(
++             "rag.vector.type=" + vectorType + " 不被支持。"
++           + "当前生产仅支持 opensearch;dev 临时使用其他后端需"
++           + "rag.vector.allow-incomplete-backend=true。"
++           + "见 docs/dev/followup/backlog.md SL-1");
+          }
+      }
+  }
 ```
 
-#### 2.5.2 测试
+`@PostConstruct` 留用（与原文件一致），`ApplicationRunner` 不切换——`@PostConstruct` 在 bean 初始化期抛错即可阻止 context 启动，与 `ApplicationRunner.run` 等价；不引入新接口可减小 diff。
 
-`VectorBackendCapabilityValidatorTest`：
+#### 2.5.3 测试
 
-- `vectorType=opensearch` → run 静默成功
+`RagVectorTypeValidatorTest`（如不存在则新建于 `bootstrap/src/test/java/.../rag/config/`）：
+
+- `vectorType=opensearch` → `validate()` 静默成功
 - `vectorType=milvus, allowIncomplete=false` → 抛 `IllegalStateException`，msg contains "milvus" + "allow-incomplete-backend"
 - `vectorType=milvus, allowIncomplete=true` → 静默通过 + WARN 日志（断言 logged）
+
+#### 2.5.4 配置文档
+
+`bootstrap/src/main/resources/application.yaml` 在 `rag.vector` 节注释新增：
+
+```yaml
+rag:
+  vector:
+    type: opensearch  # 生产仅支持 opensearch
+    # allow-incomplete-backend: false  # dev override; 设为 true 才能用 milvus/pg
+```
 
 ### 2.6 文件清单：明确不修改
 
@@ -615,11 +670,11 @@ exit $fail
 PR3 commit 顺序必须：
 
 ```
-c1 (新增 calculator/factory + 测试)   ← 编译可独立通过
-c2 (port 签名收紧 + 实现迁移)         ← 改 port + 调用方 + 测试 fixture(同 commit)
-c3 (删除 getMaxSecurityLevelForKb)    ← 必须在 c2 后(KbAccessServiceImpl 已不再依赖)
-c4 (handler ThreadLocal 收尾 + ArchUnit)
-c5 (VectorBackendCapabilityValidator + 测试)
+c1 (新增 calculator/factory + 测试)        ← 编译可独立通过
+c2 (port 签名收紧 + 实现迁移)              ← 改 port + 调用方 + 测试 fixture(同 commit)
+c3 (删除 getMaxSecurityLevelForKb)         ← 必须在 c2 后(KbAccessServiceImpl 已不再依赖)
+c4 (handler ThreadLocal 收尾 + factory 签名扩 userId + ArchUnit)
+c5 (RagVectorTypeValidator 升级 fail-fast + 测试 + 配置注释)
 ```
 
 c2 是**单 commit 大改**（约 8 个文件）但内部强耦合：port 签名变化必须跟实现 + 调用方 + 测试 fixture 同时变。**不能拆**——拆了 c2 中间状态编译都不过。
@@ -682,7 +737,9 @@ grep `getMaxSecurityLevelForKb\b` 在 `bootstrap/src/main/java`（含 `src/test/
 
 ### 5.8 `KbAccessService.getAccessibleKbIds(userId, p)` 为什么保留 deprecated？
 
-`KbAccessService` 接口本身已 PR2 整体 `@Deprecated`，PR3 期间仍有少量调用点（grep `getAccessibleKbIds(` `bootstrap/src/main/java` 仍有命中）。该方法实现改为内部调 calculator（caller-as-self 走 `currentOrThrow`，否则 `forTargetUser`），底层不再泄漏。**接口保留**——这些调用点的物理删除归阶段 B/D 推进，不是 PR3 范围。
+`KbAccessService` 接口本身已 PR2 整体 `@Deprecated`，PR3 期间仍有少量调用点（grep `getAccessibleKbIds(` `bootstrap/src/main/java` 仍有命中）。该方法实现改为内部**永远走 `forTargetUser(userId)` + calculator**——即使是 caller-as-self 调用，也多一次 `UserProfileLoader.load` JOIN 加载 subject。这与 §2.2.2 的裁定一致。
+
+**为什么不做"caller-as-self 走 currentOrThrow"分支优化**：分支会让该方法的语义依赖 `UserContext` 状态（系统态、缺 user 等需要分支判断），重新引入 ThreadLocal 触点。永远走 forTargetUser 让方法语义**只取决于 `userId` 参数**，与"target-shaped API"签名匹配，且方法是 deprecated 死路、性能不敏感。**接口保留**——调用点的物理删除归阶段 B/D 推进，不是 PR3 范围。
 
 ---
 
