@@ -6,7 +6,7 @@
   - `docs/dev/research/enterprise_permissions_architecture.md`（业务/产品视角，phase 0-8）
   - `docs/dev/followup/2026-04-26-architecture-p0-audit-report.md`（架构/工程视角，模块边界 + 跨域 mapper + ports）
   - `docs/superpowers/specs/2026-04-26-permission-pr1-controller-thinning-design.md`（PR1 spec — 已并入本图作为阶段 A 的第一刀）
-- **生产前提**：向量后端只考虑 OpenSearch；Milvus / pgvector 通过启动期 fail-fast 禁用，不再为其补能力
+- **生产前提**：向量后端只考虑 OpenSearch；Milvus / pg 通过启动期 fail-fast 禁用，不再为其补能力
 
 ---
 
@@ -27,10 +27,10 @@
 | 维度 | 当前位置 |
 |---|---|
 | 业务路线 | enterprise doc Phase 1 末 / Phase 2 前——`role_kb_relation` 已落库，`max_security_level` 列已加；sharing UI / audit_log / access_request 未做 |
-| 架构状态 | 阶段 A 进行中——PR1 完成（controller thinning + system 显式态 + fail-closed 守卫）；`KbAccessService` god-service 仍在 RAG/KB/admin 多路径扩散，待 PR2 / PR3 退役 |
-| 已完成 | **PR1**（2026-04-26）— controller→service 边界下沉、`LoginUser.system` + `UserContext.isSystem()`、`bypassIfSystemOrAssertActor()` 守卫；20 个 service 入口、4 个参数化边界测试、`rg` 守门脚本均已落地。**PR1 follow-up housekeeping**（commit `de5f7f6`，2026-04-26）— gotcha 条目 + chunk service 5 个 internal helper javadoc 扩到 MQ/scheduled + 5 个 T3 missing-user-context 断言收紧 + `TestServiceBuilders` 共享工厂抽取（PR2 测试基建预备件）。**ArchUnit 锁 PR1**（commit `e1cde99`，2026-04-26）— `PermissionBoundaryArchTest` 把"controller 不得调 5 个 KB-scoped check"从 grep 守门提到 CI 强制；admin-gate 方法（`checkAnyAdminAccess` / `checkUserManageAccess` / `checkRoleMutation` / `checkAssignRolesAccess`）显式不在禁用列表内（保留 HTTP 入口程式化 `@SaCheckRole` 等价）|
-| 进行中 | （无）— 准备启动 PR2 |
-| 下一步 | **PR2** — `KbScopeResolver` 引入 + `KbAccessService` 热路径退役（迁到 `KbReadAccessPort` / `KbManageAccessPort` / `CurrentUserProbe`）。`KbAccessCalculator` + caller-context 泄漏修复延后到 **PR3**（详见 §3 阶段 A） |
+| 架构状态 | 阶段 A 已完成——PR1 controller thinning、PR2 `KbAccessService` 热路径退役、PR3 target-aware calculator + ThreadLocal guard 均已落地；下一阶段进入检索链路权限对齐 |
+| 已完成 | **PR1**（2026-04-26）— controller→service 边界下沉、`LoginUser.system` + `UserContext.isSystem()`、`bypassIfSystemOrAssertActor()` 守卫；20 个 service 入口、4 个参数化边界测试、`rg` 守门脚本均已落地。**PR2**（2026-04-27）— `KbScopeResolver`、RAG/KB/user 热路径迁到 `KbReadAccessPort` / `KbManageAccessPort` / `CurrentUserProbe`，`KbAccessService` 降级为 deprecated port 委托者。**PR3**（2026-04-27）— `KbAccessSubject` / factory / calculator、current-user-only read port、`AccessServiceImpl` 泄漏修复、handler ThreadLocal guard、vector fail-fast、ArchUnit + grep gates、T1/T2 测试落地 |
+| 进行中 | （无）— 阶段 A 已收束，等待 PR4 |
+| 下一步 | **PR4** — `RagRequest` 字段迁移 + `RetrievalScopeBuilder`，把检索链路从"前端传值即 scope"推进到"后端计算 effective scope" |
 
 ---
 
@@ -88,7 +88,7 @@
 - ❌ 前端 `pages/` 内联 `isSuperAdmin / isDeptAdmin`（必须走 `usePermissions` / `permissions.ts`）
 - ❌ 用户全局 `LoginUser.maxSecurityLevel` 进入决策路径（阶段 C 后）
 - ❌ `*AsSystem` 双 API（如 `checkAccessAsSystem`）——系统态由 `UserContext` 单一信号承载，禁止 caller 端切换
-- ❌ 任何配置切到 Milvus / pgvector 而无 `rag.vector.allow-incomplete-backend=true` dev override
+- ❌ 任何配置切到 Milvus / pg 而无 `rag.vector.allow-incomplete-backend=true` dev override
 
 ---
 
@@ -124,7 +124,7 @@ PR1 残留 / 显式延期项（**全部由 PR2-PR3 接手**）：
 - `KnowledgeBaseServiceImpl.update`（无生产 caller）→ 引入 caller 时再加 check
 - chunk internal helper 物理 visibility 收紧（`KnowledgeChunkInternalService` 拆分）→ PR3 后续
 
-#### PR2 — `KbAccessService` 热路径退役
+#### PR2 ✅ 已完成（2026-04-27）— `KbAccessService` 热路径退役
 
 **目标**：把 `KbAccessService` 在 RAG 热路径和 KB 写路径上的引用清零，迁移到 `KbReadAccessPort` / `KbManageAccessPort` / `CurrentUserProbe` 三个 port。
 
@@ -152,9 +152,19 @@ commit 6: 启用 ArchUnit 静态规则——新代码不得注入 KbAccessServic
 
 **关键设计**：commit 5 只 `@Deprecated`，**不物理删除**——保留 1-2 个 PR 缓冲期。等 PR3 完成 + RAG/KB/user 全部迁完，再单独开 cleanup PR 物理删除。
 
-#### PR3 — `KbAccessCalculator` 提取 + caller-context 泄漏修复
+#### PR3 ✅ 已完成（2026-04-27）— `KbAccessCalculator` 提取 + caller-context 泄漏修复
 
 **目标**：把 scope 计算从 service 内提到独立 calculator，消除 `AccessServiceImpl:325 / :183` 的 caller-context 泄漏。
+
+落地内容：
+- `KbAccessSubject` / `KbAccessSubjectFactory` / `KbAccessCalculator` 落地，calculator 接受显式 target subject，不读 `UserContext`
+- `KbReadAccessPort` 收敛为 current-user-only port，去掉 `String userId` 目标用户参数
+- `AccessServiceImpl` 的 caller-context 泄漏修复，target 用户 grants / 安全等级统一委托 calculator
+- 物理删除单 key `getMaxSecurityLevelForKb`（零 caller + 自带 caller-context leak）
+- `StreamChatEventHandler` / handler package 不再 import `UserContext`，异步回调用构造期显式 `userId`
+- `RagVectorTypeValidator` 对 Milvus / pg 默认启动期 fail-fast；仅 `rag.vector.allow-incomplete-backend=true` 允许 dev override
+- `PermissionBoundaryArchTest` / `KbAccessServiceRetirementArchTest` + `docs/dev/verification/permission-pr3-leak-free.sh` 锁住 PR3 边界
+- T1/T2 单元测试覆盖 current-user-only port、calculator target-aware 计算、handler userId 显式传递与 `AccessServiceImpl` 泄漏回归
 
 **改动点**：
 - 新增 `KbAccessCalculator`，target-aware（接受 `targetUserId` 显式参数，不读 `UserContext`）
@@ -185,7 +195,7 @@ rg "KbAccessService" bootstrap/src/main/java | wc -l   ≤ 3   （仅 @Deprecate
 rg "kbAccessService\.check\*" -g '*Controller.java'      = 0
 rg "kbAccessService" bootstrap/src/main/java/com/nageoffer/ai/ragent/rag    = 0
 rg "AccessServiceImpl.*computeRbacKbIdsFor"   = 0   （已迁到 KbAccessCalculator）
-rg "AccessServiceImpl.*getMaxSecurityLevelForKb"   ≤ 1   （仅作为 port 实现委托）
+rg "getMaxSecurityLevelForKb\b" bootstrap/src/main/java   = 0   （单 key 方法已物理删除）
 启动期 rag.vector.type=milvus 触发 fail-fast
 ```
 

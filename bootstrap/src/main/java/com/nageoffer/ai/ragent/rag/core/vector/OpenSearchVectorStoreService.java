@@ -34,7 +34,7 @@ import java.util.*;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch")
+@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch", matchIfMissing = true)
 public class OpenSearchVectorStoreService implements VectorStoreService {
 
     private final OpenSearchClient client;

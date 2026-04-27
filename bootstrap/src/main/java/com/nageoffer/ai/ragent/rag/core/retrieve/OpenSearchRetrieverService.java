@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch")
+@ConditionalOnProperty(name = "rag.vector.type", havingValue = "opensearch", matchIfMissing = true)
 public class OpenSearchRetrieverService implements RetrieverService {
 
     private static final String PIPELINE_NAME = "ragent-hybrid-search-pipeline";
