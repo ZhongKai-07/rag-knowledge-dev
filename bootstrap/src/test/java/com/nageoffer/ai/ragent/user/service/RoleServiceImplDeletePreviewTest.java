@@ -20,6 +20,10 @@ package com.nageoffer.ai.ragent.user.service;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.controller.RoleController;
@@ -76,7 +80,6 @@ class RoleServiceImplDeletePreviewTest {
         userMapper = mock(UserMapper.class);
         sysDeptMapper = mock(SysDeptMapper.class);
         knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
-        KbAccessService kbAccessService = mock(KbAccessService.class);
 
         service = new RoleServiceImpl(
                 roleMapper,
@@ -85,7 +88,10 @@ class RoleServiceImplDeletePreviewTest {
                 userMapper,
                 sysDeptMapper,
                 knowledgeBaseMapper,
-                kbAccessService);
+                mock(SuperAdminInvariantGuard.class),
+                mock(KbAccessCacheAdmin.class),
+                mock(KbManageAccessPort.class),
+                mock(CurrentUserProbe.class));
     }
 
     @Test

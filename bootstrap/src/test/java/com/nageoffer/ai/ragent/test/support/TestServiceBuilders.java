@@ -22,7 +22,13 @@ import com.nageoffer.ai.ragent.core.chunk.ChunkEmbeddingService;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategyFactory;
 import com.nageoffer.ai.ragent.core.parser.DocumentParserSelector;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
 import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
 import com.nageoffer.ai.ragent.infra.token.TokenCounterService;
 import com.nageoffer.ai.ragent.ingestion.dao.mapper.IngestionPipelineMapper;
@@ -47,7 +53,6 @@ import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
 import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.impl.RoleServiceImpl;
 import org.springframework.transaction.support.TransactionOperations;
 
@@ -65,18 +70,37 @@ public final class TestServiceBuilders {
 
     private TestServiceBuilders() {}
 
-    public static KnowledgeBaseServiceImpl knowledgeBaseService(KbAccessService kbAccessService) {
+    public static KnowledgeBaseServiceImpl knowledgeBaseService(
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KbRoleBindingAdminPort kbRoleBindingAdmin) {
+        return knowledgeBaseService(
+                kbReadAccess,
+                kbManageAccess,
+                kbRoleBindingAdmin,
+                mock(KnowledgeBaseMapper.class));
+    }
+
+    public static KnowledgeBaseServiceImpl knowledgeBaseService(
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KbRoleBindingAdminPort kbRoleBindingAdmin,
+            KnowledgeBaseMapper knowledgeBaseMapper) {
         return new KnowledgeBaseServiceImpl(
-                mock(KnowledgeBaseMapper.class),
+                knowledgeBaseMapper,
                 mock(KnowledgeDocumentMapper.class),
                 mock(VectorStoreAdmin.class),
                 mock(FileStorageService.class),
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
+                kbRoleBindingAdmin,
                 mock(SysDeptMapper.class));
     }
 
     public static KnowledgeChunkServiceImpl knowledgeChunkService(
-            KbAccessService kbAccessService, KbMetadataReader kbMetadataReader) {
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KbMetadataReader kbMetadataReader) {
         return new KnowledgeChunkServiceImpl(
                 mock(KnowledgeChunkMapper.class),
                 mock(KnowledgeDocumentMapper.class),
@@ -85,16 +109,20 @@ public final class TestServiceBuilders {
                 mock(TokenCounterService.class),
                 mock(VectorStoreService.class),
                 mock(TransactionOperations.class),
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
                 kbMetadataReader);
     }
 
     public static KnowledgeDocumentServiceImpl knowledgeDocumentService(
-            KbAccessService kbAccessService, KnowledgeDocumentMapper documentMapper) {
+            KbReadAccessPort kbReadAccess,
+            KbManageAccessPort kbManageAccess,
+            KnowledgeDocumentMapper documentMapper) {
         return new KnowledgeDocumentServiceImpl(
                 mock(KnowledgeBaseMapper.class),
                 documentMapper,
-                kbAccessService,
+                kbReadAccess,
+                kbManageAccess,
                 mock(DocumentParserSelector.class),
                 mock(ChunkingStrategyFactory.class),
                 mock(FileStorageService.class),
@@ -114,7 +142,19 @@ public final class TestServiceBuilders {
                 mock(RemoteFileFetcher.class));
     }
 
-    public static RoleServiceImpl roleService(KbAccessService kbAccessService) {
+    public static RoleServiceImpl roleService(KbManageAccessPort kbManageAccess) {
+        return roleService(
+                mock(SuperAdminInvariantGuard.class),
+                mock(KbAccessCacheAdmin.class),
+                kbManageAccess,
+                mock(CurrentUserProbe.class));
+    }
+
+    public static RoleServiceImpl roleService(
+            SuperAdminInvariantGuard superAdminGuard,
+            KbAccessCacheAdmin cacheAdmin,
+            KbManageAccessPort kbManageAccess,
+            CurrentUserProbe currentUser) {
         return new RoleServiceImpl(
                 mock(RoleMapper.class),
                 mock(RoleKbRelationMapper.class),
@@ -122,6 +162,10 @@ public final class TestServiceBuilders {
                 mock(UserMapper.class),
                 mock(SysDeptMapper.class),
                 mock(KnowledgeBaseMapper.class),
-                kbAccessService);
+                superAdminGuard,
+                cacheAdmin,
+                kbManageAccess,
+                currentUser);
     }
+
 }

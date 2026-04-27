@@ -21,6 +21,10 @@ import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.KbAccessCacheAdmin;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.SuperAdminInvariantGuard;
 import com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
@@ -56,7 +60,8 @@ class RoleServiceImplDeleteTest {
     private RoleMapper roleMapper;
     private UserRoleMapper userRoleMapper;
     private RoleKbRelationMapper roleKbRelationMapper;
-    private KbAccessService kbAccessService;
+    private SuperAdminInvariantGuard superAdminGuard;
+    private KbAccessCacheAdmin cacheAdmin;
     private RoleServiceImpl service;
 
     @BeforeEach
@@ -68,7 +73,8 @@ class RoleServiceImplDeleteTest {
         roleMapper = mock(RoleMapper.class);
         userRoleMapper = mock(UserRoleMapper.class);
         roleKbRelationMapper = mock(RoleKbRelationMapper.class);
-        kbAccessService = mock(KbAccessService.class);
+        superAdminGuard = mock(SuperAdminInvariantGuard.class);
+        cacheAdmin = mock(KbAccessCacheAdmin.class);
         UserMapper userMapper = mock(UserMapper.class);
         SysDeptMapper sysDeptMapper = mock(SysDeptMapper.class);
         KnowledgeBaseMapper knowledgeBaseMapper = mock(KnowledgeBaseMapper.class);
@@ -80,7 +86,10 @@ class RoleServiceImplDeleteTest {
                 userMapper,
                 sysDeptMapper,
                 knowledgeBaseMapper,
-                kbAccessService);
+                superAdminGuard,
+                cacheAdmin,
+                mock(KbManageAccessPort.class),
+                mock(CurrentUserProbe.class));
     }
 
     /** 级联删 + 按受影响用户清缓存（去重）*/
@@ -103,9 +112,9 @@ class RoleServiceImplDeleteTest {
         verify(userRoleMapper).delete(any());
         verify(roleMapper).deleteById(roleId);
         // u-1 去重成一次；u-2 一次
-        verify(kbAccessService).evictCache("u-1");
-        verify(kbAccessService).evictCache("u-2");
-        verify(kbAccessService, times(2)).evictCache(any());
+        verify(cacheAdmin).evictCache("u-1");
+        verify(cacheAdmin).evictCache("u-2");
+        verify(cacheAdmin, times(2)).evictCache(any());
     }
 
     /** 无挂载用户时 evictCache 不触发 */
@@ -121,7 +130,7 @@ class RoleServiceImplDeleteTest {
         verify(roleKbRelationMapper).delete(any());
         verify(userRoleMapper).delete(any());
         verify(roleMapper).deleteById(roleId);
-        verify(kbAccessService, never()).evictCache(any());
+        verify(cacheAdmin, never()).evictCache(any());
     }
 
     /** last SUPER_ADMIN 保护：删除导致 SUPER 归零 → ClientException，DB 无任何改动 */
@@ -130,7 +139,7 @@ class RoleServiceImplDeleteTest {
         String roleId = "r-super";
         when(roleMapper.selectById(roleId)).thenReturn(
                 RoleDO.builder().id(roleId).roleType(RoleType.SUPER_ADMIN.name()).name("超级管理员").build());
-        when(kbAccessService.simulateActiveSuperAdminCountAfter(any(SuperAdminMutationIntent.DeleteRole.class)))
+        when(superAdminGuard.simulateActiveSuperAdminCountAfter(any(SuperAdminMutationIntent.DeleteRole.class)))
                 .thenReturn(0);
 
         ClientException ex = assertThrows(ClientException.class, () -> service.deleteRole(roleId));
@@ -139,7 +148,7 @@ class RoleServiceImplDeleteTest {
         verify(roleKbRelationMapper, never()).delete(any());
         verify(userRoleMapper, never()).delete(any());
         verify(roleMapper, never()).deleteById(eq(roleId));
-        verify(kbAccessService, never()).evictCache(any());
+        verify(cacheAdmin, never()).evictCache(any());
     }
 
     /** SUPER_ADMIN 还有后备 → 允许删除 */
@@ -148,7 +157,7 @@ class RoleServiceImplDeleteTest {
         String roleId = "r-super-secondary";
         when(roleMapper.selectById(roleId)).thenReturn(
                 RoleDO.builder().id(roleId).roleType(RoleType.SUPER_ADMIN.name()).name("备用超管").build());
-        when(kbAccessService.simulateActiveSuperAdminCountAfter(any(SuperAdminMutationIntent.DeleteRole.class)))
+        when(superAdminGuard.simulateActiveSuperAdminCountAfter(any(SuperAdminMutationIntent.DeleteRole.class)))
                 .thenReturn(1);
         when(userRoleMapper.selectList(any())).thenReturn(List.of(
                 UserRoleDO.builder().userId("u-9").roleId(roleId).build()));
@@ -156,7 +165,7 @@ class RoleServiceImplDeleteTest {
         service.deleteRole(roleId);
 
         verify(roleMapper).deleteById(roleId);
-        verify(kbAccessService).evictCache("u-9");
+        verify(cacheAdmin).evictCache("u-9");
     }
 
     private static void initTableInfo(Class<?> entityClass) {

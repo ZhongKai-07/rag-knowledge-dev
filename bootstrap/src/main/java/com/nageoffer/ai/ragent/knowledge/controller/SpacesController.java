@@ -18,20 +18,20 @@
 package com.nageoffer.ai.ragent.knowledge.controller;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.SpacesStatsVO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.nageoffer.ai.ragent.knowledge.service.KbScopeResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Set;
 
 /**
  * Spaces 控制器
@@ -43,20 +43,19 @@ public class SpacesController {
 
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
-    private final KbAccessService kbAccessService;
+    private final KbScopeResolver kbScopeResolver;
 
     /**
      * 获取当前用户可见的知识库数量和文档总数
      */
     @GetMapping("/spaces/stats")
     public Result<SpacesStatsVO> getStats() {
-        String userId = UserContext.getUserId();
-        boolean isAdmin = kbAccessService.isSuperAdmin();
+        LoginUser user = UserContext.hasUser() ? UserContext.get() : null;
+        AccessScope scope = kbScopeResolver.resolveForRead(user);
 
-        if (isAdmin) {
+        if (scope instanceof AccessScope.All) {
             // Admin sees everything — query total counts directly.
-            // Do NOT call kbAccessService.getAccessibleKbIds: it walks role chains
-            // and admin may not have explicit role-KB mappings.
+            // Admin may not have explicit role-KB mappings.
             long kbCount = knowledgeBaseMapper.selectCount(
                     Wrappers.lambdaQuery(KnowledgeBaseDO.class));
             long totalDocCount = knowledgeDocumentMapper.selectCount(
@@ -64,20 +63,19 @@ public class SpacesController {
             return Results.success(new SpacesStatsVO(kbCount, totalDocCount));
         }
 
-        // Regular user: get accessible KB IDs via RBAC
-        Set<String> accessibleKbIds = kbAccessService.getAccessibleKbIds(userId);
-
-        // Empty set short-circuit: return 0/0 to avoid SQL IN() syntax error
-        if (accessibleKbIds == null || accessibleKbIds.isEmpty()) {
+        if (!(scope instanceof AccessScope.Ids ids)) {
+            throw new IllegalStateException("Unsupported AccessScope: " + scope);
+        }
+        if (ids.kbIds().isEmpty()) {
             return Results.success(new SpacesStatsVO(0L, 0L));
         }
 
         long kbCount = knowledgeBaseMapper.selectCount(
                 Wrappers.lambdaQuery(KnowledgeBaseDO.class)
-                        .in(KnowledgeBaseDO::getId, accessibleKbIds));
+                        .in(KnowledgeBaseDO::getId, ids.kbIds()));
         long totalDocCount = knowledgeDocumentMapper.selectCount(
                 Wrappers.lambdaQuery(KnowledgeDocumentDO.class)
-                        .in(KnowledgeDocumentDO::getKbId, accessibleKbIds));
+                        .in(KnowledgeDocumentDO::getKbId, ids.kbIds()));
         return Results.success(new SpacesStatsVO(kbCount, totalDocCount));
     }
 }

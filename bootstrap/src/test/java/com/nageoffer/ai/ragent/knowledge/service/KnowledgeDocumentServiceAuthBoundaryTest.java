@@ -20,6 +20,8 @@ package com.nageoffer.ai.ragent.knowledge.service;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentPageRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUpdateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUploadRequest;
@@ -27,7 +29,6 @@ import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeDocumentServiceImpl;
 import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,19 +41,21 @@ import static org.mockito.Mockito.when;
 
 /**
  * 服务层授权边界测试：验证 KnowledgeDocumentService 的 9 个授权入口
- * 在 KbAccessService 抛出 ClientException 时如实向上传播。
+ * 在小权限 Port 抛出 ClientException 时如实向上传播。
  */
 class KnowledgeDocumentServiceAuthBoundaryTest {
 
-    private KbAccessService kbAccessService;
+    private KbReadAccessPort kbReadAccess;
+    private KbManageAccessPort kbManageAccess;
     private KnowledgeDocumentMapper documentMapper;
     private KnowledgeDocumentServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        kbAccessService = mock(KbAccessService.class);
+        kbReadAccess = mock(KbReadAccessPort.class);
+        kbManageAccess = mock(KbManageAccessPort.class);
         documentMapper = mock(KnowledgeDocumentMapper.class);
-        service = TestServiceBuilders.knowledgeDocumentService(kbAccessService, documentMapper);
+        service = TestServiceBuilders.knowledgeDocumentService(kbReadAccess, kbManageAccess, documentMapper);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 
@@ -63,30 +66,30 @@ class KnowledgeDocumentServiceAuthBoundaryTest {
 
     @Test
     void upload_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkManageAccess("kb-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkManageAccess("kb-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.upload("kb-1", new KnowledgeDocumentUploadRequest(), null));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkManageAccess("kb-1");
+        verify(kbManageAccess).checkManageAccess("kb-1");
     }
 
     @Test
     void startChunk_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class, () -> service.startChunk("doc-1"));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
     void delete_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class, () -> service.delete("doc-1"));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
@@ -95,60 +98,60 @@ class KnowledgeDocumentServiceAuthBoundaryTest {
         doc.setId("doc-1");
         doc.setKbId("kb-1");
         when(documentMapper.selectById("doc-1")).thenReturn(doc);
-        doThrow(new ClientException("denied")).when(kbAccessService).checkAccess("kb-1");
+        doThrow(new ClientException("denied")).when(kbReadAccess).checkReadAccess("kb-1");
 
         ClientException ex = assertThrows(ClientException.class, () -> service.get("doc-1"));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkAccess("kb-1");
+        verify(kbReadAccess).checkReadAccess("kb-1");
     }
 
     @Test
     void update_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.update("doc-1", new KnowledgeDocumentUpdateRequest()));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
     void page_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkAccess("kb-1");
+        doThrow(new ClientException("denied")).when(kbReadAccess).checkReadAccess("kb-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.page("kb-1", new KnowledgeDocumentPageRequest()));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkAccess("kb-1");
+        verify(kbReadAccess).checkReadAccess("kb-1");
     }
 
     @Test
     void enable_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class, () -> service.enable("doc-1", true));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     @Test
     void updateSecurityLevel_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocSecurityLevelAccess("doc-1", 2);
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocSecurityLevelAccess("doc-1", 2);
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.updateSecurityLevel("doc-1", 2));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocSecurityLevelAccess("doc-1", 2);
+        verify(kbManageAccess).checkDocSecurityLevelAccess("doc-1", 2);
     }
 
     @Test
     void getChunkLogs_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkDocManageAccess("doc-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkDocManageAccess("doc-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.getChunkLogs("doc-1", null));
         assertDeniedMessage(ex);
-        verify(kbAccessService).checkDocManageAccess("doc-1");
+        verify(kbManageAccess).checkDocManageAccess("doc-1");
     }
 
     private static void assertDeniedMessage(ClientException ex) {

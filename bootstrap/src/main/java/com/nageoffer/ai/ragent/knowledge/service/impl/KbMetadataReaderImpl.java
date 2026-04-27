@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  * 调用方不必也不应手动再过滤 deleted 字段。
  *
  * <p>此类的存在是为了消除 user 域对 knowledge Mapper 的反向依赖：
- * 以前 {@code KbAccessServiceImpl} 直接持有 {@code KnowledgeBaseMapper} +
+ * 以前 user 域权限实现直接持有 {@code KnowledgeBaseMapper} +
  * {@code KnowledgeDocumentMapper}，造成 user → knowledge 的跨域穿透。
  */
 @Service

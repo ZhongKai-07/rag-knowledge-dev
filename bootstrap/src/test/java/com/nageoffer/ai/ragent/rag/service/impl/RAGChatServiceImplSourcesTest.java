@@ -47,7 +47,6 @@ import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamChatEventHandler;
 import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,7 +94,6 @@ class RAGChatServiceImplSourcesTest {
     @Mock QueryRewriteService queryRewriteService;
     @Mock IntentResolver intentResolver;
     @Mock RetrievalEngine retrievalEngine;
-    @Mock KbAccessService kbAccessService;
     @Mock KbReadAccessPort kbReadAccess;
     @Mock ConversationMapper conversationMapper;
     @Mock SourceCardBuilder sourceCardBuilder;

@@ -22,7 +22,7 @@ com.nageoffer.ai.ragent.framework/
 ├── exception/       ← 三层异常体系
 ├── idempotent/      ← 幂等性注解与切面（提交 + 消费）
 ├── mq/              ← 消息包装器
-├── security/port/   ← 权限端口：**7 个 Port**（KbReadAccessPort / KbManageAccessPort / KbMetadataReader / CurrentUserProbe / UserAdminGuard / SuperAdminInvariantGuard / KbAccessCacheAdmin）+ **2 个 Sealed 支持类型**（AccessScope / SuperAdminMutationIntent）。业务代码只注入 7 个 Port，Sealed 类型做参数或返回值
+├── security/port/   ← 权限端口：**8 个 Port**（KbReadAccessPort / KbManageAccessPort / KbRoleBindingAdminPort / KbMetadataReader / CurrentUserProbe / UserAdminGuard / SuperAdminInvariantGuard / KbAccessCacheAdmin）+ **2 个 Sealed 支持类型**（AccessScope / SuperAdminMutationIntent）。业务代码只注入 8 个 Port，Sealed 类型做参数或返回值
 ├── trace/           ← 链路追踪上下文（TransmittableThreadLocal）
 └── web/             ← 全局异常处理、Result 工厂、SSE 工具
 ```

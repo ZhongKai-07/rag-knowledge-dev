@@ -20,6 +20,7 @@ package com.nageoffer.ai.ragent.user.service;
 import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
 import com.nageoffer.ai.ragent.test.support.TestServiceBuilders;
 import com.nageoffer.ai.ragent.user.service.impl.RoleServiceImpl;
 import org.junit.jupiter.api.AfterEach;
@@ -35,17 +36,17 @@ import static org.mockito.Mockito.verify;
 
 /**
  * 服务层授权边界测试：验证 RoleService 的 2 个 KB-role-binding 入口
- * 在 KbAccessService 抛出 ClientException 时如实向上传播。
+ * 在 KbManageAccessPort 抛出 ClientException 时如实向上传播。
  */
 class RoleServiceAuthBoundaryTest {
 
-    private KbAccessService kbAccessService;
+    private KbManageAccessPort kbManageAccess;
     private RoleServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        kbAccessService = mock(KbAccessService.class);
-        service = TestServiceBuilders.roleService(kbAccessService);
+        kbManageAccess = mock(KbManageAccessPort.class);
+        service = TestServiceBuilders.roleService(kbManageAccess);
         UserContext.set(LoginUser.builder().userId("u-1").username("alice").build());
     }
 
@@ -56,25 +57,25 @@ class RoleServiceAuthBoundaryTest {
 
     @Test
     void getKbRoleBindings_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkKbRoleBindingAccess("kb-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkKbRoleBindingAccess("kb-1");
 
         ClientException ex = assertThrows(ClientException.class, () -> service.getKbRoleBindings("kb-1"));
         if (!"denied".equals(ex.getMessage())) {
             throw new AssertionError("Expected propagated denied message, got: " + ex.getMessage());
         }
-        verify(kbAccessService).checkKbRoleBindingAccess("kb-1");
+        verify(kbManageAccess).checkKbRoleBindingAccess("kb-1");
     }
 
     @Test
     void setKbRoleBindings_propagates_check_failure() {
-        doThrow(new ClientException("denied")).when(kbAccessService).checkKbRoleBindingAccess("kb-1");
+        doThrow(new ClientException("denied")).when(kbManageAccess).checkKbRoleBindingAccess("kb-1");
 
         ClientException ex = assertThrows(ClientException.class,
                 () -> service.setKbRoleBindings("kb-1", List.of()));
         if (!"denied".equals(ex.getMessage())) {
             throw new AssertionError("Expected propagated denied message, got: " + ex.getMessage());
         }
-        verify(kbAccessService).checkKbRoleBindingAccess("kb-1");
+        verify(kbManageAccess).checkKbRoleBindingAccess("kb-1");
     }
 
 }

@@ -21,6 +21,7 @@ import cn.hutool.core.collection.CollUtil;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
 import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.nageoffer.ai.ragent.framework.trace.RagTraceNode;
 import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannel;
@@ -32,7 +33,6 @@ import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import com.nageoffer.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
 import com.nageoffer.ai.ragent.rag.dto.SubQuestionIntent;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -64,7 +64,7 @@ public class MultiChannelRetrievalEngine {
     private final List<SearchResultPostProcessor> postProcessors;
     private final RetrieverService retrieverService;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
-    private final KbAccessService kbAccessService;
+    private final KbReadAccessPort kbReadAccess;
     private final MetadataFilterBuilder metadataFilterBuilder;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
@@ -259,7 +259,7 @@ public class MultiChannelRetrievalEngine {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
         Map<String, Integer> kbSecurityLevels;
         if (accessScope instanceof AccessScope.Ids ids && !ids.kbIds().isEmpty() && UserContext.hasUser()) {
-            kbSecurityLevels = kbAccessService.getMaxSecurityLevelsForKbs(UserContext.getUserId(), ids.kbIds());
+            kbSecurityLevels = kbReadAccess.getMaxSecurityLevelsForKbs(UserContext.getUserId(), ids.kbIds());
         } else {
             kbSecurityLevels = Collections.emptyMap();
         }

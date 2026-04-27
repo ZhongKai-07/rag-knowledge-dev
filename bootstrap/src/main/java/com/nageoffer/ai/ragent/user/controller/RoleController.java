@@ -21,9 +21,10 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.context.RoleType;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import com.nageoffer.ai.ragent.user.service.RoleService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -36,11 +37,12 @@ import java.util.List;
 public class RoleController {
 
     private final RoleService roleService;
-    private final KbAccessService kbAccessService;
+    private final CurrentUserProbe currentUser;
+    private final UserAdminGuard userAdminGuard;
 
     @PostMapping("/role")
     public Result<String> createRole(@RequestBody RoleCreateRequest request) {
-        kbAccessService.checkRoleMutation(request.getDeptId());
+        userAdminGuard.checkRoleMutation(request.getDeptId());
         rejectDeptAdminSuperAdminMutation(request.getRoleType(), "创建");
         String id = roleService.createRole(
                 request.getName(),
@@ -54,7 +56,7 @@ public class RoleController {
     @PutMapping("/role/{roleId}")
     public Result<Void> updateRole(@PathVariable("roleId") String roleId, @RequestBody RoleCreateRequest request) {
         RoleDO existing = requireRole(roleId);
-        kbAccessService.checkRoleMutation(existing.getDeptId());
+        userAdminGuard.checkRoleMutation(existing.getDeptId());
         rejectDeptAdminSuperAdminMutation(existing.getRoleType(), "修改");
         rejectDeptAdminSuperAdminMutation(request.getRoleType(), "修改");
         roleService.updateRole(
@@ -70,7 +72,7 @@ public class RoleController {
     @DeleteMapping("/role/{roleId}")
     public Result<Void> deleteRole(@PathVariable("roleId") String roleId) {
         RoleDO existing = requireRole(roleId);
-        kbAccessService.checkRoleMutation(existing.getDeptId());
+        userAdminGuard.checkRoleMutation(existing.getDeptId());
         rejectDeptAdminSuperAdminMutation(existing.getRoleType(), "删除");
         roleService.deleteRole(roleId);
         return Results.success();
@@ -87,7 +89,7 @@ public class RoleController {
     @GetMapping("/role/{roleId}/delete-preview")
     public Result<RoleDeletePreviewVO> getRoleDeletePreview(@PathVariable("roleId") String roleId) {
         RoleDO existing = requireRole(roleId);
-        kbAccessService.checkRoleMutation(existing.getDeptId());
+        userAdminGuard.checkRoleMutation(existing.getDeptId());
         rejectDeptAdminSuperAdminMutation(existing.getRoleType(), "查看");
         return Results.success(roleService.getRoleDeletePreview(roleId));
     }
@@ -109,15 +111,15 @@ public class RoleController {
     @PutMapping("/user/{userId}/roles")
     public Result<Void> setUserRoles(
             @PathVariable("userId") String userId, @RequestBody List<String> roleIds) {
-        kbAccessService.checkAssignRolesAccess(userId, roleIds);
+        userAdminGuard.checkAssignRolesAccess(userId, roleIds);
         roleService.setUserRoles(userId, roleIds);
         return Results.success();
     }
 
     @GetMapping("/user/{userId}/roles")
     public Result<List<RoleDO>> getUserRoles(@PathVariable("userId") String userId) {
-        kbAccessService.checkAnyAdminAccess();
-        kbAccessService.checkUserManageAccess(userId);
+        userAdminGuard.checkAnyAdminAccess();
+        userAdminGuard.checkUserManageAccess(userId);
         return Results.success(roleService.getUserRoles(userId));
     }
 
@@ -130,7 +132,7 @@ public class RoleController {
     }
 
     private void rejectDeptAdminSuperAdminMutation(String roleType, String actionLabel) {
-        if (kbAccessService.isSuperAdmin()) {
+        if (currentUser.isSuperAdmin()) {
             return;
         }
         if (RoleType.SUPER_ADMIN.name().equals(roleType)) {

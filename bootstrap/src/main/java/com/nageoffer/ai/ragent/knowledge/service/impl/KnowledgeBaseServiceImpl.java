@@ -34,6 +34,10 @@ import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.exception.ServiceException;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.nageoffer.ai.ragent.framework.security.port.KbManageAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.nageoffer.ai.ragent.framework.security.port.KbRoleBindingAdminPort;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
@@ -41,7 +45,6 @@ import com.nageoffer.ai.ragent.rag.service.FileStorageService;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeBaseService;
 import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
 import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -54,7 +57,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -66,7 +68,9 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     private final KnowledgeDocumentMapper knowledgeDocumentMapper;
     private final VectorStoreAdmin vectorStoreAdmin;
     private final FileStorageService fileStorageService;
-    private final KbAccessService kbAccessService;
+    private final KbReadAccessPort kbReadAccess;
+    private final KbManageAccessPort kbManageAccess;
+    private final KbRoleBindingAdminPort kbRoleBindingAdmin;
     private final SysDeptMapper sysDeptMapper;
 
     @Transactional
@@ -93,8 +97,8 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
             throw new ServiceException("集合名称已存在：" + requestParam.getCollectionName());
         }
 
-        // 解析 dept_id（授权与归属逻辑收归 KbAccessService）
-        String effectiveDeptId = kbAccessService.resolveCreateKbDeptId(requestParam.getDeptId());
+        // 解析 dept_id（授权与归属逻辑收归 KbManageAccessPort）
+        String effectiveDeptId = kbManageAccess.resolveCreateKbDeptId(requestParam.getDeptId());
 
         KnowledgeBaseDO kbDO = KnowledgeBaseDO.builder()
                 .name(requestParam.getName())
@@ -125,7 +129,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     /**
      * Public write path with <b>no production caller</b> as of PR1. Deferred to a
      * future PR — when an HTTP / MQ caller is introduced, add
-     * {@code kbAccessService.checkManageAccess(requestParam.getId())} as the
+     * {@code kbManageAccess.checkManageAccess(requestParam.getId())} as the
      * first line to establish the trust boundary, mirroring rename/delete.
      *
      * <p>Spec: docs/superpowers/specs/2026-04-26-permission-pr1-controller-thinning-design.md §2.6
@@ -163,7 +167,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public void rename(String kbId, KnowledgeBaseUpdateRequest requestParam) {
-        kbAccessService.checkManageAccess(kbId);
+        kbManageAccess.checkManageAccess(kbId);
         KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
         if (kb == null || kb.getDeleted() != null && kb.getDeleted() == 1) {
             throw new ClientException("知识库不存在");
@@ -195,7 +199,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void delete(String kbId) {
-        kbAccessService.checkManageAccess(kbId);
+        kbManageAccess.checkManageAccess(kbId);
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(kbId);
         if (kbDO == null || kbDO.getDeleted() != null && kbDO.getDeleted() == 1) {
             throw new ClientException("知识库不存在");
@@ -213,7 +217,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
         kbDO.setDeleted(1);
         kbDO.setUpdatedBy(UserContext.getUsername());
         knowledgeBaseMapper.deleteById(kbDO);
-        int unbound = kbAccessService.unbindAllRolesFromKb(kbId);
+        int unbound = kbRoleBindingAdmin.unbindAllRolesFromKb(kbId);
         log.info("KB 软删 + role-KB 解绑完成, kbId={}, unbound={}", kbId, unbound);
 
         String collectionName = kbDO.getCollectionName();
@@ -247,7 +251,7 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
 
     @Override
     public KnowledgeBaseVO queryById(String kbId) {
-        kbAccessService.checkAccess(kbId);
+        kbReadAccess.checkReadAccess(kbId);
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(kbId);
         if (kbDO == null || kbDO.getDeleted() != null && kbDO.getDeleted() == 1) {
             throw new ClientException("知识库不存在");
@@ -263,19 +267,20 @@ public class KnowledgeBaseServiceImpl implements KnowledgeBaseService {
     }
 
     @Override
-    public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam) {
-        // Fail-closed: non-admin user with empty accessible set → return empty page.
-        // null = admin pathway (controller skipped injection); empty set = user has zero access.
-        Set<String> accessibleKbIds = requestParam.getAccessibleKbIds();
-        if (accessibleKbIds != null && accessibleKbIds.isEmpty()) {
+    public IPage<KnowledgeBaseVO> pageQuery(KnowledgeBasePageRequest requestParam, AccessScope scope) {
+        if (scope instanceof AccessScope.Ids ids && ids.kbIds().isEmpty()) {
             return new Page<>(requestParam.getCurrent(), requestParam.getSize(), 0);
         }
 
         LambdaQueryWrapper<KnowledgeBaseDO> queryWrapper = Wrappers.lambdaQuery(KnowledgeBaseDO.class)
                 .like(StringUtils.hasText(requestParam.getName()), KnowledgeBaseDO::getName, requestParam.getName())
-                .in(accessibleKbIds != null, KnowledgeBaseDO::getId, accessibleKbIds)
                 .eq(KnowledgeBaseDO::getDeleted, 0)
                 .orderByDesc(KnowledgeBaseDO::getUpdateTime);
+        if (scope instanceof AccessScope.Ids ids) {
+            queryWrapper.in(KnowledgeBaseDO::getId, ids.kbIds());
+        } else if (!(scope instanceof AccessScope.All)) {
+            throw new IllegalStateException("Unsupported AccessScope: " + scope);
+        }
 
         Page<KnowledgeBaseDO> page = new Page<>(requestParam.getCurrent(), requestParam.getSize());
         IPage<KnowledgeBaseDO> result = knowledgeBaseMapper.selectPage(page, queryWrapper);

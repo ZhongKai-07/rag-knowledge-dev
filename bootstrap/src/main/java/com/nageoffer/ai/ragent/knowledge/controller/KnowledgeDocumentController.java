@@ -25,11 +25,13 @@ import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUpd
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentVO;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentChunkLogVO;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO;
+import com.nageoffer.ai.ragent.framework.context.LoginUser;
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.nageoffer.ai.ragent.knowledge.service.KbScopeResolver;
 import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -47,7 +49,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * 知识库文档管理控制器
@@ -59,7 +60,7 @@ import java.util.Set;
 public class KnowledgeDocumentController {
 
     private final KnowledgeDocumentService documentService;
-    private final KbAccessService kbAccessService;
+    private final KbScopeResolver kbScopeResolver;
 
     /**
      * 上传文档：入库记录 + 文件落盘，返回文档ID
@@ -122,11 +123,9 @@ public class KnowledgeDocumentController {
     @GetMapping("/knowledge-base/docs/search")
     public Result<List<KnowledgeDocumentSearchVO>> search(@RequestParam(value = "keyword", required = false) String keyword,
                                                           @RequestParam(value = "limit", defaultValue = "8") int limit) {
-        Set<String> accessibleKbIds = null;
-        if (UserContext.hasUser() && !kbAccessService.isSuperAdmin()) {
-            accessibleKbIds = kbAccessService.getAccessibleKbIds(UserContext.getUserId());
-        }
-        return Results.success(documentService.search(keyword, limit, accessibleKbIds));
+        LoginUser user = UserContext.hasUser() ? UserContext.get() : null;
+        AccessScope scope = kbScopeResolver.resolveForRead(user);
+        return Results.success(documentService.search(keyword, limit, scope));
     }
 
     /**

@@ -23,8 +23,8 @@ import com.nageoffer.ai.ragent.admin.controller.vo.DashboardTrendsVO;
 import com.nageoffer.ai.ragent.admin.service.DashboardService;
 import com.nageoffer.ai.ragent.framework.convention.Result;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.nageoffer.ai.ragent.framework.security.port.CurrentUserProbe;
 import com.nageoffer.ai.ragent.framework.web.Results;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DashboardController {
 
     private final DashboardService dashboardService;
-    private final KbAccessService kbAccessService;
+    private final CurrentUserProbe currentUser;
 
     @GetMapping("/overview")
     public Result<DashboardOverviewVO> overview(@RequestParam(value = "window", required = false) String window) {
@@ -60,7 +60,7 @@ public class DashboardController {
     }
 
     private void checkAdminAccess() {
-        if (!kbAccessService.isSuperAdmin() && !kbAccessService.isDeptAdmin()) {
+        if (!currentUser.isSuperAdmin() && !currentUser.isDeptAdmin()) {
             throw new ClientException("无权访问仪表板");
         }
     }

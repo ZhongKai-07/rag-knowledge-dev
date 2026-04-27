@@ -15,26 +15,12 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.knowledge.controller.request;
-
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.Data;
+package com.nageoffer.ai.ragent.framework.security.port;
 
 /**
- * 知识库分页查询请求
+ * Minimal role-binding write port introduced in PR2 c3.
  */
-@Data
-public class KnowledgeBasePageRequest extends Page {
+public interface KbRoleBindingAdminPort {
 
-    /**
-     * 知识库名称（支持模糊匹配）
-     */
-    private String name;
-
-    /**
-     * 列表口径：
-     * - access（默认）：当前用户可访问范围
-     * - owner：当前管理员的拥有范围（DEPT_ADMIN 仅本部门；SUPER_ADMIN 不限）
-     */
-    private String scope;
+    int unbindAllRolesFromKb(String kbId);
 }

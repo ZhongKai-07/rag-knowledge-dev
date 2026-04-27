@@ -64,7 +64,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -94,7 +93,6 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final QueryRewriteService queryRewriteService;
     private final IntentResolver intentResolver;
     private final RetrievalEngine retrievalEngine;
-    private final KbAccessService kbAccessService;
     private final KbReadAccessPort kbReadAccess;
     private final ConversationMapper conversationMapper;
     private final SourceCardBuilder sourceCardBuilder;
@@ -131,7 +129,7 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         // If knowledgeBaseId specified, verify access
         if (knowledgeBaseId != null) {
-            kbAccessService.checkAccess(knowledgeBaseId);
+            kbReadAccess.checkReadAccess(knowledgeBaseId);
         }
 
         // Validate conversation-KB ownership for existing conversations

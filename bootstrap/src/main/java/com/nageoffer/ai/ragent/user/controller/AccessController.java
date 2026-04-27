@@ -18,13 +18,13 @@
 package com.nageoffer.ai.ragent.user.controller;
 
 import com.nageoffer.ai.ragent.framework.convention.Result;
+import com.nageoffer.ai.ragent.framework.security.port.UserAdminGuard;
 import com.nageoffer.ai.ragent.framework.web.Results;
 import com.nageoffer.ai.ragent.user.controller.vo.AccessRoleVO;
 import com.nageoffer.ai.ragent.user.controller.vo.RoleUsageVO;
 import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
 import com.nageoffer.ai.ragent.user.controller.vo.UserKbGrantVO;
 import com.nageoffer.ai.ragent.user.service.AccessService;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,7 +47,7 @@ import java.util.List;
 public class AccessController {
 
     private final AccessService accessService;
-    private final KbAccessService kbAccessService;
+    private final UserAdminGuard userAdminGuard;
 
     /**
      * P1.3a: 按部门筛选可见角色。SUPER 或 DEPT_ADMIN 均可查询任意部门（用于 Tab 2 共享面板的
@@ -57,7 +57,7 @@ public class AccessController {
     public Result<List<AccessRoleVO>> listRoles(
             @RequestParam(value = "dept_id", required = false) String deptId,
             @RequestParam(value = "include_global", required = false, defaultValue = "true") boolean includeGlobal) {
-        kbAccessService.checkAnyAdminAccess();
+        userAdminGuard.checkAnyAdminAccess();
         return Results.success(accessService.listRoles(deptId, includeGlobal));
     }
 
@@ -69,8 +69,8 @@ public class AccessController {
      */
     @GetMapping("/users/{userId}/kb-grants")
     public Result<List<UserKbGrantVO>> getUserKbGrants(@PathVariable("userId") String userId) {
-        kbAccessService.checkAnyAdminAccess();
-        kbAccessService.checkUserManageAccess(userId);
+        userAdminGuard.checkAnyAdminAccess();
+        userAdminGuard.checkUserManageAccess(userId);
         return Results.success(accessService.listUserKbGrants(userId));
     }
 
@@ -80,7 +80,7 @@ public class AccessController {
      */
     @GetMapping("/roles/{roleId}/usage")
     public Result<RoleUsageVO> getRoleUsage(@PathVariable("roleId") String roleId) {
-        kbAccessService.checkAnyAdminAccess();
+        userAdminGuard.checkAnyAdminAccess();
         return Results.success(accessService.getRoleUsage(roleId));
     }
 
@@ -90,7 +90,7 @@ public class AccessController {
      */
     @GetMapping("/departments/tree")
     public Result<List<SysDeptVO>> getDepartmentsTree() {
-        kbAccessService.checkAnyAdminAccess();
+        userAdminGuard.checkAnyAdminAccess();
         return Results.success(accessService.listDepartmentsTree());
     }
 }
