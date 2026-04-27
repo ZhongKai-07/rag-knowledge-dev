@@ -144,17 +144,21 @@ KnowledgeDocumentChunkConsumer @IdempotentConsume
 | `Permission` 枚举 | `READ < WRITE < MANAGE`（`ordinal()` 可比较） |
 | `t_role_kb_relation` | 角色 × 知识库 × maxSecurityLevel（0-3） |
 
-### 6.2 KbAccessService（唯一真相源）
+### 6.2 权限决策真相源（PR3 起 current-user vs target-aware 双轨）
 
-| 方法 | 用途 | 缓存 |
+**Current-user 路径**（RAG 检索 / KB 列表 / Spaces 等当前登录主体行为）走 `KbReadAccessPort` / `KbManageAccessPort`（`KbAccessServiceImpl` 实现）；**Admin-views-target 路径**（`AccessServiceImpl.listUserKbGrants` 等"查看其他用户授权"场景）走 `KbAccessSubjectFactory.forTargetUser(uid) + KbAccessCalculator`，永不读 caller `UserContext`。
+
+| 调用位置 | 入口方法 | 缓存 |
 | --- | --- | --- |
-| `getAccessibleKbIds(userId)` | 返回可访问 KB 集合 | Redis `kb_access:{userId}` / `kb_access:dept:{userId}` |
-| `checkAccess(kbId)` / `checkManageAccess(kbId)` | 单 KB 读/管权限 | — |
-| `getMaxSecurityLevelsForKbs(kbIds)` / `KbAccessCalculator.computeMaxSecurityLevels(subject, kbIds)` | 批量解析 KB 安全等级（current-user / target-aware 分流） | — |
-| `validateRoleAssignment(roleIds)` | DEPT_ADMIN 分配约束 | — |
-| `simulateActiveSuperAdminCountAfter(intent)` | Last-SUPER_ADMIN 守护 | — |
+| current-user | `KbReadAccessPort.getAccessScope(p)` → `KbAccessSubjectFactory.currentOrThrow + Calculator.computeAccessibleKbIds` | Redis `kb_access:{userId}` / `kb_access:dept:{userId}` |
+| current-user | `KbReadAccessPort.checkReadAccess(kbId)` / `KbManageAccessPort.checkManageAccess(kbId)` | — |
+| current-user | `KbReadAccessPort.getMaxSecurityLevelsForKbs(kbIds)` → `Calculator.computeMaxSecurityLevels(subject, kbIds)` | — |
+| target-aware | `KbAccessSubjectFactory.forTargetUser(uid) + Calculator.computeAccessibleKbIds(target, p) / computeMaxSecurityLevels(target, kbIds)` | — |
+| 上下文校验 | `KbAccessService.validateRoleAssignment(roleIds)` (DEPT_ADMIN 分配约束) / `simulateActiveSuperAdminCountAfter(intent)` (Last-SUPER_ADMIN 守护) | — |
 
-**DEPT_ADMIN 隐式权限**：`kb.dept_id == self.dept_id` 的 KB 无需 `role_kb_relation` 即拥有 MANAGE。跨部门必须显式绑定。
+**DEPT_ADMIN 隐式权限**：`kb.dept_id == self.dept_id` 的 KB 无需 `role_kb_relation` 即拥有 MANAGE。跨部门必须显式绑定。逻辑统一在 `KbAccessCalculator` 内部基于 `subject.deptId` + `subject.isDeptAdmin()` 判定（不读 ThreadLocal）。
+
+**`AccessScope.All` 是 sealed sentinel**：8+ 处 `instanceof AccessScope.All` 短路依赖（见 `bootstrap/CLAUDE.md` 关键 Gotchas）；SUPER_ADMIN/系统态在 `KbReadAccessPort.getAccessScope` / `KbScopeResolver.resolveForXxx` 出口必须返 `AccessScope.all()`，**不能**改成 `AccessScope.ids(全集)`。
 
 ### 6.3 已知架构债
 

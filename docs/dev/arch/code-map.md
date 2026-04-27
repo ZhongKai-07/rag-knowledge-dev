@@ -67,16 +67,27 @@ core/                             ← 基础能力域（17 文件）
 │   └── strategy/                 ← FixedSizeTextChunker, StructureAwareTextChunker
 └── parser/                       ← DocumentParserSelector, TikaDocumentParser
 
-user/                             ← 用户与权限域（31 文件）
+user/                             ← 用户与权限域
 ├── controller/
 │   ├── AuthController            ← 登录/登出
 │   ├── UserController            ← 用户 CRUD
 │   └── RoleController            ← 角色管理
 ├── service/
 │   ├── KbAccessService           ← @Deprecated 上帝接口（2026-04-18 RBAC 重构后保留用于调用点分批迁移）
-│   │                               新代码直接注入 framework/security/port/ 的 7 个 port
-│   │                               （CurrentUserProbe / KbReadAccessPort / KbManageAccessPort / ...）
-│   └── RoleService               ← 角色-知识库关联管理
+│   │                               新代码直接注入 framework/security/port/ 下 7 个 port
+│   │                               （CurrentUserProbe / KbReadAccessPort / KbManageAccessPort /
+│   │                                KbRoleBindingAdminPort / UserAdminGuard /
+│   │                                SuperAdminInvariantGuard / KbAccessCacheAdmin）
+│   ├── RoleService               ← 角色-知识库关联管理
+│   ├── UserProfileLoader         ← 单次 JOIN 加载用户身份快照（user+dept+roles），不走缓存
+│   └── support/                  ← PR3（2026-04-27）引入 — target-aware 权限计算
+│       ├── KbAccessSubject               ← record(userId, deptId, roleTypes, maxSecurityLevel)
+│       │                                   isSuperAdmin() / isDeptAdmin()
+│       ├── KbAccessSubjectFactory(Impl)  ← 唯一 UserContext/UserProfileLoader→Subject 入口
+│       │                                   currentOrThrow() / forTargetUser(userId)
+│       └── KbAccessCalculator            ← 纯函数计算器（不 import UserContext / LoginUser，
+│                                           ArchUnit 守门）；computeAccessibleKbIds /
+│                                           computeMaxSecurityLevels；接管原 KbRbacAccessSupport
 └── dao/entity/                   ← UserDO, RoleDO, UserRoleDO, RoleKbRelationDO
 
 admin/                            ← 管理后台域（10 文件）

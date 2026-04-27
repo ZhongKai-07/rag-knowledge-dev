@@ -97,9 +97,15 @@ KB 共享管理（AnyAdmin，按 KB dept 归属）:
 权限校验（贯穿所有业务链路）:
   新代码（2026-04-18 后）：注入 framework/security/port/ 下的细粒度端口
     CurrentUserProbe.isSuperAdmin() / isDeptAdmin()
-    KbReadAccessPort.getAccessScope(p) / getMaxSecurityLevelsForKbs(kbIds)
+    KbReadAccessPort.getAccessScope(p) / getMaxSecurityLevelsForKbs(kbIds)   ← 当前登录主体 only
     KbManageAccessPort.checkManageAccess(kbId)
-  旧代码：KbAccessService 上帝接口（@Deprecated），47 个调用点分批迁移中
+  PR3 起，admin-views-target 路径不走 port，直接 user/service/support/：
+    KbAccessSubject target = subjectFactory.forTargetUser(userId)
+    Set<String> kbIds = calculator.computeAccessibleKbIds(target, p)
+    Map<String,Integer> levels = calculator.computeMaxSecurityLevels(target, kbIds)
+    （AccessServiceImpl.listUserKbGrants 即此路径；后台"查看其他用户授权"页消费此结果，
+      修复了 PR3 之前 caller-context 偷读 ThreadLocal 导致 admin 看 target 时密级被夸大的 bug）
+  旧代码：KbAccessService 上帝接口（@Deprecated），调用点分批迁移中
   底层逻辑：查 t_user_role → 查 t_role_kb_relation → 返回可访问 kbId 集合 / 安全等级
              SUPER_ADMIN 跳过校验；DEPT_ADMIN 同部门 KB 跳过；Redis 缓存
 

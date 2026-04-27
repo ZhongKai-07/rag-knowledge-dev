@@ -110,7 +110,10 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | 类 | 职责 |
 |----|------|
 | `KbAccessService` | `@Deprecated` 上帝接口；2026-04-18 RBAC 改造后保留用于历史调用点分批迁移（数量随每轮 PR 下降，实时用 `grep -rn KbAccessService bootstrap/src/main/java` 查）。新代码直接注入 `framework.security.port.*` 下的 7 个小 port |
-| `KbAccessServiceImpl` | 同时 implements 全部 7 个 framework security port（`CurrentUserProbe` / `KbReadAccessPort` / `KbManageAccessPort` / `UserAdminGuard` / `SuperAdminInvariantGuard` / `KbAccessCacheAdmin` + `KbMetadataReader` 由 `KbMetadataReaderImpl` 在 knowledge 域实现）|
+| `KbAccessServiceImpl` | 同时 implements 全部 7 个 framework security port（`CurrentUserProbe` / `KbReadAccessPort` / `KbManageAccessPort` / `KbRoleBindingAdminPort` / `UserAdminGuard` / `SuperAdminInvariantGuard` / `KbAccessCacheAdmin` + `KbMetadataReader` 由 `KbMetadataReaderImpl` 在 knowledge 域实现）。PR3 起注入 `KbAccessSubjectFactory` + `KbAccessCalculator`，`getAccessScope(p)` / `getMaxSecurityLevelsForKbs(kbIds)` 改委托 calculator，签名级回归 current-user only |
+| `KbAccessSubject` | `record(userId, deptId, roleTypes, maxSecurityLevel)` + `isSuperAdmin/isDeptAdmin`（PR3，`user/service/support/`）—— 显式权限主体快照，不读 ThreadLocal |
+| `KbAccessSubjectFactory(Impl)` | PR3 起项目内**唯一**把 `UserContext` / `UserProfileLoader` 转成 `KbAccessSubject` 的入口；`currentOrThrow()` 系统态/无用户 fail-closed,`forTargetUser(userId)` 走 `UserProfileLoader` |
+| `KbAccessCalculator` | PR3 纯函数计算器（不 import `UserContext`/`LoginUser`，ArchUnit 守门）；接管原 `KbRbacAccessSupport` + `KbAccessServiceImpl.computeDeptAdminAccessibleKbIds` + 偷读 ThreadLocal 的决策段 |
 | `AuthController` | 登录/登出（Sa-Token） |
 | `RoleService` | 角色-知识库关联管理 |
 | `SysDeptService` | 部门 CRUD（GLOBAL 硬保护 + 删除前引用计数校验） |
@@ -131,6 +134,7 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 - **orchestrator 决策，handler 机械发射**（PR2 起架构约定）：sources 的推不推 / flag 读取 / 三层闸门全在 `RAGChatServiceImpl`；`StreamChatEventHandler.emitSources(payload)` 是纯 delegate 到 `sender.sendEvent(SSEEventType.SOURCES.value(), payload)`，**不加 try/catch，不加业务分支**。后续改动保持边界：业务决策不要下沉到 handler，handler 的机械方法不要上浮到 orchestrator。
 - **`onComplete` 埋点顺序硬性**（PR3 起）：`updateTraceTokenUsage()`（overwrite 走 `updateRunExtraData(String)`）必须在 `mergeCitationStatsIntoTrace()`（merge 走 `mergeRunExtraData(Map)`）**之前**执行。颠倒会让 merge 结果被后续 overwrite 清掉。`StreamChatEventHandlerCitationTest` 用 `Mockito.InOrder` 锁此顺序。根治见 backlog SRC-9（把 `updateTraceTokenUsage` 也改成 merge 写）。`onComplete` 里 `traceId` 用构造期 `final` 字段，**不**在异步回调里读 `RagTraceContext.getTraceId()`（零 ThreadLocal 新增是 PR3 硬约束）。
 - **sources 判定锚点统一用 indexSet.contains(n)**（PR3 起后端侧）：`CitationStatsCollector.scan` 的 `valid` 判定走 `Set<Integer> validIndexes = cards.stream().map(SourceCard::getIndex).collect(toSet())` 的 `contains(n)`。**绝不**用 `cards[n-1]` 或 `1..N` range — 对齐前端 `indexMap.get(n)` 契约，保未来过滤后非连续 index 的语义不动。同理 `RAGPromptService.appendCitationRule` 当前用 `cards.size()` 作为 range 上界只在 `SourceCardBuilder` 保证 index 1..N 连续的前提下正确；若未来 cards 非连续必须改为 `max(card.index)`。
+- **`AccessScope.All` 是 sealed sentinel,不是 `Ids(allKbIds)`**（PR3 起）：8+ 处 `instanceof AccessScope.All` 做"全量放行,不过滤"短路（`SpacesController:56` / `KnowledgeBaseServiceImpl:281` / `KnowledgeDocumentServiceImpl:686` / `MultiChannelRetrievalEngine:253` / `KbScopeResolverImpl:45,56` 等）。SUPER_ADMIN/系统态在 port/resolver 出口必须返 `AccessScope.all()` sentinel；若改成 `AccessScope.ids(kbMetadataReader.listAllKbIds())` 会**沉默地破** `instanceof` 短路,引入额外 KB 过滤循环。calculator/工具方法可物化全集供 admin 报表用（`KbAccessCalculator.computeAccessibleKbIds` 对 SUPER_ADMIN 即返物化全集），但 `KbReadAccessPort.getAccessScope` / `KbScopeResolver.resolveForXxx` 出口契约不动。
 
 ## 数据库访问
 
