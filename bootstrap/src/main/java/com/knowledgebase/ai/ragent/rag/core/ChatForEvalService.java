@@ -53,7 +53,7 @@ import java.util.List;
  *
  * <p><b>RetrievalScope 由调用方注入，service 不自造</b>（review P1-1 + PR4 P1#2）：避免任何复用此 service 的入口
  * 默认越过 RBAC。eval 路径下唯一合法调用方 {@code EvalRunExecutor}
- * 显式传 {@code RetrievalScope.all(kbId)}（spec §15.3 边界）。其他调用方必须传该入口下登录 principal 的真实 RetrievalScope。
+ * 显式传 all-scope sentinel（spec §15.3 边界）。其他调用方必须传该入口下登录 principal 的真实 RetrievalScope。
  *
  * <p><b>citation/sources 显式关闭</b>（review P2-1）：传 {@code cards=List.of()} 让 prompt 跳过 citationMode。
  * 这是 eval 与生产链路的有意偏差——eval 测的是基础 RAG 质量，不测引用渲染。该决策必须落到

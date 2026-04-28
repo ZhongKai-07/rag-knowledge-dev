@@ -91,6 +91,22 @@ public class PermissionBoundaryArchTest {
                     .because("PR3-2 keeps KbReadAccessPort current-user only; user id must not be "
                             + "threaded through read-port signatures.");
 
+    @ArchTest
+    public static final ArchRule retrieve_package_no_kb_mapper = noClasses()
+            .that().resideInAPackage("com.knowledgebase.ai.ragent.rag.core.retrieve..")
+            .should().dependOnClassesThat()
+            .resideInAPackage("com.knowledgebase.ai.ragent.knowledge.dao.mapper..")
+            .as("PR4-3: rag/core/retrieve must not depend on knowledge.dao.mapper "
+                    + "(use KbMetadataReader port)");
+
+    @ArchTest
+    public static final ArchRule chat_for_eval_does_not_inject_scope_builder = noClasses()
+            .that().haveSimpleName("ChatForEvalService")
+            .should().dependOnClassesThat()
+            .haveSimpleName("RetrievalScopeBuilder")
+            .as("review P1#2: eval path must use RetrievalScope.all(kbId) sentinel, "
+                    + "not invoke RetrievalScopeBuilder (which reads UserContext)");
+
     private static DescribedPredicate<JavaMethodCall> kbScopedCheckMethod() {
         return new DescribedPredicate<JavaMethodCall>(
                 "target is one of the 5 KB-scoped check methods on a type assignable to KbAccessService") {

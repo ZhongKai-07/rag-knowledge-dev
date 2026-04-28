@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * {@code UserProfileLoader}（ArchUnit 守门）。所有主体信息通过 {@link KbAccessSubject}
  * 由调用方传入。
  *
- * <p>取代 PR2 的静态 RBAC 工具 + {@code KbAccessServiceImpl}
+ * <p>取代 PR2 的静态 RBAC 工具 + legacy access-service implementation
  * 的 {@code computeDeptAdminAccessibleKbIds} 私有 + {@code getMaxSecurityLevelsForKbs}
  * 偷读 ThreadLocal 的实现段（spec §0.1）。
  */
@@ -57,14 +57,14 @@ public class KbAccessCalculator {
     private final RoleKbRelationMapper roleKbRelationMapper;
     private final KbMetadataReader kbMetadataReader;
 
-    /** SUPER_ADMIN 视角下"全集"的密级上限；与 KbAccessServiceImpl 原口径保持一致。*/
+    /** SUPER_ADMIN 视角下"全集"的密级上限；与 legacy access-service 原口径保持一致。*/
     private static final int SUPER_ADMIN_LEVEL_CEILING = 3;
 
     /**
      * 计算 subject 在 {@code minPermission} 下可访问的 KB ID 集合。
      *
      * <p>SUPER_ADMIN → {@code kbMetadataReader.listAllKbIds()}（物化全集，
-     * 供 admin-views-target 报表用；port 出口由 {@code KbAccessServiceImpl}
+     * 供 admin-views-target 报表用；port 出口由 legacy access-service
      * 包装为 {@code AccessScope.all()} sentinel）。
      *
      * <p>DEPT_ADMIN → RBAC ∪ 同部门 KB（subject.deptId 为 null 时 fallback RBAC-only
@@ -91,7 +91,7 @@ public class KbAccessCalculator {
     /**
      * 计算 subject 在指定 KB 集合上的最高密级上限映射。
      *
-     * <p>SUPER_ADMIN → 每个 KB 上限 {@value #SUPER_ADMIN_LEVEL_CEILING}（与原 KbAccessServiceImpl 一致）。
+     * <p>SUPER_ADMIN → 每个 KB 上限 {@value #SUPER_ADMIN_LEVEL_CEILING}（与原 access-service 一致）。
      * <p>USER → RBAC 关系上的 max(level)。
      * <p>DEPT_ADMIN → RBAC ∪ 本部门 KB（本部门 KB 上限取 subject.maxSecurityLevel,
      * RBAC 重叠取 {@code Math::max}）。

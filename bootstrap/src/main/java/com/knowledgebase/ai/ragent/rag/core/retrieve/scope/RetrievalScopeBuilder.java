@@ -41,7 +41,7 @@ public interface RetrievalScopeBuilder {
      *       <b>不</b>因 user==null 短路为 empty (review P2#1, PR1 不变量 C HTTP 语义不变)</li>
      *   <li>requestedKbId == null 且 user/userId == null → {@link RetrievalScope#empty()}</li>
      *   <li>SUPER_ADMIN → {@link RetrievalScope#all(String)} (kbSecurityLevels 留空)</li>
-     *   <li>其他 → AccessScope.ids(...) + 一次性算齐 getMaxSecurityLevelsForKbs(ids)</li>
+     *   <li>其他 → AccessScope.ids(...) + 一次性算齐 per-KB security-level map</li>
      * </ol>
      *
      * @param requestedKbId nullable, 单 KB 定向时非空
