@@ -7,7 +7,7 @@
 set -euo pipefail
 
 PATTERN='kbAccessService\.(checkAccess|checkManageAccess|checkDocManageAccess|checkDocSecurityLevelAccess|checkKbRoleBindingAccess)\('
-TARGET='bootstrap/src/main/java/com/nageoffer/ai/ragent'
+TARGET='bootstrap/src/main/java/com/knowledgebase/ai/ragent'
 
 if ! command -v rg >/dev/null 2>&1; then
   echo "ERROR: ripgrep (rg) not found on PATH — cannot run PR1 grep gate." >&2

@@ -91,8 +91,8 @@ grep_matches() {
 
 # Gate 1: file-level allowlist — KbAccessService string only in 2 files
 EXPECTED=$(cat <<'EOF'
-bootstrap/src/main/java/com/nageoffer/ai/ragent/user/service/KbAccessService.java
-bootstrap/src/main/java/com/nageoffer/ai/ragent/user/service/impl/KbAccessServiceImpl.java
+bootstrap/src/main/java/com/knowledgebase/ai/ragent/user/service/KbAccessService.java
+bootstrap/src/main/java/com/knowledgebase/ai/ragent/user/service/impl/KbAccessServiceImpl.java
 EOF
 )
 ACTUAL=$(grep_files "KbAccessService" "KbAccessService" "${TARGET}" | sort || true)
