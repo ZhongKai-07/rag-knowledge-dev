@@ -17,6 +17,7 @@
 
 package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
+import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
 import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.filter.DefaultMetadataFilterBuilder;
@@ -33,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +55,10 @@ import static org.mockito.Mockito.when;
  */
 @ExtendWith(MockitoExtension.class)
 class MultiChannelRetrievalEngineFilterAlignmentTest {
+
+    /** 两个 case 共用的 plan / 安全等级 —— 用例间唯一变化只应是 KB id 自身。 */
+    private static final RetrievalPlan PLAN = new RetrievalPlan(5, 3);
+    private static final int SECURITY_LEVEL = 2;
 
     @Mock
     private RetrieverService retrieverService;
@@ -82,10 +88,10 @@ class MultiChannelRetrievalEngineFilterAlignmentTest {
 
         engine.retrieveKnowledgeChannels(
                 List.of(new SubQuestionIntent("q", List.of())),
-                new RetrievalPlan(5, 3),
+                PLAN,
                 new RetrievalScope(
-                        com.knowledgebase.ai.ragent.framework.security.port.AccessScope.ids(java.util.Set.of("kb-1")),
-                        Map.of("kb-1", 2),
+                        AccessScope.ids(Set.of("kb-1")),
+                        Map.of("kb-1", SECURITY_LEVEL),
                         "kb-1")
         );
 
@@ -104,10 +110,10 @@ class MultiChannelRetrievalEngineFilterAlignmentTest {
 
         engine.retrieveKnowledgeChannels(
                 List.of(new SubQuestionIntent("q2", List.of())),
-                new RetrievalPlan(8, 4),
+                PLAN,
                 new RetrievalScope(
-                        com.knowledgebase.ai.ragent.framework.security.port.AccessScope.ids(java.util.Set.of("kb-finance")),
-                        Map.of("kb-finance", 1),
+                        AccessScope.ids(Set.of("kb-finance")),
+                        Map.of("kb-finance", SECURITY_LEVEL),
                         "kb-finance")
         );
 

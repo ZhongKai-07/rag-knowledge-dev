@@ -20,6 +20,7 @@ package com.knowledgebase.ai.ragent.rag.core.retrieve.filter;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.MetadataFilter;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrieveRequest;
 import com.knowledgebase.ai.ragent.rag.core.vector.VectorMetadataFields;
+import org.assertj.core.api.InstanceOfAssertFactories;
 
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,10 @@ public final class FilterAlignmentAssertions {
                 .as("RetrieveRequest.collectionName must not be null")
                 .isNotNull();
 
+        assertThat(req.getMetadataFilters())
+                .as("RetrieveRequest must carry metadataFilters")
+                .isNotNull();
+
         MetadataFilter kbIdFilter = req.getMetadataFilters().stream()
                 .filter(f -> VectorMetadataFields.KB_ID.equals(f.field())
                         && f.op() == MetadataFilter.FilterOp.IN)
@@ -64,13 +69,11 @@ public final class FilterAlignmentAssertions {
                         "missing kb_id IN filter for collection=" + collection
                                 + ", filters=" + req.getMetadataFilters()));
 
-        assertThat(kbIdFilter.value())
-                .as("kb_id filter value must be a List")
-                .isInstanceOf(List.class);
-        List<?> values = (List<?>) kbIdFilter.value();
-        assertThat(values)
-                .as("kb_id filter must be singleton list (per-KB call)")
-                .hasSize(1);
+        List<?> values = assertThat(kbIdFilter.value())
+                .as("kb_id filter value must be a singleton List<kbId> (per-KB call)")
+                .asInstanceOf(InstanceOfAssertFactories.LIST)
+                .hasSize(1)
+                .actual();
 
         String expectedKbId = collectionToKbId.get(collection);
         assertThat(expectedKbId)

@@ -119,6 +119,8 @@ class IntentParallelRetrieverFilterAlignmentTest {
     }
 
     private static SearchContext buildContext(Map<String, Integer> securityLevels) {
+        // IntentParallelRetriever does not consume accessScope; we set it from the same
+        // keySet only to satisfy SearchContext invariants without inventing extra inputs.
         return SearchContext.builder()
                 .originalQuestion("question")
                 .rewrittenQuestion("question")
