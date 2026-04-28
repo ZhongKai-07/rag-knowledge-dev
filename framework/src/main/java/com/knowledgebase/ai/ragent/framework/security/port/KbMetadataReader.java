@@ -18,6 +18,7 @@
 package com.knowledgebase.ai.ragent.framework.security.port;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,4 +48,18 @@ public interface KbMetadataReader {
 
     /** 过滤出 kbIds 中 dept_id == deptId 的 KB ID。*/
     Set<String> filterKbIdsByDept(Collection<String> kbIds, String deptId);
+
+    /**
+     * 获取 KB 的 collection_name（物理向量索引名）。
+     *
+     * @return collection_name；KB 不存在、已软删或 collection_name 为空时返回 null
+     */
+    String getCollectionName(String kbId);
+
+    /**
+     * 批量解析 kbIds 对应的 collection_name（过滤未删除且 collection_name 非空）。
+     *
+     * @return 仅包含存在且 collection_name 有效的 kbId；返回 map 不可变
+     */
+    Map<String, String> getCollectionNames(Collection<String> kbIds);
 }

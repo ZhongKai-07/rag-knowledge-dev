@@ -27,6 +27,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -127,5 +130,37 @@ public class KbMetadataReaderImpl implements KbMetadataReader {
                 .stream()
                 .map(KnowledgeBaseDO::getId)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public String getCollectionName(String kbId) {
+        if (kbId == null) {
+            return null;
+        }
+        KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(kbId);
+        if (kb == null) {
+            return null;
+        }
+        String name = kb.getCollectionName();
+        return name != null && !name.isBlank() ? name : null;
+    }
+
+    @Override
+    public Map<String, String> getCollectionNames(Collection<String> kbIds) {
+        if (kbIds == null || kbIds.isEmpty()) {
+            return Map.of();
+        }
+        List<KnowledgeBaseDO> kbs = knowledgeBaseMapper.selectList(
+                Wrappers.lambdaQuery(KnowledgeBaseDO.class)
+                        .in(KnowledgeBaseDO::getId, kbIds)
+                        .select(KnowledgeBaseDO::getId, KnowledgeBaseDO::getCollectionName));
+        Map<String, String> result = new HashMap<>(kbs.size() * 2);
+        for (KnowledgeBaseDO kb : kbs) {
+            String name = kb.getCollectionName();
+            if (name != null && !name.isBlank()) {
+                result.put(kb.getId(), name);
+            }
+        }
+        return Map.copyOf(result);
     }
 }
