@@ -39,6 +39,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
@@ -132,6 +133,10 @@ public class MultiChannelRetrievalEngine {
                             try {
                                 log.info("执行检索通道：{}", channel.getName());
                                 return channel.search(context);
+                            } catch (IllegalStateException e) {
+                                // QSI-3: c2 retriever fail-fast contract violation must propagate to SSE,
+                                // 不能被 catch (Exception) 吞成 ERROR log + empty result.
+                                throw e;
                             } catch (Exception e) {
                                 log.error("检索通道 {} 执行失败", channel.getName(), e);
                                 return SearchChannelResult.builder()
@@ -155,6 +160,15 @@ public class MultiChannelRetrievalEngine {
                 .map(future -> {
                     try {
                         return future.join();
+                    } catch (CompletionException e) {
+                        // QSI-3: c2 retriever fail-fast contract violation must propagate to SSE.
+                        // CompletableFuture.join() 把 supplier 抛出的 IllegalStateException 包成
+                        // CompletionException, 这里 unwrap 后显式 rethrow.
+                        if (e.getCause() instanceof IllegalStateException ise) {
+                            throw ise;
+                        }
+                        log.error("获取通道检索结果失败", e);
+                        return null;
                     } catch (Exception e) {
                         log.error("获取通道检索结果失败", e);
                         return null;

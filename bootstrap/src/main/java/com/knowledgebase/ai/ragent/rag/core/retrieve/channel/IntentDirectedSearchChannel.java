@@ -140,6 +140,10 @@ public class IntentDirectedSearchChannel implements SearchChannel {
                     .metadata(Map.of("intentCount", kbIntents.size()))
                     .build();
 
+        } catch (IllegalStateException e) {
+            // QSI-3: c2 retriever fail-fast contract violation must propagate to SSE,
+            // 不能被 catch (Exception) 吞成 ERROR log + empty result.
+            throw e;
         } catch (Exception e) {
             log.error("意图定向检索失败", e);
             return SearchChannelResult.builder()
