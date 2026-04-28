@@ -83,6 +83,10 @@ public class IntentParallelRetriever extends AbstractParallelRetriever<IntentPar
                             .metadataFilters(task.metadataFilters())
                             .build()
             );
+        } catch (IllegalStateException e) {
+            // QSI-3: c2 retriever fail-fast contract violation must propagate to SSE,
+            // 不能被 catch (Exception) 吞成 ERROR log + empty list.
+            throw e;
         } catch (Exception e) {
             log.error("意图检索失败 - 意图ID: {}, 意图名称: {}, Collection: {}, 错误: {}",
                     node.getId(), node.getName(), node.getCollectionName(), e.getMessage(), e);

@@ -58,6 +58,10 @@ public class CollectionParallelRetriever extends AbstractParallelRetriever<Colle
                             .metadataFilters(task.metadataFilters())
                             .build()
             );
+        } catch (IllegalStateException e) {
+            // QSI-3: c2 retriever fail-fast contract violation must propagate to SSE,
+            // 不能被 catch (Exception) 吞成 ERROR log + empty list.
+            throw e;
         } catch (Exception e) {
             log.error("在 collection {} 中检索失败，错误: {}", task.collectionName(), e.getMessage(), e);
             return List.of();

@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 
 /**
@@ -85,6 +86,16 @@ public abstract class AbstractParallelRetriever<T> {
                 List<RetrievedChunk> chunks = future.future.join();
                 allChunks.addAll(chunks);
                 successCount++;
+            } catch (CompletionException e) {
+                // QSI-3: c2 retriever fail-fast contract violation must propagate to SSE,
+                // 不能被 catch (Exception) 吞成 ERROR log + empty list. CompletableFuture.join()
+                // 把 task 抛出的 IllegalStateException 包成 CompletionException, 这里 unwrap 后
+                // 显式 rethrow, 让 channel 层 / orchestrator 层最终把契约违规冒泡到调用栈.
+                if (e.getCause() instanceof IllegalStateException ise) {
+                    throw ise;
+                }
+                failureCount++;
+                log.error("{} 获取检索结果失败 - 目标: {}", getStatisticsName(), getTargetIdentifier(future.target), e);
             } catch (Exception e) {
                 failureCount++;
                 log.error("{} 获取检索结果失败 - 目标: {}", getStatisticsName(), getTargetIdentifier(future.target), e);

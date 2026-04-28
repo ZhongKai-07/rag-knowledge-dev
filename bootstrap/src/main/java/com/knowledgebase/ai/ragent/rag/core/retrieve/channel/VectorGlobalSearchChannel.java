@@ -154,6 +154,10 @@ public class VectorGlobalSearchChannel implements SearchChannel {
                     .latencyMs(latency)
                     .build();
 
+        } catch (IllegalStateException e) {
+            // QSI-3: c2 retriever fail-fast contract violation must propagate to SSE,
+            // 不能被 catch (Exception) 吞成 ERROR log + empty result.
+            throw e;
         } catch (Exception e) {
             log.error("向量全局检索失败", e);
             return SearchChannelResult.builder()
