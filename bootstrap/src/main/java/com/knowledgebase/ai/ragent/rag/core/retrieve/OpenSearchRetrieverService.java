@@ -99,6 +99,10 @@ public class OpenSearchRetrieverService implements RetrieverService {
     @SuppressWarnings("unchecked")
     private List<RetrievedChunk> doSearch(String collectionName, String query, float[] vector,
                                           int topK, List<MetadataFilter> metadataFilters) {
+        // QSI-3: 所有 retrieval 必须经 DefaultMetadataFilterBuilder, filter set 至少含
+        // kb_id IN 与 security_level LTE_OR_MISSING. 缺失即 fail-fast, 不被下面的
+        // catch (Exception) 吞成空 list. 必须在 try 之前调用.
+        enforceFilterContract(metadataFilters, collectionName);
         try {
             String queryJson;
 
@@ -133,9 +137,33 @@ public class OpenSearchRetrieverService implements RetrieverService {
                         .collect(Collectors.toList());
             }
 
+        } catch (IllegalStateException e) {
+            // 显式不吞契约违规: 防御未来重构 (例如有人把 enforceFilterContract 挪进 try)
+            throw e;
         } catch (Exception e) {
             log.error("OpenSearch retrieval failed for index: {}", collectionName, e);
             return List.of();
+        }
+    }
+
+    /**
+     * QSI-3: 所有 OpenSearch retrieval 必须经过 DefaultMetadataFilterBuilder,
+     * filter set 必须同时含 kb_id IN 与 security_level LTE_OR_MISSING.
+     * 缺失即 fail-fast, 避免静默查询绕过 RBAC 边界.
+     */
+    private static void enforceFilterContract(List<MetadataFilter> filters, String collectionName) {
+        boolean hasKbIdFilter = filters != null && filters.stream()
+                .anyMatch(f -> VectorMetadataFields.KB_ID.equals(f.field())
+                        && f.op() == MetadataFilter.FilterOp.IN);
+        boolean hasSecurityLevelFilter = filters != null && filters.stream()
+                .anyMatch(f -> VectorMetadataFields.SECURITY_LEVEL.equals(f.field())
+                        && f.op() == MetadataFilter.FilterOp.LTE_OR_MISSING);
+        if (!hasKbIdFilter || !hasSecurityLevelFilter) {
+            throw new IllegalStateException(
+                    "OpenSearch filter contract violated for collection=" + collectionName
+                            + ", hasKbIdFilter=" + hasKbIdFilter
+                            + ", hasSecurityLevelFilter=" + hasSecurityLevelFilter
+                            + ". All retrieval must go through DefaultMetadataFilterBuilder.");
         }
     }
 
