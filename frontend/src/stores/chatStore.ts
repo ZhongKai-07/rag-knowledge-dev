@@ -46,7 +46,7 @@ interface ChatState {
   createSession: () => Promise<string>;
   deleteSession: (sessionId: string) => Promise<void>;
   renameSession: (sessionId: string, title: string) => Promise<void>;
-  selectSession: (sessionId: string) => Promise<void>;
+  selectSession: (sessionId: string, kbId?: string) => Promise<void>;
   updateSessionTitle: (sessionId: string, title: string) => void;
   setDeepThinkingEnabled: (enabled: boolean) => void;
   setSelectedKnowledgeBase: (kbId: string | null) => void;
@@ -105,6 +105,7 @@ export function createStreamHandlers(
       if (!nextId) return;
       const lastTime = new Date().toISOString();
       const existing = get().sessions.find((session) => session.id === nextId);
+      const kbId = get().activeKbId || undefined;
       set((state) => ({
         currentSessionId: nextId,
         isCreatingNew: false,
@@ -112,7 +113,8 @@ export function createStreamHandlers(
         sessions: upsertSession(state.sessions, {
           id: nextId,
           title: existing?.title || "新对话",
-          lastTime
+          lastTime,
+          kbId
         })
       }));
       if (get().cancelRequested) {
@@ -299,18 +301,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ activeKbId: kbId, activeKbName: kbName });
   },
   resetForNewSpace: () => {
+    const { isStreaming, streamAbort } = get();
+    if (isStreaming) {
+      get().cancelGeneration();
+      streamAbort?.();
+    }
     set({
       currentSessionId: null,
       messages: [],
       sessions: [],
-      sessionsLoaded: false
+      sessionsLoaded: false,
+      isLoading: false,
+      isStreaming: false,
+      isCreatingNew: false,
+      thinkingStartAt: null,
+      streamTaskId: null,
+      streamAbort: null,
+      streamingMessageId: null,
+      cancelRequested: false
     });
   },
   fetchSessions: async (kbId?) => {
+    const requestedKbId = kbId || null;
     set({ isLoading: true });
     try {
       const data = await listSessions(kbId);
-      const sessions = data
+      if (requestedKbId && get().activeKbId !== requestedKbId) {
+        return;
+      }
+      let sessions = data
         .map((item) => ({
         id: item.conversationId,
         title: item.title || "新对话",
@@ -322,11 +341,27 @@ export const useChatStore = create<ChatState>((set, get) => ({
           const timeB = b.lastTime ? new Date(b.lastTime).getTime() : 0;
           return timeB - timeA;
         });
+      const currentSessionId = get().currentSessionId;
+      const currentSession = currentSessionId
+        ? get().sessions.find((session) => session.id === currentSessionId)
+        : undefined;
+      if (
+        currentSession &&
+        !sessions.some((session) => session.id === currentSession.id) &&
+        (get().isStreaming || get().messages.length > 0)
+      ) {
+        sessions = upsertSession(sessions, {
+          ...currentSession,
+          kbId: currentSession.kbId || requestedKbId || undefined
+        });
+      }
       set({ sessions });
     } catch (error) {
       toast.error((error as Error).message || "加载会话失败");
     } finally {
-      set({ isLoading: false, sessionsLoaded: true });
+      if (!requestedKbId || get().activeKbId === requestedKbId) {
+        set({ isLoading: false, sessionsLoaded: true });
+      }
     }
   },
   createSession: async () => {
@@ -386,9 +421,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       toast.error((error as Error).message || "重命名失败");
     }
   },
-  selectSession: async (sessionId) => {
+  selectSession: async (sessionId, kbId) => {
     if (!sessionId) return;
-    if (get().currentSessionId === sessionId && get().messages.length > 0) return;
+    const requestedKbId = kbId || get().activeKbId || undefined;
+    if (
+      get().currentSessionId === sessionId &&
+      get().messages.length > 0 &&
+      (!requestedKbId || get().activeKbId === requestedKbId)
+    ) {
+      return;
+    }
     if (get().isStreaming) {
       get().cancelGeneration();
     }
@@ -399,8 +441,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
       thinkingStartAt: null
     });
     try {
-      const data = await listMessages(sessionId, get().activeKbId || undefined);
-      if (get().currentSessionId !== sessionId) {
+      const data = await listMessages(sessionId, requestedKbId);
+      if (
+        get().currentSessionId !== sessionId ||
+        (requestedKbId && get().activeKbId !== requestedKbId)
+      ) {
         return;
       }
       const mapped: Message[] = data.map((item) => ({
@@ -418,8 +463,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (error) {
       toast.error((error as Error).message || "加载消息失败");
     } finally {
-      if (get().currentSessionId !== sessionId) {
-        set({ isLoading: false });
+      if (
+        get().currentSessionId !== sessionId ||
+        (requestedKbId && get().activeKbId !== requestedKbId)
+      ) {
+        if (!requestedKbId || get().activeKbId === requestedKbId) {
+          set({ isLoading: false });
+        }
         return;
       }
       set({

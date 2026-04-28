@@ -28,10 +28,15 @@ export function ChatPage() {
   } = useChatStore();
   const showWelcome = messages.length === 0 && !isLoading;
   const [sessionsReady, setSessionsReady] = React.useState(false);
+  const isKbReady = Boolean(kbId && activeKbId === kbId);
   const sessionExists = React.useMemo(() => {
     if (!sessionId) return false;
     return sessions.some((session) => session.id === sessionId);
   }, [sessionId, sessions]);
+  const currentSessionExists = React.useMemo(() => {
+    if (!currentSessionId) return false;
+    return sessions.some((session) => session.id === currentSessionId);
+  }, [currentSessionId, sessions]);
 
   // Redirect to /spaces if no kbId in URL
   React.useEffect(() => {
@@ -43,15 +48,18 @@ export function ChatPage() {
   // On mount / kbId change: reset state and sync activeKb
   React.useEffect(() => {
     if (!kbId) return;
-    let active = true;
-
     if (kbId !== activeKbId) {
       resetForNewSpace();
       setActiveKb(kbId, null);
       setSessionsReady(false);
     }
+  }, [kbId, activeKbId, resetForNewSpace, setActiveKb]);
 
-    // Fetch KB name
+  // Fetch KB name
+  React.useEffect(() => {
+    if (!kbId) return;
+    let active = true;
+
     getKnowledgeBase(kbId)
       .then((kb) => {
         if (active) {
@@ -63,13 +71,13 @@ export function ChatPage() {
     return () => {
       active = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kbId]);
+  }, [kbId, setActiveKb]);
 
   // Fetch sessions filtered by kbId
   React.useEffect(() => {
-    if (!kbId) return;
+    if (!kbId || !isKbReady) return;
     let active = true;
+    setSessionsReady(false);
     fetchSessions(kbId)
       .catch(() => null)
       .finally(() => {
@@ -80,20 +88,17 @@ export function ChatPage() {
     return () => {
       active = false;
     };
-  }, [kbId, fetchSessions]);
+  }, [kbId, isKbReady, fetchSessions]);
 
   React.useEffect(() => {
-    if (!kbId) return;
+    if (!kbId || !isKbReady || !sessionsReady) return;
     if (sessionId) {
-      if (sessionsReady && !sessionExists) {
+      if (!sessionExists) {
         createSession().catch(() => null);
         navigate(`/chat?kbId=${kbId}`, { replace: true });
         return;
       }
-      selectSession(sessionId).catch(() => null);
-      return;
-    }
-    if (!sessionsReady) {
+      selectSession(sessionId, kbId).catch(() => null);
       return;
     }
     if (isCreatingNew) {
@@ -105,6 +110,7 @@ export function ChatPage() {
     createSession().catch(() => null);
   }, [
     kbId,
+    isKbReady,
     sessionId,
     sessionsReady,
     sessionExists,
@@ -116,11 +122,19 @@ export function ChatPage() {
   ]);
 
   React.useEffect(() => {
-    if (!kbId) return;
-    if (currentSessionId && currentSessionId !== sessionId) {
+    if (!kbId || !isKbReady || !sessionsReady || sessionId) return;
+    if (currentSessionId && currentSessionExists && currentSessionId !== sessionId) {
       navigate(`/chat/${currentSessionId}?kbId=${kbId}`, { replace: true });
     }
-  }, [currentSessionId, sessionId, kbId, navigate]);
+  }, [
+    currentSessionId,
+    currentSessionExists,
+    sessionId,
+    kbId,
+    isKbReady,
+    sessionsReady,
+    navigate
+  ]);
 
   return (
     <MainLayout>
