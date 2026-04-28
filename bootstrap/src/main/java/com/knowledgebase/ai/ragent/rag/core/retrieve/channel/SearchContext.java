@@ -21,7 +21,6 @@ import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
 import com.knowledgebase.ai.ragent.rag.dto.SubQuestionIntent;
 import lombok.Data;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -82,11 +81,6 @@ public class SearchContext {
     private Map<String, Integer> kbSecurityLevels;
 
     /**
-     * 扩展元数据
-     */
-    private Map<String, Object> metadata = new HashMap<>();
-
-    /**
      * Builder-level fail-fast：配置错 (recallTopK < rerankTopK 或非正) 直接 IAE，
      * 避免错配沉默流到 channel / rerank 后再爆。这是和
      * {@link com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties#validate()} 的第二道保险。
@@ -108,7 +102,6 @@ public class SearchContext {
         private int rerankTopK;
         private AccessScope accessScope;
         private Map<String, Integer> kbSecurityLevels;
-        private Map<String, Object> metadata;
 
         public SearchContextBuilder originalQuestion(String v) {
             this.originalQuestion = v;
@@ -150,11 +143,6 @@ public class SearchContext {
             return this;
         }
 
-        public SearchContextBuilder metadata(Map<String, Object> v) {
-            this.metadata = v;
-            return this;
-        }
-
         public SearchContext build() {
             if (recallTopK <= 0) {
                 throw new IllegalArgumentException(
@@ -178,7 +166,6 @@ public class SearchContext {
             ctx.setRerankTopK(rerankTopK);
             ctx.setAccessScope(accessScope);
             ctx.setKbSecurityLevels(kbSecurityLevels);
-            ctx.setMetadata(metadata != null ? metadata : new HashMap<>());
             return ctx;
         }
     }
