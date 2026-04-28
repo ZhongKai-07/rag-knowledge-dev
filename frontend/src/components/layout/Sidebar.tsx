@@ -54,7 +54,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     createSession,
     deleteSession,
     renameSession,
-    selectSession,
     fetchSessions
   } = useChatStore();
   const navigate = useNavigate();
@@ -159,6 +158,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
     await renameSession(renamingId, nextTitle);
     cancelRename();
+  };
+
+  const openSession = (sessionId: string) => {
+    useChatStore.setState((state) => ({
+      ...state,
+      currentSessionId: sessionId,
+      messages: [],
+      isLoading: true,
+      isCreatingNew: false
+    }));
+    navigate(sessionPath(sessionId));
+    onClose();
   };
 
   return (
@@ -295,15 +306,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                           if (renamingId) {
                             cancelRename();
                           }
-                          selectSession(session.id).catch(() => null);
-                          navigate(sessionPath(session.id));
-                          onClose();
+                          openSession(session.id);
                         }}
                         onKeyDown={(event) => {
                           if (event.key === "Enter") {
-                            selectSession(session.id).catch(() => null);
-                            navigate(sessionPath(session.id));
-                            onClose();
+                            openSession(session.id);
                           }
                         }}
                       >

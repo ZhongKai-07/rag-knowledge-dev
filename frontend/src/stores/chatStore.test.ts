@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Message, SourceCard, SourcesPayload } from "@/types";
 import { createStreamHandlers, useChatStore } from "./chatStore";
-import { listMessages } from "@/services/sessionService";
+import { listMessages, listSessions } from "@/services/sessionService";
 
 vi.mock("@/services/sessionService", async (importActual) => {
   const actual = await importActual<typeof import("@/services/sessionService")>();
   return {
     ...actual,
-    listMessages: vi.fn()
+    listMessages: vi.fn(),
+    listSessions: vi.fn()
   };
 });
 
@@ -65,8 +66,24 @@ function resetStore() {
     isStreaming: false,
     sessions: [],
     currentSessionId: null,
-    thinkingStartAt: null
+    thinkingStartAt: null,
+    activeKbId: null,
+    activeKbName: null,
+    sessionsLoaded: false,
+    streamTaskId: null,
+    streamAbort: null,
+    cancelRequested: false
   }));
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
 }
 
 describe("chatStore.onSources", () => {
@@ -138,6 +155,7 @@ describe("chatStore.onFinish sources preservation", () => {
 describe("selectSession mapping", () => {
   beforeEach(() => {
     vi.mocked(listMessages).mockReset();
+    vi.mocked(listSessions).mockReset();
     resetStore();
   });
 
@@ -192,5 +210,125 @@ describe("selectSession mapping", () => {
     expect(messages[0].thinking).toBeUndefined();
     expect(messages[0].thinkingDuration).toBeUndefined();
     expect(messages[0].sources).toBeUndefined();
+  });
+
+  it("passes explicit kbId to listMessages", async () => {
+    vi.mocked(listMessages).mockResolvedValue([]);
+
+    await useChatStore.getState().selectSession("c1", "kbA");
+
+    expect(listMessages).toHaveBeenCalledWith("c1", "kbA");
+  });
+
+  it("does not apply stale messages after active kb changes", async () => {
+    const pending = deferred<Awaited<ReturnType<typeof listMessages>>>();
+    vi.mocked(listMessages).mockReturnValue(pending.promise);
+
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kbA" }));
+    const loading = useChatStore.getState().selectSession("c1", "kbA");
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kbB" }));
+
+    pending.resolve([
+      {
+        id: "m1",
+        conversationId: "c1",
+        role: "assistant",
+        content: "stale answer",
+        vote: null
+      }
+    ]);
+    await loading;
+
+    expect(useChatStore.getState().messages).toEqual([]);
+  });
+
+  it("does not apply stale sessions after active kb changes", async () => {
+    const pending = deferred<Awaited<ReturnType<typeof listSessions>>>();
+    vi.mocked(listSessions).mockReturnValue(pending.promise);
+
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kbA" }));
+    const loading = useChatStore.getState().fetchSessions("kbA");
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kbB" }));
+
+    pending.resolve([
+      {
+        conversationId: "c1",
+        title: "KB A session",
+        kbId: "kbA"
+      }
+    ]);
+    await loading;
+
+    expect(useChatStore.getState().sessions).toEqual([]);
+  });
+
+  it("preserves the current session when fetchSessions resolves without it", async () => {
+    const pending = deferred<Awaited<ReturnType<typeof listSessions>>>();
+    vi.mocked(listSessions).mockReturnValue(pending.promise);
+
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kbA" }));
+    const loading = useChatStore.getState().fetchSessions("kbA");
+
+    seedStreamingState("msgA");
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kbA" }));
+    const handlers = buildHandlers("msgA");
+    handlers.onMeta?.({ conversationId: "c_meta", taskId: "task1" });
+
+    pending.resolve([]);
+    await loading;
+
+    expect(useChatStore.getState().sessions).toEqual([
+      expect.objectContaining({
+        id: "c_meta",
+        kbId: "kbA"
+      })
+    ]);
+  });
+});
+
+describe("chatStore.onMeta", () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it("stores active kbId on session created from stream metadata", () => {
+    seedStreamingState("msgA");
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kb1" }));
+    const handlers = buildHandlers("msgA");
+
+    handlers.onMeta?.({ conversationId: "c_meta", taskId: "task1" });
+
+    expect(useChatStore.getState().sessions[0]).toMatchObject({
+      id: "c_meta",
+      kbId: "kb1"
+    });
+  });
+});
+
+describe("resetForNewSpace", () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it("clears streaming state and ignores late stream metadata", () => {
+    seedStreamingState("msgA");
+    useChatStore.setState((s) => ({
+      ...s,
+      activeKbId: "kbA",
+      streamAbort: vi.fn()
+    }));
+    const handlers = buildHandlers("msgA");
+
+    useChatStore.getState().resetForNewSpace();
+    useChatStore.setState((s) => ({ ...s, activeKbId: "kbB" }));
+    handlers.onMeta?.({ conversationId: "c_late", taskId: "task-late" });
+
+    expect(useChatStore.getState()).toMatchObject({
+      currentSessionId: null,
+      isStreaming: false,
+      streamingMessageId: null,
+      streamTaskId: null,
+      sessions: []
+    });
   });
 });
