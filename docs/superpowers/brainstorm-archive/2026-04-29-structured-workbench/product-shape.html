@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>1. 产品形态选择 — KB 中心化 vs 任务模板 chatbot vs 结构化工作台 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 2026-04-29 Structured Workbench · 1. 产品形态选择 — KB 中心化 vs 任务模板 chatbot vs 结构化工作台</h1>
+  <a href="index.html">← back to index</a>
+</div>
+<div id="claude-content">
+<h2>产品形态：用户进入系统第一眼看到什么？</h2>
+<p class="subtitle">三种形态对后端 pipeline、任务抽象、UI 都有根本不同。先选大方向，再聊实现。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. KB 中心化（≈ 当前）</div>
+        <div class="mockup-body" style="padding:12px">
+          <div class="mock-nav">HT KnowledgeBase | 我的KB | 上传</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+            <div class="placeholder" style="height:60px">📚 COB 制度库</div>
+            <div class="placeholder" style="height:60px">📚 SOP 操作手册</div>
+            <div class="placeholder" style="height:60px">📚 Collateral 协议库</div>
+            <div class="placeholder" style="height:60px">📚 + 新建 KB</div>
+          </div>
+          <div class="label" style="margin-top:10px">点 KB → 进入聊天</div>
+          <div class="placeholder" style="height:80px;margin-top:6px">💬 Q&amp;A 聊天框（所有 KB 都长这样）</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · KB 中心化</h3>
+      <p>不同语料 = 不同 KB。所有交互形态 = 同一个 RAG 聊天框。协议提取无家可归。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. 任务模板化 Chatbot 集合</div>
+        <div class="mockup-body" style="padding:12px">
+          <div class="mock-nav">Ops 助手 | 选择任务</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+            <div class="placeholder" style="height:60px">🤖 COB 咨询</div>
+            <div class="placeholder" style="height:60px">🤖 SOP 助手</div>
+            <div class="placeholder" style="height:60px">🤖 Collateral 筛查</div>
+            <div class="placeholder" style="height:60px">🤖 协议提取（？）</div>
+          </div>
+          <div class="label" style="margin-top:10px">每个 chatbot = 聊天形态 + 绑定语料/prompt/工具</div>
+          <div class="placeholder" style="height:80px;margin-top:6px">💬 还是聊天框，但带"任务 hint"</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 任务模板化 Chatbot</h3>
+      <p>每个任务 = 一个绑定语料/prompt/工具的 chatbot。统一是聊天形态。协议提取硬塞会很别扭。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. 结构化工作台（任务驱动）</div>
+        <div class="mockup-body" style="padding:12px">
+          <div class="mock-nav">Ops 工作台 | 任务中心 | 任务历史</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+            <div class="placeholder" style="height:60px;background:#dbeafe">💬 COB 问答<br><span style="font-size:10px">→ 聊天 UI</span></div>
+            <div class="placeholder" style="height:60px;background:#dbeafe">💬 SOP 问答<br><span style="font-size:10px">→ 聊天 UI</span></div>
+            <div class="placeholder" style="height:60px;background:#fef3c7">🔍 Collateral 筛查<br><span style="font-size:10px">→ 检索+提取卡片</span></div>
+            <div class="placeholder" style="height:60px;background:#fee2e2">📤 协议提取<br><span style="font-size:10px">→ 上传+表单+Excel下载</span></div>
+          </div>
+          <div class="label" style="margin-top:10px">每个任务有自己的 UI 和后端 pipeline，共享底座（语料/权限/审计）</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · 结构化工作台 ⭐</h3>
+      <p>任务是一等公民。不同任务有不同 UI（聊天/表单/文件交付/进度条）和不同后端 pipeline，但共享语料、权限、审计、追踪底座。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;padding:14px;background:#f8fafc;border-left:3px solid #3b82f6;border-radius:4px">
+  <strong>我的初判：C</strong> · 理由：你提到"协议提取产出 Excel"和"复杂指令/问题排查"，这两类天然不是聊天形态。A/B 都得"硬塞"。但 C 的代价是要新增"任务"这一层抽象。
+</div>
+
+</div>
+</body>
+</html>

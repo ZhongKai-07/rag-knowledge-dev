@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>6. UX — Task 是后端 entity 不是 UI 概念 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 2026-04-29 Structured Workbench · 6. UX — Task 是后端 entity 不是 UI 概念</h1>
+  <a href="index.html">← back to index</a>
+</div>
+<div id="claude-content">
+<h2>"Task" 是后端 entity，不是 UI 概念</h2>
+<p class="subtitle">用户看到的是"知识问答 / 文档处理"两个能力区。点进去直接开干，不需要"创建任务"。</p>
+
+<h3>问题对照</h3>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header" style="background:#fee2e2">❌ 错误：把 task 暴露给用户</div>
+    <div class="mockup-body" style="padding:14px;font-size:12px">
+      <div class="mock-nav">Ops 工作台</div>
+      <div class="placeholder" style="height:60px;margin-top:8px;background:#fef2f2">
+        ➕ <strong>开始新任务</strong>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:#dc2626">
+        步骤 1：点"开始新任务" →<br>
+        步骤 2：选任务模板（COB / SOP / 筛查 / 提取） →<br>
+        步骤 3：填任务名 →<br>
+        步骤 4：终于能问问题了
+      </div>
+      <div class="placeholder" style="margin-top:10px;height:auto;padding:8px;background:#fee2e2;font-size:11px">
+        <strong>用户体验问题</strong>：<br>
+        · 多 3 步多余动作才能问一个问题<br>
+        · "任务"是个技术词，用户不理解<br>
+        · 比 ChatGPT 体验差太多
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header" style="background:#dcfce7">✅ 正确：task 隐藏在后端</div>
+    <div class="mockup-body" style="padding:14px;font-size:12px">
+      <div class="mock-nav">Ops 工作台 | 💬 知识问答 | 📤 文档处理</div>
+      <div class="placeholder" style="height:60px;margin-top:8px;background:#dcfce7">
+        💬 <strong>点"知识问答" → 直接看到聊天框，开问</strong>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:#10b981">
+        步骤 1：点"知识问答" →<br>
+        步骤 2：在聊天框里输入问题 ✅
+      </div>
+      <div class="placeholder" style="margin-top:10px;height:auto;padding:8px;background:#dcfce7;font-size:11px">
+        <strong>后端发生的事</strong>：<br>
+        · 用户提问的瞬间，自动创建一个 task instance<br>
+        · 落 Ledger 时记录 task_type=knowledge_qa<br>
+        · 用户左侧"历史"里看到"今天的对话"——这就是 task instance<br>
+        · 用户从来不知道"task"这个词
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px">推荐 UX：两个一级能力 + 隐式 task 实例</h3>
+
+<div class="mockup">
+  <div class="mockup-header">/workbench 主界面</div>
+  <div class="mockup-body" style="padding:0">
+
+    <div style="display:grid;grid-template-columns:200px 1fr;min-height:400px">
+
+      <div style="background:#f8fafc;border-right:1px solid #e2e8f0;padding:14px;font-size:12px">
+        <div style="font-weight:600;margin-bottom:10px;color:#3b82f6">Ops 工作台</div>
+
+        <div style="padding:10px;background:#dbeafe;border-radius:6px;margin-bottom:6px;cursor:pointer">
+          💬 <strong>知识问答</strong>
+        </div>
+        <div style="padding:10px;border-radius:6px;margin-bottom:6px;cursor:pointer">
+          📤 <strong>文档处理</strong>
+        </div>
+
+        <div style="margin-top:18px;font-size:11px;color:#94a3b8;text-transform:uppercase">最近</div>
+        <div style="padding:6px;font-size:11px;color:#475569">📝 EU MTA 政策（10 分钟前）</div>
+        <div style="padding:6px;font-size:11px;color:#475569">📝 SOP 异常处理（昨天）</div>
+        <div style="padding:6px;font-size:11px;color:#475569">📤 ISDA #1234 提取（昨天）</div>
+        <div style="padding:6px;font-size:11px;color:#475569">🔍 对手方 ABC 筛查（3 天前）</div>
+
+        <div style="margin-top:18px;font-size:11px;color:#94a3b8;text-transform:uppercase">v2</div>
+        <div style="padding:6px;font-size:11px;color:#cbd5e1">🔔 推送（待开发）</div>
+      </div>
+
+      <div style="padding:18px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">💬 知识问答</div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:12px">默认查询你部门可访问的全部知识库</div>
+
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <span style="padding:4px 10px;background:#dbeafe;border-radius:12px;font-size:11px">🟢 COB</span>
+          <span style="padding:4px 10px;background:#dbeafe;border-radius:12px;font-size:11px">🟢 SOP</span>
+          <span style="padding:4px 10px;border:1px dashed #cbd5e1;border-radius:12px;font-size:11px;color:#94a3b8">⊕ 限定来源</span>
+        </div>
+
+        <div class="placeholder" style="height:200px;background:#fff;border:1px solid #e2e8f0;text-align:left;padding:12px;font-size:12px">
+          <em style="color:#94a3b8">"EU 区域 MTA 默认值是多少？"</em><br><br>
+          <strong>系统</strong>：根据 COB 手册第 3.2 节，EU 区域 MTA 默认值为 €250,000...<br>
+          <span style="font-size:10px;color:#64748b">📎 来源：<u>COB Manual §3.2</u> · <u>EU 监管补充 §A</u></span>
+        </div>
+
+        <input class="mock-input" style="margin-top:8px" placeholder="继续问..." />
+
+        <div style="margin-top:12px;padding:8px;background:#f1f5f9;font-size:11px;color:#64748b;border-radius:4px">
+          ⓘ 这次对话已自动保存到"最近"列表
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<h3 style="margin-top:24px">文档处理的 UX</h3>
+
+<div class="mockup">
+  <div class="mockup-header">点击"📤 文档处理"</div>
+  <div class="mockup-body" style="padding:14px;font-size:12px">
+
+    <div style="font-size:14px;font-weight:600;margin-bottom:12px">📤 文档处理</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="placeholder" style="background:#fef3c7;height:auto;padding:14px;text-align:left">
+        <div style="font-size:13px;font-weight:600">🔍 协议筛查</div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px">从已归档协议中找信息<br>（保证金/MTA/IA 等）</div>
+        <button class="mock-button" style="margin-top:8px;font-size:11px">开始筛查 →</button>
+      </div>
+      <div class="placeholder" style="background:#fee2e2;height:auto;padding:14px;text-align:left">
+        <div style="font-size:13px;font-weight:600">📤 提取关键字段</div>
+        <div style="font-size:11px;color:#64748b;margin-top:4px">上传 ISDA / GMRA<br>→ 下载 Excel</div>
+        <button class="mock-button" style="margin-top:8px;font-size:11px">上传文档 →</button>
+      </div>
+    </div>
+
+    <div style="margin-top:18px">
+      <div class="label" style="color:#94a3b8">最近处理</div>
+      <div style="font-size:11px;margin-top:6px">
+        <div style="padding:8px;border-bottom:1px solid #f1f5f9">📤 ISDA_ABC_2026.pdf · 提取完成 · <u>下载 Excel</u></div>
+        <div style="padding:8px;border-bottom:1px solid #f1f5f9">🔍 对手方 XYZ 筛查 · 命中 5 处 · <u>查看</u></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<h3 style="margin-top:24px">用户语义 vs 系统术语 — 词汇映射表</h3>
+
+<div class="mockup">
+  <div class="mockup-body" style="padding:0">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead style="background:#f1f5f9">
+        <tr>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">用户看到的词</th>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">后端 entity</th>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0">💬 知识问答</td><td style="padding:8px;border:1px solid #e2e8f0">task_template = knowledge_qa</td><td style="padding:8px;border:1px solid #e2e8f0">能力区入口；点进去用知识问答 Agent</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0">📤 文档处理</td><td style="padding:8px;border:1px solid #e2e8f0">task_template = doc_intelligence</td><td style="padding:8px;border:1px solid #e2e8f0">能力区入口；含筛查/提取两个子操作</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0">📝 一段对话</td><td style="padding:8px;border:1px solid #e2e8f0">task_instance + conversation</td><td style="padding:8px;border:1px solid #e2e8f0">用户提问瞬间自动创建</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0">🔍 一次筛查</td><td style="padding:8px;border:1px solid #e2e8f0">task_instance</td><td style="padding:8px;border:1px solid #e2e8f0">用户点"开始筛查"瞬间创建</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0">📤 一次提取</td><td style="padding:8px;border:1px solid #e2e8f0">task_instance + extraction_job</td><td style="padding:8px;border:1px solid #e2e8f0">用户上传文档瞬间创建，可异步</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0">"最近"列表</td><td style="padding:8px;border:1px solid #e2e8f0">task_instance 列表渲染</td><td style="padding:8px;border:1px solid #e2e8f0">就是用户的工作历史</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0">🟢 COB / SOP chip</td><td style="padding:8px;border:1px solid #e2e8f0">kb_id 集合（task config）</td><td style="padding:8px;border:1px solid #e2e8f0">部门可访问的 KB 自动展开为 chip</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section" style="margin-top:18px;padding:14px;background:#dbeafe;border-left:3px solid #3b82f6;border-radius:4px;font-size:13px">
+  <strong>核心原则</strong>：
+  <ol style="margin-top:6px">
+    <li><strong>UI 上零"任务"二字</strong>——只有"知识问答 / 文档处理 / 最近 / 推送"</li>
+    <li><strong>能力区即入口</strong>，点击直接进入对应交互（聊天 / 上传 / 选文档）</li>
+    <li><strong>task instance 自动创建</strong>——用户的第一个动作（提问 / 上传）触发，无感</li>
+    <li><strong>"最近"列表 = task instance 历史</strong>——用户能找回所有过去的工作</li>
+    <li><strong>COB vs SOP 在知识问答内做来源 chip</strong>——用户默认看到所有部门可访问 KB，可手动限定</li>
+  </ol>
+</div>
+
+<div class="section" style="margin-top:14px;padding:14px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:13px">
+  <strong>对设计文档的影响</strong>：写 spec 时要严格区分"用户层 UI 文案"和"系统层 entity 命名"。前端组件命名也避开 Task* 前缀（用 ChatPanel / DocPanel / RecentList），后端再用 TaskInstance / TaskTemplate。
+</div>
+
+</div>
+</body>
+</html>

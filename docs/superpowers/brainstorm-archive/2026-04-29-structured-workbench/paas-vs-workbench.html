@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>3. 与 PaaS 助手作坊的根本差异 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 2026-04-29 Structured Workbench · 3. 与 PaaS 助手作坊的根本差异</h1>
+  <a href="index.html">← back to index</a>
+</div>
+<div id="claude-content">
+<h2>PaaS 助手作坊 vs 结构化工作台 — 根本差异</h2>
+<p class="subtitle">不是"我们做得更好的助手平台"，是<u>不在同一层</u>。复用单位错了，再好的拖拽工具也救不回来。</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header" style="background:#fee2e2">PaaS 助手平台（截图所示）</div>
+    <div class="mockup-body" style="padding:12px;font-size:11px">
+      <div class="label" style="color:#dc2626">▌每个助手 = 一份"全栈复刻"</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:6px 0">
+        <div class="placeholder" style="background:#fff;height:80px;font-size:10px;text-align:left;padding:4px">
+          <strong>MAC核对助手</strong><br>
+          📝 自己 prompt<br>
+          📚 自己语料<br>
+          🔧 自己工具<br>
+          🧪 自己验证
+        </div>
+        <div class="placeholder" style="background:#fff;height:80px;font-size:10px;text-align:left;padding:4px">
+          <strong>单测助手</strong><br>
+          📝 自己 prompt<br>
+          📚 自己语料<br>
+          🔧 自己工具<br>
+          🧪 自己验证
+        </div>
+        <div class="placeholder" style="background:#fff;height:80px;font-size:10px;text-align:left;padding:4px">
+          <strong>排障助手</strong><br>
+          📝 自己 prompt<br>
+          📚 自己语料<br>
+          🔧 自己工具<br>
+          🧪 自己验证
+        </div>
+      </div>
+      <div style="text-align:center;color:#dc2626;margin:6px 0">↓ 复用单位 = "助手模板"（即整体复制）↓</div>
+      <div class="placeholder" style="height:30px;background:#fee2e2;font-size:11px">拖拽 = fork 一份完整模板，从此各自演化</div>
+
+      <div class="label" style="color:#dc2626;margin-top:12px">▌结果</div>
+      <ul style="margin:4px 0;padding-left:18px;font-size:11px">
+        <li>16 个助手 = 16 份独立 prompt / 语料 / 工具 / eval</li>
+        <li>同一份制度文档被 5 个助手各自上传 5 份</li>
+        <li>没人能回答"这些助手底层有几种本质能力"</li>
+        <li>升级模型 = 16 个助手挨个改</li>
+        <li>用户找不到入口（"哪个能做我这事？"）</li>
+        <li>幽灵助手堆积，没有下线机制</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header" style="background:#dcfce7">结构化工作台（我们）</div>
+    <div class="mockup-body" style="padding:12px;font-size:11px">
+      <div class="label" style="color:#3b82f6">▌任务层（薄 · 配置）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin:6px 0">
+        <div class="placeholder" style="background:#dbeafe;height:55px;font-size:10px;text-align:left;padding:4px">
+          <strong>COB 问答</strong><br>
+          ▸ 用：知识问答 Agent<br>
+          ▸ 绑：COB 语料
+        </div>
+        <div class="placeholder" style="background:#dbeafe;height:55px;font-size:10px;text-align:left;padding:4px">
+          <strong>SOP 问答</strong><br>
+          ▸ 用：知识问答 Agent<br>
+          ▸ 绑：SOP 语料
+        </div>
+        <div class="placeholder" style="background:#dbeafe;height:55px;font-size:10px;text-align:left;padding:4px">
+          <strong>协议提取</strong><br>
+          ▸ 用：文档智能 Agent<br>
+          ▸ 绑：ISDA schema
+        </div>
+      </div>
+      <div style="text-align:center;color:#3b82f6;margin:4px 0">↓ ↓ ↓</div>
+
+      <div class="label" style="color:#10b981">▌Agent 层（厚 · 代码 · 少数有 owner）</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:4px 0">
+        <div class="placeholder" style="background:#d1fae5;height:50px;font-size:10px;text-align:left;padding:4px">
+          <strong>知识问答 Agent</strong><br>
+          检索 / 引用约束 / 多轮记忆
+        </div>
+        <div class="placeholder" style="background:#d1fae5;height:50px;font-size:10px;text-align:left;padding:4px">
+          <strong>文档智能 Agent</strong><br>
+          字段抽取 / 模板渲染 / 比对
+        </div>
+      </div>
+      <div style="text-align:center;color:#10b981;margin:4px 0">↓ 共享底座 ↓</div>
+
+      <div class="label" style="color:#6b7280">▌底座（统一治理）</div>
+      <div class="placeholder" style="height:38px;font-size:10px;background:#f1f5f9">语料 KB · RBAC · trace · RAGAS · 模型路由</div>
+
+      <div class="label" style="color:#10b981;margin-top:10px">▌结果</div>
+      <ul style="margin:4px 0;padding-left:18px;font-size:11px">
+        <li>新任务 = 写一份配置（不写代码）</li>
+        <li>语料统一在底座，零重复</li>
+        <li>Agent 升级 = 所有依赖任务自动获益</li>
+        <li>RAGAS / 引用约束等"非作坊"基建天然共享</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top:24px">作坊问题的根因（不是工具不好）</h3>
+
+<div class="section" style="padding:14px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:13px">
+  <strong>关键洞察</strong>：一个助手 ≈ <strong>80% 配置</strong>（prompt / 语料 / 工具列表 / UI 形态）+ <strong>20% 代码</strong>（编排逻辑 / 引用规则 / eval / 防护栏）。
+  <br><br>
+  PaaS 把这两部分捆在"助手"一个东西里，鼓励"每个助手 100% 自己造"——结果配置和代码都被复制。
+  <br><br>
+  我们的做法 = <strong>切开</strong>：
+  <ul style="margin-top:6px">
+    <li><strong>20% 代码 → 共享 Agent 库</strong>（少数、精炼、有 owner、统一升级）</li>
+    <li><strong>80% 配置 → 任务定义</strong>（多、轻、未来甚至可由 LLM 辅助生成）</li>
+  </ul>
+  这一刀下去，"低水平重复"才被真正切掉。
+</div>
+
+<h3 style="margin-top:20px">差异对照表</h3>
+
+<div class="mockup">
+  <div class="mockup-body" style="padding:0">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead style="background:#f1f5f9">
+        <tr>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">维度</th>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">PaaS 助手平台</th>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">结构化工作台</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>复用单位</strong></td><td style="padding:8px;border:1px solid #e2e8f0">助手模板（整体 fork）</td><td style="padding:8px;border:1px solid #e2e8f0">Agent 能力 + KB 语料（库式引用）</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>语料</strong></td><td style="padding:8px;border:1px solid #e2e8f0">每个助手各自上传，重复存储</td><td style="padding:8px;border:1px solid #e2e8f0">底座 KB 统一存储，任务"声明引用"</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>权限</strong></td><td style="padding:8px;border:1px solid #e2e8f0">每个助手各自配，易漏</td><td style="padding:8px;border:1px solid #e2e8f0">底座 RBAC + security_level，任务自动继承</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>引用约束 / 反幻觉</strong></td><td style="padding:8px;border:1px solid #e2e8f0">看 prompt 写得好不好（参差）</td><td style="padding:8px;border:1px solid #e2e8f0">Agent 内置规则，所有问答类任务统一</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>评估</strong></td><td style="padding:8px;border:1px solid #e2e8f0">基本没有 / 各自小作坊</td><td style="padding:8px;border:1px solid #e2e8f0">RAGAS 闭环统一接（已有）</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>UI 形态</strong></td><td style="padding:8px;border:1px solid #e2e8f0">只有聊天框</td><td style="padding:8px;border:1px solid #e2e8f0">聊天 / 上传+下载 / 表单 / 流程进度多形态</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>跨能力任务</strong></td><td style="padding:8px;border:1px solid #e2e8f0">无解，只能"再造一个助手"</td><td style="padding:8px;border:1px solid #e2e8f0">任务定义里组合多个 Agent</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>升级路径</strong></td><td style="padding:8px;border:1px solid #e2e8f0">挨个 agent 改</td><td style="padding:8px;border:1px solid #e2e8f0">改 Agent 一次 → 所有任务受益</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>边界</strong></td><td style="padding:8px;border:1px solid #e2e8f0">"全员造 agent"无约束</td><td style="padding:8px;border:1px solid #e2e8f0">Ops 业务任务有限收敛，能力库受控</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h3 style="margin-top:24px">类比</h3>
+<div class="pros-cons">
+  <div class="cons">
+    <h4>PaaS 助手平台 ≈ Wordpress 主题市场</h4>
+    <ul>
+      <li>每个网站 fork 一份完整模板</li>
+      <li>主题改自己的，主题间无机制共享</li>
+      <li>插件市场看似丰富，实际良莠不齐、维护各异</li>
+    </ul>
+  </div>
+  <div class="pros">
+    <h4>结构化工作台 ≈ 操作系统 + 应用</h4>
+    <ul>
+      <li>OS 提供能力（文件 / 网络 / UI 框架）</li>
+      <li>应用消费 OS 能力，不重写</li>
+      <li>OS 升级 → 所有应用自动受益</li>
+      <li>新应用门槛低（写配置），新能力门槛高（要进 OS 评审）</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section" style="margin-top:18px;padding:14px;background:#dbeafe;border-left:3px solid #3b82f6;border-radius:4px;font-size:13px">
+  <strong>我们的"反作坊"承诺（产品价值主张）</strong>：
+  <ul style="margin-top:6px">
+    <li>📦 <strong>语料零重复</strong>——所有任务共享底座 KB，永不复制上传</li>
+    <li>🛡️ <strong>权限零旁路</strong>——任务自动继承底座 RBAC + security_level</li>
+    <li>📊 <strong>质量可对比</strong>——RAGAS 评测在所有任务统一接</li>
+    <li>🔄 <strong>升级零迁移</strong>——Agent 升级，所有依赖任务自动受益</li>
+    <li>🚫 <strong>无幽灵助手</strong>——任务有 owner、有评审、有下线机制</li>
+  </ul>
+</div>
+
+<div class="section" style="margin-top:14px;padding:14px;background:#fce7f3;border-left:3px solid #db2777;border-radius:4px;font-size:13px">
+  <strong>诚实的反向风险</strong>：这套要成立，必须有<u>产品/架构纪律</u>——一个负责人能在"再加一个 Agent" vs "复用现有 Agent + 加 skill"之间 say no。否则 Agent 数量也会爆炸，退化回 PaaS。这是治理问题，不是技术问题。
+</div>
+
+</div>
+</body>
+</html>
