@@ -18,6 +18,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 cd "${REPO_ROOT}"
 
+# Single-source the package root so future renames touch one line.
+PKG_ROOT="bootstrap/src/main/java/com/knowledgebase/ai/ragent"
+RETRIEVER_FILE="${PKG_ROOT}/rag/core/retrieve/OpenSearchRetrieverService.java"
+
 if command -v rg >/dev/null 2>&1 && rg --version >/dev/null 2>&1; then
   USE_RG=1
 else
@@ -59,18 +63,16 @@ grep_quiet() {
   [ -n "${matches}" ]
 }
 
-RETRIEVER_FILE="bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/retrieve/OpenSearchRetrieverService.java"
-
 # Gate 1: PR5 c1 - 'new MetadataFilter(' must only appear in the production
 # whitelist: DefaultMetadataFilterBuilder (the only legitimate caller) and
 # the record's own javadoc examples in MetadataFilter.java.
-EXPECTED_CTOR=$(cat <<'EOF'
-bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/retrieve/MetadataFilter.java
-bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/retrieve/filter/DefaultMetadataFilterBuilder.java
+EXPECTED_CTOR=$(cat <<EOF
+${PKG_ROOT}/rag/core/retrieve/MetadataFilter.java
+${PKG_ROOT}/rag/core/retrieve/filter/DefaultMetadataFilterBuilder.java
 EOF
 )
 ACTUAL_CTOR=$(grep_files 'new MetadataFilter\(' \
-  bootstrap/src/main/java/com/knowledgebase/ai/ragent | tr '\\' '/' | sort || true)
+  "${PKG_ROOT}" | tr '\\' '/' | sort || true)
 if [ "${ACTUAL_CTOR}" != "${EXPECTED_CTOR}" ]; then
   echo "FAIL: PR5 G1 - 'new MetadataFilter(' constructed outside whitelist:"
   echo "Expected:"
@@ -99,8 +101,11 @@ else
   ENFORCE_LINE=$(awk -v start="${DO_SEARCH_LINE}" \
     'NR > start && /enforceFilterContract\(metadataFilters/ { print NR; exit }' \
     "${RETRIEVER_FILE}")
+  # Match column-0 'try', try-with-resources 'try (...)', and 'try {' on same
+  # line. Pattern: optional leading whitespace, 'try', optional whitespace,
+  # then '(' (try-with-resources) or '{' (plain try block).
   TRY_LINE=$(awk -v start="${DO_SEARCH_LINE}" \
-    'NR > start && /^[[:space:]]+try[[:space:]]*\{/ { print NR; exit }' \
+    'NR > start && /^[[:space:]]*try[[:space:]]*[\({]/ { print NR; exit }' \
     "${RETRIEVER_FILE}")
   ENFORCE_LINE=${ENFORCE_LINE:-0}
   TRY_LINE=${TRY_LINE:-0}

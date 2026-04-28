@@ -52,16 +52,26 @@ public class MetadataFilterConstructionArchTest {
     private static final String METADATA_FILTER_FQN =
             "com.knowledgebase.ai.ragent.rag.core.retrieve.MetadataFilter";
 
+    /**
+     * Anchor exemption to the FQN, not the simple name. Using
+     * {@code doNotHaveSimpleName("DefaultMetadataFilterBuilder")} would let any
+     * future class with the same simple name in any other package inherit the
+     * exemption and bypass the rule silently.
+     */
+    private static final String DEFAULT_BUILDER_FQN =
+            "com.knowledgebase.ai.ragent.rag.core.retrieve.filter.DefaultMetadataFilterBuilder";
+
     @ArchTest
     public static final ArchRule only_default_builder_may_construct_metadata_filter =
             classes()
                     .that().resideInAPackage("..rag.core.retrieve..")
-                    .and().doNotHaveSimpleName("DefaultMetadataFilterBuilder")
+                    .and().doNotHaveFullyQualifiedName(DEFAULT_BUILDER_FQN)
                     .should(notCallMetadataFilterConstructor())
-                    .as("PR5 c1: only DefaultMetadataFilterBuilder may construct "
-                            + "MetadataFilter inside rag.core.retrieve.. — every other "
-                            + "caller must go through MetadataFilterBuilder.build(...) so "
-                            + "the kb_id + security_level contract is invariant");
+                    .as("PR5 c1: only DefaultMetadataFilterBuilder (anchored by FQN "
+                            + DEFAULT_BUILDER_FQN + ") may construct MetadataFilter inside "
+                            + "rag.core.retrieve.. — every other caller must go through "
+                            + "MetadataFilterBuilder.build(...) so the kb_id + security_level "
+                            + "contract is invariant");
 
     /**
      * Custom condition: violate if the class issues any constructor call targeting
