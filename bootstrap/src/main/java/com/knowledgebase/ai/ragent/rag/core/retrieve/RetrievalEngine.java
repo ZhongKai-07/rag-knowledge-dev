@@ -24,7 +24,6 @@ import com.knowledgebase.ai.ragent.rag.dto.RetrievalContext;
 import com.knowledgebase.ai.ragent.rag.dto.SubQuestionIntent;
 import com.knowledgebase.ai.ragent.rag.enums.IntentKind;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
-import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
 import com.knowledgebase.ai.ragent.framework.trace.RagTraceNode;
 import com.knowledgebase.ai.ragent.rag.core.intent.IntentNode;
 import com.knowledgebase.ai.ragent.rag.core.intent.NodeScore;
@@ -35,6 +34,7 @@ import com.knowledgebase.ai.ragent.rag.core.mcp.MCPTool;
 import com.knowledgebase.ai.ragent.rag.core.mcp.MCPToolExecutor;
 import com.knowledgebase.ai.ragent.rag.core.mcp.MCPToolRegistry;
 import com.knowledgebase.ai.ragent.rag.core.prompt.ContextFormatter;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +81,7 @@ public class RetrievalEngine {
      */
     @RagTraceNode(name = "retrieval-engine", type = "RETRIEVE")
     public RetrievalContext retrieve(List<SubQuestionIntent> subIntents,
-                                     AccessScope accessScope, String knowledgeBaseId) {
+                                     RetrievalScope scope) {
         if (CollUtil.isEmpty(subIntents)) {
             return RetrievalContext.builder()
                     .mcpContext("")
@@ -98,8 +98,7 @@ public class RetrievalEngine {
                         () -> buildSubQuestionContext(
                                 si,
                                 resolveSubQuestionPlan(si, globalRecall, globalRerank),
-                                accessScope,
-                                knowledgeBaseId
+                                scope
                         ),
                         ragContextExecutor
                 ))
@@ -132,11 +131,11 @@ public class RetrievalEngine {
     }
 
     private SubQuestionContext buildSubQuestionContext(SubQuestionIntent intent, RetrievalPlan plan,
-                                                       AccessScope accessScope, String knowledgeBaseId) {
+                                                       RetrievalScope scope) {
         List<NodeScore> kbIntents = filterKbIntents(intent.nodeScores());
         List<NodeScore> mcpIntents = filterMCPIntents(intent.nodeScores());
 
-        KbResult kbResult = retrieveAndRerank(intent, kbIntents, plan, accessScope, knowledgeBaseId);
+        KbResult kbResult = retrieveAndRerank(intent, kbIntents, plan, scope);
 
         String mcpContext = CollUtil.isNotEmpty(mcpIntents)
                 ? executeMcpAndMerge(intent.subQuestion(), mcpIntents)
@@ -208,11 +207,11 @@ public class RetrievalEngine {
     }
 
     private KbResult retrieveAndRerank(SubQuestionIntent intent, List<NodeScore> kbIntents, RetrievalPlan plan,
-                                        AccessScope accessScope, String knowledgeBaseId) {
+                                        RetrievalScope scope) {
         // 使用多通道检索引擎（是否启用全局检索由置信度阈值决定）
         List<SubQuestionIntent> subIntents = List.of(intent);
         List<RetrievedChunk> chunks = multiChannelRetrievalEngine.retrieveKnowledgeChannels(
-                subIntents, plan, accessScope, knowledgeBaseId);
+                subIntents, plan, scope);
 
         if (CollUtil.isEmpty(chunks)) {
             return KbResult.empty();

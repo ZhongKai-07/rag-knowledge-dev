@@ -20,7 +20,6 @@ package com.knowledgebase.ai.ragent.rag.core;
 import com.knowledgebase.ai.ragent.framework.convention.ChatMessage;
 import com.knowledgebase.ai.ragent.framework.convention.ChatRequest;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
-import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
 import com.knowledgebase.ai.ragent.infra.chat.LLMService;
 import com.knowledgebase.ai.ragent.rag.core.guidance.GuidanceDecision;
 import com.knowledgebase.ai.ragent.rag.core.guidance.IntentGuidanceService;
@@ -29,6 +28,7 @@ import com.knowledgebase.ai.ragent.rag.core.intent.IntentResolver;
 import com.knowledgebase.ai.ragent.rag.core.intent.NodeScore;
 import com.knowledgebase.ai.ragent.rag.core.prompt.RAGPromptService;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import com.knowledgebase.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.knowledgebase.ai.ragent.rag.core.rewrite.RewriteResult;
 import com.knowledgebase.ai.ragent.rag.dto.IntentGroup;
@@ -75,7 +75,7 @@ class ChatForEvalServiceTest {
         when(intent.resolve(any())).thenReturn(List.of(new SubQuestionIntent("q", List.of())));
         when(guidance.detectAmbiguity(any(), any())).thenReturn(GuidanceDecision.prompt("clarify"));
 
-        AnswerResult r = svc.chatForEval(AccessScope.all(), "kb1", "ambiguous question");
+        AnswerResult r = svc.chatForEval(RetrievalScope.all("kb1"), "ambiguous question");
         assertThat(r).isInstanceOf(AnswerResult.AmbiguousIntentSkipped.class);
         verifyNoInteractions(retrieval, prompt, llm);
     }
@@ -94,7 +94,7 @@ class ChatForEvalServiceTest {
         when(guidance.detectAmbiguity(any(), any())).thenReturn(GuidanceDecision.none());
         when(intent.isSystemOnly(any())).thenReturn(true);
 
-        AnswerResult r = svc.chatForEval(AccessScope.all(), "kb1", "what is your name");
+        AnswerResult r = svc.chatForEval(RetrievalScope.all("kb1"), "what is your name");
         assertThat(r).isInstanceOf(AnswerResult.SystemOnlySkipped.class);
         verifyNoInteractions(retrieval, prompt, llm);
     }
@@ -105,10 +105,10 @@ class ChatForEvalServiceTest {
         when(intent.resolve(any())).thenReturn(List.of(new SubQuestionIntent("q", List.of())));
         when(guidance.detectAmbiguity(any(), any())).thenReturn(GuidanceDecision.none());
         when(intent.isSystemOnly(any())).thenReturn(false);
-        when(retrieval.retrieve(any(), any(), any()))
+        when(retrieval.retrieve(any(), any()))
                 .thenReturn(RetrievalContext.builder().build());
 
-        AnswerResult r = svc.chatForEval(AccessScope.all(), "kb1", "no docs question");
+        AnswerResult r = svc.chatForEval(RetrievalScope.all("kb1"), "no docs question");
         assertThat(r).isInstanceOf(AnswerResult.EmptyContext.class);
         verifyNoInteractions(prompt, llm);
     }
@@ -130,13 +130,13 @@ class ChatForEvalServiceTest {
         when(intent.isSystemOnly(any())).thenReturn(false);
         when(intent.mergeIntentGroup(any())).thenReturn(new IntentGroup(List.of(), List.of()));
 
-        ArgumentCaptor<AccessScope> scopeCap = ArgumentCaptor.forClass(AccessScope.class);
-        when(retrieval.retrieve(any(), scopeCap.capture(), any())).thenReturn(ctx);
+        ArgumentCaptor<RetrievalScope> scopeCap = ArgumentCaptor.forClass(RetrievalScope.class);
+        when(retrieval.retrieve(any(), scopeCap.capture())).thenReturn(ctx);
         when(prompt.buildStructuredMessages(any(), any(), any(), any())).thenReturn(List.of(ChatMessage.user("q")));
         when(llm.chat(any(ChatRequest.class))).thenReturn("the answer");
 
-        AccessScope passed = AccessScope.all();
-        AnswerResult r = svc.chatForEval(passed, "kb1", "q");
+        RetrievalScope passed = RetrievalScope.all("kb1");
+        AnswerResult r = svc.chatForEval(passed, "q");
         assertThat(r).isInstanceOf(AnswerResult.Success.class);
         AnswerResult.Success s = (AnswerResult.Success) r;
         assertThat(s.answer()).isEqualTo("the answer");
@@ -151,14 +151,14 @@ class ChatForEvalServiceTest {
         when(guidance.detectAmbiguity(any(), any())).thenReturn(GuidanceDecision.none());
         when(intent.isSystemOnly(any())).thenReturn(false);
         when(intent.mergeIntentGroup(any())).thenReturn(new IntentGroup(List.of(), List.of()));
-        when(retrieval.retrieve(any(), any(), any())).thenReturn(
+        when(retrieval.retrieve(any(), any())).thenReturn(
                 RetrievalContext.builder().kbContext("ctx")
                         .intentChunks(Map.of("i", List.of(new RetrievedChunk()))).build());
         when(prompt.buildStructuredMessages(any(), any(), any(), any())).thenReturn(List.of(ChatMessage.user("q")));
         when(llm.chat(any(ChatRequest.class))).thenThrow(new RuntimeException("model 503"));
 
         org.assertj.core.api.Assertions
-                .assertThatThrownBy(() -> svc.chatForEval(AccessScope.all(), "kb1", "q"))
+                .assertThatThrownBy(() -> svc.chatForEval(RetrievalScope.all("kb1"), "q"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("model 503");
     }

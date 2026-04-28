@@ -31,8 +31,10 @@ import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldItemMapper;
 import com.knowledgebase.ai.ragent.eval.domain.EvaluateRequest;
 import com.knowledgebase.ai.ragent.eval.domain.EvaluateResponse;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
 import com.knowledgebase.ai.ragent.rag.core.AnswerResult;
 import com.knowledgebase.ai.ragent.rag.core.ChatForEvalService;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,7 +100,7 @@ class EvalRunExecutorTest {
         EvalRunDO run = EvalRunDO.builder().id("run-1").datasetId("d1").kbId("kb1").build();
         when(runMapper.selectById("run-1")).thenReturn(run);
         when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
-        when(chat.chatForEval(any(), any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
+        when(chat.chatForEval(any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
 
         when(ragas.evaluate(eq("run-1"), any())).thenAnswer(inv -> {
             EvaluateRequest req = inv.getArgument(1);
@@ -130,11 +132,36 @@ class EvalRunExecutorTest {
     }
 
     @Test
+    void runInternal_passes_RetrievalScope_all_with_targetKbId_to_chatForEval() {
+        EvalRunDO run = EvalRunDO.builder().id("run-scope").datasetId("d1").kbId("kb-eval-1").build();
+        when(runMapper.selectById("run-scope")).thenReturn(run);
+        when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1")));
+        when(chat.chatForEval(any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
+        when(ragas.evaluate(eq("run-scope"), any())).thenAnswer(inv -> {
+            EvaluateRequest req = inv.getArgument(1);
+            return new EvaluateResponse(List.of(new EvaluateResponse.MetricResult(
+                    req.items().get(0).resultId(),
+                    new BigDecimal("0.9"), new BigDecimal("0.8"),
+                    new BigDecimal("0.7"), new BigDecimal("0.6"), null)));
+        });
+        when(resultMapper.selectList(any())).thenReturn(List.of());
+
+        exec.runInternal("run-scope");
+
+        ArgumentCaptor<RetrievalScope> scopeCaptor = ArgumentCaptor.forClass(RetrievalScope.class);
+        verify(chat).chatForEval(scopeCaptor.capture(), eq("q1"));
+        RetrievalScope captured = scopeCaptor.getValue();
+        assertThat(captured.accessScope()).isInstanceOf(AccessScope.All.class);
+        assertThat(captured.targetKbId()).isEqualTo("kb-eval-1");
+        assertThat(captured.kbSecurityLevels()).isEmpty();
+    }
+
+    @Test
     void all_failed_marks_run_FAILED() {
         EvalRunDO run = EvalRunDO.builder().id("run-2").datasetId("d1").kbId("kb1").build();
         when(runMapper.selectById("run-2")).thenReturn(run);
         when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
-        when(chat.chatForEval(any(), any(), any())).thenThrow(new RuntimeException("LLM 503"));
+        when(chat.chatForEval(any(), any())).thenThrow(new RuntimeException("LLM 503"));
 
         exec.runInternal("run-2");
 
@@ -151,7 +178,7 @@ class EvalRunExecutorTest {
         EvalRunDO run = EvalRunDO.builder().id("run-eval-fail").datasetId("d1").kbId("kb1").build();
         when(runMapper.selectById("run-eval-fail")).thenReturn(run);
         when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
-        when(chat.chatForEval(any(), any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
+        when(chat.chatForEval(any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
         when(ragas.evaluate(any(), any())).thenThrow(new RuntimeException("python 503"));
         when(resultMapper.selectList(any())).thenReturn(List.of());
 
@@ -170,7 +197,7 @@ class EvalRunExecutorTest {
         EvalRunDO run = EvalRunDO.builder().id("run-per-item").datasetId("d1").kbId("kb1").build();
         when(runMapper.selectById("run-per-item")).thenReturn(run);
         when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
-        when(chat.chatForEval(any(), any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
+        when(chat.chatForEval(any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
 
         when(ragas.evaluate(any(), any())).thenAnswer(inv -> {
             EvaluateRequest req = inv.getArgument(1);
@@ -200,8 +227,8 @@ class EvalRunExecutorTest {
         when(runMapper.selectById("run-3")).thenReturn(run);
         when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
 
-        when(chat.chatForEval(any(), any(), eq("q1"))).thenReturn(AnswerResult.success("a1", List.of(chunk("c1"))));
-        when(chat.chatForEval(any(), any(), eq("q2"))).thenReturn(AnswerResult.emptyContext());
+        when(chat.chatForEval(any(), eq("q1"))).thenReturn(AnswerResult.success("a1", List.of(chunk("c1"))));
+        when(chat.chatForEval(any(), eq("q2"))).thenReturn(AnswerResult.emptyContext());
         when(ragas.evaluate(eq("run-3"), any())).thenAnswer(inv -> {
             EvaluateRequest req = inv.getArgument(1);
             List<EvaluateResponse.MetricResult> mrs = req.items().stream()
@@ -231,7 +258,7 @@ class EvalRunExecutorTest {
         EvalRunDO run = EvalRunDO.builder().id("run-null-row").datasetId("d1").kbId("kb1").build();
         when(runMapper.selectById("run-null-row")).thenReturn(run);
         when(itemMapper.selectList(any())).thenReturn(List.of(item("i1", "q1"), item("i2", "q2")));
-        when(chat.chatForEval(any(), any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
+        when(chat.chatForEval(any(), any())).thenReturn(AnswerResult.success("ans", List.of(chunk("c1"))));
 
         when(ragas.evaluate(any(), any())).thenAnswer(inv -> {
             EvaluateRequest req = inv.getArgument(1);

@@ -32,9 +32,9 @@ import com.knowledgebase.ai.ragent.eval.domain.EvaluateRequest;
 import com.knowledgebase.ai.ragent.eval.domain.EvaluateResponse;
 import com.knowledgebase.ai.ragent.eval.domain.RetrievedChunkSnapshot;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
-import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
 import com.knowledgebase.ai.ragent.rag.core.AnswerResult;
 import com.knowledgebase.ai.ragent.rag.core.ChatForEvalService;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -54,7 +54,7 @@ import java.util.Map;
  * <p>在 evalExecutor 线程跑：for-each gold item → ChatForEvalService → 累积 batch
  * → 满 evaluateBatchSize 调 Python /evaluate → 落 t_eval_result。
  *
- * <p><b>系统级 AccessScope.all() 仅限 SUPER_ADMIN 手动触发离线评估场景</b>（spec §15.3）；
+ * <p><b>系统级 RetrievalScope.all(kbId) 仅限 SUPER_ADMIN 手动触发离线评估场景</b>（spec §15.3）；
  * 扩展到任何其他场景前必须重新做权限模型。
  */
 @Slf4j
@@ -112,14 +112,14 @@ public class EvalRunExecutor {
         List<PendingResult> pending = new ArrayList<>();
         int succeeded = 0;
         int failed = 0;
-        // P1-1: executor 是唯一合法持有 AccessScope.all() 的调用者
-        AccessScope systemScope = AccessScope.all();
+        // P1-1 + PR4 P1#2: executor 是唯一合法持有 RetrievalScope.all() 的调用者
+        RetrievalScope systemScope = RetrievalScope.all(run.getKbId());
 
         for (GoldItemDO item : items) {
             long t0 = System.currentTimeMillis();
             AnswerResult ar;
             try {
-                ar = chatForEvalService.chatForEval(systemScope, run.getKbId(), item.getQuestion());
+                ar = chatForEvalService.chatForEval(systemScope, item.getQuestion());
             } catch (Exception e) {
                 log.warn("[eval-run] runId={} chatForEval failed itemId={}", runId, item.getId(), e);
                 insertFailedResult(runId, item, "chatForEval: " + e.getMessage(),

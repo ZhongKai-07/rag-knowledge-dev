@@ -18,20 +18,17 @@
 package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
 import cn.hutool.core.collection.CollUtil;
-import com.knowledgebase.ai.ragent.framework.context.UserContext;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
-import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
-import com.knowledgebase.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
 import com.knowledgebase.ai.ragent.framework.trace.RagTraceNode;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannel;
-import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import com.knowledgebase.ai.ragent.rag.dto.SubQuestionIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +36,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -63,8 +58,7 @@ public class MultiChannelRetrievalEngine {
     private final List<SearchChannel> searchChannels;
     private final List<SearchResultPostProcessor> postProcessors;
     private final RetrieverService retrieverService;
-    private final KnowledgeBaseMapper knowledgeBaseMapper;
-    private final KbReadAccessPort kbReadAccess;
+    private final KbMetadataReader kbMetadataReader;
     private final MetadataFilterBuilder metadataFilterBuilder;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
@@ -79,26 +73,26 @@ public class MultiChannelRetrievalEngine {
     @RagTraceNode(name = "multi-channel-retrieval", type = "RETRIEVE_CHANNEL")
     public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents,
                                                            RetrievalPlan plan,
-                                                           AccessScope accessScope, String knowledgeBaseId) {
-        SearchContext context = buildSearchContext(subIntents, plan, accessScope);
+                                                           RetrievalScope scope) {
+        SearchContext context = buildSearchContext(subIntents, plan, scope);
 
         // 单知识库定向检索路径（召回数直接用 recallTopK）
-        if (knowledgeBaseId != null) {
-            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(knowledgeBaseId);
-            if (kb == null || kb.getCollectionName() == null) {
+        if (scope.isSingleKb()) {
+            String collectionName = kbMetadataReader.getCollectionName(scope.targetKbId());
+            if (collectionName == null) {
                 return List.of();
             }
             RetrieveRequest req = RetrieveRequest.builder()
                     .query(context.getMainQuestion())
                     .topK(plan.recallTopK())
-                    .collectionName(kb.getCollectionName())
-                    .metadataFilters(metadataFilterBuilder.build(context, knowledgeBaseId))
+                    .collectionName(collectionName)
+                    .metadataFilters(metadataFilterBuilder.build(context, scope.targetKbId()))
                     .build();
             List<RetrievedChunk> chunks = retrieverService.retrieve(req);
 
             SearchChannelResult singleResult = SearchChannelResult.builder()
                     .channelType(SearchChannelType.INTENT_DIRECTED)
-                    .channelName("single-kb-" + kb.getCollectionName())
+                    .channelName("single-kb-" + collectionName)
                     .chunks(chunks)
                     .confidence(1.0)
                     .latencyMs(0)
@@ -248,30 +242,19 @@ public class MultiChannelRetrievalEngine {
         return chunks;
     }
 
-    /**
-     * 构建检索上下文。对 {@link AccessScope.Ids} 场景一次性预解析安全等级 map,
-     * 下游 channel/postprocessor 直接 O(1) 查表；{@link AccessScope.All} 场景
-     * (SUPER_ADMIN) 无需预解析, 由检索层全量放行。
-     */
+    /** 构建检索上下文；权限 scope 与安全等级 map 均来自上游 RetrievalScope。 */
     private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents,
                                               RetrievalPlan plan,
-                                              AccessScope accessScope) {
+                                              RetrievalScope scope) {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
-        Map<String, Integer> kbSecurityLevels;
-        if (accessScope instanceof AccessScope.Ids ids && !ids.kbIds().isEmpty() && UserContext.hasUser()) {
-            kbSecurityLevels = kbReadAccess.getMaxSecurityLevelsForKbs(ids.kbIds());
-        } else {
-            kbSecurityLevels = Collections.emptyMap();
-        }
-
         return SearchContext.builder()
                 .originalQuestion(question)
                 .rewrittenQuestion(question)
                 .intents(subIntents)
                 .recallTopK(plan.recallTopK())
                 .rerankTopK(plan.rerankTopK())
-                .accessScope(accessScope)
-                .kbSecurityLevels(kbSecurityLevels)
+                .accessScope(scope.accessScope())
+                .kbSecurityLevels(scope.kbSecurityLevels())
                 .build();
     }
 

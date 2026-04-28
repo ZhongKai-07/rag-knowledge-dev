@@ -17,10 +17,8 @@
 
 package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
-import com.knowledgebase.ai.ragent.framework.context.UserContext;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
-import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
-import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannel;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
@@ -29,9 +27,8 @@ import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.postprocessor.DeduplicationPostProcessor;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.postprocessor.SearchResultPostProcessor;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import com.knowledgebase.ai.ragent.rag.dto.SubQuestionIntent;
-import com.knowledgebase.ai.ragent.framework.security.port.KbReadAccessPort;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -41,11 +38,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 class MultiChannelRetrievalEnginePostProcessorChainTest {
-
-    @AfterEach
-    void tearDown() {
-        UserContext.clear();
-    }
 
     @Test
     void retrieveKnowledgeChannels_shouldNotAllowLaterProcessorToRestoreDroppedChunks() {
@@ -116,8 +108,7 @@ class MultiChannelRetrievalEnginePostProcessorChainTest {
                 List.of(channel),
                 List.of(dropAll, new DeduplicationPostProcessor()),
                 mock(RetrieverService.class),
-                mock(KnowledgeBaseMapper.class),
-                mock(KbReadAccessPort.class),
+                mock(KbMetadataReader.class),
                 mock(MetadataFilterBuilder.class),
                 directExecutor
         );
@@ -125,8 +116,7 @@ class MultiChannelRetrievalEnginePostProcessorChainTest {
         List<RetrievedChunk> output = engine.retrieveKnowledgeChannels(
                 List.of(new SubQuestionIntent("q", List.of())),
                 new RetrievalPlan(5, 5),
-                AccessScope.all(),
-                null
+                RetrievalScope.all(null)
         );
 
         assertThat(output).isEmpty();

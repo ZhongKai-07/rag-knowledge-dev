@@ -42,7 +42,7 @@ assert_absent() {
 assert_absent \
   "PR3-3 AccessServiceImpl must not call kbReadAccess directly" \
   "kbReadAccess\." \
-  "bootstrap/src/main/java/com/nageoffer/ai/ragent/user/service/impl/AccessServiceImpl.java"
+  "bootstrap/src/main/java/com/knowledgebase/ai/ragent/user/service/impl/AccessServiceImpl.java"
 
 assert_absent \
   "PR3-5 singular getMaxSecurityLevelForKb must be absent" \
@@ -53,12 +53,12 @@ assert_absent \
 assert_absent \
   "PR3-2 KbReadAccessPort must be current-user-only, without String userId" \
   "String\s+userId" \
-  "framework/src/main/java/com/nageoffer/ai/ragent/framework/security/port/KbReadAccessPort.java"
+  "framework/src/main/java/com/knowledgebase/ai/ragent/framework/security/port/KbReadAccessPort.java"
 
 assert_absent \
   "PR3-4 handler package must not import UserContext" \
-  "import\s+com\.nageoffer\.ai\.ragent\.framework\.context\.UserContext;" \
-  "bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/handler"
+  "import\s+com\.knowledgebase\.ai\.ragent\.framework\.context\.UserContext;" \
+  "bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/service/handler"
 
 if [ "${failures}" -ne 0 ]; then
   exit 1

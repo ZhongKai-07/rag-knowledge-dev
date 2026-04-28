@@ -161,7 +161,7 @@ From the repo root (use Git Bash / WSL on Windows since these are regex patterns
 
 ```bash
 grep -rn '"admin"\.equals' bootstrap/src/main/java/ | grep -v '/\*'          # should be empty or docs only
-grep -rn 'LoginUser\.role\|\.getRole()' bootstrap/src/main/java/com/nageoffer/ai/ragent/user/ bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/
+grep -rn 'LoginUser\.role\|\.getRole()' bootstrap/src/main/java/com/knowledgebase/ai/ragent/user/ bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/
 grep -rn 'user\.role\|user?\.role' frontend/src/ --include='*.ts' --include='*.tsx'
 grep -rn 'LoginUser\.role' framework/src/main/java/
 ```
