@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>2. 抽象层级 — Task vs Agent+Skill 不是二选一，是两层 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 2026-04-29 Structured Workbench · 2. 抽象层级 — Task vs Agent+Skill 不是二选一，是两层</h1>
+  <a href="index.html">← back to index</a>
+</div>
+<div id="claude-content">
+<h2>"任务" vs "Agent+Skill" — 不是二选一，是两层</h2>
+<p class="subtitle">用户视角是任务，系统视角是能力。两个维度独立存在，把它们混到一起会出问题。</p>
+
+<div class="mockup">
+  <div class="mockup-header">两层抽象（推荐）</div>
+  <div class="mockup-body" style="padding:16px">
+
+    <div class="label" style="color:#3b82f6">▌用户层（用户进来看到、点击、产生历史的东西）</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0 16px">
+      <div class="placeholder" style="height:50px;background:#dbeafe;font-size:11px">📋 任务卡片<br>COB 问答</div>
+      <div class="placeholder" style="height:50px;background:#dbeafe;font-size:11px">📋 任务卡片<br>SOP 问答</div>
+      <div class="placeholder" style="height:50px;background:#fef3c7;font-size:11px">📋 任务卡片<br>Collateral 筛查</div>
+      <div class="placeholder" style="height:50px;background:#fee2e2;font-size:11px">📋 任务卡片<br>协议提取</div>
+    </div>
+
+    <div style="text-align:center;color:#94a3b8;margin:8px 0">↓ 任务定义里声明"我用哪些能力 + 怎么编排" ↓</div>
+
+    <div class="label" style="color:#10b981">▌系统层（可复用的能力组件 / Agent / Skill）</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">
+      <div class="placeholder" style="height:80px;background:#d1fae5;font-size:11px;text-align:left;padding:6px">
+        <strong>知识问答 Agent</strong><br>
+        <span style="font-size:10px">- 检索 skill<br>- 引用约束 skill<br>- 多轮记忆 skill</span>
+      </div>
+      <div class="placeholder" style="height:80px;background:#d1fae5;font-size:11px;text-align:left;padding:6px">
+        <strong>文档智能 Agent</strong><br>
+        <span style="font-size:10px">- 字段抽取 skill<br>- 模板渲染 skill<br>- 协议比对 skill</span>
+      </div>
+      <div class="placeholder" style="height:80px;background:#d1fae5;font-size:11px;text-align:left;padding:6px">
+        <strong>(未来) 工具编排 Agent</strong><br>
+        <span style="font-size:10px">- 多工具调用<br>- 计划/反思<br>- MCP 接入</span>
+      </div>
+    </div>
+
+    <div style="text-align:center;color:#94a3b8;margin:14px 0 8px">↓ 共享底座 ↓</div>
+
+    <div class="label" style="color:#6b7280">▌底座（KB / 权限 / 审计 / 追踪 / 模型路由 / Eval）</div>
+    <div class="placeholder" style="height:30px;font-size:11px">语料 · RBAC · security_level · trace · 模型路由 · RAGAS</div>
+
+  </div>
+</div>
+
+<div class="pros-cons" style="margin-top:18px">
+  <div class="pros">
+    <h4>为什么"任务"必须在用户层</h4>
+    <ul>
+      <li><strong>Ops 同事不是 agent 配置者</strong>——他们是任务执行者。他们的心智是"我要做 X"，不是"我要切到 Y agent，再调 Z skill"。</li>
+      <li><strong>任务 = 入口 + UI 模板 + 产出物 + 历史</strong>。聊天形态、上传+下载形态、表单形态、流程进度形态，必须由任务承载，agent 抽象承载不了 UI 差异。</li>
+      <li><strong>跨域任务的归宿问题</strong>：Collateral 筛查既检索又抽取——硬塞到"知识问答"或"文档智能"都别扭，但作为一个独立任务、内部组合两个 agent，就很自然。</li>
+      <li>任务有"实例 / 历史 / 状态机"——上传一份协议、提取中、提取完、Excel 已下载。Agent 没有这种生命周期。</li>
+    </ul>
+  </div>
+  <div class="cons">
+    <h4>为什么"Agent+Skill"应该在系统层</h4>
+    <ul>
+      <li>它是<strong>实现复用</strong>的载体。COB 和 SOP 任务底层共享同一个"知识问答 Agent"，区别只是绑定的语料和 prompt。</li>
+      <li>Agent 是有边界的能力包：哪些 skill 可调、prompt 怎么写、用哪个模型、怎么编排——全部封装。</li>
+      <li>你提到的"复杂指令类、问题排查类"未来场景，本质就是再加一个 Agent（工具编排 Agent / 诊断 Agent），新任务再"组装"现有 Agent 即可。</li>
+      <li>系统层 agent 化也方便接 MCP / Anthropic Agent SDK / 自研工具调用——这是技术选型自由度。</li>
+    </ul>
+  </div>
+</div>
+
+<div class="section" style="margin-top:18px;padding:14px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:13px">
+  <strong>反例：如果只用 Agent+Skill，没有任务层会怎样？</strong><br>
+  · 用户进来看到 4 个 agent，点"文档智能 agent" → 它问你"想用哪个 skill？" → 选"协议提取" → 才让你上传文件。多一层无意义跳转。<br>
+  · 协议提取的"上传+表单+Excel下载"UI，硬塞进"和 agent 对话"的形态会很别扭。<br>
+  · "Collateral 筛查"跨两类，归不进任何 agent。<br>
+  · 任务历史 / 进度 / 产出物没地方挂。
+</div>
+
+<div class="section" style="margin-top:14px;padding:14px;background:#dbeafe;border-left:3px solid #3b82f6;border-radius:4px;font-size:13px">
+  <strong>结论</strong>：你提的"文档智能 agent + skill" 是<u>对的</u>——但它属于<strong>系统层</strong>。用户层仍然是"任务卡片"，任务定义里写"我用文档智能 agent 的提取 skill"。两层都保留，各司其职。
+</div>
+
+</div>
+</body>
+</html>

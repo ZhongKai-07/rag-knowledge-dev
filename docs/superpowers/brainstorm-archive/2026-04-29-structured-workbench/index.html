@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Brainstorm Archive · 2026-04-29 Structured Workbench</title>
+<link rel="stylesheet" href="_frame.css">
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 2026-04-29 Structured Workbench</h1>
+  <a href="../../specs/2026-04-29-structured-workbench-design.md">→ 最终 spec</a>
+</div>
+<div id="claude-content">
+
+  <h2>结构化工作台 v1 设计 — Brainstorm 过程归档</h2>
+  <p class="subtitle">以下 6 个 mockup 是设计文档（spec）落地前的探索过程，按对话推进顺序排列。Spec 是结论，这里是结论的来路。</p>
+
+  <div class="section">
+    <p><strong>背景</strong>：2026-04-29 与产品方对齐 Ops 部门的 4 个 AI 应用场景（COB / SOP / Collateral 筛查 / 协议提取）的产品形态。最终决策落到 <a href="../../specs/2026-04-29-structured-workbench-design.md"><code>docs/superpowers/specs/2026-04-29-structured-workbench-design.md</code></a>。</p>
+  </div>
+
+  <h3>探索顺序</h3>
+
+  <div class="cards" style="margin-top:1rem">
+
+    <a class="card" href="product-shape.html" style="text-decoration:none;color:inherit;display:block">
+      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
+        <div style="text-align:center">
+          <div style="font-size:1.6rem;margin-bottom:0.4rem">1️⃣</div>
+          <strong>产品形态选择</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>KB 中心化 vs Chatbot 集合 vs 结构化工作台</h3>
+        <p>三种产品形态对比，最终选 C：结构化工作台。</p>
+      </div>
+    </a>
+
+    <a class="card" href="task-vs-agent.html" style="text-decoration:none;color:inherit;display:block">
+      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
+        <div style="text-align:center">
+          <div style="font-size:1.6rem;margin-bottom:0.4rem">2️⃣</div>
+          <strong>抽象层级</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>Task vs Agent+Skill 不是二选一</h3>
+        <p>用户层是任务，系统层是 Agent+Skill，两层都要。</p>
+      </div>
+    </a>
+
+    <a class="card" href="paas-vs-workbench.html" style="text-decoration:none;color:inherit;display:block">
+      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
+        <div style="text-align:center">
+          <div style="font-size:1.6rem;margin-bottom:0.4rem">3️⃣</div>
+          <strong>差异化 vs PaaS 作坊</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>为什么不是 agent 拖拽平台</h3>
+        <p>PaaS 助手平台问题在复用单位错了，不是工具不好。</p>
+      </div>
+    </a>
+
+    <a class="card" href="continual-learning.html" style="text-decoration:none;color:inherit;display:block">
+      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
+        <div style="text-align:center">
+          <div style="font-size:1.6rem;margin-bottom:0.4rem">4️⃣</div>
+          <strong>持续学习横切层</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>Self-Improving + 知识运营</h3>
+        <p>Ledger 为底盘的 self-improving + 部门 insight 闭环。</p>
+      </div>
+    </a>
+
+    <a class="card" href="v1-scope-and-paths.html" style="text-decoration:none;color:inherit;display:block">
+      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
+        <div style="text-align:center">
+          <div style="font-size:1.6rem;margin-bottom:0.4rem">5️⃣</div>
+          <strong>v1 范围 + 实施路径</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>4 任务 + 2 Agent + 最小闭环</h3>
+        <p>3 种实施路径对比，最终选 A：渐进改造（试点期保留新旧并存）。</p>
+      </div>
+    </a>
+
+    <a class="card" href="ux-task-hidden.html" style="text-decoration:none;color:inherit;display:block">
+      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
+        <div style="text-align:center">
+          <div style="font-size:1.6rem;margin-bottom:0.4rem">6️⃣</div>
+          <strong>UX 术语锁定</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <h3>Task 是后端 entity 不是 UI 概念</h3>
+        <p>用户看到的是"知识问答 / 文档处理 / 最近"，不是"任务"。</p>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="section" style="margin-top:2.5rem;padding:1rem;background:var(--bg-secondary);border-left:3px solid var(--accent);border-radius:6px">
+    <strong>关键决策落点（在 spec 里继续展开）</strong>：
+    <ul style="margin-top:0.5rem;margin-left:1.25rem">
+      <li>三层架构：用户层（Task）+ Agent 层 + 底座，加横切持续学习层</li>
+      <li>v1 范围：4 任务 / 2 Agent / Ledger 多任务 schema / User Memory v1（用户主动声明）</li>
+      <li>实施路径 A：新增 <code>/tasks</code> 入口，老 <code>/spaces</code> 兜底，试点期可比对</li>
+      <li>UX 术语：UI 上零"任务"二字；TaskInstance / TaskTemplate 仅存活在后端代码</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>5. v1 范围 + 3 种实施路径对比 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 2026-04-29 Structured Workbench · 5. v1 范围 + 3 种实施路径对比</h1>
+  <a href="index.html">← back to index</a>
+</div>
+<div id="claude-content">
+<h2>v1 范围锁定 + 3 种实施路径</h2>
+<p class="subtitle">范围已对齐。剩下一个关键决策：怎么落地到当前代码库，决定工作量、风险、迁移代价。</p>
+
+<h3>v1 范围（已对齐 ✅）</h3>
+
+<div class="mockup">
+  <div class="mockup-header" style="background:#dcfce7">v1 = 4 任务 + 2 Agent 类型 + 持续学习最小闭环</div>
+  <div class="mockup-body" style="padding:14px;font-size:12px">
+
+    <div class="label" style="color:#3b82f6">▌用户层 — 4 个任务</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin:6px 0 14px">
+      <div class="placeholder" style="background:#dbeafe;height:64px;font-size:11px;text-align:left;padding:6px">
+        <strong>📋 COB 问答</strong><br>
+        类型：知识问答<br>
+        UI：聊天 + 来源卡
+      </div>
+      <div class="placeholder" style="background:#dbeafe;height:64px;font-size:11px;text-align:left;padding:6px">
+        <strong>📋 SOP 问答</strong><br>
+        类型：知识问答<br>
+        UI：聊天 + 来源卡
+      </div>
+      <div class="placeholder" style="background:#fef3c7;height:64px;font-size:11px;text-align:left;padding:6px">
+        <strong>🔍 Collateral 筛查</strong><br>
+        类型：文档智能（含检索）<br>
+        UI：检索框 + 字段卡片
+      </div>
+      <div class="placeholder" style="background:#fee2e2;height:64px;font-size:11px;text-align:left;padding:6px">
+        <strong>📤 协议提取</strong><br>
+        类型：文档智能<br>
+        UI：上传 + 进度 + Excel下载
+      </div>
+    </div>
+
+    <div class="label" style="color:#10b981">▌Agent 层 — 2 类</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 14px">
+      <div class="placeholder" style="background:#d1fae5;height:auto;padding:8px;font-size:11px;text-align:left">
+        <strong>知识问答 Agent</strong><br>
+        服务：COB / SOP（共享同一份代码）<br>
+        skill：检索 / 引用约束 / 多轮记忆 / 来源卡<br>
+        ✅ 现有 RAG pipeline 抽出来即可
+      </div>
+      <div class="placeholder" style="background:#d1fae5;height:auto;padding:8px;font-size:11px;text-align:left">
+        <strong>文档智能 Agent</strong><br>
+        服务：协议提取 + Collateral 筛查的提取部分<br>
+        skill：字段抽取 / 模板渲染 / 跨文档比对<br>
+        ⚠️ 全新能力，要从零搭
+      </div>
+    </div>
+
+    <div style="padding:10px;background:#fef3c7;font-size:11px;border-radius:4px;margin:6px 0">
+      <strong>Collateral 筛查 = 跨 Agent 任务</strong>：任务定义里组合两个 Agent —— 检索阶段调"知识问答"，命中后调"文档智能"抽字段。证明两层抽象的价值。
+    </div>
+
+    <div class="label" style="color:#f59e0b">▌持续学习横切层 — 最小闭环</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0">
+      <div class="placeholder" style="background:#fff7ed;height:auto;padding:8px;font-size:11px;text-align:left">
+        <strong>✅ v1 必做</strong><br>
+        · Ledger 表（多任务 schema）<br>
+        · 所有任务统一落账（埋点）<br>
+        · User Memory v1（小闭环）<br>
+        · Memory 在 Agent prompt 注入钩子
+      </div>
+      <div class="placeholder" style="background:#f3f4f6;height:auto;padding:8px;font-size:11px;text-align:left">
+        <strong>🔜 v2/v3 推后</strong><br>
+        · Autodream 调度<br>
+        · 集体记忆 + 部门看板<br>
+        · Pulse 推送通道<br>
+        · 反哺 KB 审核入口
+      </div>
+    </div>
+
+    <div class="label" style="color:#6b7280;margin-top:14px">▌底座（复用，不动）</div>
+    <div class="placeholder" style="height:38px;font-size:11px">KB · RBAC（PR1-5 推进中）· Trace · RAGAS · 模型路由 · OpenSearch</div>
+
+  </div>
+</div>
+
+<h3 style="margin-top:24px">3 种 v1 实施路径（关键决策 ⚠️）</h3>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header" style="background:#dbeafe">A · 渐进改造（保 KB 入口）</div>
+        <div class="mockup-body" style="padding:10px;font-size:11px">
+          <div class="placeholder" style="background:#fff;height:38px">/spaces 现状不变（KB 列表）</div>
+          <div class="placeholder" style="background:#dbeafe;height:38px;margin-top:4px">⊕ /tasks 新入口（4 个任务卡片）</div>
+          <div class="placeholder" style="background:#fff;height:38px;margin-top:4px">/chat 共用</div>
+          <div style="margin-top:8px;color:#64748b">后端：抽 task / agent 抽象，旧 RAG controller 接到新 Agent</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · 渐进改造</h3>
+      <p>新旧入口并存。Ops 任务走 /tasks，老用户继续 /spaces。低风险但概念混乱。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header" style="background:#dcfce7">B · 新工作台并存 ⭐</div>
+        <div class="mockup-body" style="padding:10px;font-size:11px">
+          <div class="placeholder" style="background:#dcfce7;height:38px">/workbench 新主入口（4 任务卡）</div>
+          <div class="placeholder" style="background:#fff;height:38px;margin-top:4px">/spaces 移到管理后台（KB CRUD）</div>
+          <div class="placeholder" style="background:#fff;height:38px;margin-top:4px">/chat 退役 → 任务内嵌入</div>
+          <div style="margin-top:8px;color:#64748b">后端：新 task / agent 模块；旧 controller 标 deprecated 不删</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 新工作台并存 ⭐</h3>
+      <p>新前端入口 = 工作台。KB 概念回退到管理员视角。Ops 用户只看任务，不再"先选 KB 再聊天"。中等工作量、概念清晰。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header" style="background:#fee2e2">C · 一次性切换</div>
+        <div class="mockup-body" style="padding:10px;font-size:11px">
+          <div class="placeholder" style="background:#dcfce7;height:38px">/workbench 替代所有现有路由</div>
+          <div class="placeholder" style="background:#fee2e2;height:38px;margin-top:4px">/spaces /chat 全部下线</div>
+          <div class="placeholder" style="background:#fee2e2;height:38px;margin-top:4px">所有交互都走任务模板</div>
+          <div style="margin-top:8px;color:#64748b">后端：旧 controller 同步删除，无并存期</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · 一次性切换</h3>
+      <p>干净彻底，没有遗留概念。但前端工作量大、回归风险高、灰度难。</p>
+    </div>
+  </div>
+
+</div>
+
+<h3 style="margin-top:24px">3 种路径对照</h3>
+
+<div class="mockup">
+  <div class="mockup-body" style="padding:0">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead style="background:#f1f5f9">
+        <tr>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">维度</th>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">A 渐进改造</th>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">B 新工作台并存 ⭐</th>
+          <th style="padding:8px;text-align:left;border:1px solid #e2e8f0">C 一次性切换</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>前端工作量</strong></td><td style="padding:8px;border:1px solid #e2e8f0">小（加 1 入口）</td><td style="padding:8px;border:1px solid #e2e8f0">中（新主入口 + 旧路由保留）</td><td style="padding:8px;border:1px solid #e2e8f0">大（重写所有交互）</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>后端工作量</strong></td><td style="padding:8px;border:1px solid #e2e8f0">中</td><td style="padding:8px;border:1px solid #e2e8f0">中（旧 controller 不删）</td><td style="padding:8px;border:1px solid #e2e8f0">大（要同步迁移所有调用方）</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>概念清晰度</strong></td><td style="padding:8px;border:1px solid #e2e8f0">差（KB+任务双概念并存）</td><td style="padding:8px;border:1px solid #e2e8f0">好（KB→管理；任务→用户）</td><td style="padding:8px;border:1px solid #e2e8f0">最好</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>回归风险</strong></td><td style="padding:8px;border:1px solid #e2e8f0">低</td><td style="padding:8px;border:1px solid #e2e8f0">低-中</td><td style="padding:8px;border:1px solid #e2e8f0">高</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>灰度能力</strong></td><td style="padding:8px;border:1px solid #e2e8f0">好（旧入口兜底）</td><td style="padding:8px;border:1px solid #e2e8f0">好（feature flag 切主入口）</td><td style="padding:8px;border:1px solid #e2e8f0">差（无回滚路径）</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>对持续学习层</strong></td><td style="padding:8px;border:1px solid #e2e8f0">两套埋点（旧 + 新）</td><td style="padding:8px;border:1px solid #e2e8f0">新路径埋全</td><td style="padding:8px;border:1px solid #e2e8f0">单套埋点</td></tr>
+        <tr><td style="padding:8px;border:1px solid #e2e8f0"><strong>v2 演进难度</strong></td><td style="padding:8px;border:1px solid #e2e8f0">难（旧入口要持续兼容）</td><td style="padding:8px;border:1px solid #e2e8f0">易（旧入口逐步下线）</td><td style="padding:8px;border:1px solid #e2e8f0">最易</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section" style="margin-top:18px;padding:14px;background:#dbeafe;border-left:3px solid #3b82f6;border-radius:4px;font-size:13px">
+  <strong>我推荐 B（新工作台并存）</strong>，理由：
+  <ul style="margin-top:6px">
+    <li><strong>概念清晰</strong>：Ops 用户进 /workbench 只看到任务，不需要"先选 KB"。KB 退回管理员视角，回归"语料管理"的本质身份。</li>
+    <li><strong>风险可控</strong>：旧 /spaces/chat 路由保留作为兜底，feature flag 控制 /workbench 主入口，可灰度。</li>
+    <li><strong>持续学习层埋点干净</strong>：所有 v1 任务都走新 task / agent 链路，Ledger 记录统一，不会有"旧路径漏埋点"的脏数据。</li>
+    <li><strong>v2 演进顺</strong>：当 4 个任务都跑稳了，旧路由 deprecate 一个版本就能下线，不用反复迁移。</li>
+  </ul>
+  <br>
+  <strong>反对意见</strong>：B 比 C 多一份"过渡期"代码债。但相比 C 的回归风险，这个债是可控的。
+</div>
+
+<div class="section" style="margin-top:14px;padding:14px;background:#fef3c7;border-left:3px solid #f59e0b;border-radius:4px;font-size:13px">
+  <strong>选完路径后</strong>，我会直接写 design 文档（<code>docs/superpowers/specs/2026-04-28-structured-workbench-design.md</code>），覆盖：
+  <ol style="margin-top:6px">
+    <li>背景 / North Star / 非目标</li>
+    <li>三层架构（任务 / Agent / 底座）+ 横切持续学习层</li>
+    <li>v1 范围（4 任务 + 2 Agent + Ledger + UserMemory v1）</li>
+    <li>关键模块设计（任务定义形式 / Agent 接口 / Ledger schema / Memory 注入钩子）</li>
+    <li>与现有架构 P0 审计 / 权限 roadmap / continual-learning roadmap 的对齐关系</li>
+    <li>分阶段交付（PR 拆解建议 → 写 plan 时细化）</li>
+    <li>风险与缓解</li>
+  </ol>
+</div>
+
+</div>
+</body>
+</html>
