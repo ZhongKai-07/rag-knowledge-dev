@@ -21,13 +21,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.knowledgebase.ai.ragent.framework.context.Permission;
 import com.knowledgebase.ai.ragent.framework.context.UserContext;
 import com.knowledgebase.ai.ragent.framework.convention.ChatMessage;
 import com.knowledgebase.ai.ragent.framework.convention.ChatRequest;
 import com.knowledgebase.ai.ragent.framework.exception.ClientException;
-import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
-import com.knowledgebase.ai.ragent.framework.security.port.KbReadAccessPort;
 import com.knowledgebase.ai.ragent.framework.trace.RagTraceContext;
 import com.knowledgebase.ai.ragent.infra.chat.LLMService;
 import com.knowledgebase.ai.ragent.rag.dao.entity.ConversationDO;
@@ -43,6 +40,8 @@ import com.knowledgebase.ai.ragent.rag.core.prompt.PromptContext;
 import com.knowledgebase.ai.ragent.rag.core.prompt.PromptTemplateLoader;
 import com.knowledgebase.ai.ragent.rag.core.prompt.RAGPromptService;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScopeBuilder;
 import com.knowledgebase.ai.ragent.rag.core.rewrite.QueryRewriteService;
 import com.knowledgebase.ai.ragent.rag.core.rewrite.RewriteResult;
 import com.knowledgebase.ai.ragent.rag.core.source.SourceCardBuilder;
@@ -93,7 +92,7 @@ public class RAGChatServiceImpl implements RAGChatService {
     private final QueryRewriteService queryRewriteService;
     private final IntentResolver intentResolver;
     private final RetrievalEngine retrievalEngine;
-    private final KbReadAccessPort kbReadAccess;
+    private final RetrievalScopeBuilder retrievalScopeBuilder;
     private final ConversationMapper conversationMapper;
     private final SourceCardBuilder sourceCardBuilder;
     private final RagSourcesProperties ragSourcesProperties;
@@ -118,19 +117,8 @@ public class RAGChatServiceImpl implements RAGChatService {
         evalCollector.setOriginalQuery(question);
         RagTraceContext.setEvalCollector(evalCollector);
 
-        // RBAC: resolve access scope (single source of truth for retrieval).
-        // 未登录 → AccessScope.empty() (fail-closed), 不再复用 null 语义。
-        AccessScope accessScope;
-        if (UserContext.hasUser() && userId != null) {
-            accessScope = kbReadAccess.getAccessScope(Permission.READ);
-        } else {
-            accessScope = AccessScope.empty();
-        }
-
-        // If knowledgeBaseId specified, verify access
-        if (knowledgeBaseId != null) {
-            kbReadAccess.checkReadAccess(knowledgeBaseId);
-        }
+        // RetrievalScopeBuilder is the single source of truth for retrieval scope.
+        RetrievalScope scope = retrievalScopeBuilder.build(knowledgeBaseId);
 
         // Validate conversation-KB ownership for existing conversations
         if (knowledgeBaseId != null && StrUtil.isNotBlank(conversationId)) {
@@ -182,7 +170,7 @@ public class RAGChatServiceImpl implements RAGChatService {
             return;
         }
 
-        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, accessScope, knowledgeBaseId);
+        RetrievalContext ctx = retrievalEngine.retrieve(subIntents, scope);
         if (ctx.isEmpty()) {
             String emptyReply = "未检索到与问题相关的文档内容。";
             callback.onContent(emptyReply);
