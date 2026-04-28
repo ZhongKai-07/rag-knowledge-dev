@@ -323,7 +323,7 @@ git commit -m "feat(schema): add sys_dept, role_type, security_level, permission
 - [ ] **Step 1: 写失败测试 `RoleTypeTests`**
 
 ```java
-package com.nageoffer.ai.ragent.framework.context;
+package com.knowledgebase.ai.ragent.framework.context;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -374,7 +374,7 @@ Expected: 编译失败（`RoleType` 和 `Permission` 类不存在）。
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.framework.context;
+package com.knowledgebase.ai.ragent.framework.context;
 
 /**
  * 用户角色类型。
@@ -415,7 +415,7 @@ public enum RoleType {
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.framework.context;
+package com.knowledgebase.ai.ragent.framework.context;
 
 /**
  * 知识库访问权限级别。
@@ -467,7 +467,7 @@ git commit -m "feat(framework): add RoleType and Permission enums"
 - [ ] **Step 1: 写失败测试**
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.retrieve;
+package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -522,7 +522,7 @@ Expected: 编译失败（类不存在）。
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.retrieve;
+package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
 /**
  * 向量检索的 metadata 过滤条件（类型化版本）。
@@ -599,7 +599,7 @@ git commit -m "feat(retrieve): introduce typed MetadataFilter record"
 - [ ] **Step 1: 写失败测试**
 
 ```java
-package com.nageoffer.ai.ragent.framework.context;
+package com.knowledgebase.ai.ragent.framework.context;
 
 import org.junit.jupiter.api.Test;
 
@@ -673,7 +673,7 @@ Expected: 编译失败（setter/getter 不存在）。
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.framework.context;
+package com.knowledgebase.ai.ragent.framework.context;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -891,7 +891,7 @@ git commit -m "feat(entity): add RBAC and security_level fields to existing DOs"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.dao.entity;
+package com.knowledgebase.ai.ragent.user.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -960,10 +960,10 @@ public class SysDeptDO {
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.dao.mapper;
+package com.knowledgebase.ai.ragent.user.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.SysDeptDO;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -1035,10 +1035,10 @@ public interface RoleMapper extends BaseMapper<RoleDO> {
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.dao.mapper;
+package com.knowledgebase.ai.ragent.user.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -1124,17 +1124,17 @@ git commit -m "feat(user): add RoleMapper.selectRolesByUserId and selectRoleType
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.config;
+package com.knowledgebase.ai.ragent.user.config;
 
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.RoleType;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserMapper;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -1238,11 +1238,11 @@ public class UserContextInterceptor implements HandlerInterceptor {
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.config;
+package com.knowledgebase.ai.ragent.user.config;
 
 import cn.dev33.satoken.stp.StpInterface;
 import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -1332,9 +1332,9 @@ git commit -m "feat(user): load multi-role on request entry via RoleMapper"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
-import com.nageoffer.ai.ragent.framework.context.Permission;
+import com.knowledgebase.ai.ragent.framework.context.Permission;
 
 import java.util.Set;
 
@@ -1348,7 +1348,7 @@ import java.util.Set;
  *     <li>"当前用户对某 KB 有管理权吗"（{@link #checkManageAccess}）</li>
  * </ul>
  *
- * <p>所有方法都从 {@code UserContext} 读取当前用户。{@link com.nageoffer.ai.ragent.framework.context.RoleType#SUPER_ADMIN}
+ * <p>所有方法都从 {@code UserContext} 读取当前用户。{@link com.knowledgebase.ai.ragent.framework.context.RoleType#SUPER_ADMIN}
  * 在实现里统一放行，调用方不用再手动判 {@code "admin".equals(...)}。
  */
 public interface KbAccessService {
@@ -1410,21 +1410,21 @@ public interface KbAccessService {
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service.impl;
+package com.knowledgebase.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.Permission;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.Permission;
+import com.knowledgebase.ai.ragent.framework.context.RoleType;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.knowledgebase.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -1914,7 +1914,7 @@ private Map<String, Object> metadataFilters;
 private java.util.List<MetadataFilter> metadataFilters;
 ```
 
-或者在 import 区加 `import java.util.List;` 和 `import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;` 后：
+或者在 import 区加 `import java.util.List;` 和 `import com.knowledgebase.ai.ragent.rag.core.retrieve.MetadataFilter;` 后：
 ```java
 private List<MetadataFilter> metadataFilters;
 ```
@@ -2018,7 +2018,7 @@ private List<MetadataFilter> buildMetadataFilters(SearchContext ctx) {
 }
 ```
 
-确认 import 区有 `import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;` 和 `import java.util.ArrayList;`。
+确认 import 区有 `import com.knowledgebase.ai.ragent.rag.core.retrieve.MetadataFilter;` 和 `import java.util.ArrayList;`。
 
 然后在 `retrieveKnowledgeChannels` 的单 KB 路径（约 L83）里用它：
 
@@ -2275,7 +2275,7 @@ private String jsonArray(Object v) {
 
 确认 import：
 - `java.util.List`
-- `com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter`
+- `com.knowledgebase.ai.ragent.rag.core.retrieve.MetadataFilter`
 - `java.util.stream.Collectors` (应该已有)
 
 如果原代码里有 `import java.util.Map;` 且不再使用，删除。
@@ -2443,7 +2443,7 @@ git commit -m "feat(knowledge): accept securityLevel in document upload API"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.knowledge.mq;
+package com.knowledgebase.ai.ragent.knowledge.mq;
 
 /**
  * 文档 security_level 变更事件。
@@ -2477,9 +2477,9 @@ public record SecurityLevelRefreshEvent(
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.knowledge.mq;
+package com.knowledgebase.ai.ragent.knowledge.mq;
 
-import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
+import com.knowledgebase.ai.ragent.rag.core.vector.VectorStoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
@@ -2674,10 +2674,10 @@ if (user == null) {
 ```
 
 添加相应 import：
-- `com.nageoffer.ai.ragent.framework.context.LoginUser`
-- `com.nageoffer.ai.ragent.framework.context.RoleType`
-- `com.nageoffer.ai.ragent.framework.context.UserContext`（已有）
-- `com.nageoffer.ai.ragent.framework.exception.ClientException`（已有）
+- `com.knowledgebase.ai.ragent.framework.context.LoginUser`
+- `com.knowledgebase.ai.ragent.framework.context.RoleType`
+- `com.knowledgebase.ai.ragent.framework.context.UserContext`（已有）
+- `com.knowledgebase.ai.ragent.framework.exception.ClientException`（已有）
 
 - [ ] **Step 3: 编译**
 

@@ -105,7 +105,7 @@ frontend/
 - [ ] **Step 1.1: 创建 `SourceChunk.java`**
 
 ```java
-package com.nageoffer.ai.ragent.rag.dto;
+package com.knowledgebase.ai.ragent.rag.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -128,7 +128,7 @@ public class SourceChunk {
 - [ ] **Step 1.2: 创建 `SourceCard.java`**
 
 ```java
-package com.nageoffer.ai.ragent.rag.dto;
+package com.knowledgebase.ai.ragent.rag.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -156,7 +156,7 @@ public class SourceCard {
 - [ ] **Step 1.3: 创建 `SourcesPayload.java`**
 
 ```java
-package com.nageoffer.ai.ragent.rag.dto;
+package com.knowledgebase.ai.ragent.rag.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -198,7 +198,7 @@ SOURCES("sources"),
 `SourcesPayloadTest.java`：
 
 ```java
-package com.nageoffer.ai.ragent.rag.dto;
+package com.knowledgebase.ai.ragent.rag.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -278,9 +278,9 @@ git commit -m "feat(sources): add SourceCard/Chunk/Payload DTOs + SSEEventType.S
 - [ ] **Step 2.1: 写失败测试 `SourceCardsHolderTest.java`**
 
 ```java
-package com.nageoffer.ai.ragent.rag.service.handler;
+package com.knowledgebase.ai.ragent.rag.service.handler;
 
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -369,9 +369,9 @@ mvn -pl bootstrap test -Dtest=SourceCardsHolderTest
 - [ ] **Step 2.3: 实现 `SourceCardsHolder.java`**
 
 ```java
-package com.nageoffer.ai.ragent.rag.service.handler;
+package com.knowledgebase.ai.ragent.rag.service.handler;
 
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 
 import java.util.List;
 import java.util.Optional;
@@ -434,7 +434,7 @@ git commit -m "feat(sources): add SourceCardsHolder set-once CAS container [PR2]
 沿用项目主流模式 `@Configuration + @ConfigurationProperties`（参考 `GuidanceProperties` / `MemoryProperties` 等）。与签字的 spec § 2 一致。
 
 ```java
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -502,12 +502,12 @@ git commit -m "feat(sources): add RagSourcesProperties + application.yaml config
 - [ ] **Step 4.1: 写失败测试 `SourceCardBuilderTest.java`**
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.source;
+package com.knowledgebase.ai.ragent.rag.core.source;
 
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
-import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
+import com.knowledgebase.ai.ragent.knowledge.service.KnowledgeDocumentService;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -663,13 +663,13 @@ mvn -pl bootstrap test -Dtest=SourceCardBuilderTest
 - [ ] **Step 4.3: 实现 `SourceCardBuilder.java`**
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.source;
+package com.knowledgebase.ai.ragent.rag.core.source;
 
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
-import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
+import com.knowledgebase.ai.ragent.knowledge.service.KnowledgeDocumentService;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -895,7 +895,7 @@ git commit -m "feat(sources): add cardsHolder field to StreamChatHandlerParams [
      * <p>
      * 返回值用于调用方防御（理论上 orchestrator 主路径仅调一次，始终返回 true）。
      */
-    public boolean trySetCards(java.util.List<com.nageoffer.ai.ragent.rag.dto.SourceCard> cards) {
+    public boolean trySetCards(java.util.List<com.knowledgebase.ai.ragent.rag.dto.SourceCard> cards) {
         return cardsHolder.trySet(cards);
     }
 
@@ -903,7 +903,7 @@ git commit -m "feat(sources): add cardsHolder field to StreamChatHandlerParams [
      * 机械发射 SSE {@code sources} 事件。异常语义沿用 {@link SseEmitterSender#sendEvent}，
      * 不做额外吞错。
      */
-    public void emitSources(com.nageoffer.ai.ragent.rag.dto.SourcesPayload payload) {
+    public void emitSources(com.knowledgebase.ai.ragent.rag.dto.SourcesPayload payload) {
         sender.sendEvent(SSEEventType.SOURCES.value(), payload);
     }
 ```
@@ -937,8 +937,8 @@ git commit -m "feat(sources): expose trySetCards + emitSources on handler [PR2]"
 在 `RAGChatServiceImpl.java` 的 `@RequiredArgsConstructor` 字段区末尾（`ConversationMapper conversationMapper;` 之后）加：
 
 ```java
-    private final com.nageoffer.ai.ragent.rag.core.source.SourceCardBuilder sourceCardBuilder;
-    private final com.nageoffer.ai.ragent.rag.config.RagSourcesProperties ragSourcesProperties;
+    private final com.knowledgebase.ai.ragent.rag.core.source.SourceCardBuilder sourceCardBuilder;
+    private final com.knowledgebase.ai.ragent.rag.config.RagSourcesProperties ragSourcesProperties;
 ```
 
 （或顶部 import 后去掉 FQCN）
@@ -970,8 +970,8 @@ git commit -m "feat(sources): expose trySetCards + emitSources on handler [PR2]"
 顶部新增 imports：
 
 ```java
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourcesPayload;
 ```
 
 **注意**：闸门 1 早返回分支（`guidanceDecision.isPrompt()` / `allSystemOnly` / `ctx.isEmpty()`）**不要**加 sources 发射代码——它们在 `distinctChunks` 计算之前就 `return` 了，天然不会走到 sources 逻辑。
@@ -983,33 +983,33 @@ import com.nageoffer.ai.ragent.rag.dto.SourcesPayload;
 - 闸门判定错误（如把 `distinctChunks.isEmpty()` 写成 `ctx.isEmpty()`）的场景测试都会挂
 
 ```java
-package com.nageoffer.ai.ragent.rag.service.impl;
+package com.knowledgebase.ai.ragent.rag.service.impl;
 
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.infra.chat.LLMService;
-import com.nageoffer.ai.ragent.infra.chat.StreamCancellationHandle;
-import com.nageoffer.ai.ragent.rag.config.RagSourcesProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.guidance.GuidanceDecision;
-import com.nageoffer.ai.ragent.rag.core.guidance.IntentGuidanceService;
-import com.nageoffer.ai.ragent.rag.core.intent.IntentResolver;
-import com.nageoffer.ai.ragent.rag.core.intent.SubQuestionIntent;
-import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
-import com.nageoffer.ai.ragent.rag.core.prompt.RAGPromptService;
-import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
-import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalContext;
-import com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine;
-import com.nageoffer.ai.ragent.rag.core.rewrite.QueryRewriteService;
-import com.nageoffer.ai.ragent.rag.core.rewrite.RewriteResult;
-import com.nageoffer.ai.ragent.rag.core.source.SourceCardBuilder;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
-import com.nageoffer.ai.ragent.rag.service.handler.StreamCallbackFactory;
-import com.nageoffer.ai.ragent.rag.service.handler.StreamChatEventHandler;
-import com.nageoffer.ai.ragent.rag.service.handler.StreamTaskManager;
-import com.nageoffer.ai.ragent.user.access.AccessScope;
-import com.nageoffer.ai.ragent.user.access.KbAccessService;
-import com.nageoffer.ai.ragent.user.access.KbReadAccessPort;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.infra.chat.LLMService;
+import com.knowledgebase.ai.ragent.infra.chat.StreamCancellationHandle;
+import com.knowledgebase.ai.ragent.rag.config.RagSourcesProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.guidance.GuidanceDecision;
+import com.knowledgebase.ai.ragent.rag.core.guidance.IntentGuidanceService;
+import com.knowledgebase.ai.ragent.rag.core.intent.IntentResolver;
+import com.knowledgebase.ai.ragent.rag.core.intent.SubQuestionIntent;
+import com.knowledgebase.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.knowledgebase.ai.ragent.rag.core.prompt.RAGPromptService;
+import com.knowledgebase.ai.ragent.rag.core.prompt.PromptTemplateLoader;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalContext;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine;
+import com.knowledgebase.ai.ragent.rag.core.rewrite.QueryRewriteService;
+import com.knowledgebase.ai.ragent.rag.core.rewrite.RewriteResult;
+import com.knowledgebase.ai.ragent.rag.core.source.SourceCardBuilder;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dao.mapper.ConversationMapper;
+import com.knowledgebase.ai.ragent.rag.service.handler.StreamCallbackFactory;
+import com.knowledgebase.ai.ragent.rag.service.handler.StreamChatEventHandler;
+import com.knowledgebase.ai.ragent.rag.service.handler.StreamTaskManager;
+import com.knowledgebase.ai.ragent.user.access.AccessScope;
+import com.knowledgebase.ai.ragent.user.access.KbAccessService;
+import com.knowledgebase.ai.ragent.user.access.KbReadAccessPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

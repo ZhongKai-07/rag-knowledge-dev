@@ -165,10 +165,10 @@ Rationale: CLAUDE.md Gotcha: "VectorMetadataFields single source of truth: Alway
 Insert after the existing `SECURITY_LEVEL` constant (line 33), before the private constructor:
 
 ```java
-    /** 文档 ID. 写路径: {@code OpenSearchVectorStoreService}/{@code IndexerNode}. 读路径: {@code OpenSearchRetrieverService} 回填到 {@link com.nageoffer.ai.ragent.framework.convention.RetrievedChunk#getDocId()}. */
+    /** 文档 ID. 写路径: {@code OpenSearchVectorStoreService}/{@code IndexerNode}. 读路径: {@code OpenSearchRetrieverService} 回填到 {@link com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk#getDocId()}. */
     public static final String DOC_ID = "doc_id";
 
-    /** 分块在文档内的顺序索引. 写路径同 DOC_ID. 读路径回填到 {@link com.nageoffer.ai.ragent.framework.convention.RetrievedChunk#getChunkIndex()}. */
+    /** 分块在文档内的顺序索引. 写路径同 DOC_ID. 读路径回填到 {@link com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk#getChunkIndex()}. */
     public static final String CHUNK_INDEX = "chunk_index";
 ```
 
@@ -200,7 +200,7 @@ git commit -m "feat(rag): add DOC_ID / CHUNK_INDEX constants to VectorMetadataFi
 `framework/src/test/java/com/nageoffer/ai/ragent/framework/convention/RetrievedChunkTest.java`:
 
 ```java
-package com.nageoffer.ai.ragent.framework.convention;
+package com.knowledgebase.ai.ragent.framework.convention;
 
 import org.junit.jupiter.api.Test;
 
@@ -357,10 +357,10 @@ Context: `toRetrievedChunk` (currently lines ~253–287) parses `source.get("met
 Since `toRetrievedChunk` is `private`, the test uses reflection via `ReflectionTestUtils.invokeMethod`. (Alternatively: promote to package-private for testability — but that's a scope bump; reflection keeps PR1 minimal.)
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.retrieve;
+package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -571,7 +571,7 @@ Context: `knowledge/dto/` directory does **not** currently exist — create it. 
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.knowledge.dto;
+package com.knowledgebase.ai.ragent.knowledge.dto;
 
 /**
  * 文档元信息快照 (batch 查询返回类型).
@@ -596,7 +596,7 @@ Add to `KnowledgeDocumentService.java`:
      * @param docIds 文档 ID 集合, 允许为空或含不存在 ID
      * @return 可用文档的元信息子集; 空入参返回空列表
      */
-    List<com.nageoffer.ai.ragent.knowledge.dto.DocumentMetaSnapshot> findMetaByIds(
+    List<com.knowledgebase.ai.ragent.knowledge.dto.DocumentMetaSnapshot> findMetaByIds(
             java.util.Collection<String> docIds);
 ```
 
@@ -609,15 +609,15 @@ Since the full `KnowledgeDocumentServiceImpl` constructor has ~17 parameters, we
 `bootstrap/src/test/java/com/nageoffer/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImplFindMetaTest.java`:
 
 ```java
-package com.nageoffer.ai.ragent.knowledge.service.impl;
+package com.knowledgebase.ai.ragent.knowledge.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.injector.MapperBuilderAssistant;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
-import com.nageoffer.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
+import com.knowledgebase.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -753,7 +753,7 @@ Add top-level imports as needed:
 
 ```java
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
+import com.knowledgebase.ai.ragent.knowledge.dto.DocumentMetaSnapshot;
 import java.util.Collection;
 import java.util.stream.Collectors;
 ```

@@ -177,7 +177,7 @@ Verified `bootstrap/.../rag/config/RagVectorTypeValidator.java` exists with `@Po
 
 ### ArchUnit rules go to `bootstrap/.../arch/PermissionBoundaryArchTest`
 
-Verified `bootstrap/src/test/java/com/nageoffer/ai/ragent/arch/PermissionBoundaryArchTest.java` exists (PR1 commit `e1cde994`); `@AnalyzeClasses(packages = "com.nageoffer.ai.ragent")` covers all modules. Sister file `KbAccessServiceRetirementArchTest.java` shows the `noClasses().that().haveFullyQualifiedName(...)` pattern PR3 will reuse.
+Verified `bootstrap/src/test/java/com/nageoffer/ai/ragent/arch/PermissionBoundaryArchTest.java` exists (PR1 commit `e1cde994`); `@AnalyzeClasses(packages = "com.knowledgebase.ai.ragent")` covers all modules. Sister file `KbAccessServiceRetirementArchTest.java` shows the `noClasses().that().haveFullyQualifiedName(...)` pattern PR3 will reuse.
 
 ---
 
@@ -210,9 +210,9 @@ The commit produces production code that nothing yet calls. Keeps build green; a
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service.support;
+package com.knowledgebase.ai.ragent.user.service.support;
 
-import com.nageoffer.ai.ragent.framework.context.RoleType;
+import com.knowledgebase.ai.ragent.framework.context.RoleType;
 
 import java.util.Set;
 
@@ -271,7 +271,7 @@ Expected: BUILD SUCCESS.
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service.support;
+package com.knowledgebase.ai.ragent.user.service.support;
 
 /**
  * 项目内**唯一**把 {@code UserContext} / {@code UserProfileLoader} 转成
@@ -287,7 +287,7 @@ public interface KbAccessSubjectFactory {
      *
      * @throws IllegalStateException 当 {@code UserContext.isSystem() == true};
      *         系统态走 {@code bypassIfSystemOrAssertActor} 早返回,不应到达 calculator 层
-     * @throws com.nageoffer.ai.ragent.framework.exception.ClientException
+     * @throws com.knowledgebase.ai.ragent.framework.exception.ClientException
      *         当未登录或 userId 缺失（fail-closed,与 PR1 invariant B 一致）
      */
     KbAccessSubject currentOrThrow();
@@ -296,7 +296,7 @@ public interface KbAccessSubjectFactory {
      * 构造指定目标用户的 subject。用于 admin-views-target 路径
      * （如 {@code AccessServiceImpl.listUserKbGrants}）。
      *
-     * @throws com.nageoffer.ai.ragent.framework.exception.ClientException
+     * @throws com.knowledgebase.ai.ragent.framework.exception.ClientException
      *         当目标用户不存在
      */
     KbAccessSubject forTargetUser(String userId);
@@ -333,14 +333,14 @@ Expected: BUILD SUCCESS.
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service.support;
+package com.knowledgebase.ai.ragent.user.service.support;
 
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
-import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.RoleType;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.user.dao.dto.LoadedUserProfile;
+import com.knowledgebase.ai.ragent.user.service.UserProfileLoader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -463,13 +463,13 @@ Expected: COMPILATION FAILURE — `KbAccessSubjectFactoryImpl` symbol unresolved
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service.support;
+package com.knowledgebase.ai.ragent.user.service.support;
 
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
-import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.user.dao.dto.LoadedUserProfile;
+import com.knowledgebase.ai.ragent.user.service.UserProfileLoader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -542,16 +542,16 @@ Expected: 5 tests run, 0 failures.
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service.support;
+package com.knowledgebase.ai.ragent.user.service.support;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nageoffer.ai.ragent.framework.context.Permission;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.knowledgebase.ai.ragent.framework.context.Permission;
+import com.knowledgebase.ai.ragent.framework.context.RoleType;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserRoleMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -731,15 +731,15 @@ The implementation absorbs `KbRbacAccessSupport.computeRbacKbIdsFor` (current lo
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.user.service.support;
+package com.knowledgebase.ai.ragent.user.service.support;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.framework.context.Permission;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.knowledgebase.ai.ragent.framework.context.Permission;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserRoleMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -954,9 +954,9 @@ This is the **single big-bang commit**: `KbReadAccessPort` signature change forc
 Replace the file contents (everything between `package` and the final closing brace) with:
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
-import com.nageoffer.ai.ragent.framework.context.Permission;
+import com.knowledgebase.ai.ragent.framework.context.Permission;
 
 import java.util.Collection;
 import java.util.Map;
@@ -1005,9 +1005,9 @@ Expected: BUILD SUCCESS (port is interface-only; no impl in framework). Now boot
 Append (after existing user-service imports):
 
 ```java
-import com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator;
-import com.nageoffer.ai.ragent.user.service.support.KbAccessSubject;
-import com.nageoffer.ai.ragent.user.service.support.KbAccessSubjectFactory;
+import com.knowledgebase.ai.ragent.user.service.support.KbAccessCalculator;
+import com.knowledgebase.ai.ragent.user.service.support.KbAccessSubject;
+import com.knowledgebase.ai.ragent.user.service.support.KbAccessSubjectFactory;
 ```
 
 - [ ] **Step 2: Add two new injected fields**
@@ -1148,7 +1148,7 @@ to:
 
 Run: `grep -n "UserContext" bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/MultiChannelRetrievalEngine.java`
 - If line 261 still uses `UserContext.hasUser()`, the import stays — done.
-- If only the deleted line referenced `UserContext`, also remove `import com.nageoffer.ai.ragent.framework.context.UserContext;`.
+- If only the deleted line referenced `UserContext`, also remove `import com.knowledgebase.ai.ragent.framework.context.UserContext;`.
 
 (Line 261's `UserContext.hasUser()` guard preserves fail-closed semantics for unauthenticated paths; keep it.)
 
@@ -1166,14 +1166,14 @@ Expected: still failing — 1 more caller (`AccessServiceImpl`).
 
 Add these lines to imports:
 ```java
-import com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator;
-import com.nageoffer.ai.ragent.user.service.support.KbAccessSubject;
-import com.nageoffer.ai.ragent.user.service.support.KbAccessSubjectFactory;
+import com.knowledgebase.ai.ragent.user.service.support.KbAccessCalculator;
+import com.knowledgebase.ai.ragent.user.service.support.KbAccessSubject;
+import com.knowledgebase.ai.ragent.user.service.support.KbAccessSubjectFactory;
 ```
 
 Remove this line:
 ```java
-import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;
+import com.knowledgebase.ai.ragent.framework.security.port.KbReadAccessPort;
 ```
 
 - [ ] **Step 2: Replace `kbReadAccess` field with factory + calculator**
@@ -1273,7 +1273,7 @@ Remove lines 312-336 entirely (the comment block + helper method body).
 
 - [ ] **Step 5: Remove unused imports**
 
-Run: `grep -n "import com.nageoffer.ai.ragent.user.service.impl.KbRbacAccessSupport" bootstrap/src/main/java/com/nageoffer/ai/ragent/user/service/impl/AccessServiceImpl.java`
+Run: `grep -n "import com.knowledgebase.ai.ragent.user.service.impl.KbRbacAccessSupport" bootstrap/src/main/java/com/nageoffer/ai/ragent/user/service/impl/AccessServiceImpl.java`
 
 If the line exists, delete it. Same for any leftover unused imports (`KbMetadataReader` may or may not still be needed — check by `grep "kbMetadataReader\\." bootstrap/src/main/java/com/nageoffer/ai/ragent/user/service/impl/AccessServiceImpl.java` after Step 4; if zero hits, also remove `private final KbMetadataReader kbMetadataReader;` and the import).
 
@@ -1324,11 +1324,11 @@ Add:
 ```
 
 Update imports accordingly:
-- Remove `import com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort;`
-- Add `import com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator;`
-- Add `import com.nageoffer.ai.ragent.user.service.support.KbAccessSubject;`
-- Add `import com.nageoffer.ai.ragent.user.service.support.KbAccessSubjectFactory;`
-- Add `import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;` if not present.
+- Remove `import com.knowledgebase.ai.ragent.framework.security.port.KbReadAccessPort;`
+- Add `import com.knowledgebase.ai.ragent.user.service.support.KbAccessCalculator;`
+- Add `import com.knowledgebase.ai.ragent.user.service.support.KbAccessSubject;`
+- Add `import com.knowledgebase.ai.ragent.user.service.support.KbAccessSubjectFactory;`
+- Add `import com.knowledgebase.ai.ragent.user.dao.dto.LoadedUserProfile;` if not present.
 
 - [ ] **Step 2: Replace each existing stub of `getMaxSecurityLevelsForKbs` (5 sites)**
 
@@ -1760,7 +1760,7 @@ Expected: all pass.
 
 Delete line 27:
 ```java
-import com.nageoffer.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
 ```
 
 - [ ] **Step 2: Replace constructor read**
@@ -1817,18 +1817,18 @@ Expected: BUILD SUCCESS.
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service.handler;
+package com.knowledgebase.ai.ragent.rag.service.handler;
 
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
-import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
-import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
-import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
-import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
-import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.convention.ChatMessage;
+import com.knowledgebase.ai.ragent.infra.config.AIModelProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationGroupService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.RagEvaluationService;
+import com.knowledgebase.ai.ragent.rag.service.RagTraceRecordService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1925,16 +1925,16 @@ Append before the closing brace:
     @ArchTest
     static final ArchRule rag_handler_package_no_user_context =
             noClasses()
-                    .that().resideInAPackage("com.nageoffer.ai.ragent.rag.service.handler..")
+                    .that().resideInAPackage("com.knowledgebase.ai.ragent.rag.service.handler..")
                     .should().dependOnClassesThat()
-                    .haveFullyQualifiedName("com.nageoffer.ai.ragent.framework.context.UserContext")
+                    .haveFullyQualifiedName("com.knowledgebase.ai.ragent.framework.context.UserContext")
                     .because("PR3-4: handler 类不读 ThreadLocal,userId 由构造参数显式传入");
 
     @ArchTest
     static final ArchRule kb_access_calculator_no_user_context =
             noClasses()
                     .that().haveFullyQualifiedName(
-                            "com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator")
+                            "com.knowledgebase.ai.ragent.user.service.support.KbAccessCalculator")
                     .should().dependOnClassesThat()
                     .haveFullyQualifiedNameMatching(
                             "com\\.nageoffer\\.ai\\.ragent\\.framework\\.context\\.(UserContext|LoginUser)")
@@ -1945,7 +1945,7 @@ Append before the closing brace:
             methods()
                     .that().areDeclaredInClassesThat()
                     .haveFullyQualifiedName(
-                            "com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort")
+                            "com.knowledgebase.ai.ragent.framework.security.port.KbReadAccessPort")
                     .should(notHaveStringParameterNamedUserId())
                     .because("PR3-2: Port 签名 current-user only");
 
@@ -2050,7 +2050,7 @@ Expected: commit succeeds.
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -2111,7 +2111,7 @@ Expected: tests run; `milvus_withoutOverride_throwsIllegalStateException` FAILS 
 Replace the entire class body (preserving the license header) with:
 
 ```java
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;

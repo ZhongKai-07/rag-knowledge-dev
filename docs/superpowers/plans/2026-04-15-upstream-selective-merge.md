@@ -311,7 +311,7 @@ git commit -m "feat(infra): add LLMService.chat(request, modelId) for caller-spe
 Create `infra-ai/src/main/java/com/nageoffer/ai/ragent/infra/chat/ProbeStreamBridge.java`:
 
 ```java
-package com.nageoffer.ai.ragent.infra.chat;
+package com.knowledgebase.ai.ragent.infra.chat;
 
 import lombok.Getter;
 
@@ -622,16 +622,16 @@ Replace the constructor + `chat()` + `resolveChatTarget()` + `pickTarget()` meth
 
 Remove imports:
 ```java
-import com.nageoffer.ai.ragent.infra.chat.ChatClient;
-import com.nageoffer.ai.ragent.infra.model.ModelSelector;
-import com.nageoffer.ai.ragent.infra.model.ModelTarget;
+import com.knowledgebase.ai.ragent.infra.chat.ChatClient;
+import com.knowledgebase.ai.ragent.infra.model.ModelSelector;
+import com.knowledgebase.ai.ragent.infra.model.ModelTarget;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 ```
 
 Add import:
 ```java
-import com.nageoffer.ai.ragent.infra.chat.LLMService;
+import com.knowledgebase.ai.ragent.infra.chat.LLMService;
 ```
 
 Replace the fields + constructor (lines 51-64) with:
@@ -657,7 +657,7 @@ Replace `chat()` + `resolveChatTarget()` + `pickTarget()` (lines 138-163) with:
     }
 ```
 
-Also remove `import com.nageoffer.ai.ragent.framework.exception.ClientException;` (no longer used) and `import org.springframework.util.StringUtils;` if only used in `pickTarget`.
+Also remove `import com.knowledgebase.ai.ragent.framework.exception.ClientException;` (no longer used) and `import org.springframework.util.StringUtils;` if only used in `pickTarget`.
 
 Wait — `StringUtils` is still used in `resolveInputText` and `buildUserPrompt`. Keep it.
 
@@ -696,9 +696,9 @@ Remove unused imports: `ChatClient`, `ModelSelector`, `ModelTarget`, `ClientExce
 
 Remove imports:
 ```java
-import com.nageoffer.ai.ragent.infra.embedding.EmbeddingClient;
-import com.nageoffer.ai.ragent.infra.model.ModelSelector;
-import com.nageoffer.ai.ragent.infra.model.ModelTarget;
+import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingClient;
+import com.knowledgebase.ai.ragent.infra.model.ModelSelector;
+import com.knowledgebase.ai.ragent.infra.model.ModelTarget;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -706,7 +706,7 @@ import java.util.stream.Collectors;
 
 Add import:
 ```java
-import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
+import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingService;
 ```
 
 Replace the class body (keep `@Service` annotation, keep `embed()` signature and `applyEmbeddings`):
@@ -772,7 +772,7 @@ Expected: BUILD SUCCESS.
 - [ ] **Step 5: Verify no remaining internal imports from bootstrap**
 
 ```bash
-grep -rn "import com.nageoffer.ai.ragent.infra.model.ModelSelector\|import com.nageoffer.ai.ragent.infra.model.ModelTarget\|import com.nageoffer.ai.ragent.infra.chat.ChatClient\|import com.nageoffer.ai.ragent.infra.embedding.EmbeddingClient" bootstrap/src/main/java/
+grep -rn "import com.knowledgebase.ai.ragent.infra.model.ModelSelector\|import com.knowledgebase.ai.ragent.infra.model.ModelTarget\|import com.knowledgebase.ai.ragent.infra.chat.ChatClient\|import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingClient" bootstrap/src/main/java/
 ```
 
 Expected: no matches from EnhancerNode, EnricherNode, or ChunkEmbeddingService. Other files (e.g., `RAGChatServiceImpl`) may still import these — that's out of scope for this plan.
@@ -865,9 +865,9 @@ The `resolveTarget` and `resolveClient` methods stay as-is. The `healthStore` fi
 
 Remove imports:
 ```java
-import com.nageoffer.ai.ragent.framework.errorcode.BaseErrorCode;
-import com.nageoffer.ai.ragent.framework.exception.RemoteException;
-import com.nageoffer.ai.ragent.infra.model.ModelHealthStore;
+import com.knowledgebase.ai.ragent.framework.errorcode.BaseErrorCode;
+import com.knowledgebase.ai.ragent.framework.exception.RemoteException;
+import com.knowledgebase.ai.ragent.infra.model.ModelHealthStore;
 ```
 
 Wait — `RemoteException` is still used in `resolveTarget` and `resolveClient`. Keep it. Only remove `BaseErrorCode` and `ModelHealthStore`.

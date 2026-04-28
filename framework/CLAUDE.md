@@ -11,7 +11,7 @@ mvn -pl framework install -DskipTests
 ## 包结构与职责
 
 ```
-com.nageoffer.ai.ragent.framework/
+com.knowledgebase.ai.ragent.framework/
 ├── cache/           ← Redis key 序列化
 ├── config/          ← Spring Boot 自动配置（DB、RocketMQ、Web）
 ├── context/         ← 用户上下文（ThreadLocal）

@@ -144,7 +144,7 @@ private String sourcesJson;
 
 ```java
 // bootstrap/rag/controller/vo/ConversationMessageVO.java
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 import java.util.List;
 
 /**
@@ -184,7 +184,7 @@ void updateSourcesJson(String messageId, String json);
 // bootstrap/rag/service/impl/ConversationMessageServiceImpl.java
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 
 private static final ObjectMapper SOURCES_MAPPER = new ObjectMapper();
 private static final TypeReference<List<SourceCard>> SOURCES_TYPE = new TypeReference<>() {};
@@ -227,7 +227,7 @@ private List<SourceCard> deserializeSources(String json) {
 
 ```java
 // bootstrap/rag/service/handler/StreamChatHandlerParams.java
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
 
 /**
  * 会话消息服务，用于持久化 sources_json
@@ -241,7 +241,7 @@ private final ConversationMessageService conversationMessageService;
 
 ```java
 // bootstrap/rag/service/handler/StreamCallbackFactory.java
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
 
 // 字段列表加一行（@RequiredArgsConstructor 自动生成 final 构造器）
 private final ConversationMessageService conversationMessageService;
@@ -255,7 +255,7 @@ private final ConversationMessageService conversationMessageService;
 ```java
 // bootstrap/rag/service/handler/StreamChatEventHandler.java
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
 
 private static final ObjectMapper SOURCES_MAPPER = new ObjectMapper();
 

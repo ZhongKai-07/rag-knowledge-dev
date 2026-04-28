@@ -159,7 +159,7 @@ git commit -m "feat(eval): add v1.10 schema for RAG eval domain (4 tables)"
 Create `bootstrap/src/test/java/com/nageoffer/ai/ragent/eval/config/EvalPropertiesTest.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.config;
+package com.knowledgebase.ai.ragent.eval.config;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -211,7 +211,7 @@ Expected：FAIL，编译错误 `cannot find symbol class EvalProperties`
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/config/EvalProperties.java`（Apache 2.0 header 参照项目里其他文件）:
 
 ```java
-package com.nageoffer.ai.ragent.eval.config;
+package com.knowledgebase.ai.ragent.eval.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -305,7 +305,7 @@ git commit -m "feat(eval): add EvalProperties config binding + rag.eval.* yaml"
 Create `bootstrap/src/test/java/com/nageoffer/ai/ragent/eval/async/EvalAsyncConfigTest.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.async;
+package com.knowledgebase.ai.ragent.eval.async;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -347,7 +347,7 @@ Expected：FAIL，class not found
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/async/EvalAsyncConfig.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.async;
+package com.knowledgebase.ai.ragent.eval.async;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -414,7 +414,7 @@ git commit -m "feat(eval): add evalExecutor ThreadPoolTaskExecutor bean"
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/entity/GoldDatasetDO.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.entity;
+package com.knowledgebase.ai.ragent.eval.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -464,7 +464,7 @@ public class GoldDatasetDO {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/entity/GoldItemDO.java`（同风格）:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.entity;
+package com.knowledgebase.ai.ragent.eval.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -519,7 +519,7 @@ public class GoldItemDO {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/entity/EvalRunDO.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.entity;
+package com.knowledgebase.ai.ragent.eval.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -577,7 +577,7 @@ public class EvalRunDO {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/entity/EvalResultDO.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.entity;
+package com.knowledgebase.ai.ragent.eval.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -625,10 +625,10 @@ public class EvalResultDO {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/mapper/GoldDatasetMapper.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.mapper;
+package com.knowledgebase.ai.ragent.eval.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldDatasetDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldDatasetDO;
 
 public interface GoldDatasetMapper extends BaseMapper<GoldDatasetDO> {
 }
@@ -637,10 +637,10 @@ public interface GoldDatasetMapper extends BaseMapper<GoldDatasetDO> {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/mapper/GoldItemMapper.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.mapper;
+package com.knowledgebase.ai.ragent.eval.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldItemDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldItemDO;
 
 public interface GoldItemMapper extends BaseMapper<GoldItemDO> {
 }
@@ -649,10 +649,10 @@ public interface GoldItemMapper extends BaseMapper<GoldItemDO> {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/mapper/EvalRunMapper.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.mapper;
+package com.knowledgebase.ai.ragent.eval.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.eval.dao.entity.EvalRunDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.EvalRunDO;
 
 public interface EvalRunMapper extends BaseMapper<EvalRunDO> {
 }
@@ -661,10 +661,10 @@ public interface EvalRunMapper extends BaseMapper<EvalRunDO> {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/dao/mapper/EvalResultMapper.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.mapper;
+package com.knowledgebase.ai.ragent.eval.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.eval.dao.entity.EvalResultDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.EvalResultDO;
 
 public interface EvalResultMapper extends BaseMapper<EvalResultDO> {
 }
@@ -699,7 +699,7 @@ git commit -m "feat(eval): add 4 DO entities + 4 BaseMapper interfaces for eval 
 Create `bootstrap/src/test/java/com/nageoffer/ai/ragent/eval/dao/mapper/EvalMapperScanTest.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.dao.mapper;
+package com.knowledgebase.ai.ragent.eval.dao.mapper;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -742,11 +742,11 @@ Modify `bootstrap/src/main/java/com/nageoffer/ai/ragent/RagentApplication.java`�
 
 ```java
 @MapperScan(basePackages = {
-        "com.nageoffer.ai.ragent.rag.dao.mapper",
-        "com.nageoffer.ai.ragent.ingestion.dao.mapper",
-        "com.nageoffer.ai.ragent.knowledge.dao.mapper",
-        "com.nageoffer.ai.ragent.user.dao.mapper",
-        "com.nageoffer.ai.ragent.eval.dao.mapper"
+        "com.knowledgebase.ai.ragent.rag.dao.mapper",
+        "com.knowledgebase.ai.ragent.ingestion.dao.mapper",
+        "com.knowledgebase.ai.ragent.knowledge.dao.mapper",
+        "com.knowledgebase.ai.ragent.user.dao.mapper",
+        "com.knowledgebase.ai.ragent.eval.dao.mapper"
 })
 ```
 
@@ -791,7 +791,7 @@ git commit -m "feat(eval): register eval.dao.mapper in @MapperScan + startup ass
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/domain/SynthesizeChunkInput.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.domain;
+package com.knowledgebase.ai.ragent.eval.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -810,7 +810,7 @@ public record SynthesizeChunkInput(
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/domain/SynthesizedItem.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.domain;
+package com.knowledgebase.ai.ragent.eval.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -829,7 +829,7 @@ public record SynthesizedItem(
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/domain/SynthesizeRequest.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.domain;
+package com.knowledgebase.ai.ragent.eval.domain;
 
 import java.util.List;
 
@@ -840,7 +840,7 @@ public record SynthesizeRequest(List<SynthesizeChunkInput> chunks) {
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/domain/SynthesizeResponse.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.domain;
+package com.knowledgebase.ai.ragent.eval.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -881,12 +881,12 @@ git commit -m "feat(eval): add synthesize request/response record DTOs"
 Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/eval/client/RagasEvalClient.java`:
 
 ```java
-package com.nageoffer.ai.ragent.eval.client;
+package com.knowledgebase.ai.ragent.eval.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.nageoffer.ai.ragent.eval.config.EvalProperties;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizeRequest;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizeResponse;
+import com.knowledgebase.ai.ragent.eval.config.EvalProperties;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizeRequest;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizeResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;

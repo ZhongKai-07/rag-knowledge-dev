@@ -27,7 +27,7 @@ BaiLian / Ollama / SiliconFlow / Noop
 ## 2. 包结构
 
 ```
-com.nageoffer.ai.ragent.infra/
+com.knowledgebase.ai.ragent.infra/
 ├── chat/         ← LLM 聊天（同步 + 流式）
 ├── embedding/    ← 文本向量化
 ├── rerank/       ← 检索结果重排

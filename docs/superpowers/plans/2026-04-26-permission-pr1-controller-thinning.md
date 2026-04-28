@@ -176,7 +176,7 @@ Expected: PASS — all four tests green.
 /*
  * Licensed under Apache 2.0 (see LoginUserTests for full header).
  */
-package com.nageoffer.ai.ragent.framework.context;
+package com.knowledgebase.ai.ragent.framework.context;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -282,12 +282,12 @@ EOF
 /*
  * Licensed under Apache 2.0.
  */
-package com.nageoffer.ai.ragent.knowledge.mq;
+package com.knowledgebase.ai.ragent.knowledge.mq;
 
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.mq.MessageWrapper;
-import com.nageoffer.ai.ragent.knowledge.mq.event.KnowledgeDocumentChunkEvent;
-import com.nageoffer.ai.ragent.knowledge.service.KnowledgeDocumentService;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.mq.MessageWrapper;
+import com.knowledgebase.ai.ragent.knowledge.mq.event.KnowledgeDocumentChunkEvent;
+import com.knowledgebase.ai.ragent.knowledge.service.KnowledgeDocumentService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -423,22 +423,22 @@ EOF
 /*
  * Licensed under Apache 2.0.
  */
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
-import com.nageoffer.ai.ragent.user.service.impl.KbAccessServiceImpl;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.SysDeptMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.knowledgebase.ai.ragent.user.service.impl.KbAccessServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -787,14 +787,14 @@ This is the largest commit. The order within: tests first (red), then code chang
 /*
  * Licensed under Apache 2.0.
  */
-package com.nageoffer.ai.ragent.knowledge.service;
+package com.knowledgebase.ai.ragent.knowledge.service;
 
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBaseUpdateRequest;
-import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeBaseUpdateRequest;
+import com.knowledgebase.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
+import com.knowledgebase.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -929,17 +929,17 @@ Pattern: mirror `KnowledgeBaseServiceAuthBoundaryTest`; one `@Test` per entry.
 /*
  * Licensed under Apache 2.0.
  */
-package com.nageoffer.ai.ragent.knowledge.service;
+package com.knowledgebase.ai.ragent.knowledge.service;
 
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentPageRequest;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUpdateRequest;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentUploadRequest;
-import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentVO;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeDocumentPageRequest;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeDocumentUpdateRequest;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeDocumentUploadRequest;
+import com.knowledgebase.ai.ragent.knowledge.controller.vo.KnowledgeDocumentVO;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
+import com.knowledgebase.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1088,17 +1088,17 @@ Expected: PASS — all 9 tests green.
 /*
  * Licensed under Apache 2.0.
  */
-package com.nageoffer.ai.ragent.knowledge.service;
+package com.knowledgebase.ai.ragent.knowledge.service;
 
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkBatchRequest;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkPageRequest;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkUpdateRequest;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkBatchRequest;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkPageRequest;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkUpdateRequest;
+import com.knowledgebase.ai.ragent.user.service.KbAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1230,12 +1230,12 @@ Expected: PASS.
 /*
  * Licensed under Apache 2.0.
  */
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
-import com.nageoffer.ai.ragent.framework.context.LoginUser;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.knowledge.controller.KnowledgeBaseController;
+import com.knowledgebase.ai.ragent.framework.context.LoginUser;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.knowledge.controller.KnowledgeBaseController;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1426,12 +1426,12 @@ EOF
 /*
  * Licensed under Apache 2.0.
  */
-package com.nageoffer.ai.ragent.knowledge.service;
+package com.knowledgebase.ai.ragent.knowledge.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeBasePageRequest;
-import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeBaseVO;
-import com.nageoffer.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
+import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeBasePageRequest;
+import com.knowledgebase.ai.ragent.knowledge.controller.vo.KnowledgeBaseVO;
+import com.knowledgebase.ai.ragent.knowledge.service.impl.KnowledgeBaseServiceImpl;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -1444,7 +1444,7 @@ class PageQueryFailClosedTest {
     void pageQuery_returns_empty_page_when_accessibleKbIds_is_empty_non_null() {
         KnowledgeBaseService service = TestKnowledgeBaseServiceFactory.withMockedAccess(
                 /* kbAccessService irrelevant for this path */ org.mockito.Mockito.mock(
-                        com.nageoffer.ai.ragent.user.service.KbAccessService.class));
+                        com.knowledgebase.ai.ragent.user.service.KbAccessService.class));
 
         KnowledgeBasePageRequest request = new KnowledgeBasePageRequest();
         request.setCurrent(1L);
@@ -1461,9 +1461,9 @@ class PageQueryFailClosedTest {
     void documentSearch_returns_empty_list_when_accessibleKbIds_is_empty_non_null() {
         KnowledgeDocumentService service = TestKnowledgeDocumentServiceFactory.withMockedAccess(
                 org.mockito.Mockito.mock(
-                        com.nageoffer.ai.ragent.user.service.KbAccessService.class));
+                        com.knowledgebase.ai.ragent.user.service.KbAccessService.class));
 
-        java.util.List<com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO> result =
+        java.util.List<com.knowledgebase.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO> result =
                 service.search("anything", 8, Set.of());
 
         assertEquals(0, result.size(),

@@ -31,7 +31,7 @@ Merge: `d3a7fd6c` (PR #19)
 
 ### Java 数据层（Task 4-5）
 - 4 个 DO + 4 个 BaseMapper 接口（纯 boilerplate，camelCase → snake_case 靠 MyBatis Plus 默认转换）
-- `RagentApplication.@MapperScan` 加 `com.nageoffer.ai.ragent.eval.dao.mapper`，`EvalMapperScanTest` 用 `@SpringBootTest` 断言 4 个 bean 非 null（Gotcha #14 锁死）
+- `RagentApplication.@MapperScan` 加 `com.knowledgebase.ai.ragent.eval.dao.mapper`，`EvalMapperScanTest` 用 `@SpringBootTest` 断言 4 个 bean 非 null（Gotcha #14 锁死）
 
 ### Java 契约层（Task 6-7）
 - 4 个 Synthesize DTO record，跨 HTTP 字段全部用 `@JsonProperty` 显式 snake_case 映射（`docName → doc_name`, `sourceChunkId → source_chunk_id`, `failedChunkIds → failed_chunk_ids`, `ragasVersion / evaluatorLlm`）—— Jackson 默认不做 camelCase ↔ snake_case 转换
@@ -62,7 +62,7 @@ Merge: `d3a7fd6c` (PR #19)
 1. **Python 包 shadowing**：Docker 里 `COPY ragas ./ragas` 把本地包拷到 `/app/ragas/`，本地空 `__init__.py` 会 shadow PyPI `ragas` 库的 `__init__.py`，导致 `import ragas; ragas.__version__` 取到本地空壳，`/health` 返回 `"ragas_version": "unknown"`。修复方案：`__init__.py` 用 `importlib.metadata.version("ragas")` 读 dist-info 元数据，绕过 `sys.path` 优先级问题（commit `1a5713a8`）。本地 dev 环境未装 PyPI ragas → fallback "unknown"；Docker 装了 → 返回真实版本号。未来 RAGAS 评估用 `from ragas.metrics import faithfulness` 本身没问题（本地包没 `metrics.py`，Python fallback 到 PyPI），但**不要**在本地包里加同名子模块，否则也会 shadow。
 2. **`.env.example` 被误操作**：用户把 `.env.example` rename 成 `.env` 填真 key 后，仓库里 `.env.example` 被删。Git tracked `.env.example` 但未 tracked `.env`。修复：`git checkout HEAD -- .env.example` 从上个 commit 恢复，`.env`（untracked 带真 key）保持不变不被跟踪。
 3. **SYNTHESIS_PROMPT JSON 示例花括号**：模板里 `{"question": "...", "answer": "..."}` 在 Python `.format(text=, doc_name=)` 里会抛 `IndexError` 或 `KeyError`（花括号被当成位置参数）。必须写成 `{{"question": "...", "answer": "..."}}`。
-4. **`@MapperScan` 陷阱**：不加 `com.nageoffer.ai.ragent.eval.dao.mapper` 到 `RagentApplication.@MapperScan` basePackages，4 个 eval mapper bean **根本装配不了**。`EvalMapperScanTest` 是刻意用 `@SpringBootTest` + `@Autowired(required=false)` 做 fail-loud 的断言测试。
+4. **`@MapperScan` 陷阱**：不加 `com.knowledgebase.ai.ragent.eval.dao.mapper` 到 `RagentApplication.@MapperScan` basePackages，4 个 eval mapper bean **根本装配不了**。`EvalMapperScanTest` 是刻意用 `@SpringBootTest` + `@Autowired(required=false)` 做 fail-loud 的断言测试。
 5. **pytest rootdir + sys.path**：`ragas/tests/test_settings.py` 从 `ragas.settings` import，依赖 pytest 把 `ragas/` 自动加进 sys.path。跑时必须 `cd ragas && python -m pytest tests/`，不能在项目根跑。
 
 ## 验证数据

@@ -172,7 +172,7 @@ git commit -m "chore(sources): upgrade_v1.8_to_v1.9.sql + schema dual-write + CL
 在 `ConversationMessageVO.java` 顶部 import 区域加两行：
 
 ```java
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 import java.util.List;
 ```
 
@@ -287,14 +287,14 @@ git commit -m "chore(sources): add updateSourcesJson interface + stub [PR4]"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service.impl;
+package com.knowledgebase.ai.ragent.rag.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.nageoffer.ai.ragent.rag.dao.entity.ConversationMessageDO;
-import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMapper;
-import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
-import com.nageoffer.ai.ragent.rag.dao.mapper.ConversationSummaryMapper;
-import com.nageoffer.ai.ragent.rag.service.MessageFeedbackService;
+import com.knowledgebase.ai.ragent.rag.dao.entity.ConversationMessageDO;
+import com.knowledgebase.ai.ragent.rag.dao.mapper.ConversationMapper;
+import com.knowledgebase.ai.ragent.rag.dao.mapper.ConversationMessageMapper;
+import com.knowledgebase.ai.ragent.rag.dao.mapper.ConversationSummaryMapper;
+import com.knowledgebase.ai.ragent.rag.service.MessageFeedbackService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -456,11 +456,11 @@ git commit -m "feat(sources): implement updateSourcesJson via lambdaUpdate [PR4]
 ```java
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nageoffer.ai.ragent.rag.controller.vo.ConversationMessageVO;
-import com.nageoffer.ai.ragent.rag.dao.entity.ConversationDO;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
-import com.nageoffer.ai.ragent.rag.enums.ConversationMessageOrder;
+import com.knowledgebase.ai.ragent.rag.controller.vo.ConversationMessageVO;
+import com.knowledgebase.ai.ragent.rag.dao.entity.ConversationDO;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;
+import com.knowledgebase.ai.ragent.rag.enums.ConversationMessageOrder;
 
 import java.util.Date;
 import java.util.List;
@@ -576,7 +576,7 @@ Expected: 前 2 个（write-path）通过；新加的 `listMessages_with*` 3 个
 ```java
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 ```
 
 3. 类内加两个静态常量（紧跟类声明后、字段前）：
@@ -662,7 +662,7 @@ git commit -m "feat(sources): listMessages deserialize sources_json to VO [PR4]"
 顶部 import 区域加：
 
 ```java
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
 ```
 
 字段列表（紧跟 `memoryService` 那行，约 L64 之后）加：
@@ -681,7 +681,7 @@ import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 顶部 import 区域加：
 
 ```java
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
 ```
 
 字段列表（紧跟 `memoryService` 那行，约 L45 之后）加：
@@ -701,7 +701,7 @@ import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 顶部 import 区域加：
 
 ```java
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
 ```
 
 字段列表（紧跟 `memoryService` 那行，约 L63）加：
@@ -775,21 +775,21 @@ git commit -m "chore(sources): wire ConversationMessageService into handler via 
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service.handler;
+package com.knowledgebase.ai.ragent.rag.service.handler;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
-import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
-import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
-import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
-import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
-import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
-import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
+import com.knowledgebase.ai.ragent.framework.trace.RagTraceContext;
+import com.knowledgebase.ai.ragent.infra.config.AIModelProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;
+import com.knowledgebase.ai.ragent.rag.service.ConversationGroupService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
+import com.knowledgebase.ai.ragent.rag.service.RagEvaluationService;
+import com.knowledgebase.ai.ragent.rag.service.RagTraceRecordService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

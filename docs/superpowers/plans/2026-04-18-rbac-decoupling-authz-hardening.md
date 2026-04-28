@@ -387,7 +387,7 @@ curl -X DELETE http://localhost:9201/<collection-name>
 **文件 1：** `AccessScope.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 import java.util.Set;
 
@@ -422,7 +422,7 @@ public sealed interface AccessScope
 **文件 2：** `SuperAdminMutationIntent.java`（从 bootstrap 迁来，内容 1:1）
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 import java.util.List;
 
@@ -447,7 +447,7 @@ public sealed interface SuperAdminMutationIntent
 **文件 3：** `CurrentUserProbe.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 /**
  * 当前请求上下文的用户角色探针。
@@ -469,9 +469,9 @@ public interface CurrentUserProbe {
 **文件 4：** `KbReadAccessPort.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
-import com.nageoffer.ai.ragent.framework.context.Permission;
+import com.knowledgebase.ai.ragent.framework.context.Permission;
 
 import java.util.Collection;
 import java.util.Map;
@@ -521,7 +521,7 @@ public interface KbReadAccessPort {
 **文件 5：** `KbManageAccessPort.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 /**
  * 知识库写/管理侧权限端口。
@@ -556,7 +556,7 @@ public interface KbManageAccessPort {
 **文件 6：** `UserAdminGuard.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 import java.util.List;
 
@@ -592,7 +592,7 @@ public interface UserAdminGuard {
 **文件 7：** `SuperAdminInvariantGuard.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 /**
  * Last SUPER_ADMIN 系统级硬不变量守卫（Decision 3-M）。
@@ -614,7 +614,7 @@ public interface SuperAdminInvariantGuard {
 **文件 8：** `KbAccessCacheAdmin.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 /**
  * 知识库权限缓存管理端口。
@@ -630,7 +630,7 @@ public interface KbAccessCacheAdmin {
 **文件 9：** `KbMetadataReader.java`
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 import java.util.Collection;
 import java.util.Set;
@@ -677,7 +677,7 @@ public interface KbMetadataReader {
 |------|------|------|------|
 | 1 | create | `framework/.../security/port/SuperAdminMutationIntent.java` | 步骤 1.1 已完成 |
 | 2 | delete | `bootstrap/.../user/service/SuperAdminMutationIntent.java` | 删除旧文件 |
-| 3 | modify import | `bootstrap/.../user/service/KbAccessService.java:169` | 将 `com.nageoffer.ai.ragent.user.service.SuperAdminMutationIntent` 替换为 `com.nageoffer.ai.ragent.framework.security.port.SuperAdminMutationIntent` |
+| 3 | modify import | `bootstrap/.../user/service/KbAccessService.java:169` | 将 `com.knowledgebase.ai.ragent.user.service.SuperAdminMutationIntent` 替换为 `com.knowledgebase.ai.ragent.framework.security.port.SuperAdminMutationIntent` |
 | 4 | modify import | `bootstrap/.../user/service/impl/KbAccessServiceImpl.java` 顶部 | 同上 |
 | 5 | modify import | `bootstrap/.../user/service/impl/UserServiceImpl.java` | 同上 |
 | 6 | modify import | `bootstrap/.../user/service/impl/RoleServiceImpl.java`（3处引用） | 同上 |
@@ -694,14 +694,14 @@ public interface KbMetadataReader {
 **文件：** `E:/AIProject/ragent/bootstrap/src/main/java/com/nageoffer/ai/ragent/knowledge/service/impl/KbMetadataReaderImpl.java`
 
 ```java
-package com.nageoffer.ai.ragent.knowledge.service.impl;
+package com.knowledgebase.ai.ragent.knowledge.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.framework.security.port.KbMetadataReader;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -766,7 +766,7 @@ private final KnowledgeDocumentMapper knowledgeDocumentMapper;
 private final KbMetadataReader kbMetadataReader;
 ```
 
-**改动 3：** 删除 import `com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper` 和 `KnowledgeDocumentMapper`，以及相关的 `KnowledgeBaseDO`、`KnowledgeDocumentDO` import（如其他方法无需）
+**改动 3：** 删除 import `com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper` 和 `KnowledgeDocumentMapper`，以及相关的 `KnowledgeBaseDO`、`KnowledgeDocumentDO` import（如其他方法无需）
 
 **改动 4：** 替换 4 处 `knowledgeBaseMapper.selectList` 调用（分别在第 82-85、132-136、164-167、355-359 行及 `checkManageAccess`/`checkKbRoleBindingAccess`/`getMaxSecurityLevelForKb`/`getMaxSecurityLevelsForKbs` 中的 `knowledgeBaseMapper.selectById`）为 `kbMetadataReader` 对应方法。
 
@@ -819,10 +819,10 @@ public class KbAccessServiceImpl implements KbAccessService,
 **新文件 1：** `E:/AIProject/ragent/bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/filter/MetadataFilterBuilder.java`
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.retrieve.filter;
+package com.knowledgebase.ai.ragent.rag.core.retrieve.filter;
 
-import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;
-import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.MetadataFilter;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
 
 import java.util.List;
 
@@ -847,10 +847,10 @@ public interface MetadataFilterBuilder {
 **新文件 2：** `E:/AIProject/ragent/bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/filter/DefaultMetadataFilterBuilder.java`
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.retrieve.filter;
+package com.knowledgebase.ai.ragent.rag.core.retrieve.filter;
 
-import com.nageoffer.ai.ragent.rag.core.retrieve.MetadataFilter;
-import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.MetadataFilter;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -1111,13 +1111,13 @@ private RetrievedChunk toRetrievedChunk(Map<String, Object> hit) {
 **文件：** `E:/AIProject/ragent/bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/retrieve/postprocessor/AuthzPostProcessor.java`
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor;
+package com.knowledgebase.ai.ragent.rag.core.retrieve.postprocessor;
 
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
-import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
-import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -1223,7 +1223,7 @@ public class AuthzPostProcessor implements SearchResultPostProcessor {
 **create** `E:/AIProject/ragent/bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/config/RagVectorTypeValidator.java`：
 
 ```java
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;

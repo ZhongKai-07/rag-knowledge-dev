@@ -1,0 +1,178 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.knowledgebase.ai.ragent.rag.core.retrieve.channel;
+
+import cn.hutool.core.collection.CollUtil;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
+import com.knowledgebase.ai.ragent.rag.config.SearchChannelProperties;
+import com.knowledgebase.ai.ragent.rag.core.intent.NodeScore;
+
+import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrieverService;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.strategy.IntentParallelRetriever;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executor;
+
+/**
+ * 意图定向检索通道
+ * <p>
+ * 基于意图识别结果，在特定知识库中进行定向检索
+ * 这是最精确的检索方式，优先级最高
+ */
+@Slf4j
+@Component
+public class IntentDirectedSearchChannel implements SearchChannel {
+
+    private final SearchChannelProperties properties;
+    private final IntentParallelRetriever parallelRetriever;
+
+    public IntentDirectedSearchChannel(RetrieverService retrieverService,
+                                       SearchChannelProperties properties,
+                                       MetadataFilterBuilder metadataFilterBuilder,
+                                       @Qualifier("ragInnerRetrievalThreadPoolExecutor") Executor ragInnerRetrievalExecutor) {
+        this.properties = properties;
+        this.parallelRetriever = new IntentParallelRetriever(
+                retrieverService, metadataFilterBuilder, ragInnerRetrievalExecutor);
+    }
+
+    @Override
+    public String getName() {
+        return "IntentDirectedSearch";
+    }
+
+    @Override
+    public int getPriority() {
+        return 1;  // 最高优先级
+    }
+
+    @Override
+    public boolean isEnabled(SearchContext context) {
+        // 检查配置是否启用
+        if (!properties.getChannels().getIntentDirected().isEnabled()) {
+            return false;
+        }
+
+        // 检查是否有 KB 意图（而不仅仅是有意图）
+        if (CollUtil.isEmpty(context.getIntents())) {
+            return false;
+        }
+
+        // 提取 KB 意图，只有存在 KB 意图时才启用
+        List<NodeScore> kbIntents = extractKbIntents(context);
+        return CollUtil.isNotEmpty(kbIntents);
+    }
+
+    @Override
+    public SearchChannelResult search(SearchContext context) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            List<NodeScore> kbIntents = extractKbIntents(context);
+
+            if (CollUtil.isEmpty(kbIntents)) {
+                log.warn("意图定向检索通道被启用，但未找到 KB 意图（不应该发生）");
+                return SearchChannelResult.builder()
+                        .channelType(SearchChannelType.INTENT_DIRECTED)
+                        .channelName(getName())
+                        .chunks(List.of())
+                        .confidence(0.0)
+                        .latencyMs(System.currentTimeMillis() - startTime)
+                        .build();
+            }
+
+            log.info("执行意图定向检索，识别出 {} 个 KB 意图", kbIntents.size());
+
+            int recallTopK = context.getRecallTopK();
+            List<RetrievedChunk> fanOutChunks = parallelRetriever.executeParallelRetrieval(
+                    context.getMainQuestion(),
+                    kbIntents,
+                    recallTopK,
+                    context
+            );
+
+            // 通道级 sort+cap：多意图 fan-out 后可能多达 N*recallTopK 条，
+            // 按上游 score 降序取前 recallTopK，把"通道贡献给下游 rerank 的候选数"严格收口到 recallTopK。
+            List<RetrievedChunk> cappedChunks = fanOutChunks.stream()
+                    .sorted(Comparator.comparing(
+                            RetrievedChunk::getScore,
+                            Comparator.nullsLast(Comparator.reverseOrder())))
+                    .limit(recallTopK)
+                    .toList();
+
+            double confidence = kbIntents.stream()
+                    .mapToDouble(NodeScore::getScore)
+                    .max()
+                    .orElse(0.0);
+
+            long latency = System.currentTimeMillis() - startTime;
+
+            log.info("意图定向检索完成，fan-out {} -> cap {} 个 Chunk，置信度：{}，耗时 {}ms",
+                    fanOutChunks.size(), cappedChunks.size(), confidence, latency);
+
+            return SearchChannelResult.builder()
+                    .channelType(SearchChannelType.INTENT_DIRECTED)
+                    .channelName(getName())
+                    .chunks(cappedChunks)
+                    .confidence(confidence)
+                    .latencyMs(latency)
+                    .metadata(Map.of("intentCount", kbIntents.size()))
+                    .build();
+
+        } catch (Exception e) {
+            log.error("意图定向检索失败", e);
+            return SearchChannelResult.builder()
+                    .channelType(SearchChannelType.INTENT_DIRECTED)
+                    .channelName(getName())
+                    .chunks(List.of())
+                    .confidence(0.0)
+                    .latencyMs(System.currentTimeMillis() - startTime)
+                    .build();
+        }
+    }
+
+    @Override
+    public SearchChannelType getType() {
+        return SearchChannelType.INTENT_DIRECTED;
+    }
+
+    /**
+     * 提取 KB 意图（受 RBAC 约束）
+     */
+    private List<NodeScore> extractKbIntents(SearchContext context) {
+        double minScore = properties.getChannels().getIntentDirected().getMinIntentScore();
+        List<NodeScore> kbIntents = context.getIntents().stream()
+                .flatMap(si -> si.nodeScores().stream())
+                .filter(ns -> ns.getNode() != null && ns.getNode().isKB())
+                .filter(ns -> ns.getScore() >= minScore)
+                .toList();
+        // RBAC filter: 仅保留 scope 放行的 kbId. null kbId 的 KB 意图视为配置错误并剔除,
+        // 避免对用户无权限的 collection 发起检索(query-level 信息泄漏).
+        AccessScope scope = context.getAccessScope();
+        return kbIntents.stream()
+                .filter(ns -> scope.allows(ns.getNode().getKbId()))
+                .toList();
+    }
+
+}

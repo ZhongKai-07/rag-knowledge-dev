@@ -117,7 +117,7 @@ git commit -m "feat(rag): add SUGGESTIONS SSE event type"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.dto;
+package com.knowledgebase.ai.ragent.rag.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -178,10 +178,10 @@ git commit -m "feat(rag): add SuggestionsPayload DTO for SSE suggestions event"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.suggest;
+package com.knowledgebase.ai.ragent.rag.core.suggest;
 
-import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.framework.convention.ChatMessage;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
 
 import java.util.List;
 
@@ -391,7 +391,7 @@ git commit -m "feat(rag): add suggested-questions prompt template"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -469,7 +469,7 @@ git commit -m "feat(rag): add suggestedQuestionsExecutor thread pool bean"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.suggest;
+package com.knowledgebase.ai.ragent.rag.core.suggest;
 
 import java.util.List;
 
@@ -538,12 +538,12 @@ git commit -m "feat(rag): add SuggestedQuestionsService interface"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.suggest;
+package com.knowledgebase.ai.ragent.rag.core.suggest;
 
-import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
-import com.nageoffer.ai.ragent.infra.chat.LLMService;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
+import com.knowledgebase.ai.ragent.framework.convention.ChatRequest;
+import com.knowledgebase.ai.ragent.infra.chat.LLMService;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.prompt.PromptTemplateLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -626,7 +626,7 @@ Expected: 编译失败，提示 `DefaultSuggestedQuestionsService` 不存在
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.suggest;
+package com.knowledgebase.ai.ragent.rag.core.suggest;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
@@ -634,12 +634,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
-import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.infra.chat.LLMService;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
+import com.knowledgebase.ai.ragent.framework.convention.ChatMessage;
+import com.knowledgebase.ai.ragent.framework.convention.ChatRequest;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.infra.chat.LLMService;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.prompt.PromptTemplateLoader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -647,7 +647,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.SUGGESTED_QUESTIONS_PROMPT_PATH;
+import static com.knowledgebase.ai.ragent.rag.constant.RAGConstant.SUGGESTED_QUESTIONS_PROMPT_PATH;
 
 @Slf4j
 @Service
@@ -809,7 +809,7 @@ Expected: `MalformedJsonException` 或 `IllegalStateException`（因为 `JsonPar
 
 ```java
     private List<String> parseQuestions(String raw) {
-        String cleaned = com.nageoffer.ai.ragent.infra.util.LLMResponseCleaner.stripMarkdownCodeFence(raw);
+        String cleaned = com.knowledgebase.ai.ragent.infra.util.LLMResponseCleaner.stripMarkdownCodeFence(raw);
         JsonElement root = JsonParser.parseString(cleaned);
         JsonObject obj = root.getAsJsonObject();
         JsonArray arr = obj.getAsJsonArray("questions");
@@ -824,7 +824,7 @@ Expected: `MalformedJsonException` 或 `IllegalStateException`（因为 `JsonPar
 并在文件顶部加 import（如果 IDE 没自动加）：
 
 ```java
-import com.nageoffer.ai.ragent.infra.util.LLMResponseCleaner;
+import com.knowledgebase.ai.ragent.infra.util.LLMResponseCleaner;
 ```
 
 然后把内联的 full-qualified name 简化为 `LLMResponseCleaner.stripMarkdownCodeFence(raw)`。
@@ -1052,14 +1052,14 @@ git commit -m "feat(rag): harden SuggestedQuestionsService parsing for malformed
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service;
+package com.knowledgebase.ai.ragent.rag.service;
 
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.google.gson.Gson;
-import com.nageoffer.ai.ragent.rag.dao.entity.RagTraceRunDO;
-import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceNodeMapper;
-import com.nageoffer.ai.ragent.rag.dao.mapper.RagTraceRunMapper;
-import com.nageoffer.ai.ragent.rag.service.impl.RagTraceRecordServiceImpl;
+import com.knowledgebase.ai.ragent.rag.dao.entity.RagTraceRunDO;
+import com.knowledgebase.ai.ragent.rag.dao.mapper.RagTraceNodeMapper;
+import com.knowledgebase.ai.ragent.rag.dao.mapper.RagTraceRunMapper;
+import com.knowledgebase.ai.ragent.rag.service.impl.RagTraceRecordServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -1217,7 +1217,7 @@ git commit -m "feat(rag): add mergeRunExtraData to RagTraceRecordService"
     /**
      * 推荐问题服务
      */
-    private final com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService suggestedQuestionsService;
+    private final com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService suggestedQuestionsService;
 
     /**
      * 推荐问题专用线程池
@@ -1227,7 +1227,7 @@ git commit -m "feat(rag): add mergeRunExtraData to RagTraceRecordService"
     /**
      * RAG 功能配置属性
      */
-    private final com.nageoffer.ai.ragent.rag.config.RAGConfigProperties ragConfigProperties;
+    private final com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties ragConfigProperties;
 ```
 
 - [ ] **Step 2: 编译验证**
@@ -1275,15 +1275,15 @@ git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/handler/Stre
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service.handler;
+package com.knowledgebase.ai.ragent.rag.service.handler;
 
-import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
-import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
-import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
-import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
-import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
+import com.knowledgebase.ai.ragent.infra.config.AIModelProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.knowledgebase.ai.ragent.rag.service.ConversationGroupService;
+import com.knowledgebase.ai.ragent.rag.service.RagEvaluationService;
+import com.knowledgebase.ai.ragent.rag.service.RagTraceRecordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -1370,12 +1370,12 @@ git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/handler/Stre
 在 `StreamChatEventHandler` 类字段区（`private volatile TokenUsage tokenUsage;` 之后）追加：
 
 ```java
-    private final com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService suggestedQuestionsService;
+    private final com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService suggestedQuestionsService;
     private final org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor suggestedQuestionsExecutor;
-    private final com.nageoffer.ai.ragent.rag.config.RAGConfigProperties ragConfigProperties;
+    private final com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties ragConfigProperties;
     private final String questionText;
-    private volatile com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext suggestionContext =
-            com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext.skip();
+    private volatile com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext suggestionContext =
+            com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext.skip();
 ```
 
 然后修改构造函数，在 `this.userId = UserContext.getUserId();` 之后追加：
@@ -1393,7 +1393,7 @@ git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/handler/Stre
     /**
      * orchestrator 走完检索后，调用此方法更新上下文以触发推荐生成
      */
-    public void updateSuggestionContext(com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext ctx) {
+    public void updateSuggestionContext(com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext ctx) {
         if (ctx != null) {
             this.suggestionContext = ctx;
         }
@@ -1425,7 +1425,7 @@ git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/handler/Stre
         // 立即发 FINISH，让前端进入"完成"状态
         sender.sendEvent(SSEEventType.FINISH.value(), new CompletionPayload(messageIdText, title));
 
-        com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext ctx = this.suggestionContext;
+        com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext ctx = this.suggestionContext;
         boolean enabled = Boolean.TRUE.equals(ragConfigProperties.getSuggestionsEnabled());
         boolean shouldGenerate = enabled && ctx != null && ctx.shouldGenerate();
 
@@ -1444,7 +1444,7 @@ git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/handler/Stre
         }
     }
 
-    private void generateAndFinish(com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext ctx,
+    private void generateAndFinish(com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext ctx,
                                    String answerSnapshot, String messageIdText) {
         java.util.List<String> questions = java.util.List.of();
         try {
@@ -1454,7 +1454,7 @@ git add bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/service/handler/Stre
             questions = suggestedQuestionsService.generate(ctx, answerSnapshot);
             if (!taskManager.isCancelled(taskId) && !questions.isEmpty()) {
                 sender.sendEvent(SSEEventType.SUGGESTIONS.value(),
-                        new com.nageoffer.ai.ragent.rag.dto.SuggestionsPayload(messageIdText, questions));
+                        new com.knowledgebase.ai.ragent.rag.dto.SuggestionsPayload(messageIdText, questions));
             }
         } catch (Exception e) {
             log.warn("推荐问题生成失败", e);
@@ -1538,16 +1538,16 @@ git commit -m "feat(rag): wire SuggestedQuestionsService into stream handler wit
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.service.handler;
+package com.knowledgebase.ai.ragent.rag.service.handler;
 
-import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
-import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
-import com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext;
-import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
-import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
-import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
+import com.knowledgebase.ai.ragent.infra.config.AIModelProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext;
+import com.knowledgebase.ai.ragent.rag.service.ConversationGroupService;
+import com.knowledgebase.ai.ragent.rag.service.RagEvaluationService;
+import com.knowledgebase.ai.ragent.rag.service.RagTraceRecordService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -1762,7 +1762,7 @@ git commit -m "test(rag): integration test for stream handler suggestions branch
    ```
    改为：
    ```java
-   com.nageoffer.ai.ragent.rag.service.handler.StreamChatEventHandler callback =
+   com.knowledgebase.ai.ragent.rag.service.handler.StreamChatEventHandler callback =
            callbackFactory.createChatEventHandler(emitter, actualConversationId, taskId);
    ```
 
@@ -1786,13 +1786,13 @@ git commit -m "test(rag): integration test for stream handler suggestions branch
 
 ```java
         // 装配推荐问题上下文：扁平化取 top-3 chunks、检查是否含 MCP 意图
-        java.util.List<com.nageoffer.ai.ragent.framework.convention.RetrievedChunk> topChunks =
+        java.util.List<com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk> topChunks =
                 ctx.getIntentChunks() == null ? java.util.List.of() :
                         ctx.getIntentChunks().values().stream()
                                 .flatMap(java.util.List::stream)
                                 .distinct()
                                 .sorted(java.util.Comparator.comparing(
-                                        com.nageoffer.ai.ragent.framework.convention.RetrievedChunk::getScore,
+                                        com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk::getScore,
                                         java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
                                 .limit(3)
                                 .toList();
@@ -1804,7 +1804,7 @@ git commit -m "test(rag): integration test for stream handler suggestions branch
                         && ns.getNode().getKind().name().contains("MCP"));
 
         boolean shouldGenerate = !hasMcp && !topChunks.isEmpty();
-        callback.updateSuggestionContext(new com.nageoffer.ai.ragent.rag.core.suggest.SuggestionContext(
+        callback.updateSuggestionContext(new com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext(
                 rewriteResult.rewrittenQuestion(),
                 history,
                 topChunks,

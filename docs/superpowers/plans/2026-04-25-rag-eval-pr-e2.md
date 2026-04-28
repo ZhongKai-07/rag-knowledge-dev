@@ -32,7 +32,7 @@
 
 ## 前置代码现状（已 grep 确认无漂移）
 
-- `RagentApplication.@MapperScan` 已含 `com.nageoffer.ai.ragent.eval.dao.mapper`
+- `RagentApplication.@MapperScan` 已含 `com.knowledgebase.ai.ragent.eval.dao.mapper`
 - `application.yaml` `rag.eval.*` 已完整（`python-service / synthesis / run` 三组）
 - `EvalProperties`（9 字段）、`EvalAsyncConfig.evalExecutor`（core=2, max=4, queue=50）、`RagasEvalClient`（`synthesize / health`）、4 DO + 4 Mapper 均已就绪
 - 4 张 `t_eval_*` 表已 via `upgrade_v1.9_to_v1.10.sql` 落到 `schema_pg.sql`
@@ -161,7 +161,7 @@ Expected: `EvalPropertiesTest / EvalAsyncConfigTest / EvalMapperScanTest` 全绿
 - [ ] **Step 1: 新建 port**
 
 ```java
-package com.nageoffer.ai.ragent.framework.security.port;
+package com.knowledgebase.ai.ragent.framework.security.port;
 
 import java.util.List;
 
@@ -221,10 +221,10 @@ git commit -m "feat(eval): add KbChunkSamplerPort for cross-domain chunk samplin
 - [ ] **Step 1: 写失败测试（需要已启动 PG 容器 + schema 已初始化）**
 
 ```java
-package com.nageoffer.ai.ragent.knowledge.service.impl;
+package com.knowledgebase.ai.ragent.knowledge.service.impl;
 
-import com.nageoffer.ai.ragent.framework.security.port.KbChunkSamplerPort;
-import com.nageoffer.ai.ragent.framework.security.port.KbChunkSamplerPort.ChunkSample;
+import com.knowledgebase.ai.ragent.framework.security.port.KbChunkSamplerPort;
+import com.knowledgebase.ai.ragent.framework.security.port.KbChunkSamplerPort.ChunkSample;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -310,7 +310,7 @@ Expected: FAIL — `KbChunkSamplerPort` bean 未装配。
 - [ ] **Step 3: 新建 Mapper（@Select 固化 spec SQL）**
 
 ```java
-package com.nageoffer.ai.ragent.knowledge.dao.mapper;
+package com.knowledgebase.ai.ragent.knowledge.dao.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -341,10 +341,10 @@ public interface KbChunkSamplerMapper {
 - [ ] **Step 4: 新建 Port 实现（Java 侧 per-doc dedup）**
 
 ```java
-package com.nageoffer.ai.ragent.knowledge.service.impl;
+package com.knowledgebase.ai.ragent.knowledge.service.impl;
 
-import com.nageoffer.ai.ragent.framework.security.port.KbChunkSamplerPort;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KbChunkSamplerMapper;
+import com.knowledgebase.ai.ragent.framework.security.port.KbChunkSamplerPort;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KbChunkSamplerMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -542,7 +542,7 @@ git commit -m "feat(eval): set per-call timeout for RagasEvalClient.synthesize"
 - [ ] **Step 1: 建 record**
 
 ```java
-package com.nageoffer.ai.ragent.eval.domain;
+package com.knowledgebase.ai.ragent.eval.domain;
 
 /**
  * 合成任务进度快照——进程内可读，不入库。
@@ -573,9 +573,9 @@ public record SynthesisProgress(
 - [ ] **Step 2: 建 tracker**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service;
+package com.knowledgebase.ai.ragent.eval.service;
 
-import com.nageoffer.ai.ragent.eval.domain.SynthesisProgress;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesisProgress;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -664,7 +664,7 @@ git commit -m "feat(eval): add in-memory SynthesisProgressTracker"
 
 ```java
 // controller/vo/GoldDatasetVO.java
-package com.nageoffer.ai.ragent.eval.controller.vo;
+package com.knowledgebase.ai.ragent.eval.controller.vo;
 
 import java.util.Date;
 
@@ -685,7 +685,7 @@ public record GoldDatasetVO(
 
 ```java
 // controller/request/CreateGoldDatasetRequest.java
-package com.nageoffer.ai.ragent.eval.controller.request;
+package com.knowledgebase.ai.ragent.eval.controller.request;
 
 import lombok.Data;
 
@@ -700,15 +700,15 @@ public class CreateGoldDatasetRequest {
 - [ ] **Step 2: 写失败测试**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service.impl;
+package com.knowledgebase.ai.ragent.eval.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.nageoffer.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
-import com.nageoffer.ai.ragent.eval.controller.vo.GoldDatasetVO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldDatasetDO;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldItemMapper;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
+import com.knowledgebase.ai.ragent.eval.controller.vo.GoldDatasetVO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldDatasetDO;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldItemMapper;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -828,10 +828,10 @@ Expected: FAIL — 类不存在。
 - [ ] **Step 3: 建 Service 接口**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service;
+package com.knowledgebase.ai.ragent.eval.service;
 
-import com.nageoffer.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
-import com.nageoffer.ai.ragent.eval.controller.vo.GoldDatasetVO;
+import com.knowledgebase.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
+import com.knowledgebase.ai.ragent.eval.controller.vo.GoldDatasetVO;
 
 import java.util.List;
 
@@ -859,18 +859,18 @@ public interface GoldDatasetService {
 - [ ] **Step 4: 建 Impl**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service.impl;
+package com.knowledgebase.ai.ragent.eval.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nageoffer.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
-import com.nageoffer.ai.ragent.eval.controller.vo.GoldDatasetVO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldDatasetDO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldItemDO;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldItemMapper;
-import com.nageoffer.ai.ragent.eval.service.GoldDatasetService;
-import com.nageoffer.ai.ragent.framework.errorcode.BaseErrorCode;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
+import com.knowledgebase.ai.ragent.eval.controller.vo.GoldDatasetVO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldDatasetDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldItemDO;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldItemMapper;
+import com.knowledgebase.ai.ragent.eval.service.GoldDatasetService;
+import com.knowledgebase.ai.ragent.framework.errorcode.BaseErrorCode;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -1040,7 +1040,7 @@ git commit -m "feat(eval): add GoldDatasetService with DRAFT/ACTIVE/ARCHIVED sta
 - [ ] **Step 1: 建 Request**
 
 ```java
-package com.nageoffer.ai.ragent.eval.controller.request;
+package com.knowledgebase.ai.ragent.eval.controller.request;
 
 import lombok.Data;
 
@@ -1054,21 +1054,21 @@ public class TriggerSynthesisRequest {
 - [ ] **Step 2: 写失败测试——冻结快照 + 零 ThreadLocal**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service.impl;
+package com.knowledgebase.ai.ragent.eval.service.impl;
 
-import com.nageoffer.ai.ragent.eval.client.RagasEvalClient;
-import com.nageoffer.ai.ragent.eval.config.EvalProperties;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldDatasetDO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldItemDO;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldItemMapper;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizeRequest;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizeResponse;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizedItem;
-import com.nageoffer.ai.ragent.eval.service.SynthesisProgressTracker;
-import com.nageoffer.ai.ragent.framework.security.port.KbChunkSamplerPort;
-import com.nageoffer.ai.ragent.framework.security.port.KbChunkSamplerPort.ChunkSample;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.eval.client.RagasEvalClient;
+import com.knowledgebase.ai.ragent.eval.config.EvalProperties;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldDatasetDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldItemDO;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldItemMapper;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizeRequest;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizeResponse;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizedItem;
+import com.knowledgebase.ai.ragent.eval.service.SynthesisProgressTracker;
+import com.knowledgebase.ai.ragent.framework.security.port.KbChunkSamplerPort;
+import com.knowledgebase.ai.ragent.framework.security.port.KbChunkSamplerPort.ChunkSample;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -1225,7 +1225,7 @@ Expected: FAIL — 类不存在。
 - [ ] **Step 3: 建 Service 接口**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service;
+package com.knowledgebase.ai.ragent.eval.service;
 
 /**
  * Gold Set 合成服务。
@@ -1245,25 +1245,25 @@ public interface GoldDatasetSynthesisService {
 - [ ] **Step 4: 建 Impl**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service.impl;
+package com.knowledgebase.ai.ragent.eval.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nageoffer.ai.ragent.eval.client.RagasEvalClient;
-import com.nageoffer.ai.ragent.eval.config.EvalProperties;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldDatasetDO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldItemDO;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldItemMapper;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizeChunkInput;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizeRequest;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizeResponse;
-import com.nageoffer.ai.ragent.eval.domain.SynthesizedItem;
-import com.nageoffer.ai.ragent.eval.service.GoldDatasetSynthesisService;
-import com.nageoffer.ai.ragent.eval.service.SynthesisProgressTracker;
-import com.nageoffer.ai.ragent.framework.errorcode.BaseErrorCode;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.framework.security.port.KbChunkSamplerPort;
-import com.nageoffer.ai.ragent.framework.security.port.KbChunkSamplerPort.ChunkSample;
+import com.knowledgebase.ai.ragent.eval.client.RagasEvalClient;
+import com.knowledgebase.ai.ragent.eval.config.EvalProperties;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldDatasetDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldItemDO;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldItemMapper;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizeChunkInput;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizeRequest;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizeResponse;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesizedItem;
+import com.knowledgebase.ai.ragent.eval.service.GoldDatasetSynthesisService;
+import com.knowledgebase.ai.ragent.eval.service.SynthesisProgressTracker;
+import com.knowledgebase.ai.ragent.framework.errorcode.BaseErrorCode;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.framework.security.port.KbChunkSamplerPort;
+import com.knowledgebase.ai.ragent.framework.security.port.KbChunkSamplerPort.ChunkSample;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -1466,7 +1466,7 @@ git commit -m "feat(eval): add GoldDatasetSynthesisService with batched python c
 
 ```java
 // controller/vo/GoldItemVO.java
-package com.nageoffer.ai.ragent.eval.controller.vo;
+package com.knowledgebase.ai.ragent.eval.controller.vo;
 
 public record GoldItemVO(
         String id,
@@ -1486,7 +1486,7 @@ public record GoldItemVO(
 
 ```java
 // controller/request/ReviewGoldItemRequest.java
-package com.nageoffer.ai.ragent.eval.controller.request;
+package com.knowledgebase.ai.ragent.eval.controller.request;
 
 import lombok.Data;
 
@@ -1499,7 +1499,7 @@ public class ReviewGoldItemRequest {
 
 ```java
 // controller/request/EditGoldItemRequest.java
-package com.nageoffer.ai.ragent.eval.controller.request;
+package com.knowledgebase.ai.ragent.eval.controller.request;
 
 import lombok.Data;
 
@@ -1513,15 +1513,15 @@ public class EditGoldItemRequest {
 - [ ] **Step 2: 写失败测试**
 
 ```java
-package com.nageoffer.ai.ragent.eval.service.impl;
+package com.knowledgebase.ai.ragent.eval.service.impl;
 
-import com.nageoffer.ai.ragent.eval.controller.request.EditGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldDatasetDO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldItemDO;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldItemMapper;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.eval.controller.request.EditGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldDatasetDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldItemDO;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldItemMapper;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -1621,11 +1621,11 @@ Expected: FAIL — 类不存在。
 
 ```java
 // service/GoldItemReviewService.java
-package com.nageoffer.ai.ragent.eval.service;
+package com.knowledgebase.ai.ragent.eval.service;
 
-import com.nageoffer.ai.ragent.eval.controller.request.EditGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.controller.vo.GoldItemVO;
+import com.knowledgebase.ai.ragent.eval.controller.request.EditGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.controller.vo.GoldItemVO;
 
 import java.util.List;
 
@@ -1638,19 +1638,19 @@ public interface GoldItemReviewService {
 
 ```java
 // service/impl/GoldItemReviewServiceImpl.java
-package com.nageoffer.ai.ragent.eval.service.impl;
+package com.knowledgebase.ai.ragent.eval.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.nageoffer.ai.ragent.eval.controller.request.EditGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.controller.vo.GoldItemVO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldDatasetDO;
-import com.nageoffer.ai.ragent.eval.dao.entity.GoldItemDO;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
-import com.nageoffer.ai.ragent.eval.dao.mapper.GoldItemMapper;
-import com.nageoffer.ai.ragent.eval.service.GoldItemReviewService;
-import com.nageoffer.ai.ragent.framework.errorcode.BaseErrorCode;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.eval.controller.request.EditGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.controller.vo.GoldItemVO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldDatasetDO;
+import com.knowledgebase.ai.ragent.eval.dao.entity.GoldItemDO;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldDatasetMapper;
+import com.knowledgebase.ai.ragent.eval.dao.mapper.GoldItemMapper;
+import com.knowledgebase.ai.ragent.eval.service.GoldItemReviewService;
+import com.knowledgebase.ai.ragent.framework.errorcode.BaseErrorCode;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -1767,7 +1767,7 @@ git commit -m "feat(eval): add GoldItemReviewService with APPROVE/REJECT/edit fl
 - [ ] **Step 1: SynthesisProgressVO**
 
 ```java
-package com.nageoffer.ai.ragent.eval.controller.vo;
+package com.knowledgebase.ai.ragent.eval.controller.vo;
 
 public record SynthesisProgressVO(
         String status,
@@ -1782,21 +1782,21 @@ public record SynthesisProgressVO(
 - [ ] **Step 2: GoldDatasetController**
 
 ```java
-package com.nageoffer.ai.ragent.eval.controller;
+package com.knowledgebase.ai.ragent.eval.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
-import com.nageoffer.ai.ragent.eval.config.EvalProperties;
-import com.nageoffer.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
-import com.nageoffer.ai.ragent.eval.controller.request.TriggerSynthesisRequest;
-import com.nageoffer.ai.ragent.eval.controller.vo.GoldDatasetVO;
-import com.nageoffer.ai.ragent.eval.controller.vo.SynthesisProgressVO;
-import com.nageoffer.ai.ragent.eval.domain.SynthesisProgress;
-import com.nageoffer.ai.ragent.eval.service.GoldDatasetService;
-import com.nageoffer.ai.ragent.eval.service.GoldDatasetSynthesisService;
-import com.nageoffer.ai.ragent.eval.service.SynthesisProgressTracker;
-import com.nageoffer.ai.ragent.framework.convention.Result;
-import com.nageoffer.ai.ragent.framework.web.Results;
+import com.knowledgebase.ai.ragent.eval.config.EvalProperties;
+import com.knowledgebase.ai.ragent.eval.controller.request.CreateGoldDatasetRequest;
+import com.knowledgebase.ai.ragent.eval.controller.request.TriggerSynthesisRequest;
+import com.knowledgebase.ai.ragent.eval.controller.vo.GoldDatasetVO;
+import com.knowledgebase.ai.ragent.eval.controller.vo.SynthesisProgressVO;
+import com.knowledgebase.ai.ragent.eval.domain.SynthesisProgress;
+import com.knowledgebase.ai.ragent.eval.service.GoldDatasetService;
+import com.knowledgebase.ai.ragent.eval.service.GoldDatasetSynthesisService;
+import com.knowledgebase.ai.ragent.eval.service.SynthesisProgressTracker;
+import com.knowledgebase.ai.ragent.framework.convention.Result;
+import com.knowledgebase.ai.ragent.framework.web.Results;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -1875,16 +1875,16 @@ public class GoldDatasetController {
 - [ ] **Step 3: GoldItemController**
 
 ```java
-package com.nageoffer.ai.ragent.eval.controller;
+package com.knowledgebase.ai.ragent.eval.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
-import com.nageoffer.ai.ragent.eval.controller.request.EditGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
-import com.nageoffer.ai.ragent.eval.controller.vo.GoldItemVO;
-import com.nageoffer.ai.ragent.eval.service.GoldItemReviewService;
-import com.nageoffer.ai.ragent.framework.convention.Result;
-import com.nageoffer.ai.ragent.framework.web.Results;
+import com.knowledgebase.ai.ragent.eval.controller.request.EditGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.controller.request.ReviewGoldItemRequest;
+import com.knowledgebase.ai.ragent.eval.controller.vo.GoldItemVO;
+import com.knowledgebase.ai.ragent.eval.service.GoldItemReviewService;
+import com.knowledgebase.ai.ragent.framework.convention.Result;
+import com.knowledgebase.ai.ragent.framework.web.Results;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

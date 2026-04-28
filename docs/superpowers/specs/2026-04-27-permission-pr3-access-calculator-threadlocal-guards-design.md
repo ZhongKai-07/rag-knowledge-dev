@@ -126,7 +126,7 @@ PR3 改契约：
 - **PR3-1 — Calculator 纯函数性**：`KbAccessCalculator` 不得 import `UserContext`、`LoginUser`、`UserProfileLoader`。所有输入由参数传入；ArchUnit 守门。
 - **PR3-2 — Port 签名 current-user only**：`KbReadAccessPort` 任何方法不得接受 `String userId` 参数；ArchUnit 守门。
 - **PR3-3 — admin-views-target 走 calculator**：`AccessServiceImpl` 不得调 `kbReadAccess.*`；只能通过 `subjectFactory.forTargetUser(uid) + calculator`；grep 守门。
-- **PR3-4 — RAG handler 包零 UserContext**：`com.nageoffer.ai.ragent.rag.service.handler` 包内任何类不得 import `UserContext`；ArchUnit 守门。`userId` 由构造参数显式传入。
+- **PR3-4 — RAG handler 包零 UserContext**：`com.knowledgebase.ai.ragent.rag.service.handler` 包内任何类不得 import `UserContext`；ArchUnit 守门。`userId` 由构造参数显式传入。
 - **PR3-5 — 单 key `getMaxSecurityLevelForKb` 物理删除**：从 `KbAccessService` 接口与 `KbAccessServiceImpl` 实现完全删除（不 `@Deprecated`）。grep `getMaxSecurityLevelForKb` `bootstrap/src/main/java` 应返回零结果（除注释）。
 - **PR3-6 — 向量后端启动 fail-fast**：`rag.vector.type != opensearch` 且 `rag.vector.allow-incomplete-backend != true` 时启动失败。`VectorBackendCapabilityValidator` 实现 + 启动测试覆盖。
 
@@ -308,7 +308,7 @@ ChunkServiceImpl 等仅用 `checkReadAccess(kbId)` 的测试**零改动**。
 #### 2.4.3 `bootstrap/.../rag/service/handler/StreamChatEventHandler.java`
 
 ```diff
-- import com.nageoffer.ai.ragent.framework.context.UserContext;
+- import com.knowledgebase.ai.ragent.framework.context.UserContext;
 
   public StreamChatEventHandler(StreamChatHandlerParams params) {
       // ...
@@ -343,7 +343,7 @@ orchestrator 在 `:119` 已有 `String userId = UserContext.getUserId();`，改 
 
 #### 2.4.5 ArchUnit 规则（commit 4 c5）
 
-**位置**：扩展现有 `bootstrap/src/test/java/com/nageoffer/ai/ragent/arch/PermissionBoundaryArchTest.java`（PR1 commit `e1cde994` 落地的同一文件，已 `@AnalyzeClasses(packages = "com.nageoffer.ai.ragent")`，能扫到 bootstrap + framework + infra-ai 全部业务类）。**不**放 framework 模块——framework 测试当前不依赖 ArchUnit，且 `PermissionBoundaryArchTest` 引用 `KbAccessService` 这种 bootstrap 类型，搬到 framework 会破依赖方向。
+**位置**：扩展现有 `bootstrap/src/test/java/com/nageoffer/ai/ragent/arch/PermissionBoundaryArchTest.java`（PR1 commit `e1cde994` 落地的同一文件，已 `@AnalyzeClasses(packages = "com.knowledgebase.ai.ragent")`，能扫到 bootstrap + framework + infra-ai 全部业务类）。**不**放 framework 模块——framework 测试当前不依赖 ArchUnit，且 `PermissionBoundaryArchTest` 引用 `KbAccessService` 这种 bootstrap 类型，搬到 framework 会破依赖方向。
 
 `KbAccessServiceRetirementArchTest`（PR2 commit `ea8d93bd`）也在同一 package，可作 PR3 规则的姊妹文件参考。
 
@@ -353,16 +353,16 @@ orchestrator 在 `:119` 已有 `String userId = UserContext.getUserId();`，改 
 @ArchTest
 static final ArchRule rag_handler_package_no_user_context =
     noClasses()
-        .that().resideInAPackage("com.nageoffer.ai.ragent.rag.service.handler..")
+        .that().resideInAPackage("com.knowledgebase.ai.ragent.rag.service.handler..")
         .should().dependOnClassesThat()
-        .haveFullyQualifiedName("com.nageoffer.ai.ragent.framework.context.UserContext")
+        .haveFullyQualifiedName("com.knowledgebase.ai.ragent.framework.context.UserContext")
         .because("PR3-4: handler 类不读 ThreadLocal,userId 由构造参数显式传入");
 
 @ArchTest
 static final ArchRule kb_access_calculator_no_user_context =
     noClasses()
         .that().haveFullyQualifiedName(
-            "com.nageoffer.ai.ragent.user.service.support.KbAccessCalculator")
+            "com.knowledgebase.ai.ragent.user.service.support.KbAccessCalculator")
         .should().dependOnClassesThat()
         .haveFullyQualifiedNameMatching(
             "com\\.nageoffer\\.ai\\.ragent\\.framework\\.context\\.(UserContext|LoginUser)")
@@ -373,7 +373,7 @@ static final ArchRule kb_read_access_port_no_userid_param =
     methods()
         .that().areDeclaredInClassesThat()
         .haveFullyQualifiedName(
-            "com.nageoffer.ai.ragent.framework.security.port.KbReadAccessPort")
+            "com.knowledgebase.ai.ragent.framework.security.port.KbReadAccessPort")
         .should(notHaveStringParameterNamedUserId())
         .because("PR3-2: Port 签名 current-user only");
 ```

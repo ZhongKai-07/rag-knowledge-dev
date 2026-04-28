@@ -74,13 +74,13 @@ Expected output: `@Data @Builder` 类含 `question / mcpContext / kbContext / mc
 在 `private Map<String, List<RetrievedChunk>> intentChunks;` 下方（第 44 行附近）加一行：
 
 ```java
-    private List<com.nageoffer.ai.ragent.rag.dto.SourceCard> cards;
+    private List<com.knowledgebase.ai.ragent.rag.dto.SourceCard> cards;
 ```
 
 或改用 import 写法（推荐）——在 imports 区加：
 
 ```java
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 ```
 
 并把字段写成：
@@ -131,12 +131,12 @@ Expected: `@EqualsAndHashCode(of = "id")` + 字段 `id / text / score / kbId / s
 Create `bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/core/prompt/RAGPromptServiceCitationTest.java`：
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.prompt;
+package com.knowledgebase.ai.ragent.rag.core.prompt;
 
-import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
+import com.knowledgebase.ai.ragent.framework.convention.ChatMessage;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -380,11 +380,11 @@ Expected: 方法签名 `public List<ChatMessage> buildStructuredMessages(PromptC
         }
 
         StringBuilder sb = new StringBuilder("【参考文档】\n");
-        for (com.nageoffer.ai.ragent.rag.dto.SourceCard card : ctx.getCards()) {
+        for (com.knowledgebase.ai.ragent.rag.dto.SourceCard card : ctx.getCards()) {
             sb.append('[').append('^').append(card.getIndex()).append(']')
               .append('《').append(card.getDocName()).append('》').append('\n');
             int i = 1;
-            for (com.nageoffer.ai.ragent.rag.dto.SourceChunk chunk : card.getChunks()) {
+            for (com.knowledgebase.ai.ragent.rag.dto.SourceChunk chunk : card.getChunks()) {
                 String body = chunkTextById.getOrDefault(chunk.getChunkId(), chunk.getPreview());
                 sb.append("—— 片段 ").append(i++).append("：").append(body).append('\n');
             }
@@ -394,12 +394,12 @@ Expected: 方法签名 `public List<ChatMessage> buildStructuredMessages(PromptC
     }
 ```
 
-（或提到 imports 区：`import com.nageoffer.ai.ragent.rag.dto.SourceCard;` / `import com.nageoffer.ai.ragent.rag.dto.SourceChunk;` / `import java.util.HashMap;`；然后把内部用短名。推荐 imports 写法。）
+（或提到 imports 区：`import com.knowledgebase.ai.ragent.rag.dto.SourceCard;` / `import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;` / `import java.util.HashMap;`；然后把内部用短名。推荐 imports 写法。）
 
 ### - [ ] Step 4: 加 `appendCitationRule` 私有方法
 
 ```java
-    private String appendCitationRule(String base, List<com.nageoffer.ai.ragent.rag.dto.SourceCard> cards) {
+    private String appendCitationRule(String base, List<com.knowledgebase.ai.ragent.rag.dto.SourceCard> cards) {
         String range = cards.size() == 1
                 ? "[^1]"
                 : "[^1] 至 [^" + cards.size() + "]";
@@ -566,7 +566,7 @@ Expected: `public static GuidanceDecision prompt(String prompt)` 单参。
     void streamChat_whenGuidanceClarificationPrompt_thenSkipSourcesEntirely() {
         // guidance 返回 prompt（GuidanceDecision.prompt 只接受一个 String）
         when(guidanceService.detectAmbiguity(any(), any()))
-                .thenReturn(com.nageoffer.ai.ragent.rag.core.guidance.GuidanceDecision.prompt("请补充您的问题细节"));
+                .thenReturn(com.knowledgebase.ai.ragent.rag.core.guidance.GuidanceDecision.prompt("请补充您的问题细节"));
 
         service.streamChat("q", "cid-src6", null, false, emitter);
 
@@ -609,10 +609,10 @@ git commit -m "test(sources): SRC-6 — lock clarification branch skip sources [
 Create `bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/core/source/CitationStatsCollectorTest.java`：
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.source;
+package com.knowledgebase.ai.ragent.rag.core.source;
 
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -711,11 +711,11 @@ Create `bootstrap/src/main/java/com/nageoffer/ai/ragent/rag/core/source/Citation
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.source;
+package com.knowledgebase.ai.ragent.rag.core.source;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 
 import java.util.List;
 import java.util.Set;
@@ -799,18 +799,18 @@ Expected: `void updateRunExtraData(String traceId, String extraData)` 和 `void 
 Create `bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/service/handler/StreamChatEventHandlerCitationTest.java`：
 
 ```java
-package com.nageoffer.ai.ragent.rag.service.handler;
+package com.knowledgebase.ai.ragent.rag.service.handler;
 
-import com.nageoffer.ai.ragent.framework.trace.RagTraceContext;
-import com.nageoffer.ai.ragent.infra.chat.TokenUsage;
-import com.nageoffer.ai.ragent.rag.config.RAGConfigProperties;
-import com.nageoffer.ai.ragent.rag.core.memory.ConversationMemoryService;
-import com.nageoffer.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
-import com.nageoffer.ai.ragent.rag.dto.SourceCard;
-import com.nageoffer.ai.ragent.rag.dto.SourceChunk;
-import com.nageoffer.ai.ragent.rag.service.ConversationGroupService;
-import com.nageoffer.ai.ragent.rag.service.RagEvaluationService;
-import com.nageoffer.ai.ragent.rag.service.RagTraceRecordService;
+import com.knowledgebase.ai.ragent.framework.trace.RagTraceContext;
+import com.knowledgebase.ai.ragent.infra.chat.TokenUsage;
+import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
+import com.knowledgebase.ai.ragent.rag.core.memory.ConversationMemoryService;
+import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
+import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;
+import com.knowledgebase.ai.ragent.rag.service.ConversationGroupService;
+import com.knowledgebase.ai.ragent.rag.service.RagEvaluationService;
+import com.knowledgebase.ai.ragent.rag.service.RagTraceRecordService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1026,8 +1026,8 @@ Expected: 看到 `updateTraceTokenUsage();` 下方紧跟 `saveEvaluationRecord(m
             return;
         }
         try {
-            com.nageoffer.ai.ragent.rag.core.source.CitationStatsCollector.CitationStats stats =
-                    com.nageoffer.ai.ragent.rag.core.source.CitationStatsCollector.scan(
+            com.knowledgebase.ai.ragent.rag.core.source.CitationStatsCollector.CitationStats stats =
+                    com.knowledgebase.ai.ragent.rag.core.source.CitationStatsCollector.scan(
                             answer.toString(), cardsOpt.get());
             traceRecordService.mergeRunExtraData(traceId, Map.of(
                     "citationTotal", stats.total(),
@@ -1041,7 +1041,7 @@ Expected: 看到 `updateTraceTokenUsage();` 下方紧跟 `saveEvaluationRecord(m
     }
 ```
 
-（或把 import 提到顶部：`import com.nageoffer.ai.ragent.rag.core.source.CitationStatsCollector;`，然后用短名。推荐 imports 写法。）
+（或把 import 提到顶部：`import com.knowledgebase.ai.ragent.rag.core.source.CitationStatsCollector;`，然后用短名。推荐 imports 写法。）
 
 ### - [ ] Step 4: 跑 T7 测试确认 PASS
 

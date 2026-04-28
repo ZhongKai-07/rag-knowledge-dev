@@ -190,7 +190,7 @@ Total: **28 tasks**.
 - [ ] **Step 1**: Create `SysDeptCreateRequest.java`
 
 ```java
-package com.nageoffer.ai.ragent.user.controller.request;
+package com.knowledgebase.ai.ragent.user.controller.request;
 
 import lombok.Data;
 
@@ -207,7 +207,7 @@ public class SysDeptCreateRequest {
 - [ ] **Step 2**: Create `SysDeptUpdateRequest.java`
 
 ```java
-package com.nageoffer.ai.ragent.user.controller.request;
+package com.knowledgebase.ai.ragent.user.controller.request;
 
 import lombok.Data;
 
@@ -224,7 +224,7 @@ public class SysDeptUpdateRequest {
 - [ ] **Step 3**: Create `SysDeptVO.java`
 
 ```java
-package com.nageoffer.ai.ragent.user.controller.vo;
+package com.knowledgebase.ai.ragent.user.controller.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -273,11 +273,11 @@ git commit -m "feat(pr3): add SysDept DTOs and VO"
 - [ ] **Step 1**: Create `SysDeptService.java`
 
 ```java
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
-import com.nageoffer.ai.ragent.user.controller.request.SysDeptCreateRequest;
-import com.nageoffer.ai.ragent.user.controller.request.SysDeptUpdateRequest;
-import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
+import com.knowledgebase.ai.ragent.user.controller.request.SysDeptCreateRequest;
+import com.knowledgebase.ai.ragent.user.controller.request.SysDeptUpdateRequest;
+import com.knowledgebase.ai.ragent.user.controller.vo.SysDeptVO;
 
 import java.util.List;
 
@@ -313,20 +313,20 @@ public interface SysDeptService {
 - [ ] **Step 2**: Create `SysDeptServiceImpl.java`
 
 ```java
-package com.nageoffer.ai.ragent.user.service.impl;
+package com.knowledgebase.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.user.controller.request.SysDeptCreateRequest;
-import com.nageoffer.ai.ragent.user.controller.request.SysDeptUpdateRequest;
-import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
-import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.user.service.SysDeptService;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.user.controller.request.SysDeptCreateRequest;
+import com.knowledgebase.ai.ragent.user.controller.request.SysDeptUpdateRequest;
+import com.knowledgebase.ai.ragent.user.controller.vo.SysDeptVO;
+import com.knowledgebase.ai.ragent.user.dao.entity.SysDeptDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.SysDeptMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserMapper;
+import com.knowledgebase.ai.ragent.user.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -488,15 +488,15 @@ git commit -m "feat(pr3): add SysDeptService with GLOBAL protection and referenc
 - [ ] **Step 1**: Create controller with class-level SUPER_ADMIN guard
 
 ```java
-package com.nageoffer.ai.ragent.user.controller;
+package com.knowledgebase.ai.ragent.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import com.nageoffer.ai.ragent.framework.convention.Result;
-import com.nageoffer.ai.ragent.framework.web.Results;
-import com.nageoffer.ai.ragent.user.controller.request.SysDeptCreateRequest;
-import com.nageoffer.ai.ragent.user.controller.request.SysDeptUpdateRequest;
-import com.nageoffer.ai.ragent.user.controller.vo.SysDeptVO;
-import com.nageoffer.ai.ragent.user.service.SysDeptService;
+import com.knowledgebase.ai.ragent.framework.convention.Result;
+import com.knowledgebase.ai.ragent.framework.web.Results;
+import com.knowledgebase.ai.ragent.user.controller.request.SysDeptCreateRequest;
+import com.knowledgebase.ai.ragent.user.controller.request.SysDeptUpdateRequest;
+import com.knowledgebase.ai.ragent.user.controller.vo.SysDeptVO;
+import com.knowledgebase.ai.ragent.user.service.SysDeptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -562,9 +562,9 @@ git commit -m "feat(pr3): add SysDeptController with class-level SUPER_ADMIN gua
 - [ ] **Step 1**: Create `LoadedUserProfile.java` as a record
 
 ```java
-package com.nageoffer.ai.ragent.user.dao.dto;
+package com.knowledgebase.ai.ragent.user.dao.dto;
 
-import com.nageoffer.ai.ragent.framework.context.RoleType;
+import com.knowledgebase.ai.ragent.framework.context.RoleType;
 
 import java.util.List;
 import java.util.Set;
@@ -592,9 +592,9 @@ public record LoadedUserProfile(
 - [ ] **Step 2**: Create `UserProfileLoader.java` interface
 
 ```java
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
-import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
+import com.knowledgebase.ai.ragent.user.dao.dto.LoadedUserProfile;
 
 /**
  * 单一职责：给 userId 返回完整的 user+dept+role 快照。
@@ -614,20 +614,20 @@ public interface UserProfileLoader {
 - [ ] **Step 3**: Create `UserProfileLoaderImpl.java`
 
 ```java
-package com.nageoffer.ai.ragent.user.service.impl;
+package com.knowledgebase.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.framework.context.RoleType;
-import com.nageoffer.ai.ragent.user.dao.dto.LoadedUserProfile;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
-import com.nageoffer.ai.ragent.user.dao.entity.SysDeptDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.SysDeptMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
-import com.nageoffer.ai.ragent.user.service.UserProfileLoader;
+import com.knowledgebase.ai.ragent.framework.context.RoleType;
+import com.knowledgebase.ai.ragent.user.dao.dto.LoadedUserProfile;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.SysDeptDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.SysDeptMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.knowledgebase.ai.ragent.user.service.UserProfileLoader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -745,7 +745,7 @@ git commit -m "feat(pr3): add UserProfileLoader with single-JOIN snapshot (no ca
 New LoginVO shape (show full file after edit):
 
 ```java
-package com.nageoffer.ai.ragent.user.controller.vo;
+package com.knowledgebase.ai.ragent.user.controller.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -777,7 +777,7 @@ public class LoginVO {
 - [ ] **Step 2**: Same for `CurrentUserVO.java` (drop `token` and keep `role` legacy-deprecated, add all PR3 fields)
 
 ```java
-package com.nageoffer.ai.ragent.user.controller.vo;
+package com.knowledgebase.ai.ragent.user.controller.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -1285,7 +1285,7 @@ git commit -m "refactor(pr3): DEPT_ADMIN-aware getAccessibleKbIds/checkAccess wi
 - [ ] **Step 1**: Create `SuperAdminMutationIntent.java` — sealed interface + 4 records
 
 ```java
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
 import java.util.List;
 

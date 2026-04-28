@@ -615,7 +615,7 @@ evalExecutor + TaskDecorator 续 UserContext/RagTraceContext  // ❌（异步线
 
 13. **系统级 `AccessScope.all()` 边界**：仅限 **`SUPER_ADMIN` 手动触发的离线评估**场景合法；**不得**被部门管理员触发的评估、定时任务、回归守门等场景复用。扩展到其他场景时必须重新做权限模型。代码 review 硬阻断项
 
-14. **`@MapperScan` 必须显式加 eval.dao.mapper 包**：`RagentApplication` 现有 `@MapperScan` 只扫 `rag / ingestion / knowledge / user` 四个包，新域的 mapper **不会**自动生效。PR E1 里必须改 `RagentApplication.java` 加一行 `"com.nageoffer.ai.ragent.eval.dao.mapper"`。漏了 = 所有 mapper bean 装配失败、启动期 `UnsatisfiedDependencyException`
+14. **`@MapperScan` 必须显式加 eval.dao.mapper 包**：`RagentApplication` 现有 `@MapperScan` 只扫 `rag / ingestion / knowledge / user` 四个包，新域的 mapper **不会**自动生效。PR E1 里必须改 `RagentApplication.java` 加一行 `"com.knowledgebase.ai.ragent.eval.dao.mapper"`。漏了 = 所有 mapper bean 装配失败、启动期 `UnsatisfiedDependencyException`
 
 15. **评估读接口权限不得降级为 `AnyAdmin`**（见 §15.1）：`t_eval_result.retrieved_chunks` 是系统级检索产物，含跨 `security_level` 的内容。读接口放宽会绕过 RBAC，直到 EVAL-3（查询侧 redaction）落地前，**一律 `SUPER_ADMIN`**
 
@@ -642,7 +642,7 @@ evalExecutor + TaskDecorator 续 UserContext/RagTraceContext  // ❌（异步线
 
 分 3 个 PR 逐步落地，每 PR 独立可 merge + demo：
 
-- **PR E1（地基）**：4 张新表（`upgrade_v1.9_to_v1.10.sql`）+ Java `eval/` 域骨架（含 `EvalAsyncConfig` + `evalExecutor`）+ **`RagentApplication.@MapperScan` 加 `com.nageoffer.ai.ragent.eval.dao.mapper`** + Python 服务壳 + `ragent-eval.compose.yaml`。验收：`POST /synthesize` 合成一条返回 JSON（不落库）+ 启动期 mapper bean 正常装配（无 `UnsatisfiedDependencyException`）
+- **PR E1（地基）**：4 张新表（`upgrade_v1.9_to_v1.10.sql`）+ Java `eval/` 域骨架（含 `EvalAsyncConfig` + `evalExecutor`）+ **`RagentApplication.@MapperScan` 加 `com.knowledgebase.ai.ragent.eval.dao.mapper`** + Python 服务壳 + `ragent-eval.compose.yaml`。验收：`POST /synthesize` 合成一条返回 JSON（不落库）+ 启动期 mapper bean 正常装配（无 `UnsatisfiedDependencyException`）
 - **PR E2（合成闭环）**：合成真落库（写 `source_chunk_text` 快照）+ 审核前端 `/admin/eval-suites` + dataset 激活。验收：50 条能跑完人审，DRAFT → ACTIVE
 - **PR E3-spike（预研）**：验证从 `RAGChatServiceImpl.streamChat` 抽出 `AnswerPipeline` 的真实工程量与隐性耦合。产出 ADR：决定 PR E3 是否需拆分成 E3a（重构）+ E3b（eval 闭环）。**不合并**，或合并一个极小的标记性 refactor
 - **PR E3（评估闭环）**：`AnswerPipeline`（如 spike 证明可落地）+ `ChatForEvalService` + `EvalRunExecutor` + result 看板 + 趋势页。验收：一键跑完 50 条拿四指标 + 两次 run 对比 snapshot diff + 三态状态机正确

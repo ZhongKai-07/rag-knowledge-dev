@@ -77,7 +77,7 @@ Execute this as five independent PRs:
 - [ ] **Step 2: Write the initial failing boundary test**
 
 ```java
-@AnalyzeClasses(packages = "com.nageoffer.ai.ragent")
+@AnalyzeClasses(packages = "com.knowledgebase.ai.ragent")
 class BootstrapDependencyRulesTest {
 
     @ArchTest
@@ -183,7 +183,7 @@ At minimum replace imports in:
 - `KnowledgeDocumentServiceImpl`
 - `RemoteFileFetcher`
 
-No `knowledge` class should import `com.nageoffer.ai.ragent.rag.service.FileStorageService` or `com.nageoffer.ai.ragent.rag.core.vector.*` after this slice.
+No `knowledge` class should import `com.knowledgebase.ai.ragent.rag.service.FileStorageService` or `com.knowledgebase.ai.ragent.rag.core.vector.*` after this slice.
 
 - [ ] **Step 5: Commit**
 

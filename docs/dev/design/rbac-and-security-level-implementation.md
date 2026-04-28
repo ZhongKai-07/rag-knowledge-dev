@@ -496,7 +496,7 @@ private Integer resolveMaxSecurityLevel() {
 
 ```java
 // bootstrap/.../rag/core/retrieve/MetadataFilter.java
-package com.nageoffer.ai.ragent.rag.core.retrieve;
+package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
 public record MetadataFilter(String field, FilterOp op, Object value) {
     public enum FilterOp { EQ, LTE, GTE, LT, GT, IN }

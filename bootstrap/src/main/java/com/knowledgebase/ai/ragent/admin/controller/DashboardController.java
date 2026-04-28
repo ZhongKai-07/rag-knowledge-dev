@@ -1,0 +1,67 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.knowledgebase.ai.ragent.admin.controller;
+
+import com.knowledgebase.ai.ragent.admin.controller.vo.DashboardOverviewVO;
+import com.knowledgebase.ai.ragent.admin.controller.vo.DashboardPerformanceVO;
+import com.knowledgebase.ai.ragent.admin.controller.vo.DashboardTrendsVO;
+import com.knowledgebase.ai.ragent.admin.service.DashboardService;
+import com.knowledgebase.ai.ragent.framework.convention.Result;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.framework.security.port.CurrentUserProbe;
+import com.knowledgebase.ai.ragent.framework.web.Results;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/admin/dashboard")
+public class DashboardController {
+
+    private final DashboardService dashboardService;
+    private final CurrentUserProbe currentUser;
+
+    @GetMapping("/overview")
+    public Result<DashboardOverviewVO> overview(@RequestParam(value = "window", required = false) String window) {
+        checkAdminAccess();
+        return Results.success(dashboardService.loadOverview(window));
+    }
+
+    @GetMapping("/performance")
+    public Result<DashboardPerformanceVO> performance(@RequestParam(value = "window", required = false) String window) {
+        checkAdminAccess();
+        return Results.success(dashboardService.loadPerformance(window));
+    }
+
+    @GetMapping("/trends")
+    public Result<DashboardTrendsVO> trends(@RequestParam("metric") String metric,
+                                            @RequestParam(value = "window", required = false) String window,
+                                            @RequestParam(value = "granularity", required = false) String granularity) {
+        checkAdminAccess();
+        return Results.success(dashboardService.loadTrends(metric, window, granularity));
+    }
+
+    private void checkAdminAccess() {
+        if (!currentUser.isSuperAdmin() && !currentUser.isDeptAdmin()) {
+            throw new ClientException("无权访问仪表板");
+        }
+    }
+}

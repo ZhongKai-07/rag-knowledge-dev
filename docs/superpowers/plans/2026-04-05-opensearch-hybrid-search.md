@@ -107,7 +107,7 @@ git commit -m "feat(opensearch): 添加 OpenSearch Java Client 依赖"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -164,7 +164,7 @@ public class OpenSearchProperties {
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
@@ -264,10 +264,10 @@ git commit -m "feat(opensearch): 添加 OpenSearch 客户端配置类"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.vector;
+package com.knowledgebase.ai.ragent.rag.core.vector;
 
-import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.rag.config.OpenSearchProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -352,11 +352,11 @@ Expected: COMPILATION FAILURE
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.vector;
+package com.knowledgebase.ai.ragent.rag.core.vector;
 
-import com.nageoffer.ai.ragent.framework.exception.kb.VectorCollectionAlreadyExistsException;
-import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.framework.exception.kb.VectorCollectionAlreadyExistsException;
+import com.knowledgebase.ai.ragent.rag.config.OpenSearchProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -544,10 +544,10 @@ git commit -m "feat(opensearch): 实现 OpenSearchVectorStoreAdmin 索引管理"
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.vector;
+package com.knowledgebase.ai.ragent.rag.core.vector;
 
-import com.nageoffer.ai.ragent.core.chunk.VectorChunk;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -648,12 +648,12 @@ Expected: COMPILATION FAILURE
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.vector;
+package com.knowledgebase.ai.ragent.rag.core.vector;
 
 import cn.hutool.core.lang.Assert;
-import com.nageoffer.ai.ragent.core.chunk.VectorChunk;
-import com.nageoffer.ai.ragent.framework.exception.ClientException;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
+import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -875,12 +875,12 @@ git commit -m "feat(opensearch): 实现 OpenSearchVectorStoreService 文档 CRUD
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.retrieve;
+package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
-import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingService;
+import com.knowledgebase.ai.ragent.rag.config.OpenSearchProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -997,13 +997,13 @@ Expected: COMPILATION FAILURE
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.retrieve;
+package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
 import cn.hutool.core.util.StrUtil;
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
-import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingService;
+import com.knowledgebase.ai.ragent.rag.config.OpenSearchProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.json.JsonData;

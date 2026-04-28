@@ -167,7 +167,7 @@ git commit -m "feat: add OpenSearch Docker environment and Maven dependency"
 - [ ] **Step 1: 创建 OpenSearchProperties**
 
 ```java
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -203,7 +203,7 @@ public class OpenSearchProperties {
 - [ ] **Step 2: 创建 OpenSearchConfig**
 
 ```java
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.auth.AuthScope;
@@ -286,10 +286,10 @@ git commit -m "feat: add OpenSearch configuration and client bean"
 - [ ] **Step 1: 实现 OpenSearchVectorStoreAdmin**
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.vector;
+package com.knowledgebase.ai.ragent.rag.core.vector;
 
-import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.rag.config.OpenSearchProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import lombok.RequiredArgsConstructor;
@@ -504,9 +504,9 @@ git commit -m "feat: add OpenSearchVectorStoreAdmin with index creation and pipe
 - [ ] **Step 1: 实现 OpenSearchVectorStoreService**
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.vector;
+package com.knowledgebase.ai.ragent.rag.core.vector;
 
-import com.nageoffer.ai.ragent.core.chunk.VectorChunk;
+import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -675,13 +675,13 @@ git commit -m "feat: add OpenSearchVectorStoreService for chunk CRUD"
 - [ ] **Step 1: 实现 OpenSearchRetrieverService**
 
 ```java
-package com.nageoffer.ai.ragent.rag.core.retrieve;
+package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.rag.config.OpenSearchProperties;
-import com.nageoffer.ai.ragent.rag.config.RAGDefaultProperties;
-import com.nageoffer.ai.ragent.rag.core.vector.OpenSearchVectorStoreAdmin;
-import com.nageoffer.ai.ragent.infra.embedding.EmbeddingService;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.rag.config.OpenSearchProperties;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.rag.core.vector.OpenSearchVectorStoreAdmin;
+import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingService;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -1019,7 +1019,7 @@ git commit -m "feat: add RBAC DDL migration script (t_role, t_role_kb_relation, 
 - [ ] **Step 1: 创建 RoleDO**
 
 ```java
-package com.nageoffer.ai.ragent.user.dao.entity;
+package com.knowledgebase.ai.ragent.user.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -1055,7 +1055,7 @@ public class RoleDO {
 - [ ] **Step 2: 创建 RoleKbRelationDO**
 
 ```java
-package com.nageoffer.ai.ragent.user.dao.entity;
+package com.knowledgebase.ai.ragent.user.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -1088,7 +1088,7 @@ public class RoleKbRelationDO {
 - [ ] **Step 3: 创建 UserRoleDO**
 
 ```java
-package com.nageoffer.ai.ragent.user.dao.entity;
+package com.knowledgebase.ai.ragent.user.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
@@ -1122,10 +1122,10 @@ public class UserRoleDO {
 
 ```java
 // RoleMapper.java
-package com.nageoffer.ai.ragent.user.dao.mapper;
+package com.knowledgebase.ai.ragent.user.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleDO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
@@ -1135,10 +1135,10 @@ public interface RoleMapper extends BaseMapper<RoleDO> {
 
 ```java
 // RoleKbRelationMapper.java
-package com.nageoffer.ai.ragent.user.dao.mapper;
+package com.knowledgebase.ai.ragent.user.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleKbRelationDO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
@@ -1148,10 +1148,10 @@ public interface RoleKbRelationMapper extends BaseMapper<RoleKbRelationDO> {
 
 ```java
 // UserRoleMapper.java
-package com.nageoffer.ai.ragent.user.dao.mapper;
+package com.knowledgebase.ai.ragent.user.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
@@ -1187,7 +1187,7 @@ git commit -m "feat: add RBAC entity classes and MyBatis mappers"
 - [ ] **Step 1: 创建 KbAccessService 接口**
 
 ```java
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
 import java.util.Set;
 
@@ -1214,17 +1214,17 @@ public interface KbAccessService {
 - [ ] **Step 2: 创建 KbAccessServiceImpl**
 
 ```java
-package com.nageoffer.ai.ragent.user.service.impl;
+package com.knowledgebase.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.framework.context.UserContext;
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
+import com.knowledgebase.ai.ragent.framework.context.UserContext;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.knowledgebase.ai.ragent.user.service.KbAccessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBucket;
@@ -1350,9 +1350,9 @@ git commit -m "feat: add KbAccessService with Redis cache and dual-context autho
 - [ ] **Step 1: 创建 RoleService 接口**
 
 ```java
-package com.nageoffer.ai.ragent.user.service;
+package com.knowledgebase.ai.ragent.user.service;
 
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleDO;
 import java.util.List;
 
 public interface RoleService {
@@ -1382,17 +1382,17 @@ public interface RoleService {
 - [ ] **Step 2: 创建 RoleServiceImpl**
 
 ```java
-package com.nageoffer.ai.ragent.user.service.impl;
+package com.knowledgebase.ai.ragent.user.service.impl;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleKbRelationDO;
-import com.nageoffer.ai.ragent.user.dao.entity.UserRoleDO;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.RoleMapper;
-import com.nageoffer.ai.ragent.user.dao.mapper.UserRoleMapper;
-import com.nageoffer.ai.ragent.user.service.KbAccessService;
-import com.nageoffer.ai.ragent.user.service.RoleService;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleKbRelationDO;
+import com.knowledgebase.ai.ragent.user.dao.entity.UserRoleDO;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleKbRelationMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.RoleMapper;
+import com.knowledgebase.ai.ragent.user.dao.mapper.UserRoleMapper;
+import com.knowledgebase.ai.ragent.user.service.KbAccessService;
+import com.knowledgebase.ai.ragent.user.service.RoleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -1524,13 +1524,13 @@ public class RoleServiceImpl implements RoleService {
 - [ ] **Step 3: 创建 RoleController**
 
 ```java
-package com.nageoffer.ai.ragent.user.controller;
+package com.knowledgebase.ai.ragent.user.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
-import com.nageoffer.ai.ragent.framework.convention.Result;
-import com.nageoffer.ai.ragent.framework.web.Results;
-import com.nageoffer.ai.ragent.user.dao.entity.RoleDO;
-import com.nageoffer.ai.ragent.user.service.RoleService;
+import com.knowledgebase.ai.ragent.framework.convention.Result;
+import com.knowledgebase.ai.ragent.framework.web.Results;
+import com.knowledgebase.ai.ragent.user.dao.entity.RoleDO;
+import com.knowledgebase.ai.ragent.user.service.RoleService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -1758,7 +1758,7 @@ void streamChat(String question, String conversationId, String knowledgeBaseId,
 private final KbAccessService kbAccessService;
 ```
 
-import：`import com.nageoffer.ai.ragent.user.service.KbAccessService;` 和 `import java.util.Set;`
+import：`import com.knowledgebase.ai.ragent.user.service.KbAccessService;` 和 `import java.util.Set;`
 
 3b. 修改 `streamChat` 签名匹配接口。
 
@@ -1895,7 +1895,7 @@ git commit -m "feat: integrate knowledgeBaseId and RBAC into full chat retrieval
 private final KbAccessService kbAccessService;
 ```
 
-import：`import com.nageoffer.ai.ragent.user.service.KbAccessService;` 和 `import java.util.Set;`
+import：`import com.knowledgebase.ai.ragent.user.service.KbAccessService;` 和 `import java.util.Set;`
 
 修改 `pageQuery` 方法（约 line 90）：
 

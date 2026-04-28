@@ -43,7 +43,7 @@
 **核心改动**：
 - 新增独立顶级 `bootstrap/.../eval/` bounded context（**不**挂 `rag/` 下），含 4 张 `t_eval_*` 表（v1.10 schema）、4 DO + Mapper、`EvalProperties` / `EvalAsyncConfig`（`evalExecutor` 线程池，**不**用 `@EnableAsync`）/ `RagasEvalClient` 骨架
 - `ragas/` 目录从一次性脚本改造成 FastAPI 微服务 `ragent-eval`（:9091），端点 `/health` + `/synthesize`（PR E3 再加 `/evaluate`），Docker Compose 就位
-- `RagentApplication.@MapperScan` 加 `com.nageoffer.ai.ragent.eval.dao.mapper`，`EvalMapperScanTest` 用 `@SpringBootTest` 断言 4 个 bean 非 null（Gotcha #14 锁死）
+- `RagentApplication.@MapperScan` 加 `com.knowledgebase.ai.ragent.eval.dao.mapper`，`EvalMapperScanTest` 用 `@SpringBootTest` 断言 4 个 bean 非 null（Gotcha #14 锁死）
 - 跨 HTTP 字段 Java ↔ Python 全部 `@JsonProperty` snake_case ↔ camelCase 显式映射
 - 零新增 ThreadLocal（`evalExecutor` 不用 TaskDecorator、`RagasEvalClient` 不读 `RagTraceContext`）
 - 硬约束文档化：依赖方向 `eval/ → rag.core / knowledge.*Port / framework.*`（✓），`rag/ → eval/` / `eval/` 直读 rag 表 ❌；SUPER_ADMIN-only 读 eval 结果（EVAL-3 redaction 前置）

@@ -557,7 +557,7 @@ In `search()` (lines 105-155), update the calls:
 
 Add import if needed:
 ```java
-import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 ```
 
 - [ ] **Step 4: IntentParallelRetriever — accept SearchContext instead of shared filters**
@@ -584,8 +584,8 @@ In `IntentParallelRetriever.java`, change the `executeParallelRetrieval` overloa
 
 Add imports:
 ```java
-import com.nageoffer.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
-import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.MultiChannelRetrievalEngine;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
 ```
 
 - [ ] **Step 5: IntentDirectedSearchChannel — pass SearchContext**

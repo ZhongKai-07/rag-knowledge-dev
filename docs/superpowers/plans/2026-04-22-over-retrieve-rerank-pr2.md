@@ -44,7 +44,7 @@
 
 ```java
 // bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/config/RagRetrievalPropertiesTest.java
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Test;
@@ -121,7 +121,7 @@ Expected: Compilation failure — `RagRetrievalProperties` not found.
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.config;
+package com.knowledgebase.ai.ragent.rag.config;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
@@ -207,9 +207,9 @@ git commit -m "feat(retrieval): add RagRetrievalProperties for recall/rerank top
 
 ```java
 // bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/core/retrieve/channel/SearchContextBuilderTest.java
-package com.nageoffer.ai.ragent.rag.core.retrieve.channel;
+package com.knowledgebase.ai.ragent.rag.core.retrieve.channel;
 
-import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
+import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -279,15 +279,15 @@ Full new field block (replacing lines 57-62 in `SearchContext.java`):
 ```java
     /**
      * 召回阶段的候选数（向量检索每个目标返回这么多）。
-     * 由 {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties#getRecallTopK()} 或
+     * 由 {@link com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties#getRecallTopK()} 或
      * 意图节点 override 推导。必须 >= rerankTopK。
      */
     private int recallTopK;
 
     /**
      * Rerank 后保留并喂给 LLM 的数量（最终 TopK）。
-     * 由 {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties#getRerankTopK()} 或
-     * {@link com.nageoffer.ai.ragent.rag.core.intent.IntentNode#getTopK()} override 推导。
+     * 由 {@link com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties#getRerankTopK()} 或
+     * {@link com.knowledgebase.ai.ragent.rag.core.intent.IntentNode#getTopK()} override 推导。
      */
     private int rerankTopK;
 ```
@@ -303,7 +303,7 @@ Full replacement of `SearchContext.java` class body. Remove the `@Builder` annot
     /**
      * Builder-level fail-fast：配置错 (recallTopK < rerankTopK 或非正) 直接 IAE，
      * 避免错配沉默流到 channel / rerank 后再爆。这是和
-     * {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties#validate()} 的第二道保险。
+     * {@link com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties#validate()} 的第二道保险。
      * <p>
      * 不用 Lombok @Builder 是因为需要在 build() 内做校验；Lombok 生成的 build() 可以通过
      * 继承覆盖，但依赖内部字段名 (metadata$value) 和 positional ctor 顺序，跨 Lombok 版本
@@ -414,7 +414,7 @@ In `RetrievalEngine.java`:
 
 1. Add field in the `@RequiredArgsConstructor` area (after `multiChannelRetrievalEngine`):
 ```java
-    private final com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties ragRetrievalProperties;
+    private final com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties ragRetrievalProperties;
 ```
 
 2. Replace the `retrieve` method signature + body (lines 82-130). Drop the `int topK` param (callers will be updated in Task 8):
@@ -552,7 +552,7 @@ Replace `retrieveKnowledgeChannels(List<SubQuestionIntent>, int topK, ...)` (lin
 ```java
     @RagTraceNode(name = "multi-channel-retrieval", type = "RETRIEVE_CHANNEL")
     public List<RetrievedChunk> retrieveKnowledgeChannels(List<SubQuestionIntent> subIntents,
-                                                           com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan plan,
+                                                           com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan plan,
                                                            AccessScope accessScope, String knowledgeBaseId) {
         SearchContext context = buildSearchContext(subIntents, plan, accessScope);
 
@@ -595,7 +595,7 @@ Replace `buildSearchContext(List<SubQuestionIntent>, int topK, AccessScope)` (li
 
 ```java
     private SearchContext buildSearchContext(List<SubQuestionIntent> subIntents,
-                                              com.nageoffer.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan plan,
+                                              com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan plan,
                                               AccessScope accessScope) {
         String question = CollUtil.isEmpty(subIntents) ? "" : subIntents.get(0).subQuestion();
         Map<String, Integer> kbSecurityLevels;
@@ -712,7 +712,7 @@ In `IntentDirectedSearchChannel.java`, replace the `search` method (lines 86-147
             // 按上游 score 降序取前 recallTopK，把"通道贡献给下游 rerank 的候选数"严格收口到 recallTopK。
             List<RetrievedChunk> cappedChunks = fanOutChunks.stream()
                     .sorted(java.util.Comparator.comparing(
-                            com.nageoffer.ai.ragent.framework.convention.RetrievedChunk::getScore,
+                            com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk::getScore,
                             java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
                     .limit(recallTopK)
                     .toList();
@@ -841,12 +841,12 @@ Replace the search method body that reads `context.getTopK() * topKMultiplier` (
 
 ```java
 // bootstrap/src/test/java/com/nageoffer/ai/ragent/rag/core/retrieve/postprocessor/RerankPostProcessorTest.java
-package com.nageoffer.ai.ragent.rag.core.retrieve.postprocessor;
+package com.knowledgebase.ai.ragent.rag.core.retrieve.postprocessor;
 
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.framework.security.port.AccessScope;
-import com.nageoffer.ai.ragent.infra.rerank.RerankService;
-import com.nageoffer.ai.ragent.rag.core.retrieve.channel.SearchContext;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
+import com.knowledgebase.ai.ragent.infra.rerank.RerankService;
+import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -1017,12 +1017,12 @@ Find or create a test for `BaiLianRerankClient`. If none exists, check `infra-ai
 
 ```java
 // infra-ai/src/test/java/com/nageoffer/ai/ragent/infra/rerank/BaiLianRerankClientSmallKbTest.java
-package com.nageoffer.ai.ragent.infra.rerank;
+package com.knowledgebase.ai.ragent.infra.rerank;
 
 import com.google.gson.JsonObject;
-import com.nageoffer.ai.ragent.framework.convention.RetrievedChunk;
-import com.nageoffer.ai.ragent.infra.config.AIModelProperties;
-import com.nageoffer.ai.ragent.infra.model.ModelTarget;
+import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.infra.config.AIModelProperties;
+import com.knowledgebase.ai.ragent.infra.model.ModelTarget;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -1150,7 +1150,7 @@ In `RAGChatServiceImpl.java`, Lombok `@RequiredArgsConstructor` generates the ct
 Find the field block around the top of the class and add:
 
 ```java
-    private final com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties ragRetrievalProperties;
+    private final com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties ragRetrievalProperties;
 ```
 
 - [ ] **Step 8.2: Update the `retrievalEngine.retrieve(...)` call site**
@@ -1188,7 +1188,7 @@ evalCollector.setTopK(distinctChunks.size());
 
 - [ ] **Step 8.4: Remove unused import of DEFAULT_TOP_K if no longer referenced**
 
-If after edits `DEFAULT_TOP_K` is no longer used in `RAGChatServiceImpl.java`, remove `import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.DEFAULT_TOP_K;` (around line 75).
+If after edits `DEFAULT_TOP_K` is no longer used in `RAGChatServiceImpl.java`, remove `import static com.knowledgebase.ai.ragent.rag.constant.RAGConstant.DEFAULT_TOP_K;` (around line 75).
 
 - [ ] **Step 8.5: Add javadoc to EvaluationCollector.topK**
 
@@ -1307,7 +1307,7 @@ Add `@Deprecated(forRemoval = true)` + javadoc to both `topKMultiplier` fields i
 ```java
         /**
          * @deprecated since PR2 — retrieval topK amplification moved into
-         * {@link com.nageoffer.ai.ragent.rag.config.RagRetrievalProperties} (recallTopK / rerankTopK split).
+         * {@link com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties} (recallTopK / rerankTopK split).
          * This field is no longer read by channel code; left in place only to avoid breaking existing yaml.
          * Will be removed once all deployments drop the setting from their config.
          */
