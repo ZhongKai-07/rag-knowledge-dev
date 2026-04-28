@@ -18,11 +18,9 @@
 package com.knowledgebase.ai.ragent.rag.core.retrieve.channel;
 
 import cn.hutool.core.collection.CollUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
 import com.knowledgebase.ai.ragent.framework.security.port.AccessScope;
-import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
 import com.knowledgebase.ai.ragent.rag.config.SearchChannelProperties;
 import com.knowledgebase.ai.ragent.rag.core.intent.NodeScore;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrieverService;
@@ -34,6 +32,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
@@ -47,17 +47,17 @@ import java.util.concurrent.Executor;
 public class VectorGlobalSearchChannel implements SearchChannel {
 
     private final SearchChannelProperties properties;
-    private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final KbMetadataReader kbMetadataReader;
     private final CollectionParallelRetriever parallelRetriever;
     private final MetadataFilterBuilder metadataFilterBuilder;
 
     public VectorGlobalSearchChannel(RetrieverService retrieverService,
                                      SearchChannelProperties properties,
-                                     KnowledgeBaseMapper knowledgeBaseMapper,
+                                     KbMetadataReader kbMetadataReader,
                                      MetadataFilterBuilder metadataFilterBuilder,
                                      @Qualifier("ragInnerRetrievalThreadPoolExecutor") Executor innerRetrievalExecutor) {
         this.properties = properties;
-        this.knowledgeBaseMapper = knowledgeBaseMapper;
+        this.kbMetadataReader = kbMetadataReader;
         this.metadataFilterBuilder = metadataFilterBuilder;
         this.parallelRetriever = new CollectionParallelRetriever(retrieverService, innerRetrievalExecutor);
     }
@@ -111,7 +111,7 @@ public class VectorGlobalSearchChannel implements SearchChannel {
             log.info("执行向量全局检索，问题：{}", context.getMainQuestion());
 
             // 获取所有可访问的 KB
-            List<KnowledgeBaseDO> kbs = getAccessibleKBs(context);
+            List<KbCollection> kbs = getAccessibleKBs(context);
 
             if (kbs.isEmpty()) {
                 log.warn("未找到任何 KB collection，跳过全局检索");
@@ -169,11 +169,23 @@ public class VectorGlobalSearchChannel implements SearchChannel {
     /**
      * 获取所有可访问的 KB（受 RBAC 约束）
      */
-    private List<KnowledgeBaseDO> getAccessibleKBs(SearchContext context) {
+    private List<KbCollection> getAccessibleKBs(SearchContext context) {
         AccessScope scope = context.getAccessScope();
-        return knowledgeBaseMapper.selectList(Wrappers.lambdaQuery(KnowledgeBaseDO.class)).stream()
-                .filter(kb -> scope.allows(kb.getId()))
-                .filter(kb -> kb.getCollectionName() != null && !kb.getCollectionName().isBlank())
+        Set<String> visibleKbIds;
+        if (scope instanceof AccessScope.All) {
+            visibleKbIds = kbMetadataReader.listAllKbIds();
+        } else if (scope instanceof AccessScope.Ids ids) {
+            visibleKbIds = ids.kbIds();
+        } else {
+            return List.of();
+        }
+        if (CollUtil.isEmpty(visibleKbIds)) {
+            return List.of();
+        }
+
+        Map<String, String> collectionNames = kbMetadataReader.getCollectionNames(visibleKbIds);
+        return collectionNames.entrySet().stream()
+                .map(e -> new KbCollection(e.getKey(), e.getValue()))
                 .toList();
     }
 
@@ -181,13 +193,13 @@ public class VectorGlobalSearchChannel implements SearchChannel {
      * 并行在所有 collection 中检索（per-KB metadata filters）
      */
     private List<RetrievedChunk> retrieveFromAllCollections(String question,
-                                                            List<KnowledgeBaseDO> kbs,
+                                                            List<KbCollection> kbs,
                                                             SearchContext context,
                                                             int topK) {
         List<CollectionParallelRetriever.CollectionTask> tasks = kbs.stream()
                 .map(kb -> new CollectionParallelRetriever.CollectionTask(
-                        kb.getCollectionName(),
-                        metadataFilterBuilder.build(context, kb.getId())))
+                        kb.collectionName(),
+                        metadataFilterBuilder.build(context, kb.kbId())))
                 .toList();
         return parallelRetriever.executeParallelRetrieval(question, tasks, topK);
     }
@@ -195,5 +207,8 @@ public class VectorGlobalSearchChannel implements SearchChannel {
     @Override
     public SearchChannelType getType() {
         return SearchChannelType.VECTOR_GLOBAL;
+    }
+
+    private record KbCollection(String kbId, String collectionName) {
     }
 }

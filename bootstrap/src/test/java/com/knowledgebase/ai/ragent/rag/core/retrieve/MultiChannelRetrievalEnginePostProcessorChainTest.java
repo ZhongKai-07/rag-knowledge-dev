@@ -18,7 +18,7 @@
 package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
-import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannel;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
@@ -108,7 +108,7 @@ class MultiChannelRetrievalEnginePostProcessorChainTest {
                 List.of(channel),
                 List.of(dropAll, new DeduplicationPostProcessor()),
                 mock(RetrieverService.class),
-                mock(KnowledgeBaseMapper.class),
+                mock(KbMetadataReader.class),
                 mock(MetadataFilterBuilder.class),
                 directExecutor
         );

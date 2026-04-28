@@ -19,11 +19,10 @@ package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
 import cn.hutool.core.collection.CollUtil;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
+import com.knowledgebase.ai.ragent.framework.security.port.KbMetadataReader;
 import com.knowledgebase.ai.ragent.framework.trace.RagTraceNode;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrievalEngine.RetrievalPlan;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannel;
-import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
-import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannelResult;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchChannelType;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.SearchContext;
@@ -59,7 +58,7 @@ public class MultiChannelRetrievalEngine {
     private final List<SearchChannel> searchChannels;
     private final List<SearchResultPostProcessor> postProcessors;
     private final RetrieverService retrieverService;
-    private final KnowledgeBaseMapper knowledgeBaseMapper;
+    private final KbMetadataReader kbMetadataReader;
     private final MetadataFilterBuilder metadataFilterBuilder;
     @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
@@ -79,21 +78,21 @@ public class MultiChannelRetrievalEngine {
 
         // 单知识库定向检索路径（召回数直接用 recallTopK）
         if (scope.isSingleKb()) {
-            KnowledgeBaseDO kb = knowledgeBaseMapper.selectById(scope.targetKbId());
-            if (kb == null || kb.getCollectionName() == null) {
+            String collectionName = kbMetadataReader.getCollectionName(scope.targetKbId());
+            if (collectionName == null) {
                 return List.of();
             }
             RetrieveRequest req = RetrieveRequest.builder()
                     .query(context.getMainQuestion())
                     .topK(plan.recallTopK())
-                    .collectionName(kb.getCollectionName())
+                    .collectionName(collectionName)
                     .metadataFilters(metadataFilterBuilder.build(context, scope.targetKbId()))
                     .build();
             List<RetrievedChunk> chunks = retrieverService.retrieve(req);
 
             SearchChannelResult singleResult = SearchChannelResult.builder()
                     .channelType(SearchChannelType.INTENT_DIRECTED)
-                    .channelName("single-kb-" + kb.getCollectionName())
+                    .channelName("single-kb-" + collectionName)
                     .chunks(chunks)
                     .confidence(1.0)
                     .latencyMs(0)
