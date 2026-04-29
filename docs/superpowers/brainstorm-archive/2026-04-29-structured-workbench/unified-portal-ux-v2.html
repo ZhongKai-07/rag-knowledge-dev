@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>统一门户 v2 · Chatbot 入口 + 任务单元 + Skill 库 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  /* App framing */
+  .app-mock {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1rem 0 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .app-shell {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 580px;
+  }
+  @media (max-width: 900px) {
+    .app-shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border);
+    padding: 1rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.5rem 0.8rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+  .sidebar-brand .logo {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, #5856d6, #0071e3);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+  }
+  .new-task-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .search-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+  .nav-item {
+    padding: 0.4rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+  .nav-item.active { background: var(--bg-tertiary); }
+  .group-label {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.6rem 0.55rem 0.3rem;
+    margin-top: 0.4rem;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .task-tree {
+    display: flex; flex-direction: column; gap: 1px;
+    font-size: 0.83rem;
+  }
+  .tree-folder {
+    padding: 0.3rem 0.55rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .tree-task {
+    padding: 0.3rem 0.55rem 0.3rem 1.6rem;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tree-task:hover { background: var(--bg-secondary); }
+  .tree-task.active {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Main content */
+  .main {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-secondary);
+  }
+  .main-topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.7rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .main-body {
+    flex: 1;
+    padding: 2.5rem 2rem 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .home-title {
+    font-size: 1.55rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 0.4rem;
+  }
+  .home-sub {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Skill chips above input */
+  .skill-chips {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    justify-content: center;
+    max-width: 720px;
+    margin: 0 auto 0.85rem;
+  }
+  .skill-chip {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.3rem;
+    transition: all 0.15s;
+  }
+  .skill-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,113,227,0.04);
+  }
+  .skill-chip .ic { font-size: 0.92rem; }
+
+  /* Input box */
+  .input-wrap {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .input-box {
+    background: var(--bg-primary);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 0.75rem 0.9rem;
+    transition: border-color 0.15s;
+  }
+  .input-box:hover { border-color: var(--accent); }
+  .input-attach {
+    color: var(--text-tertiary);
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+  }
+  .input-text {
+    color: var(--text-tertiary);
+    font-size: 0.95rem;
+    padding: 0.3rem 0;
+    min-height: 1.5rem;
+  }
+  .input-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px dashed var(--border);
+  }
+  .input-actions .left {
+    display: flex; gap: 0.5rem;
+  }
+  .input-actions .pill {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.3rem;
+  }
+  .input-actions .pill .arrow { color: var(--text-tertiary); font-size: 0.7rem; }
+  .input-actions .send-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .footer-note {
+    font-size: 0.74rem;
+    color: var(--text-tertiary);
+    text-align: center;
+    margin-top: 0.6rem;
+  }
+
+  /* Recent compact below input */
+  .recent-compact {
+    width: 100%;
+    max-width: 720px;
+    margin: 1.5rem auto 0;
+  }
+  .section-divider {
+    color: var(--text-tertiary);
+    font-size: 0.74rem;
+    text-align: center;
+    margin: 0.6rem 0 0.5rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .recent-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.45rem 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.35rem;
+    font-size: 0.84rem;
+  }
+  .recent-row .ri-time { color: var(--text-secondary); font-size: 0.74rem; }
+  .recent-row button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 9px;
+    font-size: 0.74rem;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Comparison table */
+  table.compact {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0.5rem 0 1rem;
+  }
+  table.compact th, table.compact td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+  table.compact td.check { color: var(--success); font-weight: 600; text-align: center; }
+  table.compact td.cross { color: var(--error); font-weight: 600; text-align: center; }
+  table.compact td.partial { color: var(--warning); font-weight: 600; text-align: center; }
+
+  .insight-box {
+    padding: 0.95rem 1.2rem;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 0.88rem;
+    line-height: 1.65;
+    margin: 0.5rem 0;
+  }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  .nav-bar {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .nav-bar .ch-tag {
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 0.74rem;
+  }
+  .nav-bar a { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  ul.tight { margin-left: 1.1rem; font-size: 0.86rem; }
+  ul.tight li { margin-bottom: 0.25rem; line-height: 1.55; }
+
+  .principle-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 0.5rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.86rem;
+  }
+  .principle-row:last-child { border-bottom: none; }
+  .principle-row .pr-tag {
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 0.78rem;
+    align-self: start;
+  }
+</style>
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 统一门户 v2 · Chatbot + 任务 + Skill 三件套</h1>
+  <a href="index.html">← back to index</a>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">补章 v2 · 修正版</span> &nbsp; 基于 Code-Buddy / 悟空 实物 review</span>
+  <span>
+    <a href="unified-portal-ux.html">↩ 对比：v1（极简但缺 affordance）</a>
+    &nbsp;|&nbsp;
+    <a href="16-ux-home.html">↩ 旧版 16-ux-home（2 卡入口）</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+<h2>统一门户 v2 · Chatbot 入口 + 任务单元 + Skill 库</h2>
+<p class="subtitle">
+  v1 反思：把 skill 藏太深了 → discoverability 缺失。<br>
+  Code-Buddy / 悟空 / Glean / ChatGPT Workspace Agents 共识模式：<strong>Chatbot 主入口 + 任务为单元 + Skill 横向陈列</strong>。<br>
+  关键认知：<u>显式 affordance ≠ 琐碎</u>。Skill chips 让用户"知道能做什么"，但不强迫"先决策"。
+</p>
+
+<!-- ============ Section 1: v2 主屏 mockup ============ -->
+<div class="section">
+  <h3>① v2 主屏 mockup</h3>
+
+  <div class="app-mock">
+    <div class="app-shell">
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-brand">
+          <div class="logo">HT</div>
+          <span>HT KnowledgeBase</span>
+        </div>
+
+        <button class="new-task-btn">
+          <span>＋</span>
+          <span>新对话</span>
+        </button>
+
+        <div class="search-box">
+          <span>🔍</span>
+          <span>搜索任务...</span>
+        </div>
+
+        <div class="nav-item active">📋 全部</div>
+        <div class="nav-item">⭐ 收藏</div>
+        <div class="nav-item">🧰 技能中心</div>
+        <div class="nav-item">⏰ 定时任务</div>
+
+        <div class="group-label">
+          <span>项目</span>
+          <span style="cursor:pointer">＋</span>
+        </div>
+        <div class="task-tree">
+          <div class="tree-folder">📁 EU Ops</div>
+          <div class="tree-task active">📝 EU MTA 默认值</div>
+          <div class="tree-task">🔍 HSBC 准入筛查</div>
+          <div class="tree-task">📤 ISDA_HSBC_2026</div>
+          <div class="tree-folder">📁 APAC Ops</div>
+          <div class="tree-task">📝 GMRA 联动账户</div>
+          <div class="tree-folder">📁 合规专项</div>
+          <div class="tree-task">📤 CSA Q1 复核</div>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="main">
+        <div class="main-topbar">
+          <span style="font-weight:500;">新对话</span>
+          <div style="display:flex; align-items:center; gap:0.5rem; color: var(--text-secondary);">
+            <span style="font-size:0.82rem;">张三 · EU Ops</span>
+            <div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg, #5856d6, #0071e3); color:white; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:600;">张</div>
+          </div>
+        </div>
+
+        <div class="main-body">
+          <div class="home-title">今天，我能帮你做什么？</div>
+          <div class="home-sub">说话、提问、上传协议——系统自动选合适的形态</div>
+
+          <!-- Skill chips: discoverability without forced decision -->
+          <div class="skill-chips">
+            <div class="skill-chip"><span class="ic">💬</span> COB 咨询</div>
+            <div class="skill-chip"><span class="ic">📖</span> SOP 流程</div>
+            <div class="skill-chip"><span class="ic">🔍</span> 协议筛查</div>
+            <div class="skill-chip"><span class="ic">📤</span> ISDA 提取</div>
+            <div class="skill-chip"><span class="ic">📤</span> GMRA 提取</div>
+            <div class="skill-chip"><span class="ic">📋</span> 准入审批</div>
+            <div class="skill-chip"><span class="ic">📊</span> 部门 insight</div>
+          </div>
+
+          <!-- Input box -->
+          <div class="input-wrap">
+            <div class="input-box">
+              <div class="input-attach">📎</div>
+              <div class="input-text">问问题，或拖一份协议进来 →</div>
+              <div class="input-actions">
+                <div class="left">
+                  <button class="pill">
+                    <span>🤖</span><span>智能</span><span class="arrow">▾</span>
+                  </button>
+                  <button class="pill">
+                    <span>📁</span><span>EU Ops</span><span class="arrow">▾</span>
+                  </button>
+                </div>
+                <button class="send-btn">↑</button>
+              </div>
+            </div>
+            <div class="footer-note">⌘ K 快速命令 · 内容由 AI 生成，请核实重要信息</div>
+          </div>
+
+          <!-- Recent compact -->
+          <div class="recent-compact">
+            <div class="section-divider">最近</div>
+            <div class="recent-row">
+              <span>📝 EU MTA 默认值</span>
+              <span style="display:flex;align-items:center;gap:0.6rem">
+                <span class="ri-time">2 小时前</span>
+                <button>继续</button>
+              </span>
+            </div>
+            <div class="recent-row">
+              <span>📤 ISDA_HSBC_2026.pdf · 已提取 18 字段</span>
+              <span style="display:flex;align-items:center;gap:0.6rem">
+                <span class="ri-time">昨天</span>
+                <button>下载 Excel</button>
+              </span>
+            </div>
+            <div class="recent-row">
+              <span>🔍 HSBC · Notification Time 筛查</span>
+              <span style="display:flex;align-items:center;gap:0.6rem">
+                <span class="ri-time">3 天前</span>
+                <button>查看</button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ============ Section 2: v1 vs v2 ============ -->
+<div class="section">
+  <h3>② v1 vs v2 关键变化</h3>
+
+  <table class="compact">
+    <thead>
+      <tr>
+        <th style="width:20%">维度</th>
+        <th style="width:30%">v1（极简版）</th>
+        <th style="width:30%">v2（修正版）</th>
+        <th style="width:20%">理由</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>主入口</td>
+        <td>仅 1 个搜索框</td>
+        <td>搜索框 + 上方 7 个 Skill chips</td>
+        <td>chips 是 affordance 不是决策点；不点也能用</td>
+      </tr>
+      <tr>
+        <td>任务列表</td>
+        <td>底部 inline "最近"（3 条）</td>
+        <td>左侧栏 first-class · 项目分组</td>
+        <td>对齐 Code-Buddy/悟空；项目分组让多周期任务可管理</td>
+      </tr>
+      <tr>
+        <td>新建动作</td>
+        <td>隐式（敲字即创建）</td>
+        <td>左上"＋ 新对话"显式按钮 + 仍支持隐式</td>
+        <td>显式按钮让"清空当前 / 开新会话"更直觉</td>
+      </tr>
+      <tr>
+        <td>Mode/Project</td>
+        <td>无</td>
+        <td>输入框下"智能"+"EU Ops"两个 pill</td>
+        <td>对齐 Code-Buddy 的 Agent+Model；用户可显式锁定项目上下文</td>
+      </tr>
+      <tr>
+        <td>Skill 发现</td>
+        <td>仅 IntentRouter 后端隐式</td>
+        <td>chips 显式陈列 + IntentRouter 仍兜底</td>
+        <td>新用户不点 chip 永远不知道能做什么；这是 onboarding 致命问题</td>
+      </tr>
+      <tr>
+        <td>项目分组</td>
+        <td>无</td>
+        <td>侧栏按项目折叠（EU Ops / APAC Ops / 合规专项）</td>
+        <td>对齐悟空"项目"概念；Ops 用户跨多对手方/区域工作时必需</td>
+      </tr>
+      <tr>
+        <td>二级功能区</td>
+        <td>无（仅头像下拉藏 Memory）</td>
+        <td>侧栏"技能中心 / 定时任务 / 收藏"</td>
+        <td>给 v2 留口子（定时任务 = Autodream 出口）；v1 不必上线但 IA 留位</td>
+      </tr>
+      <tr>
+        <td>主屏决策点</td>
+        <td>1 个（输入框）</td>
+        <td>仍是 1 个（chips/sidebar 都是 affordance/历史）</td>
+        <td>One Portal 哲学守住</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="insight-box insight-success">
+    <strong>关键判断：v2 看起来"更密"但决策点没增加。</strong><br>
+    用户主流程仍然是"打字 / 拖文件" → Mode A/B/C 由 IntentRouter 决定。
+    Skill chips 是<u>横向 affordance</u>（让用户知道系统会做什么），点 chip 等价于在搜索框输入对应 prompt。
+    Sidebar 是<u>历史和项目结构</u>，不是入口（用户不用先去那里"创建"）。
+  </div>
+</div>
+
+<!-- ============ Section 3: 三件套对应到我们的架构 ============ -->
+<div class="section">
+  <h3>③ "三件套"对应到我们的 DDD 架构</h3>
+
+  <table class="compact">
+    <thead>
+      <tr>
+        <th style="width:18%">前端三件套</th>
+        <th style="width:22%">UI 表现</th>
+        <th style="width:30%">后端 entity</th>
+        <th style="width:30%">v1 落地</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Chatbot 入口</strong></td>
+        <td>主屏单一搜索框 + 拖拽 hint</td>
+        <td><code>IntentRouter</code> · 路由到 Agent 组合</td>
+        <td>规则版：文本→KnowledgeQAAgent / 文件→DocIntelligenceAgent</td>
+      </tr>
+      <tr>
+        <td><strong>任务为单元</strong></td>
+        <td>左侧栏任务树 + 项目分组 + 最近列表</td>
+        <td><code>TaskInstance</code> · 自动创建 / 项目 tag / 用户可重命名</td>
+        <td>沿用 spec §3.2 设计，新增 <code>project_tag</code> 字段（可空）</td>
+      </tr>
+      <tr>
+        <td><strong>Skill 库</strong></td>
+        <td>chips 横向 + 技能中心二级</td>
+        <td><code>TaskTemplate</code> · 每个 chip = 一个内置 template</td>
+        <td>v1 = 7 个内置 chip；点击 = 把 template 的 prompt prefill 到输入框</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="insight-box">
+    <strong>这是<u>同一套 DDD 后台</u>的三种前端入口：</strong>
+    <ul class="tight" style="margin-top:0.4rem;">
+      <li>用户从 chip 点进 = TaskTemplate prefill → IntentRouter 直接命中 → 进对应 Mode</li>
+      <li>用户从输入框打字 = IntentRouter 自由路由 → 命中或兜底 Chatbot</li>
+      <li>用户从侧栏点旧任务 = 加载 TaskInstance 上下文 → 继续</li>
+    </ul>
+    三条路径共用同一套 Agent / RBAC / Trace / Memory 链路。
+  </div>
+</div>
+
+<!-- ============ Section 4: 设计原则更新 ============ -->
+<div class="section">
+  <h3>④ 设计原则更新（P6 + P7 新增）</h3>
+
+  <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem;">
+    <div class="principle-row">
+      <span class="pr-tag">P1</span>
+      <span>零"任务 / 配置 / Agent / Skill"字眼 — UI 对用户用<u>"对话 / 技能 / 项目"</u>等业务词</span>
+    </div>
+    <div class="principle-row">
+      <span class="pr-tag">P2</span>
+      <span>第一动作即创建，空状态不入库</span>
+    </div>
+    <div class="principle-row">
+      <span class="pr-tag">P3</span>
+      <span>永远显示来源 / 引用 / 置信度</span>
+    </div>
+    <div class="principle-row">
+      <span class="pr-tag">P4</span>
+      <span>诚实失败用主动语态，给具体下一步</span>
+    </div>
+    <div class="principle-row">
+      <span class="pr-tag">P5</span>
+      <span>个人 / 部门 memory 透明但不打扰</span>
+    </div>
+    <div class="principle-row">
+      <span class="pr-tag">P6</span>
+      <span>形态由意图决定，不由用户决定（IntentRouter 做决策）</span>
+    </div>
+    <div class="principle-row">
+      <span class="pr-tag">★ P7</span>
+      <span><strong>显式 affordance ≠ 决策点</strong>。Skill chips 让用户"知道能做什么"，但不强迫先决策；点 chip = prefill 到输入框，仍走单一路由</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Section 5: 还需要决定的问题 ============ -->
+<div class="section">
+  <h3>⑤ 待你定的几个细节</h3>
+
+  <table class="compact">
+    <thead>
+      <tr><th style="width:24%">问题</th><th>选项</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Skill chips 数量</td>
+        <td>v1 给 5 个还是 7 个？给少了 affordance 弱，给多了视觉密；建议起步 5（COB 咨询 / SOP 流程 / 协议筛查 / ISDA 提取 / 准入审批）</td>
+      </tr>
+      <tr>
+        <td>项目分组来源</td>
+        <td>(a) 用户手动创建项目；(b) 系统按 KB 自动分；(c) 按对手方/区域自动 tag。建议 (a) 起步，v2 加 (c) 自动建议</td>
+      </tr>
+      <tr>
+        <td>"技能中心"页面</td>
+        <td>v1 是否上？建议 v1 仅在侧栏留入口但点击只显示 toast"v1.5 上线"，避免页面空跑</td>
+      </tr>
+      <tr>
+        <td>"定时任务"</td>
+        <td>v1 完全不做，但侧栏留位置（呼应 Autodream 路线）</td>
+      </tr>
+      <tr>
+        <td>左侧栏可折叠？</td>
+        <td>建议默认展开，提供顶部 ⊢ 折叠按钮（对齐 Code-Buddy / 悟空都有）</td>
+      </tr>
+      <tr>
+        <td>"新对话" vs "新任务"</td>
+        <td>UI 用"新对话"（用户语义），后端 entity 仍是 TaskInstance（架构语义）— 符合 P1</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ Section 6: 衔接 ============ -->
+<div class="section">
+  <h3>⑥ 与现有 spec 衔接</h3>
+
+  <div class="insight-box insight-warn">
+    本页相对 v1（unified-portal-ux.html）和 spec §5.2 的<strong>主要修改点</strong>：
+    <ul class="tight" style="margin-top:0.4rem;">
+      <li><strong>新增左侧栏</strong>（任务树 + 项目分组 + 二级功能区）→ spec §6.1 前端组件需新增 <code>SidebarPanel</code></li>
+      <li><strong>新增 Skill chips 行</strong> → spec §6.1 新增 <code>SkillChipsBar</code> + 后端 <code>TaskTemplate</code> 暴露 chip 元数据接口</li>
+      <li><strong>输入框下 Mode/Project 切换器</strong> → spec §3.2 IntentRouter 接受 user override（强制走某 Mode）</li>
+      <li><strong>原则 P7 新增</strong> → spec §5 用户语义词汇映射表加入"affordance vs 决策点"约束</li>
+      <li><strong>路由仍是 <code>/</code>(One Portal) + <code>/docs/:taskId</code>(Mode C)</strong>，不变</li>
+    </ul>
+  </div>
+</div>
+
+</div>
+<script src="_paths.js"></script>
+</body>
+</html>

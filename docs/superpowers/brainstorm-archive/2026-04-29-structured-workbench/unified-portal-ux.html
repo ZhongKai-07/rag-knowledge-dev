@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>统一门户 · One Portal + AI 隐形于业务上下文 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  /* App mockup framing */
+  .app-mock {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1rem 0 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    .app-mock { background: #1a1a1c; }
+  }
+  .app-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 1.25rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .app-brand { font-weight: 600; }
+  .app-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+  }
+  .app-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5856d6, #0071e3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .app-body { padding: 2.5rem 2rem; }
+
+  /* Hero block — design philosophy */
+  .philosophy {
+    background: linear-gradient(135deg, rgba(0,113,227,0.06), rgba(88,86,214,0.05));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+  .philosophy h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  .philosophy blockquote {
+    margin: 0.75rem 0;
+    padding: 0.5rem 0 0.5rem 1rem;
+    border-left: 3px solid var(--accent);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+  .philosophy .principle-tag {
+    display: inline-block;
+    padding: 2px 10px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-right: 0.4rem;
+    margin-top: 0.5rem;
+  }
+
+  /* Unified search input */
+  .home-title {
+    font-size: 1.65rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 1.75rem;
+  }
+  .search-wrap {
+    max-width: 640px;
+    margin: 0 auto 1rem;
+  }
+  .search-input {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    cursor: text;
+    transition: all 0.2s;
+  }
+  .search-input:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0,113,227,0.10);
+  }
+  .search-input .si-icon { font-size: 1.2rem; }
+  .search-input .si-hint { flex: 1; }
+  .search-input .si-cmdk {
+    font-size: 0.72rem;
+    background: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  .drop-hint {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text-tertiary);
+    margin-top: 0.6rem;
+  }
+
+  /* Recent compact */
+  .recent-compact {
+    max-width: 640px;
+    margin: 1.75rem auto 0;
+  }
+  .section-divider {
+    color: var(--text-tertiary);
+    font-size: 0.78rem;
+    text-align: center;
+    margin: 1rem 0 0.6rem;
+    letter-spacing: 0.04em;
+  }
+  .recent-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.85rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+    font-size: 0.86rem;
+  }
+  .recent-row .ri-time { color: var(--text-secondary); font-size: 0.76rem; }
+  .recent-row button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 3px 10px;
+    font-size: 0.76rem;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Three modes — adapter cards */
+  .modes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1rem 0 1.5rem;
+  }
+  @media (max-width: 1000px) { .modes-grid { grid-template-columns: 1fr; } }
+  .mode-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .mode-card.A { border-top: 4px solid #0071e3; }
+  .mode-card.B { border-top: 4px solid #ff9f0a; }
+  .mode-card.C { border-top: 4px solid #5856d6; }
+  .mode-head {
+    padding: 0.85rem 1rem 0.4rem;
+    background: var(--bg-secondary);
+  }
+  .mode-head .mh-tag {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.25rem;
+  }
+  .mode-head h4 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+  .mode-head p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+  .mode-body {
+    flex: 1;
+    padding: 0.6rem 1rem 1rem;
+  }
+  .mini-mock {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+  .mini-mock .mm-bubble {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.35rem;
+    border: 1px solid var(--border);
+  }
+  .mini-mock .mm-bubble.user { background: rgba(0,113,227,0.08); border-color: rgba(0,113,227,0.2); }
+  .mini-mock .mm-skill-card {
+    background: rgba(255,159,10,0.08);
+    border: 1px solid rgba(255,159,10,0.3);
+    border-radius: 8px;
+    padding: 0.5rem 0.65rem;
+    margin: 0.35rem 0;
+  }
+  .mini-mock .mm-skill-card .sk-title { font-weight: 600; font-size: 0.8rem; margin-bottom: 0.25rem; }
+  .mini-mock .mm-skill-card .sk-row {
+    display: flex; justify-content: space-between;
+    font-size: 0.74rem; padding: 1px 0;
+  }
+  .mini-mock .mm-skill-card .sk-actions {
+    display: flex; gap: 0.4rem; margin-top: 0.4rem;
+  }
+  .mini-mock .mm-skill-card .sk-actions button {
+    flex: 1; font-size: 0.72rem; padding: 3px 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .mini-mock .mm-skill-card .sk-actions button.primary {
+    background: #ff9f0a; color: white; border-color: #ff9f0a;
+  }
+  .mini-mock .mm-doc-pane {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 0.4rem;
+    height: 130px;
+  }
+  .mini-mock .mm-doc {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem;
+    font-size: 0.7rem;
+    overflow: hidden;
+    color: var(--text-secondary);
+  }
+  .mini-mock .mm-doc mark {
+    background: rgba(88,86,214,0.18);
+    color: var(--text-primary);
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  .mini-mock .mm-side {
+    background: rgba(88,86,214,0.06);
+    border: 1px solid rgba(88,86,214,0.2);
+    border-radius: 6px;
+    padding: 0.4rem;
+    font-size: 0.72rem;
+  }
+  .mini-mock .mm-side .ms-field {
+    display: flex; justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .mini-mock .mm-side .ms-field:last-child { border-bottom: none; }
+  .mini-mock .mm-side .ms-field .ms-conf {
+    font-size: 0.66rem;
+    padding: 0 4px;
+    border-radius: 3px;
+  }
+  .mini-mock .mm-side .ms-field .ms-conf.high { background: rgba(52,199,89,0.15); color: #34c759; }
+  .mini-mock .mm-side .ms-field .ms-conf.mid  { background: rgba(255,159,10,0.18); color: #ff9f0a; }
+
+  .mode-foot {
+    padding: 0.6rem 1rem 0.85rem;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+  .mode-foot strong { color: var(--text-primary); }
+
+  /* Architecture diagram */
+  .arch {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--text-primary);
+  }
+  .arch .layer-label {
+    font-family: system-ui, sans-serif;
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 0.6rem;
+    margin-bottom: 0.2rem;
+  }
+  .arch .layer-label:first-child { margin-top: 0; }
+
+  /* Compact decision table */
+  table.compact {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0.5rem 0 1rem;
+  }
+  table.compact th, table.compact td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box {
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  .nav-bar {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-bar .ch-tag {
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 0.74rem;
+  }
+  .nav-bar a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.82rem;
+  }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 800px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-cell {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .compare-cell h4 { font-size: 0.95rem; margin-bottom: 0.4rem; }
+  .compare-cell .delta { font-size: 0.78rem; color: var(--success); margin-top: 0.3rem; }
+
+  ul.tight { margin-left: 1.1rem; font-size: 0.86rem; }
+  ul.tight li { margin-bottom: 0.25rem; line-height: 1.55; }
+</style>
+</head>
+<body>
+<div class="archive-header">
+  <h1>Brainstorm Archive · 统一门户 UX · One Portal + AI 隐形于业务上下文</h1>
+  <a href="index.html">← back to index</a>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">补章 · 产品形态终态</span> &nbsp; 基于 2026-04-29 调研后修正</span>
+  <span>
+    <a href="16-ux-home.html">↩ 对比：旧版 16-ux-home（2 卡入口）</a>
+    &nbsp;|&nbsp;
+    <a href="product-shape.html">↩ v1 形态选择 (A/B/C)</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+<h2>统一门户 · One Portal + 三态适配</h2>
+<p class="subtitle">
+  前端越简单（One Portal），后端的意图路由（Intent Routing）和 RBAC 要求就越高。<br>
+  统一入口不是"把系统缝合在一起"，而是"建立一个强大的智能调度前台"。
+</p>
+
+<!-- ============ Philosophy ============ -->
+<div class="section">
+  <div class="philosophy">
+    <h3>设计哲学</h3>
+    <blockquote>
+      "AI 应当<strong>隐形于业务上下文</strong>之中。让应用找人，而不是人找应用。"
+    </blockquote>
+    <p style="font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.6rem;">
+      用户不需要认知"我用哪个 KB / 哪个 Agent / 哪个工作流"——业务意图触发后，系统自动选择合适的呈现形态。
+      这要求所有形态共享同一套领域驱动后台（DDD），仅在前端接不同的"入站适配器"（Inbound Adapter）。
+    </p>
+    <span class="principle-tag">P1 · 零技术词暴露</span>
+    <span class="principle-tag">P2 · 第一动作即创建</span>
+    <span class="principle-tag">P3 · 永远显示来源/置信度</span>
+    <span class="principle-tag">P4 · 失败给具体下一步</span>
+    <span class="principle-tag">P5 · Memory 透明不打扰</span>
+    <span class="principle-tag" style="background: rgba(0,113,227,0.12); color: var(--accent);">
+      ★ 新增 P6 · 形态由意图决定，不由用户决定
+    </span>
+  </div>
+</div>
+
+<!-- ============ Section 1: One Portal 主屏 ============ -->
+<div class="section">
+  <h3>① One Portal · 统一入口主屏</h3>
+  <p class="subtitle" style="font-size: 0.86rem;">
+    进入 → 1 秒看到一个搜索框 + 拖拽提示 → 0 决策点。三种交互形态由后端意图路由决定，用户无感。
+  </p>
+
+  <div class="app-mock">
+    <div class="app-topbar">
+      <div class="app-brand">HT KnowledgeBase</div>
+      <div class="app-user">
+        <span>张三 · EU Ops</span>
+        <div class="app-avatar">张</div>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <div class="home-title">今天，我能帮你做什么？</div>
+
+      <div class="search-wrap">
+        <div class="search-input">
+          <span class="si-icon">🔍</span>
+          <span class="si-hint">问一个问题，或把协议拖进来 →</span>
+          <span class="si-cmdk">⌘ K</span>
+        </div>
+        <div class="drop-hint">⤓ 拖文件到任意位置自动识别 · 支持 PDF / DOCX / TXT</div>
+      </div>
+
+      <div class="recent-compact">
+        <div class="section-divider">最近</div>
+        <div class="recent-row">
+          <span>📝 EU MTA 默认值</span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <span class="ri-time">2 小时前</span>
+            <button>继续</button>
+          </span>
+        </div>
+        <div class="recent-row">
+          <span>📤 ISDA_HSBC_2026.pdf · 已提取 18 字段</span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <span class="ri-time">昨天</span>
+            <button>下载 Excel</button>
+          </span>
+        </div>
+        <div class="recent-row">
+          <span>🔍 对手方 HSBC · Notification Time 筛查</span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <span class="ri-time">3 天前</span>
+            <button>查看</button>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight-box">
+    <strong>对比旧版 16-ux-home：</strong>
+    首屏元素从 <strong>6 类（标题/2 卡/最近/部门提醒/顶栏）→ 3 类（标题/输入框/最近）</strong>。
+    "💬 问知识 / 📤 处理文档" 两个能力卡<u>不再作为入口决策点</u>，而是作为<u>后端路由后的呈现结果</u>。
+  </div>
+</div>
+
+<!-- ============ Section 2: 三态适配 ============ -->
+<div class="section">
+  <h3>② 同一前台 · 三种 AI 隐形形态</h3>
+  <p class="subtitle" style="font-size: 0.86rem;">
+    用户在主屏只看到一个搜索框。第一个动作（打字 / 拖文件 / 输入特定意图）后，意图路由决定走哪种形态——
+    <strong>都是同一个用户视角的"我在工作"</strong>，没有"我在用 KB / 用 Agent / 用 Copilot"的认知切换。
+  </p>
+
+  <div class="modes-grid">
+    <!-- Mode A: Chatbot -->
+    <div class="mode-card A">
+      <div class="mode-head">
+        <div class="mh-tag">形态 A · 全局 Chatbot</div>
+        <h4>导航与咨询（SOP / 政策指导）</h4>
+        <p>意图：知识查询、规则解读。<br>路由 → KnowledgeQAAgent + 意图分类后选 KB 子集。</p>
+      </div>
+      <div class="mode-body">
+        <div class="mini-mock">
+          <div class="mm-bubble user">EU 区域 MTA 默认值是多少？</div>
+          <div class="mm-bubble">
+            根据 <strong>COB §3.2</strong>，EU 区域 MTA 默认值为 <strong>€250k</strong>，特殊情形需走 §4.1 审批。
+            <div style="margin-top:0.3rem; font-size:0.7rem; color:var(--text-secondary);">
+              📎 来源：COB Manual §3.2 · §4.1 · 置信度 92%
+            </div>
+          </div>
+          <div class="mm-bubble user" style="font-size:0.74rem;">追问：那 APAC 呢？</div>
+        </div>
+      </div>
+      <div class="mode-foot">
+        <strong>后端路由</strong>：用户输入 → IntentRouter → KnowledgeQAAgent →
+        RAG pipeline（rewrite / retrieve / rerank / cite）。
+      </div>
+    </div>
+
+    <!-- Mode B: Skill Card -->
+    <div class="mode-card B">
+      <div class="mode-head">
+        <div class="mh-tag">形态 B · Chatbot 中吐 Skill 卡片</div>
+        <h4>轻量审批与筛查（Collateral 准入）</h4>
+        <p>意图：跨数据源决策、需要人工审批。<br>路由 → 检索 + 抽取 + 渲染动态交互卡片。</p>
+      </div>
+      <div class="mode-body">
+        <div class="mini-mock">
+          <div class="mm-bubble user">对手方 HSBC 能签 ISDA Master 吗？</div>
+          <div class="mm-skill-card">
+            <div class="sk-title">📋 Collateral 准入筛查 · HSBC</div>
+            <div class="sk-row"><span>对手方评级</span><span>A+ ✓</span></div>
+            <div class="sk-row"><span>白名单状态</span><span>已批 ✓</span></div>
+            <div class="sk-row"><span>历史协议</span><span>3 份历史 MTA</span></div>
+            <div class="sk-row"><span>Collateral 限额</span><span>€50M / €30M 已用</span></div>
+            <div class="sk-actions">
+              <button>查看详情</button>
+              <button class="primary">同意准入</button>
+            </div>
+          </div>
+          <div class="mm-bubble" style="font-size:0.72rem; color:var(--text-secondary);">
+            点击"同意准入"将创建准入记录并通知 Compliance。
+          </div>
+        </div>
+      </div>
+      <div class="mode-foot">
+        <strong>后端路由</strong>：意图 = "审批/筛查" → 调用 KnowledgeQAAgent + DocIntelligenceAgent
+        + ApprovalSkill → 渲染 ActionCard schema。
+      </div>
+    </div>
+
+    <!-- Mode C: Doc Workbench + Copilot -->
+    <div class="mode-card C">
+      <div class="mode-head">
+        <div class="mh-tag">形态 C · 文档工作台 + 侧边 Copilot</div>
+        <h4>重度数据萃取与复核（ISDA / CSA 提取）</h4>
+        <p>意图：文档智能、字段抽取、人工审核。<br>路由 → 进入文档工作台路由，侧边栏 Copilot 辅助。</p>
+      </div>
+      <div class="mode-body">
+        <div class="mini-mock">
+          <div class="mm-doc-pane">
+            <div class="mm-doc">
+              ISDA Master Agreement<br>
+              <br>
+              §1 Definitions...<br>
+              §2 Obligations...<br>
+              §3 Representations<br>
+              <mark>"Threshold Amount"</mark> = <mark>USD 10M</mark><br>
+              §4 Agreements...<br>
+              §5 <mark>Notification Time</mark>: <mark>11:00 NY</mark>
+            </div>
+            <div class="mm-side">
+              <div style="font-weight:600; margin-bottom:0.3rem;">字段抽取</div>
+              <div class="ms-field">
+                <span>Threshold</span>
+                <span>USD 10M <span class="ms-conf high">95%</span></span>
+              </div>
+              <div class="ms-field">
+                <span>Notif Time</span>
+                <span>11:00 NY <span class="ms-conf high">98%</span></span>
+              </div>
+              <div class="ms-field">
+                <span>MTA</span>
+                <span>USD 250k <span class="ms-conf mid">73%</span></span>
+              </div>
+              <div class="ms-field">
+                <span>IA</span>
+                <span>—</span>
+              </div>
+              <div style="margin-top:0.3rem;">
+                <button style="width:100%; font-size:0.7rem; padding:3px; background:#5856d6; color:white; border:none; border-radius:4px; cursor:pointer;">
+                  ↓ 导出 Excel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mode-foot">
+        <strong>后端路由</strong>：拖文件 → 意图 = "文档处理" → 自动跳转到 <code>/docs/:taskId</code> →
+        DocIntelligenceAgent 按 schema 抽取 → 字段卡 + 原文高亮 + 人工复核。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Section 3: Inbound Adapter 共享后台 ============ -->
+<div class="section">
+  <h3>③ 共用 DDD 后台 · 三种入站适配器</h3>
+  <p class="subtitle" style="font-size: 0.86rem;">
+    三种前端形态在后端共用同一套 Domain / Application Service / Agent / RBAC / Trace 链路；
+    差异只在 <strong>Inbound Adapter</strong>（如何接收用户输入、如何渲染响应）。
+  </p>
+
+  <div class="arch">
+<div class="layer-label">前端 · Inbound Adapters</div>
+┌──────────────┬──────────────┬──────────────────────┐
+│ 全局 Chatbot │ Skill Card   │ Doc Workbench         │
+│ (Mode A)     │ Renderer (B) │ + Sidebar Copilot (C) │
+└──────────────┴──────────────┴──────────────────────┘
+       │              │                  │
+       └──── HTTP / SSE / WebSocket ─────┘
+                      ↓
+<div class="layer-label">智能调度前台 · Intent Router (核心新增)</div>
+       ┌────────────────────────────────────────┐
+       │ IntentRouter                            │
+       │  · 文本意图分类（咨询 / 审批 / 抽取）   │
+       │  · 文件类型嗅探（ISDA / GMRA / 通用）   │
+       │  · 用户偏好 + 部门上下文                 │
+       │  → 决定 task_template + agents 组合     │
+       └────────────────────────────────────────┘
+                      ↓
+<div class="layer-label">Application · Task 编排层 (现有 spec §3.1)</div>
+       TaskTemplate · TaskInstance · Orchestrator
+                      ↓
+<div class="layer-label">Domain · Agent 能力库</div>
+       KnowledgeQAAgent  ·  DocIntelligenceAgent
+       ApprovalSkill (新增) · 未来工具编排 Agent
+                      ↓
+<div class="layer-label">底座 · 共享治理</div>
+       KB · RBAC · security_level · Trace · RAGAS
+       OpenSearch · Tika · Sa-Token · MyBatis · MQ
+                      ↓
+<div class="layer-label">横切 · Q&amp;A Ledger + User Memory</div>
+       三种形态都自动落账，Memory 在 prompt 阶段注入
+  </div>
+
+  <div class="insight-success insight-box" style="margin-top: 1rem;">
+    <strong>关键：IntentRouter 是新增层，不是改造现有 RAG。</strong>
+    现有 rewrite / retrieve / rerank 链路被包装进 KnowledgeQAAgent；
+    IntentRouter 在更外层做"意图 → agent 组合 → 形态"决策。
+    这样三种形态可以独立演化，不互相耦合。
+  </div>
+</div>
+
+<!-- ============ Section 4: 与旧设计对比 ============ -->
+<div class="section">
+  <h3>④ 与旧版（16-ux-home · 2 能力卡入口）对比</h3>
+
+  <div class="compare-grid">
+    <div class="compare-cell">
+      <h4>旧版：2 能力卡 + 入口决策</h4>
+      <ul class="tight">
+        <li>用户进入 → 看到"💬 问知识 / 📤 处理文档"</li>
+        <li>需要先决策"我要做哪种事"再进入</li>
+        <li>入口数：2（+ 部门提醒 banner）</li>
+        <li>"协议筛查"硬塞到"📤 处理文档"内的二级菜单</li>
+        <li>用户认知模型：能力 → 任务</li>
+      </ul>
+    </div>
+    <div class="compare-cell">
+      <h4>新版：One Portal + 智能路由</h4>
+      <ul class="tight">
+        <li>用户进入 → 看到一个搜索框</li>
+        <li>动作即意图（打字 / 拖文件），形态自动确定</li>
+        <li>入口数：1</li>
+        <li>"协议筛查"自然走 Mode B（Skill Card）路径</li>
+        <li>用户认知模型：意图 → 系统选形态</li>
+      </ul>
+      <div class="delta">↓ 决策点 -100% · ↑ IntentRouter 复杂度（受控）</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Section 5: 关键设计决策 ============ -->
+<div class="section">
+  <h3>⑤ 8 个关键设计决策</h3>
+
+  <table class="compact">
+    <thead>
+      <tr><th style="width:24%">决策点</th><th>决定</th><th>理由</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>主入口</td>
+        <td>单一搜索框 + 拖拽 hint，<u>不放能力卡</u></td>
+        <td>对齐 Glean / Notion 3.0 / M365 Copilot 趋势；让 AI 隐形于业务上下文</td>
+      </tr>
+      <tr>
+        <td>意图路由层</td>
+        <td>新增 <code>IntentRouter</code> 在 Application 层之上</td>
+        <td>把"形态选择"职责从用户挪到系统；与现有 RAG pipeline 解耦</td>
+      </tr>
+      <tr>
+        <td>形态 A · Chatbot</td>
+        <td>覆盖<u>导航/咨询</u>类意图（占预期流量 70%+）</td>
+        <td>SOP/COB/政策类问题最自然的形态；现有 RAG 直接复用</td>
+      </tr>
+      <tr>
+        <td>形态 B · Skill Card</td>
+        <td>覆盖<u>轻量审批/筛查</u>，在 Chatbot 内动态吐卡</td>
+        <td>Collateral 准入需要"看 + 决策"，不能纯文本；卡片是结构化交付</td>
+      </tr>
+      <tr>
+        <td>形态 C · Doc Workbench</td>
+        <td>覆盖<u>重度抽取/复核</u>，独立路由 <code>/docs/:taskId</code></td>
+        <td>对齐 iManage / ISDA Create 业内惯例；字段卡 + 原文高亮 + 置信度需要专属画布</td>
+      </tr>
+      <tr>
+        <td>形态切换可见性</td>
+        <td>形态 A→B 在同一对话流；A→C 跳路由但保留 task_id 上下文</td>
+        <td>A→B 是对话延续；A→C 是 modal 切换，URL 变更让用户感知"进入审核状态"</td>
+      </tr>
+      <tr>
+        <td>错路由兜底</td>
+        <td>低置信度 IntentRouter 输出 → 走默认 Chatbot + 顶部 chip 让用户切换</td>
+        <td>意图判错代价高（用户已说出问题但走错形态）；置信度阈值 + 用户可纠错</td>
+      </tr>
+      <tr>
+        <td>Cmd+K 命令面板</td>
+        <td>v1 不做（只在搜索框露 hint），v2 加</td>
+        <td>对齐 Notion 3.0；power user 的快捷通道，不占首屏视觉</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ Section 6: 用户故事 ============ -->
+<div class="section">
+  <h3>⑥ 用户故事 — 张三的一天（三种形态自然切换）</h3>
+
+  <div class="insight-box">
+    <strong>9:15 · 形态 A 触发</strong> 张三打开工作台 → 主标题"今天，我能帮你做什么？"。
+    在搜索框输入"EU MTA 默认值是多少？" → IntentRouter 判定 = 咨询 → 进入 Mode A，给答案 + 来源卡。<br><br>
+
+    <strong>11:30 · 形态 B 触发</strong> 收到一个新对手方咨询 → 直接在搜索框打"对手方 HSBC 能签 ISDA Master 吗？"
+    → IntentRouter 判定 = 审批/筛查 → 进入 Mode A 但<u>吐出 Skill Card</u>（Mode B），
+    展示对手方评级 + 限额 + 历史协议 → 张三点"同意准入"，记录入账，通知 Compliance。<br><br>
+
+    <strong>14:00 · 形态 C 触发</strong> 收到 ISDA_HSBC.pdf 上传需求 → 张三<u>直接拖文件到首屏</u>
+    → IntentRouter 判定 = 文档处理 → 自动跳到 <code>/docs/:taskId</code>（Mode C）→
+    左原文高亮、右字段抽取卡（带置信度）→ 张三复核 73% 的 MTA 字段后点"导出 Excel"。<br><br>
+
+    <strong>17:30 · 都没有"创建任务"</strong> 张三全天没有点过"新建/上传/创建"任何东西，
+    没有思考过"我用哪个 KB / 哪个 agent"。<u>他做的 3 件事都自然落账成 task instance，未来都可以"继续"</u>。
+  </div>
+
+  <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.8rem">
+    这套 UX 让张三<u>从来不需要思考</u>：<br>
+    ❌ "我要进哪个页面？"（永远是首页搜索框）<br>
+    ❌ "这是个咨询问题还是审批问题？"（IntentRouter 判定）<br>
+    ❌ "我用哪个 agent？"（用户层根本不知道有 agent 概念）<br>
+    ❌ "怎么从问答切到文档处理？"（拖文件就行 / 系统自动跳路由）
+  </p>
+</div>
+
+<!-- ============ Section 7: 后续 ============ -->
+<div class="section">
+  <h3>⑦ 与现有 spec 的衔接</h3>
+
+  <table class="compact">
+    <thead>
+      <tr><th style="width:30%">现有 spec 章节</th><th>新增 / 修改</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>§3.1 三层 + 横切层</td>
+        <td>在 Application 层之上新增 <code>IntentRouter</code> 子层；不改现有三层职责</td>
+      </tr>
+      <tr>
+        <td>§3.2 Agent 接口</td>
+        <td>新增 <code>ApprovalSkill</code>（Mode B 用），契约保持 <code>Agent&lt;I, O&gt;</code></td>
+      </tr>
+      <tr>
+        <td>§5.1 路由策略</td>
+        <td>主路由从 <code>/tasks</code> → <code>/</code>（One Portal）；新增 <code>/docs/:taskId</code> 给 Mode C</td>
+      </tr>
+      <tr>
+        <td>§5.2 工作台主界面</td>
+        <td>替换为本页 §1 的单输入框设计；旧 16-ux-home 归档为对比参考</td>
+      </tr>
+      <tr>
+        <td>§4 持续学习横切层</td>
+        <td>不动；三种形态都通过 TaskInstance 落账，Memory 注入点不变</td>
+      </tr>
+      <tr>
+        <td>§5.5 用户语义词汇映射</td>
+        <td>新增："形态 A/B/C" 是架构词，UI 从不出现；对用户只是"问问题 / 看建议 / 处理文档"</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="insight-warn insight-box" style="margin-top: 1rem;">
+    <strong>v1 落地优先级建议：</strong><br>
+    1. <strong>Mode A 全量上线</strong>（现有 RAG 直接包成 KnowledgeQAAgent + IntentRouter v0 = always-Chat）<br>
+    2. <strong>Mode C 试点 ISDA 提取</strong>（独立路由 + DocIntelligenceAgent，不依赖 IntentRouter 完美准确度）<br>
+    3. <strong>Mode B 后置</strong>（依赖 ApprovalSkill 框架 + 业务方对"准入卡"字段达成共识）<br>
+    4. <strong>IntentRouter 智能化</strong>（v1 用规则 + 文件嗅探，v2 上 LLM 分类，v3 加用户偏好学习）
+  </div>
+</div>
+
+</div>
+<script src="_paths.js"></script>
+</body>
+</html>

@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>知识与任务平台 · 产品形态说明</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500;600&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF6F0;
+    --bg-card: #FFFFFF;
+    --bg-soft: #F2EDE3;
+    --ink: #14202E;
+    --ink-2: #2D3D52;
+    --muted: #6B6F75;
+    --muted-2: #8E8F92;
+    --line: #DCD5C7;
+    --line-soft: #EBE5D8;
+    --accent: #B23A1F;
+    --accent-soft: #F7E6DD;
+    --accent-deep: #7A2611;
+    --gold: #B5862C;
+    --gold-soft: #F5EBD3;
+    --teal: #2C6E66;
+    --teal-soft: #DCEAE7;
+    --serif: 'Fraunces', 'Noto Serif SC', serif;
+    --sans: 'IBM Plex Sans', 'Noto Sans SC', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 64px;
+  }
+  
+  /* ============ Header ============ */
+  .masthead {
+    border-bottom: 1px solid var(--line);
+    padding: 56px 0 40px;
+    margin-bottom: 64px;
+    position: relative;
+  }
+  .masthead::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 80px;
+    height: 4px;
+    background: var(--accent);
+  }
+  .masthead .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 32px;
+    font-family: var(--mono);
+  }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 56px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 20px;
+    font-variation-settings: "opsz" 144;
+  }
+  .masthead h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .masthead .deck {
+    font-size: 18px;
+    color: var(--ink-2);
+    line-height: 1.55;
+    max-width: 760px;
+    font-weight: 300;
+  }
+  .masthead .byline {
+    margin-top: 32px;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    font-family: var(--mono);
+    display: flex;
+    gap: 24px;
+  }
+  .masthead .byline span::before {
+    content: '— ';
+    color: var(--muted-2);
+  }
+  
+  /* ============ Section ============ */
+  section {
+    margin-bottom: 88px;
+    scroll-margin-top: 24px;
+  }
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: inline-block;
+  }
+  .sec-title {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 38px;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin-bottom: 14px;
+    font-variation-settings: "opsz" 96;
+  }
+  .sec-deck {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 720px;
+    margin-bottom: 40px;
+    line-height: 1.6;
+  }
+  
+  /* ============ Lede paragraph ============ */
+  .lede {
+    font-family: var(--serif);
+    font-size: 22px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    font-weight: 400;
+    margin-bottom: 32px;
+    max-width: 880px;
+    font-variation-settings: "opsz" 36;
+  }
+  .lede strong { color: var(--accent-deep); font-weight: 600; }
+  
+  p {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--ink-2);
+    margin-bottom: 16px;
+    max-width: 780px;
+  }
+  p strong { color: var(--ink); font-weight: 600; }
+  
+  /* ============ Pull quote ============ */
+  .pull {
+    border-left: 3px solid var(--accent);
+    padding: 8px 0 8px 28px;
+    margin: 28px 0;
+    font-family: var(--serif);
+    font-size: 20px;
+    line-height: 1.5;
+    color: var(--ink);
+    font-weight: 400;
+    max-width: 720px;
+    font-style: italic;
+  }
+  
+  /* ============ Three-column "What we are not / are" ============ */
+  .stance {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-top: 32px;
+  }
+  .stance-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line-soft);
+    padding: 28px 24px 24px;
+    position: relative;
+  }
+  .stance-card.deny {
+    background: var(--bg);
+  }
+  .stance-card.affirm {
+    background: var(--ink);
+    color: #FAF6F0;
+    border-color: var(--ink);
+  }
+  .stance-card .label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    margin-bottom: 16px;
+  }
+  .stance-card.affirm .label {
+    color: var(--accent);
+  }
+  .stance-card h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    line-height: 1.25;
+    font-weight: 500;
+    margin-bottom: 10px;
+    letter-spacing: -0.01em;
+  }
+  .stance-card.deny h3 {
+    color: var(--ink-2);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--accent);
+  }
+  .stance-card .desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .stance-card.affirm .desc {
+    color: #DDD5C5;
+  }
+  
+  /* ============ Task primitive cards ============ */
+  .primitives {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    margin-top: 16px;
+  }
+  .prim {
+    display: grid;
+    grid-template-columns: 80px 1fr 280px;
+    gap: 32px;
+    padding: 36px 0;
+    border-top: 1px solid var(--line);
+    align-items: start;
+  }
+  .prim:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+  .prim .num {
+    font-family: var(--serif);
+    font-size: 56px;
+    line-height: 1;
+    color: var(--accent);
+    font-weight: 300;
+    font-variation-settings: "opsz" 144;
+  }
+  .prim h3 {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .prim .en {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .prim .body {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    margin-bottom: 16px;
+  }
+  .prim .scenario {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    letter-spacing: 0.02em;
+  }
+  .prim .scenario.future {
+    background: var(--bg-soft);
+    color: var(--muted);
+  }
+  .prim-meta {
+    background: var(--bg-soft);
+    padding: 18px 20px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--ink-2);
+  }
+  .prim-meta dl {
+    display: grid;
+    grid-template-columns: 70px 1fr;
+    gap: 6px 12px;
+  }
+  .prim-meta dt {
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-top: 2px;
+  }
+  .prim-meta dd {
+    color: var(--ink);
+    font-weight: 500;
+    font-size: 12px;
+  }
+  
+  /* ============ Workbench grid ============ */
+  .workbenches {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-top: 16px;
+  }
+  .wb {
+    background: var(--bg-card);
+    padding: 28px 28px 24px;
+  }
+  .wb .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .wb h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .wb .desc {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .wb .feats {
+    list-style: none;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 14px;
+  }
+  .wb .feats li {
+    font-size: 12px;
+    color: var(--ink-2);
+    padding: 4px 0 4px 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .wb .feats li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 11px;
+    width: 6px;
+    height: 1px;
+    background: var(--accent);
+  }
+  .wb.future {
+    background: var(--bg-soft);
+  }
+  .wb.future .tag {
+    color: var(--accent);
+  }
+  
+  /* ============ Diff matrix ============ */
+  .diff-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 16px;
+    font-size: 13px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+  }
+  .diff-table th, .diff-table td {
+    padding: 14px 18px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .diff-table th {
+    background: var(--bg-soft);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 1px solid var(--line);
+  }
+  .diff-table td.dim {
+    font-weight: 600;
+    color: var(--ink);
+    width: 18%;
+  }
+  .diff-table tr:last-child td {
+    border-bottom: none;
+  }
+  .diff-table .ours {
+    background: #F9F0E9;
+    color: var(--accent-deep);
+    font-weight: 500;
+  }
+  
+  /* ============ Glossary ============ */
+  .glossary {
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--line);
+    margin-top: 16px;
+  }
+  .gl-row {
+    display: grid;
+    grid-template-columns: 220px 240px 1fr;
+    gap: 24px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line-soft);
+    align-items: baseline;
+  }
+  .gl-row:last-child { border-bottom: none; }
+  .gl-term {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .gl-en {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .gl-def {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.65;
+  }
+  .gl-def .warn {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    padding: 1px 8px;
+    font-size: 11px;
+    font-family: var(--mono);
+    margin-left: 4px;
+    letter-spacing: 0.04em;
+  }
+  
+  /* ============ TOC ============ */
+  .toc {
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 24px 0;
+    margin-bottom: 80px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px 24px;
+  }
+  .toc a {
+    text-decoration: none;
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.5;
+    display: block;
+    transition: color 0.15s;
+  }
+  .toc a:hover { color: var(--accent); }
+  .toc a .n {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 4px;
+    letter-spacing: 0.1em;
+  }
+  
+  /* ============ Footer ============ */
+  footer {
+    border-top: 1px solid var(--line);
+    margin-top: 96px;
+    padding: 40px 0 64px;
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+  }
+  
+  /* ============ SVG containers ============ */
+  .svg-frame {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 32px;
+    margin: 24px 0 8px;
+  }
+  .svg-frame.tight { padding: 24px; }
+  .fig-cap {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 12px;
+    margin-bottom: 32px;
+  }
+  .fig-cap strong {
+    color: var(--ink);
+    font-weight: 500;
+    margin-right: 8px;
+  }
+  
+  /* ============ Mapping rows ============ */
+  .map-table {
+    width: 100%;
+    margin-top: 16px;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .map-table thead th {
+    text-align: left;
+    padding: 10px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    border-bottom: 2px solid var(--ink);
+  }
+  .map-table tbody td {
+    padding: 16px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .map-table .col-scn {
+    font-weight: 500;
+    color: var(--ink);
+    width: 22%;
+  }
+  .map-table .col-current {
+    color: var(--muted);
+    font-size: 12px;
+    width: 28%;
+  }
+  .map-table .col-prim {
+    width: 22%;
+  }
+  .map-table .col-prim .pill {
+    display: inline-block;
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    padding: 3px 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+  }
+  .map-table .col-wb {
+    color: var(--ink-2);
+    font-size: 12px;
+  }
+  
+  /* ============ Differentiation matrix ============ */
+  .diff-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .competitor {
+    background: var(--bg-card);
+    border: 1px solid var(--line-soft);
+    padding: 24px;
+  }
+  .competitor.us {
+    background: var(--ink);
+    color: #FAF6F0;
+    border-color: var(--ink);
+  }
+  .competitor h4 {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .competitor.us h4 { color: var(--accent); }
+  .competitor .stub {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    letter-spacing: 0.06em;
+  }
+  .competitor.us .stub { color: #DDD5C5; }
+  .competitor .gap-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    margin-bottom: 6px;
+    margin-top: 12px;
+  }
+  .competitor.us .gap-label { color: var(--gold); }
+  .competitor .gap-text {
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+  .competitor.us .gap-text { color: #EFE9DD; }
+  
+  /* ============ Industry insights ============ */
+  .insights {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin: 24px 0 32px;
+  }
+  .insight {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 28px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .insight::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 36px;
+    height: 2px;
+    background: var(--accent);
+  }
+  .ins-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .ins-source {
+    font-family: var(--serif);
+    font-size: 13px;
+    font-style: italic;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .insight h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.25;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+  }
+  .ins-body {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    margin-bottom: 18px;
+    flex: 1;
+  }
+  .ins-body strong { color: var(--ink); font-weight: 600; }
+  .ins-impl {
+    background: var(--bg-soft);
+    padding: 14px 16px;
+    margin-top: auto;
+    border-left: 2px solid var(--gold);
+  }
+  .ins-impl-l {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .ins-impl-t {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink);
+  }
+  .ins-impl-t strong { color: var(--ink); font-weight: 600; }
+  
+  /* ============ Manifesto block ============ */
+  .manifesto {
+    background: var(--ink);
+    color: #FAF6F0;
+    padding: 40px 44px;
+    margin: 32px 0 16px;
+    position: relative;
+  }
+  .manifesto::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 80px;
+    height: 4px;
+    background: var(--accent);
+  }
+  .manifesto .m-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .manifesto .m-title {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 400;
+    line-height: 1.3;
+    margin-bottom: 18px;
+    letter-spacing: -0.01em;
+    font-variation-settings: "opsz" 96;
+  }
+  .manifesto .m-title em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .manifesto .m-body {
+    font-size: 14px;
+    line-height: 1.75;
+    color: #DDD5C5;
+    max-width: 760px;
+  }
+  .manifesto .m-body strong { color: #FAF6F0; font-weight: 500; }
+  
+  @media (max-width: 880px) {
+    .page { padding: 0 24px; }
+    .masthead h1 { font-size: 36px; }
+    .stance, .workbenches, .diff-grid, .toc, .insights { grid-template-columns: 1fr; }
+    .prim { grid-template-columns: 1fr; }
+    .gl-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ Masthead ============ -->
+  <header class="masthead">
+    <div class="meta">
+      <span>OPS · AI Platform · Internal Alignment</span>
+      <span>v0.1 · Draft for review</span>
+    </div>
+    <h1>从问答系统<br>到<em>任务化平台</em></h1>
+    <p class="deck">为什么 Ops 部门的下一代 AI 产品不该是 "更智能的 RAG 知识库",也不是 "另一个 Coze 式的 Agent 工厂",而应该是面向真实业务任务的结构化工作台。这份文档面向 Tech Lead、产品 owner 与 leadership,用于在动手开发前对齐定位、形态与术语。</p>
+    <div class="byline">
+      <span>Document type: Product positioning</span>
+      <span>Companion: Architecture spec</span>
+    </div>
+  </header>
+
+  <!-- ============ TOC ============ -->
+  <nav class="toc">
+    <a href="#sec-1"><span class="n">§ 01</span>问题与起点</a>
+    <a href="#sec-2"><span class="n">§ 02</span>业内启发</a>
+    <a href="#sec-3"><span class="n">§ 03</span>产品定位</a>
+    <a href="#sec-4"><span class="n">§ 04</span>需求映射</a>
+    <a href="#sec-5"><span class="n">§ 05</span>五种任务原语</a>
+    <a href="#sec-6"><span class="n">§ 06</span>工作台清单</a>
+    <a href="#sec-7"><span class="n">§ 07</span>知识飞轮</a>
+    <a href="#sec-8"><span class="n">§ 08</span>差异化定位</a>
+    <a href="#sec-9"><span class="n">§ 09</span>统一术语</a>
+  </nav>
+
+  <!-- ============ Section 1: 问题与起点 ============ -->
+  <section id="sec-1">
+    <div class="sec-num">§ 01</div>
+    <h2 class="sec-title">问题与起点</h2>
+    <p class="sec-deck">为什么我们必须从 "知识库问答" 升级到一个新的产品形态。</p>
+
+    <p class="lede">我们最初的命题是: 用 RAG 为 Ops 各团队搭建一个智能问答系统。<strong>但随着业务深入,我们遇到了三个 RAG 范式无法承载的真实需求</strong>——它们让我们不得不重新思考产品的形态边界。</p>
+
+    <div class="svg-frame">
+      <svg viewBox="0 0 1080 380" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
+        <defs>
+          <marker id="arrow1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#14202E" stroke-width="1.5"/>
+          </marker>
+        </defs>
+        <!-- Title strip -->
+        <text x="40" y="34" font-family="IBM Plex Mono" font-size="11" fill="#6B6F75" letter-spacing="2">SCENARIO MAP</text>
+        <line x1="40" y1="48" x2="1040" y2="48" stroke="#DCD5C7" stroke-width="1"/>
+        
+        <!-- Left column: original ask -->
+        <text x="40" y="84" font-family="Fraunces" font-size="14" fill="#6B6F75" font-style="italic">最初命题</text>
+        <rect x="40" y="100" width="240" height="220" fill="#FFFFFF" stroke="#DCD5C7" stroke-width="1"/>
+        <text x="60" y="132" font-family="Noto Serif SC" font-size="17" font-weight="500" fill="#14202E">RAG 知识库问答</text>
+        <text x="60" y="160" font-family="IBM Plex Sans" font-size="12" fill="#6B6F75">单一形态:</text>
+        <text x="60" y="180" font-family="IBM Plex Sans" font-size="12" fill="#2D3D52">用户提问 → 检索 → 答复</text>
+        
+        <line x1="60" y1="204" x2="260" y2="204" stroke="#EBE5D8"/>
+        <text x="60" y="228" font-family="IBM Plex Mono" font-size="10" fill="#6B6F75" letter-spacing="1">SCOPE</text>
+        <text x="60" y="248" font-family="IBM Plex Sans" font-size="12" fill="#14202E">COB Chatbot</text>
+        <text x="60" y="268" font-family="IBM Plex Sans" font-size="12" fill="#14202E">SOP Chatbot</text>
+        <text x="60" y="296" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F">→ RAG 完全胜任</text>
+        
+        <!-- Arrow -->
+        <line x1="295" y1="210" x2="365" y2="210" stroke="#14202E" stroke-width="1" marker-end="url(#arrow1)"/>
+        <text x="297" y="200" font-family="IBM Plex Mono" font-size="10" fill="#6B6F75">业务深入</text>
+        
+        <!-- Right column: reality -->
+        <text x="385" y="84" font-family="Fraunces" font-size="14" fill="#B23A1F" font-style="italic">业务真实场景</text>
+        
+        <!-- Three challenge cards -->
+        <g>
+          <rect x="385" y="100" width="208" height="100" fill="#F9F0E9" stroke="#B23A1F" stroke-width="0.5"/>
+          <text x="400" y="124" font-family="IBM Plex Mono" font-size="10" fill="#7A2611" letter-spacing="1">CHALLENGE 1</text>
+          <text x="400" y="148" font-family="Noto Serif SC" font-size="14" font-weight="500" fill="#14202E">Colleteral 智能筛查</text>
+          <text x="400" y="170" font-family="IBM Plex Sans" font-size="11" fill="#2D3D52">"问答 + 字段抽取" 混合体</text>
+          <text x="400" y="186" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75">RAG 只能召回,无法稳定取值</text>
+        </g>
+        
+        <g>
+          <rect x="385" y="216" width="208" height="100" fill="#F9F0E9" stroke="#B23A1F" stroke-width="0.5"/>
+          <text x="400" y="240" font-family="IBM Plex Mono" font-size="10" fill="#7A2611" letter-spacing="1">CHALLENGE 2</text>
+          <text x="400" y="264" font-family="Noto Serif SC" font-size="14" font-weight="500" fill="#14202E">协议智能提取</text>
+          <text x="400" y="286" font-family="IBM Plex Sans" font-size="11" fill="#2D3D52">PDF → 固定模板 Excel</text>
+          <text x="400" y="302" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75">输入是文档,输出是结构化数据</text>
+        </g>
+        
+        <g>
+          <rect x="612" y="100" width="208" height="100" fill="#FFF8EC" stroke="#B5862C" stroke-width="0.5"/>
+          <text x="627" y="124" font-family="IBM Plex Mono" font-size="10" fill="#B5862C" letter-spacing="1">CHALLENGE 3 · FUTURE</text>
+          <text x="627" y="148" font-family="Noto Serif SC" font-size="14" font-weight="500" fill="#14202E">复杂指令</text>
+          <text x="627" y="170" font-family="IBM Plex Sans" font-size="11" fill="#2D3D52">跨工具的多步骤执行</text>
+          <text x="627" y="186" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75">需要规划、工具调用、回滚</text>
+        </g>
+        
+        <g>
+          <rect x="612" y="216" width="208" height="100" fill="#FFF8EC" stroke="#B5862C" stroke-width="0.5"/>
+          <text x="627" y="240" font-family="IBM Plex Mono" font-size="10" fill="#B5862C" letter-spacing="1">CHALLENGE 4 · FUTURE</text>
+          <text x="627" y="264" font-family="Noto Serif SC" font-size="14" font-weight="500" fill="#14202E">问题排查</text>
+          <text x="627" y="286" font-family="IBM Plex Sans" font-size="11" fill="#2D3D52">异常 → 假设 → 验证</text>
+          <text x="627" y="302" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75">不是回答,是辅助诊断</text>
+        </g>
+        
+        <!-- Conclusion -->
+        <line x1="840" y1="210" x2="900" y2="210" stroke="#14202E" stroke-width="1" marker-end="url(#arrow1)"/>
+        
+        <rect x="915" y="140" width="125" height="140" fill="#14202E"/>
+        <text x="977.5" y="178" font-family="Fraunces" font-size="14" font-weight="500" fill="#B23A1F" text-anchor="middle">结论</text>
+        <line x1="947" y1="194" x2="1008" y2="194" stroke="#B23A1F"/>
+        <text x="977.5" y="220" font-family="Noto Serif SC" font-size="13" fill="#FAF6F0" text-anchor="middle">不能塞进</text>
+        <text x="977.5" y="240" font-family="Noto Serif SC" font-size="13" fill="#FAF6F0" text-anchor="middle">"知识库"</text>
+        <text x="977.5" y="262" font-family="IBM Plex Mono" font-size="10" fill="#DDD5C5" text-anchor="middle">这一个壳里</text>
+      </svg>
+    </div>
+    <div class="fig-cap"><strong>图 01</strong>从单一 RAG 命题到四类真实业务场景的演化</div>
+
+    <p>这四个场景的<strong>形态相似但本质不同</strong>:输入形态(自然语言 vs 文档)、输出形态(文本 vs 结构化数据)、执行模式(单轮检索 vs 确定性 Pipeline vs Agent loop)、失败成本(重新问 vs 法律风险)、可复用性(一次性 vs 模板化)——五个维度上几乎全不一样。如果我们继续用 "Chatbot 加几个功能" 的方式去 cover,只会越做越乱。</p>
+
+    <p class="pull">真正的产品形态,是 Ops 同事每天工作里的 <em>"任务"</em> 本身——不是 "问答",也不是 "Agent"。</p>
+  </section>
+
+  <!-- ============ Section 2: 业内启发 ============ -->
+  <section id="sec-2">
+    <div class="sec-num">§ 02</div>
+    <h2 class="sec-title">业内启发</h2>
+    <p class="sec-deck">设计这套架构不是凭空而来。它根植于业内最近两年关于 AI、知识与 Agent 的几个核心命题。这一章梳理给我们带来根本性启发的四个洞察,以及它们如何转化为我们的设计原则。</p>
+
+    <p class="lede">这四个启发汇聚成一个判断: <strong>下一代企业 AI 产品,不再是 "把 AI 接入系统",而是 "把系统建立在 AI 之上"</strong>。我们要做的,是一个 AI 原生的工作台,不是给 RAG 加几个功能。</p>
+
+    <div class="insights">
+
+      <div class="insight">
+        <div class="ins-num">INSIGHT 01</div>
+        <div class="ins-source">LLM Wiki · 知识沉淀派</div>
+        <h3>RAG 不该每次从零检索</h3>
+        <div class="ins-body">RAG 的根本缺陷,是把每一次问答都当作 <strong>"从零开始的检索任务"</strong>——知识不沉淀、不结晶、不升级。理想形态是让 LLM 真正 "懂" 知识库,而不是每次重新翻一遍语料。高频问答应该被验证、被收敛、成为 canonical 知识,下一个相同的问题不再走 RAG,而是直接命中已沉淀的答案。</div>
+        <div class="ins-impl">
+          <div class="ins-impl-l">→ 给我们的指导</div>
+          <div class="ins-impl-t">任务产物必须有<strong>反向沉淀通道</strong>(知识飞轮)。审核通过的高频 Q&amp;A 升级为知识资产,而不是埋在对话日志里。RAG 是兜底机制,不是唯一机制。</div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <div class="ins-num">INSIGHT 02</div>
+        <div class="ins-source">Claude Code Memory · mem0</div>
+        <h3>分级记忆是 Agent 的下半场</h3>
+        <div class="ins-body">上半场拼模型能力,下半场拼<strong>上下文工程</strong>。让 Agent 懂用户、懂场景、懂历史,核心是分级记忆——短期工作记忆(本次任务上下文)、中期 episodic 记忆(用户历史行为)、长期语义记忆(空间共享知识)。这是上下文工程的精髓,也是 Agent 从 "能用" 到 "好用" 的分水岭。</div>
+        <div class="ins-impl">
+          <div class="ins-impl-l">→ 给我们的指导</div>
+          <div class="ins-impl-t"><strong>三层记忆架构</strong>: 任务级 / 用户级 / 空间级。上下文不是单次 prompt,是持续构建、持续升级的资产。Memory 严格按 Space 隔离,符合金融合规要求。</div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <div class="ins-num">INSIGHT 03</div>
+        <div class="ins-source">ChatGPT Pulse</div>
+        <h3>从被动响应到主动洞察</h3>
+        <div class="ins-body">Pulse 把 "用户问 → AI 答" 的被动模式,改造为 <strong>"AI 主动洞察 → 用户响应"</strong> 的主动模式。AI 不再是一个永远等待提问的工具,而是一个会主动发现、主动提示的同事。这代表了 AI 助手交互范式的根本转变——从工具变成同事。</div>
+        <div class="ins-impl">
+          <div class="ins-impl-l">→ 给我们的指导</div>
+          <div class="ins-impl-t">系统的终极形态包含主动 Pulse,但金融场景必须<strong>严格分级</strong>: 先做内部观察类(本周高频咨询、知识缺口报告),不碰对客建议。Pulse 排在 Phase 4,是远期能力。</div>
+        </div>
+      </div>
+
+      <div class="insight">
+        <div class="ins-num">INSIGHT 04</div>
+        <div class="ins-source">业内对 AI 开发本质的共识</div>
+        <h3>AI 替代了原本的 if-else</h3>
+        <div class="ins-body">AI 开发的本质,是用大模型在<strong>预训练阶段固化的知识</strong>,加上人类在后续提供的内容(post-training、上下文工程、提示工程),去解决现实里 70% 原本必须用 if-else / 规则引擎硬编码的"软逻辑"问题。从 Pretrain → Post-train → Context → Prompt,本质上是把规则塑造的责任,从程序员手里转交给一条<strong>知识与提示的流水线</strong>。</div>
+        <div class="ins-impl">
+          <div class="ins-impl-l">→ 给我们的指导</div>
+          <div class="ins-impl-t">不再用传统硬编码思维做产品。规则、判断、流程交给 LLM 承载,通过 <strong>schema、提示、上下文、记忆</strong>塑造行为。这是 AI native 思维,也是这套架构和传统软件架构最大的差异。</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="svg-frame">
+      <svg viewBox="0 0 1080 530" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
+        <defs>
+          <marker id="arInsight" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#14202E" stroke-width="1.2"/>
+          </marker>
+        </defs>
+        
+        <text x="40" y="32" font-family="IBM Plex Mono" font-size="11" fill="#6B6F75" letter-spacing="2">FROM INDUSTRY INSIGHTS TO DESIGN PRINCIPLES</text>
+        <line x1="40" y1="46" x2="1040" y2="46" stroke="#DCD5C7"/>
+        
+        <!-- Layer label -->
+        <text x="40" y="70" font-family="Fraunces" font-size="13" font-style="italic" fill="#B23A1F">业内启发</text>
+        
+        <!-- 4 insight cards (top row) -->
+        <g>
+          <rect x="40" y="82" width="232" height="92" fill="#FFFFFF" stroke="#B23A1F" stroke-width="0.5"/>
+          <text x="156" y="106" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F" text-anchor="middle" letter-spacing="1">INSIGHT 01</text>
+          <text x="156" y="130" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">LLM Wiki</text>
+          <text x="156" y="150" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">知识沉淀</text>
+          <text x="156" y="166" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">不再 0 检索</text>
+        </g>
+        <g>
+          <rect x="296" y="82" width="232" height="92" fill="#FFFFFF" stroke="#B23A1F" stroke-width="0.5"/>
+          <text x="412" y="106" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F" text-anchor="middle" letter-spacing="1">INSIGHT 02</text>
+          <text x="412" y="130" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">分级记忆</text>
+          <text x="412" y="150" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">Agent 下半场</text>
+          <text x="412" y="166" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">上下文工程精髓</text>
+        </g>
+        <g>
+          <rect x="552" y="82" width="232" height="92" fill="#FFFFFF" stroke="#B23A1F" stroke-width="0.5"/>
+          <text x="668" y="106" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F" text-anchor="middle" letter-spacing="1">INSIGHT 03</text>
+          <text x="668" y="130" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">ChatGPT Pulse</text>
+          <text x="668" y="150" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">被动 → 主动</text>
+          <text x="668" y="166" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">Proactive Agent</text>
+        </g>
+        <g>
+          <rect x="808" y="82" width="232" height="92" fill="#FFFFFF" stroke="#B23A1F" stroke-width="0.5"/>
+          <text x="924" y="106" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F" text-anchor="middle" letter-spacing="1">INSIGHT 04</text>
+          <text x="924" y="130" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">AI 替代 if-else</text>
+          <text x="924" y="150" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">LLM 承载软逻辑</text>
+          <text x="924" y="166" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">替代 70% 规则代码</text>
+        </g>
+        
+        <!-- Vertical arrows -->
+        <line x1="156" y1="174" x2="156" y2="222" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        <line x1="412" y1="174" x2="412" y2="222" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        <line x1="668" y1="174" x2="668" y2="222" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        <line x1="924" y1="174" x2="924" y2="222" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        
+        <!-- Layer label -->
+        <text x="40" y="216" font-family="Fraunces" font-size="13" font-style="italic" fill="#B5862C">设计原则</text>
+        
+        <!-- 4 principle cards (middle row) -->
+        <g>
+          <rect x="40" y="228" width="232" height="92" fill="#F5EBD3" stroke="#B5862C" stroke-width="0.5"/>
+          <text x="156" y="252" font-family="IBM Plex Mono" font-size="10" fill="#B5862C" text-anchor="middle" letter-spacing="1">PRINCIPLE 01</text>
+          <text x="156" y="276" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">任务化 + 飞轮</text>
+          <text x="156" y="296" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">产物可沉淀</text>
+          <text x="156" y="312" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">Q&amp;A 结晶为资产</text>
+        </g>
+        <g>
+          <rect x="296" y="228" width="232" height="92" fill="#F5EBD3" stroke="#B5862C" stroke-width="0.5"/>
+          <text x="412" y="252" font-family="IBM Plex Mono" font-size="10" fill="#B5862C" text-anchor="middle" letter-spacing="1">PRINCIPLE 02</text>
+          <text x="412" y="276" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">三层 Memory</text>
+          <text x="412" y="296" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">任务 / 用户 / 空间</text>
+          <text x="412" y="312" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">上下文是资产</text>
+        </g>
+        <g>
+          <rect x="552" y="228" width="232" height="92" fill="#F5EBD3" stroke="#B5862C" stroke-width="0.5"/>
+          <text x="668" y="252" font-family="IBM Plex Mono" font-size="10" fill="#B5862C" text-anchor="middle" letter-spacing="1">PRINCIPLE 03</text>
+          <text x="668" y="276" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">主动 Pulse · 分级</text>
+          <text x="668" y="296" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">内部洞察先行</text>
+          <text x="668" y="312" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">合规护栏严守</text>
+        </g>
+        <g>
+          <rect x="808" y="228" width="232" height="92" fill="#F5EBD3" stroke="#B5862C" stroke-width="0.5"/>
+          <text x="924" y="252" font-family="IBM Plex Mono" font-size="10" fill="#B5862C" text-anchor="middle" letter-spacing="1">PRINCIPLE 04</text>
+          <text x="924" y="276" font-family="Noto Serif SC" font-size="13" font-weight="500" fill="#14202E" text-anchor="middle">LLM 承载逻辑</text>
+          <text x="924" y="296" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">规则 / 判断 / 流程</text>
+          <text x="924" y="312" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">交给提示与上下文</text>
+        </g>
+        
+        <!-- Converging arrows to center -->
+        <path d="M 156 320 Q 156 360 410 396" fill="none" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        <path d="M 412 320 Q 412 360 480 396" fill="none" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        <path d="M 668 320 Q 668 360 600 396" fill="none" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        <path d="M 924 320 Q 924 360 670 396" fill="none" stroke="#14202E" stroke-width="1" marker-end="url(#arInsight)"/>
+        
+        <!-- Center bottom: AI Native Workbench -->
+        <rect x="320" y="402" width="440" height="108" fill="#14202E"/>
+        <rect x="320" y="402" width="80" height="3" fill="#B23A1F"/>
+        <text x="540" y="436" font-family="Fraunces" font-size="22" font-weight="500" fill="#FAF6F0" text-anchor="middle">AI 原生工作台</text>
+        <text x="540" y="458" font-family="IBM Plex Mono" font-size="11" fill="#B23A1F" text-anchor="middle" letter-spacing="3">AI-NATIVE WORKBENCH</text>
+        <line x1="430" y1="470" x2="650" y2="470" stroke="#B23A1F" stroke-width="0.5"/>
+        <text x="540" y="492" font-family="IBM Plex Sans" font-size="11.5" fill="#DDD5C5" text-anchor="middle" font-style="italic">不是把 AI 接入系统,而是把系统建立在 AI 之上</text>
+      </svg>
+    </div>
+    <div class="fig-cap"><strong>图 02</strong>四个业内启发如何汇聚为四条设计原则,共同支撑 AI 原生工作台</div>
+
+    <div class="manifesto">
+      <div class="m-label">AI-NATIVE MANIFESTO</div>
+      <div class="m-title">用 AI 思维<em> 重构系统</em>,不是给系统<em> 加 AI</em></div>
+      <div class="m-body">这四条启发放在一起看,我们要做的事就清晰了: 一个<strong>有持续记忆、有主动能力、有知识沉淀、用 LLM-native 方式承载业务逻辑</strong>的工作台。它不是 RAG 系统的升级版,是<strong>另一个物种</strong>。这意味着团队在做技术选型和功能拆解时,需要从 "在已有架构上加 AI 能力" 的思路,切换到 "AI 是一等组件,围绕它组织整个系统" 的思路。</div>
+    </div>
+
+    <p>这种切换不是术语层面的差异,而是<strong>设计动力学的差异</strong>。传统系统是 "用代码定义行为",LLM-native 系统是 "用上下文塑造行为"; 传统系统的智能在编译期固化,LLM-native 系统的智能在运行时被持续注入(通过 schema、prompt、记忆、检索)。这意味着我们的代码量会减少,但<strong>提示词、模板、上下文资产的设计量会大幅增加</strong>——这恰恰是接下来五大原语和工作台层的核心工作。</p>
+  </section>
+
+  <!-- ============ Section 3: 产品定位 ============ -->
+  <section id="sec-3">
+    <div class="sec-num">§ 03</div>
+    <h2 class="sec-title">产品定位:三个"不是",一个"是"</h2>
+    <p class="sec-deck">在金融受监管环境下,我们要做的产品有清晰的边界和反边界。</p>
+
+    <div class="stance">
+      <div class="stance-card deny">
+        <div class="label">Not 01</div>
+        <h3>不是<br>智能知识库</h3>
+        <div class="desc">RAG 只是底层能力之一。我们要承载的任务远不止 "问答",还有抽取、混合检索、复杂指令、问题排查。</div>
+      </div>
+      <div class="stance-card deny">
+        <div class="label">Not 02</div>
+        <h3>不是<br>Agent 工厂</h3>
+        <div class="desc">我们不像 Coze / Dify 让用户自由拼装 Agent。受监管环境下的产品逻辑是 "任务先行,Agent 是任务的执行形态之一"。</div>
+      </div>
+      <div class="stance-card deny">
+        <div class="label">Not 03</div>
+        <h3>不是<br>横向 Copilot</h3>
+        <div class="desc">不像 Microsoft Copilot / Gemini Enterprise 在已有数据上叠 AI。我们主动培育和治理知识资产,做合规可审计的运营平台。</div>
+      </div>
+      <div class="stance-card affirm">
+        <div class="label">What we are</div>
+        <h3>面向业务任务的<br>结构化工作台</h3>
+        <div class="desc">把 Ops 真实工作流里的 "任务" 抽象为产品的一等公民。不同任务有不同执行原语、不同 UI、不同产物,但共享底层能力,统一治理与沉淀。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Section 4: 业务需求映射 ============ -->
+  <section id="sec-4">
+    <div class="sec-num">§ 04</div>
+    <h2 class="sec-title">业务需求 → 任务原语 映射</h2>
+    <p class="sec-deck">把 Ops 部门四个核心场景映射到平台的执行原语,这是产品化的第一步。</p>
+
+    <table class="map-table">
+      <thead>
+        <tr>
+          <th>业务场景</th>
+          <th>当前承载方式</th>
+          <th>映射到原语</th>
+          <th>对应工作台</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-scn">COB Chatbot<br><span style="font-weight:400;color:#6B6F75;font-size:12px">制度守则、操作流程问答</span></td>
+          <td class="col-current">已有 RAG Chatbot 形态承载,功能基本满足</td>
+          <td class="col-prim"><span class="pill">Retrieval QA</span></td>
+          <td class="col-wb">知识问答工作台</td>
+        </tr>
+        <tr>
+          <td class="col-scn">SOP Chatbot<br><span style="font-weight:400;color:#6B6F75;font-size:12px">SOP 精准查询、新员工 onboarding</span></td>
+          <td class="col-current">已有 RAG Chatbot 形态承载</td>
+          <td class="col-prim"><span class="pill">Retrieval QA</span></td>
+          <td class="col-wb">知识问答工作台</td>
+        </tr>
+        <tr>
+          <td class="col-scn">Colleteral 智能筛查<br><span style="font-weight:400;color:#6B6F75;font-size:12px">从协议库精确取值: MTA / IA / 联动账户</span></td>
+          <td class="col-current"><strong style="color:#B23A1F">RAG 不能稳定承载</strong>。RAG 能召回片段,但无法精确抽取字段值</td>
+          <td class="col-prim"><span class="pill">Hybrid R+E</span></td>
+          <td class="col-wb">混合筛查工作台</td>
+        </tr>
+        <tr>
+          <td class="col-scn">协议智能提取<br><span style="font-weight:400;color:#6B6F75;font-size:12px">ISDA / GMRA → 模板 Excel,导入 CloudMargin</span></td>
+          <td class="col-current"><strong style="color:#B23A1F">超出 RAG 范畴</strong>。本质是 schema-driven 文档结构化</td>
+          <td class="col-prim"><span class="pill">Extraction</span></td>
+          <td class="col-wb">文档抽取工作台</td>
+        </tr>
+        <tr style="opacity:0.7">
+          <td class="col-scn">复杂指令<br><span style="font-weight:400;color:#6B6F75;font-size:12px">跨协议对比报告、批量 Margin 复算</span></td>
+          <td class="col-current">未来场景。需要规划+工具调用+审计</td>
+          <td class="col-prim"><span class="pill" style="background:#F5EBD3;color:#B5862C">Multi-step</span></td>
+          <td class="col-wb">复杂指令工作台</td>
+        </tr>
+        <tr style="opacity:0.7">
+          <td class="col-scn">问题排查<br><span style="font-weight:400;color:#6B6F75;font-size:12px">CloudMargin 报错诊断、流程异常分析</span></td>
+          <td class="col-current">未来场景。基于假设-验证循环</td>
+          <td class="col-prim"><span class="pill" style="background:#F5EBD3;color:#B5862C">Diagnostic</span></td>
+          <td class="col-wb">问题排查工作台</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ Section 5: 五大任务原语 ============ -->
+  <section id="sec-5">
+    <div class="sec-num">§ 05</div>
+    <h2 class="sec-title">五种任务原语</h2>
+    <p class="sec-deck">原语层是平台架构的核心抽象——每个原语对应一种确定的执行模式。它决定后端的 Executor 类型,也决定前端的 UI 形态。</p>
+
+    <div class="primitives">
+
+      <div class="prim">
+        <div class="num">01</div>
+        <div>
+          <h3>检索问答</h3>
+          <div class="en">Retrieval QA · Single/Multi-turn RAG</div>
+          <div class="body">最经典的 RAG 形态: 用户提问,系统从知识库检索相关片段,LLM 基于片段生成答复。适合制度、SOP、流程类的稳态知识查询。<strong>当前的 RAG 系统经过适配后即可承担此原语</strong>。</div>
+          <div>
+            <span class="scenario">COB Chatbot</span>
+            <span class="scenario">SOP Chatbot</span>
+          </div>
+        </div>
+        <div class="prim-meta">
+          <dl>
+            <dt>输入</dt><dd>NL Query</dd>
+            <dt>输出</dt><dd>文本 + 引用</dd>
+            <dt>执行</dt><dd>单轮/多轮 RAG</dd>
+            <dt>UI</dt><dd>对话流</dd>
+            <dt>评估</dt><dd>RAGAS 类</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="prim">
+        <div class="num">02</div>
+        <div>
+          <h3>文档抽取</h3>
+          <div class="en">Document Extraction · Schema-driven</div>
+          <div class="body">用户上传文档,选择模板(ISDA/CSA/GMRA),系统按 schema 抽取字段并输出结构化 Excel。<strong>不是 Agent,是确定性 Pipeline</strong>: 解析 → 章节定位 → 字段抽取(LLM + JSON Schema 约束) → 校验 → 置信度标注 → Maker-Checker 复核。</div>
+          <div>
+            <span class="scenario">协议智能提取</span>
+          </div>
+        </div>
+        <div class="prim-meta">
+          <dl>
+            <dt>输入</dt><dd>文档 + 模板</dd>
+            <dt>输出</dt><dd>结构化数据</dd>
+            <dt>执行</dt><dd>确定性 Pipeline</dd>
+            <dt>UI</dt><dd>工作流面板</dd>
+            <dt>评估</dt><dd>字段级 F1 / Recall</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="prim">
+        <div class="num">03</div>
+        <div>
+          <h3>混合检索抽取</h3>
+          <div class="en">Hybrid Retrieval + Extraction</div>
+          <div class="body">"检索" 和 "抽取" 的复合体。用户问 "某交易对手的 MTA 是多少" → 系统先检索定位到对应协议片段,再在该片段上做精确字段抽取。<strong>纯 RAG 做不到稳定取值,纯抽取找不到目标文档</strong>,因此自成一类原语。</div>
+          <div>
+            <span class="scenario">Colleteral 智能筛查</span>
+          </div>
+        </div>
+        <div class="prim-meta">
+          <dl>
+            <dt>输入</dt><dd>NL + 范围</dd>
+            <dt>输出</dt><dd>结构片段 + 引用</dd>
+            <dt>执行</dt><dd>检索 → 定位 → 抽取</dd>
+            <dt>UI</dt><dd>查询 + 表格</dd>
+            <dt>评估</dt><dd>精确匹配率</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="prim">
+        <div class="num">04</div>
+        <div>
+          <h3>复杂指令</h3>
+          <div class="en">Multi-step Action · ReAct / Plan-Act-Reflect</div>
+          <div class="body">真正的 Agent loop。用户给出 NL 指令,系统规划步骤、调用多个工具、综合结果。<strong>这是平台中风险最高的原语</strong>: 涉及副作用操作、需完整审计链、需用户确认机制。规划放在 Phase 3。</div>
+          <div>
+            <span class="scenario future">未来 · 跨协议对比</span>
+            <span class="scenario future">未来 · 批量 Margin</span>
+          </div>
+        </div>
+        <div class="prim-meta">
+          <dl>
+            <dt>输入</dt><dd>NL 指令</dd>
+            <dt>输出</dt><dd>跨工具结果</dd>
+            <dt>执行</dt><dd>Agent loop</dd>
+            <dt>UI</dt><dd>规划 + 进度</dd>
+            <dt>评估</dt><dd>任务成功率</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="prim">
+        <div class="num">05</div>
+        <div>
+          <h3>问题排查</h3>
+          <div class="en">Diagnostic · Hypothesis-Verify Loop</div>
+          <div class="body">用户描述异常现象,系统基于错误码字典+历史案例+日志,生成假设链并辅助验证。<strong>仅做诊断辅助,不做自动修复</strong>。准确率最不可控,严格定位为 "AI 给的不是答案,是排查思路"。</div>
+          <div>
+            <span class="scenario future">未来 · CloudMargin 报错</span>
+            <span class="scenario future">未来 · 流程异常</span>
+          </div>
+        </div>
+        <div class="prim-meta">
+          <dl>
+            <dt>输入</dt><dd>异常 + 上下文</dd>
+            <dt>输出</dt><dd>根因 + 建议</dd>
+            <dt>执行</dt><dd>假设-验证</dd>
+            <dt>UI</dt><dd>诊断报告</dd>
+            <dt>评估</dt><dd>命中率 + 召回</dd>
+          </dl>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ Section 6: 工作台清单 ============ -->
+  <section id="sec-6">
+    <div class="sec-num">§ 06</div>
+    <h2 class="sec-title">工作台清单</h2>
+    <p class="sec-deck">用户面对的不是一个 Chatbot,也不是一个 Agent 列表,而是一组面向具体任务的工作台。每个工作台有独立的 UI、独立的产物管理、独立的评估指标。</p>
+
+    <div class="workbenches">
+
+      <div class="wb">
+        <div class="tag">P0 · 现有改造</div>
+        <h3>知识问答工作台</h3>
+        <div class="desc">承载 COB / SOP 等基于稳态知识的 NL 查询。延续 Chatbot 形态,但作为整体工作台体系下的一个实例。</div>
+        <ul class="feats">
+          <li>对话式交互,流式返回</li>
+          <li>引用回链与置信度提示</li>
+          <li>多轮上下文与会话管理</li>
+          <li>高频 Q&amp;A 沉淀入口</li>
+        </ul>
+      </div>
+
+      <div class="wb">
+        <div class="tag">P0 · 新建</div>
+        <h3>文档抽取工作台</h3>
+        <div class="desc">承载协议智能提取场景。面向任务的工作流型 UI,与对话流截然不同。</div>
+        <ul class="feats">
+          <li>模板中心 (ISDA / CSA / GMRA)</li>
+          <li>批量上传与任务队列</li>
+          <li>字段级置信度 + 原文回链</li>
+          <li>Maker-Checker 复核流</li>
+          <li>Excel / JSON 导出 + 版本管理</li>
+          <li>产物可注册回知识空间</li>
+        </ul>
+      </div>
+
+      <div class="wb">
+        <div class="tag">P0 · 新建</div>
+        <h3>混合筛查工作台</h3>
+        <div class="desc">承载 Colleteral 智能筛查。表面像问答,实则是 "检索 + 字段抽取" 的复合产品。</div>
+        <ul class="feats">
+          <li>查询条件结构化 (交易对手、字段)</li>
+          <li>结果以表格 + 引用呈现</li>
+          <li>命中字段可批量导出</li>
+          <li>不命中时提示降级到全文检索</li>
+          <li>复用文档抽取的字段 schema</li>
+        </ul>
+      </div>
+
+      <div class="wb future">
+        <div class="tag">P2 · 未来</div>
+        <h3>复杂指令工作台</h3>
+        <div class="desc">承载需要 Agent loop 的多步任务。规划在 Phase 3 落地,合规设计先行。</div>
+        <ul class="feats">
+          <li>NL 指令 → 可视化执行计划</li>
+          <li>每步用户确认与中止</li>
+          <li>受控 Tool Registry</li>
+          <li>完整审计链 + 回滚</li>
+          <li>任务模板可复用</li>
+        </ul>
+      </div>
+
+      <div class="wb future">
+        <div class="tag">P3 · 未来</div>
+        <h3>问题排查工作台</h3>
+        <div class="desc">承载诊断类任务。重点不是给答案,是给排查思路。</div>
+        <ul class="feats">
+          <li>异常现象输入 + 上下文上传</li>
+          <li>假设链可视化</li>
+          <li>历史案例匹配</li>
+          <li>逐项验证清单</li>
+          <li>明确 "辅助" 定位与免责</li>
+        </ul>
+      </div>
+
+      <div class="wb">
+        <div class="tag">横向 · 后台</div>
+        <h3>知识管理后台</h3>
+        <div class="desc">所有工作台的共享后台。承担文档治理、产物归档、知识沉淀。</div>
+        <ul class="feats">
+          <li>多 Space 多租户</li>
+          <li>RBAC + ABAC + ACL 权限</li>
+          <li>文档生命周期管理</li>
+          <li>任务产物归档与回流</li>
+          <li>沉淀的 Q&amp;A / 模板治理</li>
+          <li>合规审计与链路追踪</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ Section 7: 知识飞轮 ============ -->
+  <section id="sec-7">
+    <div class="sec-num">§ 07</div>
+    <h2 class="sec-title">知识飞轮:任务产物 → 知识资产</h2>
+    <p class="sec-deck">这套架构最关键的,是任务执行的高质量产物能反向沉淀回知识空间,形成持续运转的飞轮。这是和 Coze / Copilot 类产品的根本差异。</p>
+
+    <p class="lede">不是 "回答一次问题",而是 <strong>建立一个可持续运转的知识闭环</strong>。任务产生数据,数据沉淀为资产,资产反哺下一次任务。</p>
+
+    <div class="svg-frame">
+      <svg viewBox="0 0 1080 480" xmlns="http://www.w3.org/2000/svg" style="width:100%; height:auto; display:block;">
+        <defs>
+          <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#B23A1F" stroke-width="1.5"/>
+          </marker>
+          <marker id="arrow2g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#2C6E66" stroke-width="1.5"/>
+          </marker>
+        </defs>
+        
+        <text x="40" y="32" font-family="IBM Plex Mono" font-size="11" fill="#6B6F75" letter-spacing="2">KNOWLEDGE FLYWHEEL</text>
+        <line x1="40" y1="46" x2="1040" y2="46" stroke="#DCD5C7" stroke-width="1"/>
+        
+        <!-- Center -->
+        <circle cx="540" cy="240" r="92" fill="#14202E"/>
+        <text x="540" y="226" font-family="Fraunces" font-size="20" fill="#FAF6F0" text-anchor="middle" font-weight="500">知识空间</text>
+        <text x="540" y="252" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F" text-anchor="middle" letter-spacing="2">KNOWLEDGE SPACE</text>
+        <text x="540" y="276" font-family="IBM Plex Sans" font-size="11" fill="#DDD5C5" text-anchor="middle">文档 · Q&amp;A · 模板 · 字段</text>
+        
+        <!-- Top: tasks generate -->
+        <g>
+          <rect x="180" y="86" width="200" height="76" fill="#FFFFFF" stroke="#B23A1F" stroke-width="1"/>
+          <text x="280" y="112" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F" text-anchor="middle" letter-spacing="1">UPSTREAM</text>
+          <text x="280" y="134" font-family="Noto Serif SC" font-size="15" font-weight="500" fill="#14202E" text-anchor="middle">任务执行</text>
+          <text x="280" y="152" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">RAG / 抽取 / 筛查 / 指令</text>
+        </g>
+        
+        <g>
+          <rect x="700" y="86" width="200" height="76" fill="#FFFFFF" stroke="#B23A1F" stroke-width="1"/>
+          <text x="800" y="112" font-family="IBM Plex Mono" font-size="10" fill="#B23A1F" text-anchor="middle" letter-spacing="1">PRODUCE</text>
+          <text x="800" y="134" font-family="Noto Serif SC" font-size="15" font-weight="500" fill="#14202E" text-anchor="middle">高质量产物</text>
+          <text x="800" y="152" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">结构化字段 · 验证过的答案</text>
+        </g>
+        
+        <g>
+          <rect x="180" y="318" width="200" height="76" fill="#FFFFFF" stroke="#2C6E66" stroke-width="1"/>
+          <text x="280" y="344" font-family="IBM Plex Mono" font-size="10" fill="#2C6E66" text-anchor="middle" letter-spacing="1">FEEDBACK</text>
+          <text x="280" y="366" font-family="Noto Serif SC" font-size="15" font-weight="500" fill="#14202E" text-anchor="middle">下次任务复用</text>
+          <text x="280" y="384" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">检索精度 ↑ · 新任务模式</text>
+        </g>
+        
+        <g>
+          <rect x="700" y="318" width="200" height="76" fill="#FFFFFF" stroke="#2C6E66" stroke-width="1"/>
+          <text x="800" y="344" font-family="IBM Plex Mono" font-size="10" fill="#2C6E66" text-anchor="middle" letter-spacing="1">CRYSTALLIZE</text>
+          <text x="800" y="366" font-family="Noto Serif SC" font-size="15" font-weight="500" fill="#14202E" text-anchor="middle">沉淀为资产</text>
+          <text x="800" y="384" font-family="IBM Plex Sans" font-size="11" fill="#6B6F75" text-anchor="middle">canonical Q&amp;A · 抽取模板</text>
+        </g>
+        
+        <!-- Curved arrows clockwise -->
+        <path d="M 380 124 Q 540 96 700 124" fill="none" stroke="#B23A1F" stroke-width="1.5" marker-end="url(#arrow2)"/>
+        <path d="M 800 162 Q 850 240 800 318" fill="none" stroke="#B23A1F" stroke-width="1.5" marker-end="url(#arrow2)" stroke-dasharray="5,3"/>
+        <path d="M 700 356 Q 540 384 380 356" fill="none" stroke="#2C6E66" stroke-width="1.5" marker-end="url(#arrow2g)"/>
+        <path d="M 280 318 Q 230 240 280 162" fill="none" stroke="#2C6E66" stroke-width="1.5" marker-end="url(#arrow2g)"/>
+        
+        <!-- Path labels -->
+        <text x="540" y="86" font-family="IBM Plex Sans" font-size="11" fill="#B23A1F" text-anchor="middle" font-style="italic">① 用户做任务</text>
+        <text x="846" y="244" font-family="IBM Plex Sans" font-size="11" fill="#B23A1F" text-anchor="middle" font-style="italic">② 注册回</text>
+        <text x="846" y="258" font-family="IBM Plex Sans" font-size="11" fill="#B23A1F" text-anchor="middle" font-style="italic">知识空间</text>
+        <text x="540" y="402" font-family="IBM Plex Sans" font-size="11" fill="#2C6E66" text-anchor="middle" font-style="italic">③ 反哺</text>
+        <text x="208" y="244" font-family="IBM Plex Sans" font-size="11" fill="#2C6E66" text-anchor="middle" font-style="italic">④ 复用</text>
+        <text x="208" y="258" font-family="IBM Plex Sans" font-size="11" fill="#2C6E66" text-anchor="middle" font-style="italic">提升精度</text>
+        
+        <!-- Examples bar -->
+        <line x1="40" y1="436" x2="1040" y2="436" stroke="#DCD5C7"/>
+        <text x="40" y="460" font-family="IBM Plex Mono" font-size="10" fill="#6B6F75" letter-spacing="1">实例</text>
+        <text x="100" y="460" font-family="IBM Plex Sans" font-size="11" fill="#14202E">协议抽取 → ISDA 字段沉淀 → Colleteral 筛查直接用结构化数据 → 回答精度暴涨</text>
+      </svg>
+    </div>
+    <div class="fig-cap"><strong>图 03</strong>知识飞轮的四步闭环</div>
+
+    <p>这个闭环里有<strong>两个关键的反向通道</strong>是 Coze / Copilot 类产品都不具备的: 第一是<strong>任务产物注册回知识空间</strong>(高质量字段成为可被检索的资产); 第二是<strong>任务模式沉淀为模板/skill</strong>(下次同类任务无需从零做起)。</p>
+
+    <p>需要警惕的是,任务<strong>过程数据</strong>(执行轨迹、轨迹日志)和任务<strong>产物</strong>(结构化字段、验证过的答案)是两个完全不同层次的概念——前者用于观测和调优,后者才是飞轮的真正燃料。两者不能混为一谈。</p>
+  </section>
+
+  <!-- ============ Section 8: 差异化 ============ -->
+  <section id="sec-8">
+    <div class="sec-num">§ 08</div>
+    <h2 class="sec-title">差异化定位</h2>
+    <p class="sec-deck">在和市面同类产品对比时,我们的护城河在哪里。</p>
+
+    <div class="diff-grid">
+
+      <div class="competitor">
+        <div class="stub">COZE / DIFY 类</div>
+        <h4>Agent 装配平台</h4>
+        <div class="gap-label">他们的逻辑</div>
+        <div class="gap-text">自下而上,每个用户/团队搭自己的小 Agent + 小知识库。</div>
+        <div class="gap-label">结构性缺陷</div>
+        <div class="gap-text">没有强制治理层,知识资产碎片化、不可信、不可审计。</div>
+      </div>
+
+      <div class="competitor">
+        <div class="stub">COPILOT / GEMINI ENTERPRISE</div>
+        <h4>横向 AI 助手</h4>
+        <div class="gap-label">他们的逻辑</div>
+        <div class="gap-text">在已有数据上叠 AI,索引邮件、文档、日历做横向搜索 Q&amp;A。</div>
+        <div class="gap-label">结构性缺陷</div>
+        <div class="gap-text">几乎不主动治理知识,知识质量等于企业现有数据质量。垃圾进垃圾出。</div>
+      </div>
+
+      <div class="competitor us">
+        <div class="stub">OURS</div>
+        <h4>任务化平台</h4>
+        <div class="gap-label">我们的逻辑</div>
+        <div class="gap-text">业务任务为一等公民。任务驱动产物,产物沉淀回知识空间,知识反哺下一次任务。</div>
+        <div class="gap-label">结构性优势</div>
+        <div class="gap-text">合规可审计 · 知识资产持续运营 · 受监管行业可用 · 任务和资产双向飞轮</div>
+      </div>
+
+    </div>
+
+    <p style="margin-top: 32px;">用一句话表述差异化:<strong>在受监管行业里,以 "知识资产 + 任务能力" 双重持续运营为中心,把 RAG / Agent / Memory 统一在一个可治理的闭环里。</strong></p>
+
+    <p>我们不是要做 "更好的 Coze",也不是 "金融版的 Copilot",而是一个新的产品品类。把这点对内对外讲清楚,是这份文档存在的根本原因。</p>
+  </section>
+
+  <!-- ============ Section 9: Glossary ============ -->
+  <section id="sec-9">
+    <div class="sec-num">§ 09</div>
+    <h2 class="sec-title">统一术语</h2>
+    <p class="sec-deck">团队对内沟通的标准词汇表。混用会导致设计偏移,请严格使用。</p>
+
+    <div class="glossary">
+      <div class="gl-row">
+        <div class="gl-term">任务</div>
+        <div class="gl-en">Task</div>
+        <div class="gl-def">用户在工作台发起的一次明确目的的执行单元。<strong>是平台的一等公民</strong>,有 ID、状态、输入、产物、轨迹。所有业务需求都用 Task 描述。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">任务原语</div>
+        <div class="gl-en">Task Primitive</div>
+        <div class="gl-def">任务的执行模式抽象,共五种: Retrieval QA、Extraction、Hybrid、Multi-step、Diagnostic。一个原语对应一个 Executor。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">任务执行器</div>
+        <div class="gl-en">Task Executor</div>
+        <div class="gl-def">实现某个原语的后端组件。比如 RetrievalQAExecutor、ExtractionExecutor。<strong>对外不要叫 "Agent"</strong>。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">Agent</div>
+        <div class="gl-en">Agent (narrow)</div>
+        <div class="gl-def">仅指具备自主规划能力的执行器(Multi-step、Diagnostic)。<strong>RAG 和 Extraction 不是 Agent</strong><span class="warn">易混词</span></div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">工作台</div>
+        <div class="gl-en">Workbench</div>
+        <div class="gl-def">面向用户的产品形态。每个工作台对应一个任务原语,有独立 UI、独立产物管理。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">任务产物</div>
+        <div class="gl-en">Task Artifact</div>
+        <div class="gl-def">任务产生的高质量结果(结构化字段、验证过的答案、生成的 Excel 等)。可注册回知识空间。<strong>不等于</strong>任务的执行轨迹日志。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">任务轨迹</div>
+        <div class="gl-en">Task Trace</div>
+        <div class="gl-def">任务执行过程的中间步骤记录。用于观测、调试、评估。<strong>不直接进入飞轮</strong>。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">知识空间</div>
+        <div class="gl-en">Knowledge Space</div>
+        <div class="gl-def">租户级的知识容器,承载文档、Q&amp;A、模板、字段等知识资产。受 RBAC + ABAC + ACL 权限模型管控。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">沉淀</div>
+        <div class="gl-en">Crystallize</div>
+        <div class="gl-def">把高质量任务产物注册为可复用知识资产的过程。是飞轮的核心动作。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">原子能力</div>
+        <div class="gl-en">Capability Atom</div>
+        <div class="gl-def">底层共享的基础能力(检索引擎、抽取引擎、文档解析、工具调用、评估)。多个原语共用。</div>
+      </div>
+      <div class="gl-row">
+        <div class="gl-term">飞轮</div>
+        <div class="gl-en">Flywheel</div>
+        <div class="gl-def">"任务 → 产物 → 沉淀 → 反哺任务" 的闭环。是产品的核心动力学。<strong>非营销用语</strong>,是真实的架构机制。</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>OPS · AI Platform Team · v0.1</div>
+    <div>For internal alignment use</div>
+  </footer>
+
+</div>
+</body>
+</html>
