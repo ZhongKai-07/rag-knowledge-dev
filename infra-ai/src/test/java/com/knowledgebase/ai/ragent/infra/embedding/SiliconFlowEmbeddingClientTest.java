@@ -17,30 +17,19 @@
 
 package com.knowledgebase.ai.ragent.infra.embedding;
 
-import com.google.gson.JsonObject;
 import com.knowledgebase.ai.ragent.infra.enums.ModelProvider;
-import com.knowledgebase.ai.ragent.infra.model.ModelTarget;
 import okhttp3.OkHttpClient;
-import org.springframework.stereotype.Service;
+import org.junit.jupiter.api.Test;
 
-@Service
-public class OllamaEmbeddingClient extends AbstractOpenAIStyleEmbeddingClient {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-    public OllamaEmbeddingClient(OkHttpClient httpClient) {
-        super(httpClient);
-    }
+class SiliconFlowEmbeddingClientTest {
 
-    @Override
-    public String provider() {
-        return ModelProvider.OLLAMA.getId();
-    }
+    @Test
+    void providerReturnsSiliconFlowProviderId() {
+        SiliconFlowEmbeddingClient client = new SiliconFlowEmbeddingClient(mock(OkHttpClient.class));
 
-    @Override
-    protected boolean requiresApiKey() {
-        return false;
-    }
-
-    @Override
-    protected void customizeRequestBody(JsonObject body, ModelTarget target) {
+        assertThat(client.provider()).isEqualTo(ModelProvider.SILICON_FLOW.getId());
     }
 }
