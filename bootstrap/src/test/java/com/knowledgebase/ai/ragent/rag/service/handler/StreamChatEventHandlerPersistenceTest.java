@@ -24,6 +24,7 @@ import com.knowledgebase.ai.ragent.infra.config.AIModelProperties;
 import com.knowledgebase.ai.ragent.rag.config.RAGConfigProperties;
 import com.knowledgebase.ai.ragent.rag.core.memory.ConversationMemoryService;
 import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestedQuestionsService;
+import com.knowledgebase.ai.ragent.rag.dto.CompletionPayload;
 import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 import com.knowledgebase.ai.ragent.rag.dto.SourceChunk;
 import com.knowledgebase.ai.ragent.rag.service.ConversationGroupService;
@@ -44,8 +45,12 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -168,6 +173,37 @@ class StreamChatEventHandlerPersistenceTest {
         handler.onComplete();
 
         verify(conversationMessageService, never()).updateSourcesJson(anyString(), anyString());
+    }
+
+    @Test
+    void onComplete_whenMemoryAppendThrows_thenStillFinishesAndUnregisters() throws Exception {
+        doThrow(new RuntimeException("memory db down"))
+                .when(memoryService).append(anyString(), any(), any(), any());
+
+        StreamChatEventHandler handler = newHandler();
+        handler.onContent("answer");
+
+        assertDoesNotThrow(handler::onComplete);
+
+        verify(conversationMessageService, never()).updateSourcesJson(anyString(), anyString());
+        verify(taskManager).unregister("t-1");
+        verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
+    }
+
+    @Test
+    void cancellationPayloadSupplier_whenMemoryAppendThrowsAfterContentAccumulated_thenReturnsPayload() {
+        ArgumentCaptor<Supplier<CompletionPayload>> supplierCaptor = ArgumentCaptor.forClass(Supplier.class);
+        StreamChatEventHandler handler = newHandler();
+        verify(taskManager).register(eq("t-1"), any(), supplierCaptor.capture());
+
+        handler.onContent("partial answer");
+        doThrow(new RuntimeException("memory db down"))
+                .when(memoryService).append(anyString(), any(), any(), any());
+
+        CompletionPayload payload = assertDoesNotThrow(() -> supplierCaptor.getValue().get());
+
+        assertNull(payload.messageId());
+        assertNotNull(payload.title());
     }
 
     @Test

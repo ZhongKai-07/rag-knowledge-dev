@@ -17,8 +17,6 @@
 
 package com.knowledgebase.ai.ragent.framework.web;
 
-import com.knowledgebase.ai.ragent.framework.errorcode.BaseErrorCode;
-import com.knowledgebase.ai.ragent.framework.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -48,7 +46,19 @@ public class SseEmitterSender {
      * Spring 的 SseEmitter 实例，用于实际的 SSE 通信
      */
     public SseEmitterSender(SseEmitter emitter) {
+        this(emitter, null);
+    }
+
+    /**
+     * Spring 的 SseEmitter 实例，用于实际的 SSE 通信
+     *
+     * @param onTimeout Spring 触发 SSE 超时时执行的可选回调
+     */
+    public SseEmitterSender(SseEmitter emitter, Runnable onTimeout) {
         this.emitter = emitter;
+        this.emitter.onCompletion(() -> closed.set(true));
+        this.emitter.onTimeout(() -> handleTimeout(onTimeout));
+        this.emitter.onError(throwable -> closed.set(true));
     }
 
     /**
@@ -62,12 +72,11 @@ public class SseEmitterSender {
      *
      * @param eventName 事件名称，为 null 时使用默认格式
      * @param data      要发送的数据内容
-     * @throws ServiceException 当连接已关闭或发送失败时抛出
      */
     public void sendEvent(String eventName, Object data) {
         // 检查连接是否已关闭
         if (closed.get()) {
-            throw new ServiceException("SSE already closed", BaseErrorCode.SERVICE_ERROR);
+            return;
         }
         try {
             // 根据是否指定事件名称选择不同的发送方式
@@ -123,6 +132,17 @@ public class SseEmitterSender {
         // 使用 CAS 原子操作，确保只关闭一次
         if (closed.compareAndSet(false, true)) {
             emitter.completeWithError(throwable);
+        }
+    }
+
+    private void handleTimeout(Runnable onTimeout) {
+        if (!closed.compareAndSet(false, true) || onTimeout == null) {
+            return;
+        }
+        try {
+            onTimeout.run();
+        } catch (Exception e) {
+            log.warn("SSE timeout callback failed", e);
         }
     }
 }

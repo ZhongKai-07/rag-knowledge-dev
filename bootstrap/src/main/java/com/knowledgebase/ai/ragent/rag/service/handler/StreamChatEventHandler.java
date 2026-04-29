@@ -86,13 +86,13 @@ public class StreamChatEventHandler implements StreamCallback {
      * @param params 构建参数
      */
     public StreamChatEventHandler(StreamChatHandlerParams params) {
-        this.sender = new SseEmitterSender(params.getEmitter());
         this.conversationId = params.getConversationId();
         this.taskId = params.getTaskId();
         this.memoryService = params.getMemoryService();
         this.conversationMessageService = params.getConversationMessageService();
         this.conversationGroupService = params.getConversationGroupService();
         this.taskManager = params.getTaskManager();
+        this.sender = new SseEmitterSender(params.getEmitter(), () -> taskManager.cancel(taskId));
         this.evaluationService = params.getEvaluationService();
         this.traceRecordService = params.getTraceRecordService();
         this.traceId = RagTraceContext.getTraceId();
@@ -145,10 +145,14 @@ public class StreamChatEventHandler implements StreamCallback {
         String content = answer.toString();
         String messageId = null;
         if (StrUtil.isNotBlank(content)) {
-            messageId = memoryService.append(conversationId, userId, ChatMessage.assistant(content), null);
+            try {
+                messageId = memoryService.append(conversationId, userId, ChatMessage.assistant(content), null);
+            } catch (Exception e) {
+                log.error("取消时持久化助手消息失败，conversationId={}", conversationId, e);
+            }
         }
         String title = resolveTitleForEvent();
-        return new CompletionPayload(String.valueOf(messageId), title);
+        return new CompletionPayload(messageId, title);
     }
 
     @Override
@@ -186,8 +190,13 @@ public class StreamChatEventHandler implements StreamCallback {
         if (taskManager.isCancelled(taskId)) {
             return;
         }
-        String messageId = memoryService.append(conversationId, userId,
-                ChatMessage.assistant(answer.toString()), null);
+        String messageId = null;
+        try {
+            messageId = memoryService.append(conversationId, userId,
+                    ChatMessage.assistant(answer.toString()), null);
+        } catch (Exception e) {
+            log.error("完成时持久化助手消息失败，conversationId={}", conversationId, e);
+        }
 
         // 持久化 sources_json（必须在 updateTraceTokenUsage 之前，见 spec §2.7）
         persistSourcesIfPresent(messageId);

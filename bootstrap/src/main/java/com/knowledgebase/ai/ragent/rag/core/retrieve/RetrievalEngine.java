@@ -50,6 +50,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 import static com.knowledgebase.ai.ragent.rag.constant.RAGConstant.INTENT_MIN_SCORE;
 import static com.knowledgebase.ai.ragent.rag.constant.RAGConstant.MULTI_CHANNEL_KEY;
@@ -62,6 +63,8 @@ import static com.knowledgebase.ai.ragent.rag.constant.RAGConstant.MULTI_CHANNEL
 @Service
 @RequiredArgsConstructor
 public class RetrievalEngine {
+
+    private static final long MCP_TOOL_TIMEOUT_SECONDS = 30;
 
     private final ContextFormatter contextFormatter;
     private final MCPParameterExtractor mcpParameterExtractor;
@@ -95,11 +98,19 @@ public class RetrievalEngine {
 
         List<CompletableFuture<SubQuestionContext>> tasks = subIntents.stream()
                 .map(si -> CompletableFuture.supplyAsync(
-                        () -> buildSubQuestionContext(
-                                si,
-                                resolveSubQuestionPlan(si, globalRecall, globalRerank),
-                                scope
-                        ),
+                        () -> {
+                            try {
+                                return buildSubQuestionContext(
+                                        si,
+                                        resolveSubQuestionPlan(si, globalRecall, globalRerank),
+                                        scope
+                                );
+                            } catch (Exception e) {
+                                log.error("Sub-question retrieval context build failed, question: {}",
+                                        si.subQuestion(), e);
+                                return new SubQuestionContext(si.subQuestion(), "", "", Map.of());
+                            }
+                        },
                         ragContextExecutor
                 ))
                 .toList();
@@ -199,7 +210,7 @@ public class RetrievalEngine {
         }
 
         List<MCPResponse> responses = executeMcpTools(question, mcpIntents);
-        if (responses.isEmpty() || responses.stream().noneMatch(MCPResponse::isSuccess)) {
+        if (responses.isEmpty()) {
             return "";
         }
 
@@ -249,12 +260,30 @@ public class RetrievalEngine {
 
         // 并行执行所有 MCP 工具调用
         List<CompletableFuture<MCPResponse>> futures = requests.stream()
-                .map(request -> CompletableFuture.supplyAsync(() -> executeSingleMcpTool(request), mcpBatchExecutor))
+                .map(this::submitMcpTool)
                 .toList();
 
         return futures.stream()
                 .map(CompletableFuture::join)
                 .toList();
+    }
+
+    private CompletableFuture<MCPResponse> submitMcpTool(MCPRequest request) {
+        try {
+            return CompletableFuture.supplyAsync(() -> executeSingleMcpTool(request), mcpBatchExecutor)
+                    .orTimeout(MCP_TOOL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .exceptionally(e -> mcpTimeoutResponse(request, e));
+        } catch (Exception e) {
+            return CompletableFuture.completedFuture(mcpTimeoutResponse(request, e));
+        }
+    }
+
+    private MCPResponse mcpTimeoutResponse(MCPRequest request, Throwable e) {
+        log.error("MCP tool execution timed out or failed, toolId: {}", request.getToolId(), e);
+        return MCPResponse.error(
+                request.getToolId(),
+                "TIMEOUT",
+                "工具调用超时或异常: " + e.getMessage());
     }
 
     private MCPResponse executeSingleMcpTool(MCPRequest request) {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Check, FileUp, FolderOpen, PlayCircle, RefreshCw, Trash2, Pencil, FileBarChart, X } from "lucide-react";
+import { FileUp, FolderOpen, PlayCircle, RefreshCw, Trash2, Pencil, FileBarChart, X } from "lucide-react";
 import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -93,6 +93,12 @@ const parseChunkConfig = (raw?: string | null): Record<string, unknown> => {
   }
 };
 
+const parseConfigNumber = (value: string | undefined, fallback: number) => {
+  if (value === undefined || value.trim() === "") return fallback;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 const statusDotClass = (status?: string | null) => {
   if (!status) return "bg-muted-foreground/40";
   const normalized = status.toLowerCase();
@@ -155,6 +161,8 @@ export function KnowledgeDocumentsPage() {
   const [detailStrategies, setDetailStrategies] = useState<ChunkStrategyOption[]>([]);
   const [detailPipelines, setDetailPipelines] = useState<IngestionPipeline[]>([]);
   const [detailConfigValues, setDetailConfigValues] = useState<Record<string, string>>({});
+  const [detailNoChunk, setDetailNoChunk] = useState(false);
+  const [detailOriginalChunkSize, setDetailOriginalChunkSize] = useState("512");
   const [detailSourceLocation, setDetailSourceLocation] = useState("");
   const [detailScheduleEnabled, setDetailScheduleEnabled] = useState(false);
   const [detailScheduleCron, setDetailScheduleCron] = useState("");
@@ -220,6 +228,13 @@ export function KnowledgeDocumentsPage() {
         values[k] = String(v);
       }
       setDetailConfigValues(values);
+      if (values["chunkSize"] === String(NO_CHUNK_VALUE)) {
+        setDetailNoChunk(true);
+        setDetailOriginalChunkSize("512");
+      } else {
+        setDetailNoChunk(false);
+        setDetailOriginalChunkSize(values["chunkSize"] || "512");
+      }
 
       // 加载策略列表和管道列表
       getChunkStrategies().then(setDetailStrategies).catch(() => {});
@@ -230,6 +245,8 @@ export function KnowledgeDocumentsPage() {
       setDetailChunkStrategy("structure_aware");
       setDetailPipelineId("");
       setDetailConfigValues({});
+      setDetailNoChunk(false);
+      setDetailOriginalChunkSize("512");
       setDetailStrategies([]);
       setDetailPipelines([]);
       setDetailSourceLocation("");
@@ -307,7 +324,7 @@ export function KnowledgeDocumentsPage() {
         if (strategy) {
           const configObj: Record<string, number> = {};
           for (const key of Object.keys(strategy.defaultConfig)) {
-            configObj[key] = Number(detailConfigValues[key]) || strategy.defaultConfig[key];
+            configObj[key] = parseConfigNumber(detailConfigValues[key], strategy.defaultConfig[key]);
           }
           data.chunkConfig = JSON.stringify(configObj);
         }
@@ -381,6 +398,35 @@ export function KnowledgeDocumentsPage() {
         values[k] = String(v);
       }
       setDetailConfigValues(values);
+      setDetailNoChunk(false);
+      setDetailOriginalChunkSize(values["chunkSize"] || "512");
+    }
+  };
+
+  const handleDetailNoChunkToggle = () => {
+    if (detailNoChunk) {
+      setDetailConfigValues((values) => ({
+        ...values,
+        chunkSize: detailOriginalChunkSize
+      }));
+      setDetailNoChunk(false);
+    } else {
+      setDetailOriginalChunkSize(detailConfigValues["chunkSize"] || "512");
+      setDetailConfigValues((values) => ({
+        ...values,
+        chunkSize: String(NO_CHUNK_VALUE)
+      }));
+      setDetailNoChunk(true);
+    }
+  };
+
+  const handleDetailChunkSizeChange = (value: string) => {
+    setDetailConfigValues((values) => ({
+      ...values,
+      chunkSize: value
+    }));
+    if (detailNoChunk && value !== String(NO_CHUNK_VALUE)) {
+      setDetailNoChunk(false);
     }
   };
 
@@ -770,17 +816,40 @@ export function KnowledgeDocumentsPage() {
                   </div>
 
                   {detailChunkStrategy === "fixed_size" ? (
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-3">
                       <div>
                         <div className="text-sm font-medium mb-2">块大小</div>
                         <Input type="number" value={detailConfigValues["chunkSize"] ?? "512"}
-                          onChange={e => setDetailConfigValues(v => ({ ...v, chunkSize: e.target.value }))} />
+                          onChange={e => handleDetailChunkSizeChange(e.target.value)} />
                         <div className="text-sm text-muted-foreground mt-1">字符数</div>
                       </div>
                       <div>
                         <div className="text-sm font-medium mb-2">重叠大小</div>
                         <Input type="number" value={detailConfigValues["overlapSize"] ?? "128"}
                           onChange={e => setDetailConfigValues(v => ({ ...v, overlapSize: e.target.value }))} />
+                      </div>
+                      <div>
+                        <div className="text-sm font-medium mb-2">不分块</div>
+                        <div className="flex h-9 items-center">
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={detailNoChunk}
+                            onClick={handleDetailNoChunkToggle}
+                            className={cn(
+                              "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
+                              detailNoChunk ? "bg-blue-600" : "bg-slate-200"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "inline-block h-4 w-4 transform rounded-full bg-background shadow transition-transform",
+                                detailNoChunk ? "translate-x-4" : "translate-x-1"
+                              )}
+                            />
+                          </button>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">开启后块大小为-1</div>
                       </div>
                     </div>
                   ) : (

@@ -20,6 +20,7 @@ package com.knowledgebase.ai.ragent.rag.controller;
 import com.knowledgebase.ai.ragent.framework.convention.Result;
 import com.knowledgebase.ai.ragent.framework.idempotent.IdempotentSubmit;
 import com.knowledgebase.ai.ragent.framework.web.Results;
+import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
 import com.knowledgebase.ai.ragent.rag.service.RAGChatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +39,8 @@ public class RAGChatController {
 
     private final RAGChatService ragChatService;
 
+    private final RAGDefaultProperties ragDefaultProperties;
+
     /**
      * 发起 SSE 流式对话
      */
@@ -50,7 +53,7 @@ public class RAGChatController {
                            @RequestParam(value = "conversationId", required = false) String conversationId,
                            @RequestParam(value = "knowledgeBaseId", required = false) String knowledgeBaseId,
                            @RequestParam(value = "deepThinking", required = false, defaultValue = "false") Boolean deepThinking) {
-        SseEmitter emitter = new SseEmitter(0L);
+        SseEmitter emitter = new SseEmitter(ragDefaultProperties.getSseTimeoutMs());
         ragChatService.streamChat(question, conversationId, knowledgeBaseId, deepThinking, emitter);
         return emitter;
     }
