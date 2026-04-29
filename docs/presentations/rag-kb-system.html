@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HT KnowledgeBase · 系统汇报</title>
+<link rel="stylesheet" href="../../.claude/skills/html-ppt/assets/fonts.css">
+<link rel="stylesheet" href="../../.claude/skills/html-ppt/assets/base.css">
+<link rel="stylesheet" href="../../.claude/skills/html-ppt/assets/animations/animations.css">
+<link rel="stylesheet" href="../../.claude/skills/html-ppt/assets/themes/corporate-clean.css">
+<style>
+/* ── deck-level overrides ── */
+body { background: #ffffff; }
+.slide { padding: 64px 88px; background: #ffffff; justify-content: flex-start; }
+.slide.center { justify-content: center; }
+
+/* header strip */
+.deck-header { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #8898aa; }
+.deck-header .logo { font-weight: 700; color: #0a2540; font-size: 13px; letter-spacing: .04em; }
+.deck-footer { font-size: 11px; color: #8898aa; }
+
+/* cover */
+.cover-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #1d4ed8; margin-bottom: 28px; }
+.cover-title { font-size: 72px; font-weight: 800; line-height: 1.04; letter-spacing: -.03em; color: #0a2540; margin: 0 0 24px; }
+.cover-sub { font-size: 22px; color: #425466; font-weight: 300; margin-bottom: 48px; }
+.cover-meta { display: flex; align-items: center; gap: 32px; font-size: 13px; color: #8898aa; }
+.cover-accent-bar { width: 56px; height: 4px; background: linear-gradient(90deg, #0a2540, #1d4ed8); border-radius: 2px; margin-bottom: 32px; }
+
+/* section badge */
+.section-badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; background: #eef2ff; border-radius: 4px; font-size: 12px; font-weight: 600; color: #1d4ed8; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 20px; }
+
+/* slide title */
+.slide-title { font-size: 44px; font-weight: 700; line-height: 1.1; letter-spacing: -.025em; color: #0a2540; margin: 0 0 10px; }
+.slide-sub { font-size: 17px; color: #425466; margin: 0 0 36px; font-weight: 300; }
+
+/* module cards */
+.module-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 22px 24px; }
+.module-card .mc-tag { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #1d4ed8; margin-bottom: 8px; }
+.module-card .mc-name { font-size: 18px; font-weight: 700; color: #0a2540; margin-bottom: 6px; }
+.module-card .mc-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+/* flow step */
+.flow-row { display: flex; align-items: center; gap: 0; }
+.flow-step { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.flow-box { background: #0a2540; color: #ffffff; border-radius: 6px; padding: 10px 16px; font-size: 13px; font-weight: 600; text-align: center; line-height: 1.35; width: 100%; }
+.flow-box.light { background: #eef2ff; color: #1d4ed8; }
+.flow-box.accent { background: #1d4ed8; color: #ffffff; }
+.flow-arrow { width: 20px; flex: none; display: flex; align-items: center; justify-content: center; color: #8898aa; font-size: 16px; }
+.flow-label { font-size: 11px; color: #94a3b8; margin-top: 6px; text-align: center; }
+
+/* node pipeline */
+.pipeline { display: flex; align-items: stretch; gap: 0; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+.pipeline-node { flex: 1; padding: 20px 16px; border-right: 1px solid #e2e8f0; text-align: center; }
+.pipeline-node:last-child { border-right: none; }
+.pipeline-node .pn-icon { font-size: 22px; margin-bottom: 8px; }
+.pipeline-node .pn-name { font-size: 13px; font-weight: 700; color: #0a2540; margin-bottom: 4px; }
+.pipeline-node .pn-desc { font-size: 11px; color: #64748b; line-height: 1.4; }
+.pipeline-node.active { background: #0a2540; }
+.pipeline-node.active .pn-name, .pipeline-node.active .pn-desc { color: #ffffff; }
+
+/* permission model */
+.rbac-row { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid #e2e8f0; }
+.rbac-row:last-child { border-bottom: none; }
+.rbac-label { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #ffffff; background: #0a2540; border-radius: 4px; padding: 4px 10px; flex: none; width: 90px; text-align: center; }
+.rbac-label.blue { background: #1d4ed8; }
+.rbac-arrow { color: #cbd5e1; font-size: 16px; flex: none; }
+.rbac-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.rbac-item { background: #f0f4ff; color: #1d4ed8; border: 1px solid #c7d2fe; border-radius: 4px; padding: 4px 10px; font-size: 12px; font-weight: 500; }
+.rbac-item.gray { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+
+/* opensearch */
+.os-stat { text-align: center; }
+.os-stat .val { font-size: 42px; font-weight: 800; color: #0a2540; letter-spacing: -.03em; line-height: 1; }
+.os-stat .unit { font-size: 14px; color: #64748b; margin-top: 4px; }
+
+/* two col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.four-col { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+/* concept card */
+.concept-card { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #1d4ed8; border-radius: 0 8px 8px 0; padding: 18px 20px; }
+.concept-card h4 { font-size: 15px; font-weight: 700; color: #0a2540; margin: 0 0 8px; }
+.concept-card p { font-size: 13px; color: #475569; line-height: 1.65; margin: 0; }
+.concept-card.dark { border-left-color: #0a2540; }
+
+/* tag row */
+.tag { display: inline-flex; align-items: center; padding: 3px 10px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; color: #475569; font-weight: 500; }
+.tag.blue { background: #eef2ff; border-color: #c7d2fe; color: #1d4ed8; }
+.tag.dark { background: #0a2540; border-color: #0a2540; color: #ffffff; }
+
+/* milestone */
+.ms-row { display: flex; align-items: flex-start; gap: 20px; padding: 16px 0; border-bottom: 1px solid #f1f5f9; }
+.ms-row:last-child { border-bottom: none; }
+.ms-dot { width: 12px; height: 12px; border-radius: 50%; background: #0a2540; flex: none; margin-top: 4px; }
+.ms-dot.done { background: #0e9f6e; }
+.ms-dot.wip { background: #1d4ed8; }
+.ms-dot.todo { background: #e2e8f0; border: 2px solid #94a3b8; }
+.ms-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8898aa; flex: none; width: 48px; margin-top: 1px; }
+.ms-body h5 { font-size: 15px; font-weight: 700; color: #0a2540; margin: 0 0 4px; }
+.ms-body p { font-size: 12px; color: #64748b; margin: 0; line-height: 1.6; }
+
+/* eval metric */
+.metric-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 20px; text-align: center; }
+.metric-card .m-val { font-size: 34px; font-weight: 800; color: #0a2540; line-height: 1; }
+.metric-card .m-name { font-size: 12px; font-weight: 600; color: #64748b; margin-top: 6px; text-transform: uppercase; letter-spacing: .08em; }
+
+/* prompt block */
+.prompt-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; color: #334155; }
+.prompt-block .sys { color: #64748b; font-style: italic; }
+.prompt-block .var { color: #1d4ed8; font-weight: 600; }
+.prompt-block .key { color: #0a2540; font-weight: 700; }
+.prompt-block .cmt { color: #94a3b8; }
+
+/* context layer viz */
+.ctx-layer { border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; }
+.ctx-layer .cl-label { font-size: 13px; font-weight: 700; color: #ffffff; }
+.ctx-layer .cl-detail { font-size: 11px; color: rgba(255,255,255,.75); }
+.ctx-layer .cl-size { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.9); font-family: 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- ──────────────────── 1. COVER ──────────────────── -->
+<section class="slide" data-title="封面" style="justify-content:center;">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>Internal · Confidential</span></div>
+  <div style="max-width:760px;">
+    <div class="cover-eyebrow">系统汇报 · 2026-04-28</div>
+    <h1 class="cover-title">HT KnowledgeBase<br><span style="background:linear-gradient(90deg,#0a2540,#1d4ed8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">RAG 知识库平台</span></h1>
+    <div class="cover-accent-bar"></div>
+    <p class="cover-sub">企业级多知识空间 RAG 问答系统 · 架构、能力与规划</p>
+    <div class="cover-meta">
+      <span>技术 &amp; 产品团队</span>
+      <span style="color:#e2e8f0;">|</span>
+      <span>架构现状汇报</span>
+    </div>
+  </div>
+  <div class="deck-footer"><span></span><span class="slide-number" data-current="1" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 2. 系统总览 ──────────────────── -->
+<section class="slide" data-title="系统总览">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>系统总览</span></div>
+  <div class="section-badge">01 · System Overview</div>
+  <h2 class="slide-title" data-anim="fade-up">四模块 Maven 架构</h2>
+  <p class="slide-sub">前后端分离，Spring Boot 3.5 · React 18 · OpenSearch · PostgreSQL</p>
+  <div class="four-col">
+    <div class="module-card card-accent" style="border-top-color:#0a2540;">
+      <div class="mc-tag">核心</div>
+      <div class="mc-name">bootstrap</div>
+      <div class="mc-desc">全部业务逻辑。RAG 问答、知识管理、文档入库、权限、评测。绝大多数开发在此模块。</div>
+    </div>
+    <div class="module-card card-accent" style="border-top-color:#1d4ed8;">
+      <div class="mc-tag">基础设施</div>
+      <div class="mc-name">framework</div>
+      <div class="mc-desc">跨域基础设施。通用工具类、异常处理、响应封装、基础抽象。</div>
+    </div>
+    <div class="module-card card-accent" style="border-top-color:#3b82f6;">
+      <div class="mc-tag">AI 层</div>
+      <div class="mc-name">infra-ai</div>
+      <div class="mc-desc">LLM 客户端抽象、模型路由、Embedding 服务、多模型调度与降级。</div>
+    </div>
+    <div class="module-card card-accent" style="border-top-color:#64748b;">
+      <div class="mc-tag">工具集成</div>
+      <div class="mc-name">mcp-server</div>
+      <div class="mc-desc">MCP 协议服务端，对外暴露知识库检索工具供其他 AI Agent 调用。</div>
+    </div>
+  </div>
+  <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
+    <span class="tag dark">多知识空间隔离</span>
+    <span class="tag blue">RBAC 权限管控</span>
+    <span class="tag blue">多模型路由 + 降级</span>
+    <span class="tag blue">RocketMQ 异步入库</span>
+    <span class="tag">Sa-Token 认证</span>
+    <span class="tag">OpenSearch 向量检索</span>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="2" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 3. 核心 RAG 链路 ──────────────────── -->
+<section class="slide" data-title="核心 RAG 链路">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>核心 RAG 链路</span></div>
+  <div class="section-badge">02 · RAG Pipeline</div>
+  <h2 class="slide-title" data-anim="fade-up">问答全链路：意图驱动 + 双通道检索</h2>
+  <p class="slide-sub">用户问题经三轮改写后，由意图树导引 + 全局向量并行检索，去重重排后送入 LLM</p>
+
+  <!-- main flow -->
+  <div class="flow-row" style="margin-bottom:20px;">
+    <div class="flow-step">
+      <div class="flow-box">用户提问</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box accent">Query Rewriting<br><span style="font-size:11px;font-weight:400;opacity:.8">多路改写 × 3</span></div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box accent">Intent 分类<br><span style="font-size:11px;font-weight:400;opacity:.8">三级意图树</span></div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box" style="background:#1e40af;">双通道检索<br><span style="font-size:11px;font-weight:400;opacity:.8">并行执行</span></div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box">去重 + Rerank</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="flow-box accent">Prompt 组装<br>→ LLM</div>
+    </div>
+  </div>
+
+  <!-- dual channel detail -->
+  <div class="two-col" style="gap:20px;">
+    <div class="concept-card" style="border-left-color:#1d4ed8;">
+      <h4>通道 A · 意图导引检索</h4>
+      <p>根据意图分类结果，在对应意图节点的向量分区内精准检索。高置信度时直接给出结果；低置信度触发澄清引导。</p>
+    </div>
+    <div class="concept-card dark">
+      <h4>通道 B · 全局向量检索</h4>
+      <p>不经意图过滤，对整个知识库做全量语义搜索，作为兜底通道，与通道 A 结果合并后统一重排。</p>
+    </div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:10px;">
+    <span class="tag blue">对话记忆上下文注入</span>
+    <span class="tag blue">全链路 RagTraceContext</span>
+    <span class="tag">多模型调度 + 健康检查</span>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="3" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 4. 文档入库流程 ──────────────────── -->
+<section class="slide" data-title="文档入库">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>文档入库</span></div>
+  <div class="section-badge">03 · Document Ingestion</div>
+  <h2 class="slide-title" data-anim="fade-up">Node 组合管道：可拆卸的 ETL 流水线</h2>
+  <p class="slide-sub">每个 Node 是独立处理单元，由管道引擎串联编排；RocketMQ 解耦入库触发</p>
+
+  <!-- pipeline visual -->
+  <div class="pipeline">
+    <div class="pipeline-node">
+      <div class="pn-icon">📥</div>
+      <div class="pn-name">Fetch</div>
+      <div class="pn-desc">从 RustFS / S3 拉取原始文档二进制</div>
+    </div>
+    <div class="pipeline-node">
+      <div class="pn-icon">📄</div>
+      <div class="pn-name">Parse</div>
+      <div class="pn-desc">Apache Tika 解析 PDF / Word / PPT / HTML 等</div>
+    </div>
+    <div class="pipeline-node">
+      <div class="pn-icon">✨</div>
+      <div class="pn-name">Enhance</div>
+      <div class="pn-desc">LLM 摘要 / 关键词提取 / 元数据增强</div>
+    </div>
+    <div class="pipeline-node active">
+      <div class="pn-icon">✂️</div>
+      <div class="pn-name">Chunk</div>
+      <div class="pn-desc">多策略分块（大小、段落、语义）</div>
+    </div>
+    <div class="pipeline-node active">
+      <div class="pn-icon">🧮</div>
+      <div class="pn-name">Vectorize</div>
+      <div class="pn-desc">Embedding 服务生成向量</div>
+    </div>
+    <div class="pipeline-node active">
+      <div class="pn-icon">💾</div>
+      <div class="pn-name">Store</div>
+      <div class="pn-desc">写入 OpenSearch + PostgreSQL</div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:24px;gap:20px;">
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 12px;font-size:16px;">异步触发机制</h4>
+      <div class="concept-card" style="border-left-color:#1d4ed8;">
+        <h4>RocketMQ 事件驱动</h4>
+        <p>文档上传触发 MQ 消息，知识库状态机异步驱动入库任务，解耦 HTTP 响应与重计算流程。</p>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 12px;font-size:16px;">状态追踪</h4>
+      <div class="concept-card dark">
+        <h4>分块级状态机</h4>
+        <p>每个文档 / 分块独立追踪处理状态（待处理 / 处理中 / 已完成 / 失败），支持断点重试与重建索引。</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="4" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 5. 权限管理 ──────────────────── -->
+<section class="slide" data-title="权限管理">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>权限管理</span></div>
+  <div class="section-badge">04 · Permission Model</div>
+  <h2 class="slide-title" data-anim="fade-up">基于部门的知识空间访问控制</h2>
+  <p class="slide-sub">RBAC 模型 + 知识空间隔离，用户只能看到所属部门授权的知识库</p>
+
+  <div class="two-col" style="gap:32px;">
+    <!-- RBAC model -->
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 16px;font-size:15px;font-weight:700;">权限模型层次</h4>
+      <div class="rbac-row">
+        <div class="rbac-label">用户</div>
+        <div class="rbac-arrow">→</div>
+        <div class="rbac-items">
+          <div class="rbac-item gray">隶属部门</div>
+          <div class="rbac-item gray">绑定角色</div>
+        </div>
+      </div>
+      <div class="rbac-row">
+        <div class="rbac-label blue">角色</div>
+        <div class="rbac-arrow">→</div>
+        <div class="rbac-items">
+          <div class="rbac-item">可访问知识库列表</div>
+          <div class="rbac-item">功能权限集</div>
+        </div>
+      </div>
+      <div class="rbac-row">
+        <div class="rbac-label">知识库</div>
+        <div class="rbac-arrow">→</div>
+        <div class="rbac-items">
+          <div class="rbac-item gray">所属部门 dept_id</div>
+          <div class="rbac-item gray">公开 / 部门 / 私有</div>
+        </div>
+      </div>
+      <div class="rbac-row">
+        <div class="rbac-label" style="background:#0e9f6e;">校验层</div>
+        <div class="rbac-arrow">→</div>
+        <div class="rbac-items">
+          <div class="rbac-item">Controller 拦截器</div>
+          <div class="rbac-item">Service 准入计算</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- business capabilities -->
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 16px;font-size:15px;font-weight:700;">核心业务能力</h4>
+      <div class="stack">
+        <div class="concept-card" style="border-left-color:#0e9f6e;">
+          <h4>知识空间隔离</h4>
+          <p>每个 KB 绑定 dept_id，问答 / 检索 / 管理操作均在准入计算后执行，数据不跨空间泄漏。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#1d4ed8;">
+          <h4>三级安全检查</h4>
+          <p>请求进入后：① Sa-Token 身份验证 → ② 权限计算器 → ③ 业务层所有权校验，三道守门。</p>
+        </div>
+        <div class="concept-card dark">
+          <h4>零 ThreadLocal 泄漏</h4>
+          <p>权限上下文通过参数传递而非隐式 ThreadLocal，ArchUnit 守门规则持续保障架构正确性。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="5" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 6. OpenSearch 向量检索 ──────────────────── -->
+<section class="slide" data-title="OpenSearch">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>向量检索</span></div>
+  <div class="section-badge">05 · Vector Search</div>
+  <h2 class="slide-title" data-anim="fade-up">OpenSearch 2.18 · 生产向量存储</h2>
+  <p class="slide-sub">每个知识库独立索引，HNSW 近似近邻 + BM25 文本检索双路融合</p>
+
+  <div class="two-col" style="gap:32px;margin-bottom:24px;">
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 16px;font-size:15px;font-weight:700;">索引架构</h4>
+      <div class="stack">
+        <div class="concept-card" style="border-left-color:#0a2540;">
+          <h4>One Index Per KB</h4>
+          <p>每个知识库（collection_name）对应一个独立的 OpenSearch index，天然实现数据隔离。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#1d4ed8;">
+          <h4>字段结构</h4>
+          <p><code style="font-size:11px;">content</code> 文本 + <code style="font-size:11px;">embedding</code> 向量（1536d） + <code style="font-size:11px;">metadata</code>（kb_id, doc_id, chunk_idx, security_level）</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 16px;font-size:15px;font-weight:700;">检索策略</h4>
+      <div class="stack">
+        <div class="concept-card" style="border-left-color:#3b82f6;">
+          <h4>HNSW 向量检索</h4>
+          <p>基于 Embedding 余弦相似度，M=16 / efConstruction=512，top-K 语义召回。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#6366f1;">
+          <h4>BM25 + 混合融合</h4>
+          <p>关键词精确匹配与向量语义并行，RRF（倒数排名融合）合并两路结果后送 Reranker。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <span class="tag dark">生产唯一向量引擎</span>
+    <span class="tag blue">OpenSearch 2.18</span>
+    <span class="tag blue">k-NN plugin HNSW</span>
+    <span class="tag">Docker Compose 部署</span>
+    <span class="tag">软删除复用 collection_name</span>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="6" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 7. Prompt Engineering ──────────────────── -->
+<section class="slide" data-title="Prompt Engineering">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>Prompt Engineering</span></div>
+  <div class="section-badge">06 · Prompt Engineering</div>
+  <h2 class="slide-title" data-anim="fade-up">提示词工程：检索增强 + 意图感知</h2>
+  <p class="slide-sub">Prompt 分三层构建，不同意图分支使用差异化指令，保障答案质量</p>
+
+  <div class="two-col" style="gap:28px;">
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 12px;font-size:15px;font-weight:700;">三层 Prompt 结构</h4>
+      <div class="stack">
+        <div class="concept-card" style="border-left-color:#0a2540;padding:14px 16px;">
+          <h4>① 系统人设层</h4>
+          <p>定义 AI 角色定位、回答风格、边界约束（"仅基于知识库内容回答，不编造"）。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#1d4ed8;padding:14px 16px;">
+          <h4>② 检索增强层</h4>
+          <p>将 Rerank 后的 top-K chunks 结构化注入，标注来源 KB、文档名，支持引用溯源。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#3b82f6;padding:14px 16px;">
+          <h4>③ 对话历史层</h4>
+          <p>按 token 预算注入最近 N 轮对话，维持多轮语境连贯性。</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 12px;font-size:15px;font-weight:700;">Query Rewriting 策略</h4>
+      <div class="stack">
+        <div class="concept-card dark" style="padding:14px 16px;">
+          <h4>意图感知改写</h4>
+          <p>根据意图分类结果，将口语化问题改写为向量检索友好的文本，多路改写取最优召回。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#0e9f6e;padding:14px 16px;">
+          <h4>低置信度保护</h4>
+          <p>意图置信度低于阈值时，Prompt 自动切换为引导澄清模式，不强行检索避免噪声答案。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#d97706;padding:14px 16px;">
+          <h4>无关问题拒识</h4>
+          <p>系统 Prompt 内置知识边界守卫，超出 KB 范围的问题礼貌拒绝并引导提问。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="7" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 8. Context Engineering ──────────────────── -->
+<section class="slide" data-title="Context Engineering">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>Context Engineering</span></div>
+  <div class="section-badge">07 · Context Engineering</div>
+  <h2 class="slide-title" data-anim="fade-up">上下文工程：有限窗口的信息密度最大化</h2>
+  <p class="slide-sub">在模型 context window 约束内，精确控制每一层内容的来源、优先级与 token 预算</p>
+
+  <div class="two-col" style="gap:32px;">
+    <!-- context window composition -->
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 14px;font-size:15px;font-weight:700;">Context Window 构成</h4>
+      <div class="ctx-layer" style="background:#0a2540;">
+        <div>
+          <div class="cl-label">System Prompt</div>
+          <div class="cl-detail">角色定义 · 行为约束 · 安全边界</div>
+        </div>
+        <div class="cl-size">~400 tok</div>
+      </div>
+      <div class="ctx-layer" style="background:#1d4ed8;">
+        <div>
+          <div class="cl-label">Retrieved Chunks</div>
+          <div class="cl-detail">Rerank top-K · 来源标注 · 去重</div>
+        </div>
+        <div class="cl-size">~2000 tok</div>
+      </div>
+      <div class="ctx-layer" style="background:#3b82f6;">
+        <div>
+          <div class="cl-label">Conversation History</div>
+          <div class="cl-detail">最近 N 轮 · 按 token 预算裁剪</div>
+        </div>
+        <div class="cl-size">~1200 tok</div>
+      </div>
+      <div class="ctx-layer" style="background:#64748b;">
+        <div>
+          <div class="cl-label">Current Query</div>
+          <div class="cl-detail">改写后问题 + 意图标签</div>
+        </div>
+        <div class="cl-size">~200 tok</div>
+      </div>
+    </div>
+
+    <!-- engineering decisions -->
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 14px;font-size:15px;font-weight:700;">工程决策要点</h4>
+      <div class="stack">
+        <div class="concept-card" style="border-left-color:#0a2540;">
+          <h4>Chunks 优先级高于历史</h4>
+          <p>知识检索结果固定占用最大预算；对话历史在超限时从最远轮次开始裁剪，保证知识准确性。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#1d4ed8;">
+          <h4>t_message 持久化思考链</h4>
+          <p><code style="font-size:11px;">thinking_content</code> / <code style="font-size:11px;">thinking_duration</code> 字段持久化深度思考过程，可供后续评测与调试。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#0e9f6e;">
+          <h4>Answer Sources 溯源</h4>
+          <p><code style="font-size:11px;">sources_json</code> 记录每条回答引用的原始文档 chunk，前端可展示引用来源面板。</p>
+        </div>
+        <div class="concept-card dark">
+          <h4>KB 级记忆隔离</h4>
+          <p>对话 session 绑定 kb_id，切换知识空间时强制 reset，彻底杜绝跨空间上下文污染。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="8" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 9. RAG 评测 ──────────────────── -->
+<section class="slide" data-title="RAG 评测">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>RAG 评测</span></div>
+  <div class="section-badge">08 · RAG Evaluation</div>
+  <h2 class="slide-title" data-anim="fade-up">RAGAS 评测体系：量化问答质量</h2>
+  <p class="slide-sub">黄金数据集 + 自动化评分，覆盖检索与生成两个维度</p>
+
+  <div class="two-col" style="gap:32px;">
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 14px;font-size:15px;font-weight:700;">评测架构</h4>
+      <div class="stack">
+        <div class="concept-card" style="border-left-color:#0a2540;">
+          <h4>EvaluationCollector</h4>
+          <p>在 RAG 链路中通过 <code style="font-size:11px;">RagTraceContext</code> 自动采集 query-chunk-answer 三元组，写入 <code style="font-size:11px;">t_rag_evaluation_record</code>。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#1d4ed8;">
+          <h4>黄金数据集管理</h4>
+          <p>4 张评测表（gold_dataset / gold_item / eval_run / eval_result），支持人工标注、批次运行、版本对比。</p>
+        </div>
+        <div class="concept-card" style="border-left-color:#0e9f6e;">
+          <h4>导出 &amp; 自动评分</h4>
+          <p><code style="font-size:11px;">GET /rag/evaluations/export</code> 产出 RAGAS-compatible JSON，<code style="font-size:11px;">run_eval.py</code> 调用百炼 API 自动评分。</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h4 style="color:#0a2540;margin:0 0 14px;font-size:15px;font-weight:700;">评测维度（RAGAS 四项）</h4>
+      <div class="four-col" style="grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="metric-card">
+          <div class="m-val" style="color:#0a2540;">F</div>
+          <div class="m-name">Faithfulness<br>忠实度</div>
+        </div>
+        <div class="metric-card">
+          <div class="m-val" style="color:#1d4ed8;">R</div>
+          <div class="m-name">Answer Relevance<br>答案相关性</div>
+        </div>
+        <div class="metric-card">
+          <div class="m-val" style="color:#0e9f6e;">P</div>
+          <div class="m-name">Context Precision<br>检索精度</div>
+        </div>
+        <div class="metric-card">
+          <div class="m-val" style="color:#d97706;">R</div>
+          <div class="m-name">Context Recall<br>检索召回</div>
+        </div>
+      </div>
+      <div class="concept-card dark" style="margin-top:14px;">
+        <h4>持续评测目标</h4>
+        <p>每次 RAG 参数调整（改写策略、Chunk 大小、Rerank 模型）后可对比评测分数，形成量化迭代闭环。</p>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="9" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 10. 里程碑 & 规划 ──────────────────── -->
+<section class="slide" data-title="里程碑与规划">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>里程碑与规划</span></div>
+  <div class="section-badge">09 · Milestones &amp; Roadmap</div>
+  <h2 class="slide-title" data-anim="fade-up">已落地能力 &amp; 下一步规划</h2>
+
+  <div class="two-col" style="gap:40px;">
+    <!-- done -->
+    <div>
+      <h4 style="color:#0e9f6e;margin:0 0 12px;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">✓ 已完成</h4>
+      <div class="ms-row">
+        <div class="ms-dot done"></div>
+        <div class="ms-label" style="color:#0e9f6e;">完成</div>
+        <div class="ms-body"><h5>多知识空间 + RBAC 权限体系</h5><p>用户 / 角色 / 部门三级隔离，KB 级访问控制，零泄漏架构守卫</p></div>
+      </div>
+      <div class="ms-row">
+        <div class="ms-dot done"></div>
+        <div class="ms-label" style="color:#0e9f6e;">完成</div>
+        <div class="ms-body"><h5>双通道 RAG 问答链路</h5><p>意图树分类 + 全局向量双路并行，多轮改写 + Rerank</p></div>
+      </div>
+      <div class="ms-row">
+        <div class="ms-dot done"></div>
+        <div class="ms-label" style="color:#0e9f6e;">完成</div>
+        <div class="ms-body"><h5>RAGAS 评测基础设施</h5><p>黄金数据集管理、自动采集、导出评分，E1 PR 已合并</p></div>
+      </div>
+      <div class="ms-row">
+        <div class="ms-dot done"></div>
+        <div class="ms-label" style="color:#0e9f6e;">完成</div>
+        <div class="ms-body"><h5>Context Engineering 基础</h5><p>sources_json 溯源、thinking 链持久化、KB 级记忆隔离</p></div>
+      </div>
+    </div>
+
+    <!-- next -->
+    <div>
+      <h4 style="color:#1d4ed8;margin:0 0 12px;font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;">→ 规划中</h4>
+      <div class="ms-row">
+        <div class="ms-dot wip"></div>
+        <div class="ms-label" style="color:#1d4ed8;">进行中</div>
+        <div class="ms-body"><h5>权限 PR4 · 检索范围构建器</h5><p>检索时动态构建安全过滤条件，在向量查询层强制权限边界</p></div>
+      </div>
+      <div class="ms-row">
+        <div class="ms-dot todo"></div>
+        <div class="ms-label">计划</div>
+        <div class="ms-body"><h5>RAGAS E2 · 评测 Dashboard</h5><p>可视化评分趋势、版本对比、问题诊断面板</p></div>
+      </div>
+      <div class="ms-row">
+        <div class="ms-dot todo"></div>
+        <div class="ms-label">计划</div>
+        <div class="ms-body"><h5>Milvus / pgvector metadataFilters</h5><p>补齐安全等级过滤，实现三向量引擎统一安全语义</p></div>
+      </div>
+      <div class="ms-row">
+        <div class="ms-dot todo"></div>
+        <div class="ms-label">计划</div>
+        <div class="ms-body"><h5>Context 压缩策略</h5><p>长对话摘要压缩、检索 chunk 去冗余，提升长会话质量</p></div>
+      </div>
+    </div>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="10" data-total="11"></span></div>
+</section>
+
+<!-- ──────────────────── 11. Q&A ──────────────────── -->
+<section class="slide center" data-title="Q&A">
+  <div class="deck-header"><span class="logo">HT KnowledgeBase</span><span>Q&amp;A</span></div>
+  <div style="text-align:center;">
+    <div style="font-size:88px;font-weight:800;color:#0a2540;line-height:1;letter-spacing:-.04em;margin-bottom:24px;">Q&amp;A</div>
+    <div class="cover-accent-bar" style="margin:0 auto 28px;"></div>
+    <h2 style="font-size:36px;font-weight:700;color:#0a2540;margin:0 0 16px;">感谢聆听</h2>
+    <p style="font-size:18px;color:#425466;margin:0 0 40px;font-weight:300;">HT KnowledgeBase · RAG 知识库平台</p>
+    <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
+      <span class="tag dark">代码库: rag-knowledge-dev</span>
+      <span class="tag blue">文档: docs/dev/</span>
+      <span class="tag">API: :9090/api/ragent</span>
+    </div>
+  </div>
+  <div class="deck-footer"><span>HT KnowledgeBase · 系统汇报</span><span class="slide-number" data-current="11" data-total="11"></span></div>
+</section>
+
+</div>
+<div class="progress-bar"><span></span></div>
+<script src="../../.claude/skills/html-ppt/assets/runtime.js"></script>
+</body>
+</html>
