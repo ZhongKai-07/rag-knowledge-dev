@@ -151,7 +151,7 @@ docker exec postgres psql -U postgres -d ragent -c "SQL语句"
 | `rag.vector.type` | 向量库选择（milvus/opensearch/pg） |
 | `rag.query-rewrite` | 查询改写开关和历史消息轮数 |
 | `rag.rate-limit` | 全局并发限制 |
-| `rag.memory` | 会话记忆保留轮数、摘要开关、TTL |
+| `rag.memory` | 会话记忆保留轮数、摘要开关 |
 | `rag.retrieval` | 两阶段检索配置（`recall-top-k=30` / `rerank-top-k=10`）。PR2 起生效。`SearchChannelProperties.topKMultiplier` 已 `@Deprecated(forRemoval=true)`，不再读取。 |
 | `rag.search.channels` | 各检索通道的置信度阈值 |
 | `rag.sources` | 回答来源（Answer Sources）功能开关 + 卡片参数。2026-04-22 PR5 起默认 `enabled: true`；置 `false` 即 hot-rollback 回 PR4 末态（前端 `hasSources=false` 对称 gate + 后端 `SourceCardBuilder` 空输出 + `persistSourcesIfPresent` 空 guard 全链路字节级等价） |

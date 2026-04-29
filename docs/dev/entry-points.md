@@ -167,7 +167,7 @@
   - `rag.vector.type` —— 向量库切换（opensearch / milvus / pg）
   - `rag.query-rewrite` —— 改写开关 + 历史轮数
   - `rag.rate-limit` —— 全局并发上限
-  - `rag.memory` —— 记忆轮数、摘要开关、TTL
+  - `rag.memory` —— 记忆轮数、摘要开关
   - `rag.search.channels` —— 各通道置信度阈值
   - `ai.chat.candidates` / `ai.embedding.candidates` —— 模型候选列表 + 优先级
   - `ai.rerank` —— 重排模型
