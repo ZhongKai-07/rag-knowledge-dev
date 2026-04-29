@@ -28,7 +28,7 @@ import org.springframework.validation.annotation.Validated;
 /**
  * 记忆配置属性类
  * 用于配置 RAG 系统中的对话记忆管理相关参数
- * 包括历史轮数保留、缓存时间、摘要压缩等功能的配置
+ * 包括历史轮数保留、摘要压缩等功能的配置
  */
 @Data
 @Configuration
@@ -43,11 +43,6 @@ public class MemoryProperties {
     @Min(1)
     @Max(100)
     private Integer historyKeepTurns = 8;
-
-    /**
-     * 缓存过期时间（分钟）
-     */
-    private Integer ttlMinutes = 60;
 
     /**
      * 是否启用对话记忆压缩
