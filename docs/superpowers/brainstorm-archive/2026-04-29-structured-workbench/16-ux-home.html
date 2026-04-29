@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>16. UX 屏 1 · 工作台首屏 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .nav-bar {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 1.5rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-bar .ch-tag {
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 0.74rem;
+  }
+  .nav-bar a {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.82rem;
+  }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  /* App mockup */
+  .app-mock {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    .app-mock { background: #1a1a1c; }
+  }
+  .app-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 1.25rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .app-brand { font-weight: 600; }
+  .app-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+  }
+  .app-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5856d6, #0071e3);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .app-body {
+    padding: 2.5rem 2rem;
+  }
+
+  .home-title {
+    font-size: 1.65rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .ability-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    max-width: 720px;
+    margin: 0 auto 2rem;
+  }
+  @media (max-width: 700px) { .ability-grid { grid-template-columns: 1fr; } }
+  .ability-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .ability-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0,113,227,0.12);
+  }
+  .ability-card .ab-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .ability-card h4 { font-size: 1.1rem; margin-bottom: 0.4rem; }
+  .ability-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 0.3rem 0; }
+  .ability-card .ab-cta {
+    display: inline-block;
+    margin-top: 0.6rem;
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .recent-section {
+    max-width: 720px;
+    margin: 0 auto 2rem;
+  }
+  .section-divider {
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    text-align: center;
+    margin: 1rem 0;
+  }
+  .section-divider::before,
+  .section-divider::after {
+    content: '';
+    display: inline-block;
+    width: 60px;
+    height: 1px;
+    background: var(--border);
+    vertical-align: middle;
+    margin: 0 0.5rem;
+  }
+  .recent-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.85rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
+  }
+  .recent-item .ri-time { color: var(--text-secondary); font-size: 0.78rem; }
+  .recent-item button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  .dept-tip {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0.85rem 1.1rem;
+    background: rgba(255,159,10,0.06);
+    border: 1px solid rgba(255,159,10,0.25);
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    text-align: center;
+  }
+  .dept-tip a {
+    color: var(--accent);
+    text-decoration: none;
+    margin-left: 0.4rem;
+  }
+
+  /* Annotation overlay */
+  .annot-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .annot {
+    padding: 0.8rem 1rem;
+    border-left: 3px solid var(--accent);
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    font-size: 0.83rem;
+  }
+  .annot strong { color: var(--accent); display: block; margin-bottom: 0.2rem; font-size: 0.9rem; }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 16. UX 屏 1 · 工作台首屏</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">章 5 · 看见产品</span> &nbsp; 第 13/20 张</span>
+  <span>
+    <a href="13-self-improving-engine.html">← 上一章 · 13 Self-improving 发动机</a>
+    &nbsp;|&nbsp;
+    <a href="17-ux-knowledge-qa.html">下一张 · 17 知识问答 →</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+  <h2>屏 1 · 进入工作台,1 秒知道能干什么</h2>
+  <p class="subtitle">
+    进入 → 1 秒内知道"我能干什么" · 3 秒内决定"要点哪儿"。<br>
+    用户从来不点"创建任务"、"配置 Agent"。点能力区直接干活。
+  </p>
+
+  <!-- ============ 1. mockup ============ -->
+  <div class="section">
+    <h3>① UI mockup</h3>
+
+    <div class="app-mock">
+      <div class="app-topbar">
+        <div class="app-brand">HT KnowledgeBase</div>
+        <div class="app-user">
+          <span>张三 · EU Ops</span>
+          <div class="app-avatar">张</div>
+        </div>
+      </div>
+
+      <div class="app-body">
+        <div class="home-title">今天,我能帮你做什么?</div>
+
+        <div class="ability-grid">
+          <div class="ability-card">
+            <div class="ab-icon">💬</div>
+            <h4>问知识</h4>
+            <p>COB 守则 / SOP 流程</p>
+            <p>随时问</p>
+            <span class="ab-cta">开始 →</span>
+          </div>
+          <div class="ability-card">
+            <div class="ab-icon">📤</div>
+            <h4>处理文档</h4>
+            <p>协议提取 → Excel</p>
+            <p>对手方协议查询</p>
+            <span class="ab-cta">开始 →</span>
+          </div>
+        </div>
+
+        <div class="recent-section">
+          <div class="section-divider">最近</div>
+          <div class="recent-item">
+            <span>📝 EU MTA 默认值</span>
+            <span style="display:flex;align-items:center;gap:0.75rem">
+              <span class="ri-time">2 小时前</span>
+              <button>继续</button>
+            </span>
+          </div>
+          <div class="recent-item">
+            <span>📤 ISDA_HSBC_2026.pdf · 已提取 18 字段</span>
+            <span style="display:flex;align-items:center;gap:0.75rem">
+              <span class="ri-time">昨天</span>
+              <button>下载 Excel</button>
+            </span>
+          </div>
+          <div class="recent-item">
+            <span>🔍 华泰 HSBC ISDA Notification Time</span>
+            <span style="display:flex;align-items:center;gap:0.75rem">
+              <span class="ri-time">3 天前</span>
+              <button>查看</button>
+            </span>
+          </div>
+        </div>
+
+        <div class="dept-tip">
+          ⓘ 本部门最近有人在问"EU 区域 IA 调整",要看吗?
+          <a href="#">→</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 关键设计点 ============ -->
+  <div class="section">
+    <h3>② 8 个关键设计决策</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:24%">决策点</th><th>决定</th><th>理由</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>主标题</td>
+          <td>"今天,我能帮你做什么?"</td>
+          <td>设问句,让用户立刻知道这是工具不是查阅</td>
+        </tr>
+        <tr>
+          <td>能力区数量</td>
+          <td>v1 = 2 个(知识问答 / 文档处理)</td>
+          <td>5 类里只 2 类落 v1;其他暂不显示,避免 dead button</td>
+        </tr>
+        <tr>
+          <td>能力区命名</td>
+          <td>"问知识 / 处理文档"</td>
+          <td>极口语,回避"问答 / 智能"等术语(P1 零技术词)</td>
+        </tr>
+        <tr>
+          <td>"最近"列表</td>
+          <td>按 task instance 倒序,3 类形态混排</td>
+          <td>用户记忆点是"我做过什么",不是"哪种类型"</td>
+        </tr>
+        <tr>
+          <td>"部门提醒"</td>
+          <td>self-improving 在用户端的小窗口</td>
+          <td>用户感受到"系统在帮整个部门进步";仅 1 行,无红点</td>
+        </tr>
+        <tr>
+          <td>是否有侧边栏</td>
+          <td><strong>没有</strong></td>
+          <td>v1 试点单部门,导航极简就够;侧边栏会让首屏复杂</td>
+        </tr>
+        <tr>
+          <td>顶部右侧</td>
+          <td>用户名 + 部门</td>
+          <td>让用户始终知道自己的"上下文"</td>
+        </tr>
+        <tr>
+          <td>设置入口</td>
+          <td>点头像 → 下拉菜单(个人记忆 / 退出)</td>
+          <td>不让设置抢首屏注意力</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 3. 部门提醒 ============ -->
+  <div class="section">
+    <h3>③ "部门提醒"是 self-improving 的<u>用户端出口</u></h3>
+
+    <div class="annot-grid">
+      <div class="annot">
+        <strong>显示规则</strong>
+        过去 7 天部门有 ≥ 5 次同主题查询 + 当前用户没问过该主题 → 显示。点击预填该主题进能力区,不强制。
+      </div>
+      <div class="annot">
+        <strong>不能做什么</strong>
+        不能变成"团队广播 / 集体讨论 / 评论"——那是飞书的事。这里只是 Insight 的<u>轻量出口</u>。
+      </div>
+      <div class="annot">
+        <strong>视觉权重</strong>
+        浅黄底 / 1 行 / 无红点徽章 / 不打扰。和系统提示性 banner 同级,不抢能力区。
+      </div>
+      <div class="annot">
+        <strong>价值</strong>
+        让员工感受到"AI 在背后看着部门趋势" + "原来同事也在关心这个"。这是 self-improving 在用户端最细微的体感。
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4. 5 条主路径设计原则(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>④ 5 条主路径设计原则(贯穿 16/17/18 三屏)</h3>
+
+    <table class="compact">
+      <thead><tr><th style="width:8%">#</th><th style="width:25%">原则</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>P1</strong></td>
+          <td>零"任务 / 配置 / Agent / Skill"字眼</td>
+          <td>UI 文案严禁出现技术词。用户从来不点"创建/新建/配置",只点能力区和"问/上传/继续"</td>
+        </tr>
+        <tr>
+          <td><strong>P2</strong></td>
+          <td>第一动作即创建,空状态不入库</td>
+          <td>用户点能力区只是"进入",不创建任何 Ledger。第一个真实动作(敲句话/上传文件)才创建 TaskInstance</td>
+        </tr>
+        <tr>
+          <td><strong>P3</strong></td>
+          <td>永远显示来源 / 引用 / 置信度</td>
+          <td>知识问答的来源卡 + 文档智能的字段引用 + 置信度三色 — 可追溯不变量的物理体现</td>
+        </tr>
+        <tr>
+          <td><strong>P4</strong></td>
+          <td>诚实失败用主动语态,给具体下一步</td>
+          <td>不用"抱歉"挡住,给具体行动选项("换个表述 / 告诉 Lead 这块缺资料")</td>
+        </tr>
+        <tr>
+          <td><strong>P5</strong></td>
+          <td>个人/部门 memory 透明但不打扰</td>
+          <td>永远不主动 prompt"要不要记住";用户主动写,系统在每次问答下方一行小字告知"基于...",可展开看具体注入</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 5. 用户故事 ============ -->
+  <div class="section">
+    <h3>⑤ 用户故事 — 张三的一天</h3>
+
+    <div class="insight-box">
+      <strong>9:15</strong> 张三打开工作台 → 主标题"今天,我能帮你做什么?"<br><br>
+      <strong>9:16</strong> 看到"💬 问知识"卡片 → 点击 → 跳到屏 2a → 问"EU MTA 默认值是多少?"→ 拿到答案 + 来源卡<br><br>
+      <strong>14:00</strong> 收到上传 ISDA_HSBC.pdf 的需求 → 回到首屏 → 点"📤 处理文档" → 跳到屏 2b → 上传 → 等 25 秒 → 下载 Excel<br><br>
+      <strong>17:30</strong> 收工前看首屏 → 注意到"部门提醒:本部门最近有人在问'EU 区域 IA 调整'" → 点击 → 自己也学到一点新知识
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      这套 UX 让张三<u>从来不需要思考</u>:<br>
+      ❌ "我用哪个 KB?"(KB chip 默认全开)<br>
+      ❌ "我用哪个 agent?"(用户层根本不知道有 agent 概念)<br>
+      ❌ "怎么配置任务?"(零配置 / 直接干活)<br>
+      ❌ "怎么让 AI 记住我?"(透明栏告诉他记住了什么 / 一键编辑)
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

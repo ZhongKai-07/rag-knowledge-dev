@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>20. UX 屏 6 · 系统提议 inbox — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+  .nav-bar .ch-tag { padding: 2px 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 0.74rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+  .insight-error { border-left-color: var(--error); background: rgba(255,59,48,0.04); }
+
+  /* Admin app */
+  .admin-mock {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  @media (prefers-color-scheme: dark) { .admin-mock { background: #1a1a1c; } }
+  .admin-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 1.25rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .admin-title { font-weight: 600; }
+  .admin-tab { display: inline-block; padding: 4px 10px; background: rgba(255,159,10,0.12); color: #b25e00; border-radius: 4px; font-size: 0.74rem; }
+
+  .admin-body { padding: 1.5rem 2rem; }
+
+  .info-banner {
+    padding: 0.75rem 1rem;
+    background: rgba(0,113,227,0.06);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .tab-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+  }
+  .tab-row .tab {
+    padding: 5px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .tab-row .tab.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  /* Proposal cards */
+  .proposal-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .pcard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+  .pcard-type {
+    font-weight: 500;
+  }
+  .pcard-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin: 0.4rem 0 0.6rem;
+  }
+  .pcard-section {
+    margin: 0.4rem 0;
+    padding-left: 0.6rem;
+    border-left: 2px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .pcard-section .lbl-evidence { color: var(--accent); }
+  .pcard-section .lbl-impact { color: var(--success); }
+  .pcard-section ul {
+    margin: 0.3rem 0 0 1.25rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+  }
+  .pcard-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+  }
+  .pcard-actions button {
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    font-size: 0.83rem;
+    cursor: pointer;
+  }
+  .pcard-actions .btn-approve {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+  }
+  .pcard-actions .btn-reject {
+    color: var(--error);
+    border-color: rgba(255,59,48,0.3);
+  }
+  .pcard-actions .btn-later {
+    color: var(--text-secondary);
+  }
+
+  .relearn-banner {
+    padding: 0.6rem 0.85rem;
+    background: rgba(255,159,10,0.1);
+    border-left: 3px solid var(--warning);
+    border-radius: 4px;
+    font-size: 0.83rem;
+    margin: 0.5rem 0;
+  }
+  .second-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--warning);
+    color: white;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    margin-left: 0.4rem;
+  }
+
+  .processed-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed var(--border);
+  }
+  .processed-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.85rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 0.4rem;
+    font-size: 0.83rem;
+  }
+  .processed-row .pr-icon {
+    font-size: 0.85rem;
+    margin-right: 0.4rem;
+  }
+  .processed-row.approved { border-left: 3px solid var(--success); }
+  .processed-row.rejected { border-left: 3px solid var(--error); opacity: 0.85; }
+  .processed-row .pr-action {
+    font-size: 0.78rem;
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  /* Comparison: 5 forms */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.6rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 800px) { .form-grid { grid-template-columns: 1fr 1fr; } }
+  .form-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem;
+    text-align: center;
+    font-size: 0.82rem;
+  }
+  .form-card .form-icon { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .form-card .form-name { font-weight: 500; margin-bottom: 0.2rem; }
+  .form-card .form-stat { color: var(--text-secondary); font-size: 0.74rem; }
+  .form-card.f-active { border-color: var(--success); background: rgba(52,199,89,0.06); }
+  .form-card.f-pending { border-color: var(--warning); background: rgba(255,159,10,0.06); }
+  .form-card.f-future { opacity: 0.55; }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 20. UX 屏 6 · 系统提议 inbox</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">章 5 · 看见产品</span> &nbsp; 第 17/20 张</span>
+  <span>
+    <a href="19-ux-insight-board.html">← 19 Insight 看板</a>
+    &nbsp;|&nbsp;
+    <a href="09-cmd-troubleshoot-arch.html">下一章 · 09 复杂指令/问题排查 →</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+  <h2>屏 6 · 系统提议 — self-improving 在 admin 端的物质化</h2>
+  <p class="subtitle">
+    向领导汇报时,这屏是最值钱的一帧 — 它具象化"AI 原生工作台不是工具,是会自己长大的中枢"这个抽象主张。<br>
+    业务管家永远只面对二元决策(Approve / Reject) — 产品在背后自己沉淀。
+  </p>
+
+  <!-- ============ 1. 主屏 mockup ============ -->
+  <div class="section">
+    <h3>① 主屏 mockup</h3>
+
+    <div class="admin-mock">
+      <div class="admin-topbar">
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <span style="color:var(--text-secondary)">Ops 工作台 ›</span>
+          <span class="admin-title">💡 系统提议 (8 待处理)</span>
+          <span class="admin-tab">dept_admin</span>
+        </div>
+        <div style="color:var(--text-secondary);font-size:0.82rem">李四 · Ops Lead</div>
+      </div>
+
+      <div class="admin-body">
+        <div class="info-banner">
+          ⓘ 系统每天根据部门使用情况生成提议。一键决定,立即生效。
+        </div>
+
+        <div class="tab-row">
+          <span class="tab active">全部 8</span>
+          <span class="tab">📚 部门记忆 3</span>
+          <span class="tab">🔍 KB 补充 2</span>
+          <span class="tab">🗑 清理 2</span>
+          <span class="tab">🆕 新入口 1</span>
+        </div>
+
+        <!-- 第一张:沉淀部门记忆 (第二次提议含反学习) -->
+        <div class="proposal-card">
+          <div class="pcard-header">
+            <span class="pcard-type">📚 沉淀部门记忆 · 3 天前生成 <span class="second-tag">第 2 次提议</span></span>
+            <span>30 天后过期</span>
+          </div>
+
+          <div class="relearn-banner">
+            ⚠ <strong>上次被拒原因</strong>:"这是某个用户的个人习惯,不是部门通用术语" · 本次新增 5 个用户支持,共 9 人使用
+          </div>
+
+          <div class="pcard-title">建议添加规则:"EUM = EU MTA"</div>
+
+          <div class="pcard-section">
+            <span class="lbl-evidence">▸ 证据(更新)</span>:9 个用户在过去 90 天使用该简称(原 4 人 + 新增 5 人) · 跨 3 个 sub-team
+            <ul>
+              <li>用户 #3712 · "我说 EUM 都指 EU MTA"   2026-04-15</li>
+              <li>用户 #2156 · "EUM = European MTA"     2026-04-18</li>
+              <li>用户 #4901 · "EUM is EU MTA"          2026-04-22</li>
+              <li>+ 6 位新增用户证据</li>
+            </ul>
+          </div>
+
+          <div class="pcard-section">
+            <span class="lbl-impact">▸ 影响</span>:批准后,所有部门成员的下一次问答 prompt 会自动注入此规则;用户问"EUM 是多少"时 Agent 自动转 query 为"EU MTA"。
+          </div>
+
+          <div class="pcard-actions">
+            <button class="btn-approve">✓ 批准</button>
+            <button class="btn-reject">✗ 拒绝(需写原因)</button>
+            <button class="btn-later">稍后</button>
+          </div>
+        </div>
+
+        <!-- 第二张:补充 KB -->
+        <div class="proposal-card">
+          <div class="pcard-header">
+            <span class="pcard-type">🔍 补充 KB · 5 天前生成</span>
+            <span>25 天后过期</span>
+          </div>
+
+          <div class="pcard-title">建议补充:"EU 区域 IA 调整规则"相关资料</div>
+
+          <div class="pcard-section">
+            <span class="lbl-evidence">▸ 证据</span>:过去 30 天有 5 次"未找到"的查询都涉及该主题
+            <ul>
+              <li>"EU 区域 IA 怎么调整"               2026-04-12</li>
+              <li>"IA adjustment EU rules"           2026-04-19</li>
+              <li>"europe IA threshold revision"     2026-04-22</li>
+              <li>"EU IA 调整流程"                    2026-04-24</li>
+              <li>"EU region IA changes"             2026-04-26</li>
+            </ul>
+          </div>
+
+          <div class="pcard-section">
+            <span class="lbl-impact">▸ 影响</span>:批准后,会创建一条 KB 补充工单分配给资料团队;工单完成后下次同类查询将能命中。
+          </div>
+
+          <div class="pcard-actions">
+            <button class="btn-approve">✓ 批准 → 派发工单</button>
+            <button class="btn-reject">✗ 拒绝(需写原因)</button>
+            <button class="btn-later">稍后</button>
+          </div>
+        </div>
+
+        <!-- 第三张:下线规则 -->
+        <div class="proposal-card">
+          <div class="pcard-header">
+            <span class="pcard-type">🗑 下线规则 · 7 天前生成</span>
+            <span>23 天后过期</span>
+          </div>
+
+          <div class="pcard-title">建议下线:"数字保留两位小数"</div>
+
+          <div class="pcard-section">
+            <span class="lbl-evidence">▸ 证据</span>:该规则注入次数 142 / 命中改写 4 次(命中率 2.8%)
+            <ul>
+              <li>命中率连续 60 天 &lt; 5%</li>
+              <li>添加于 4 个月前,已无明显业务价值</li>
+            </ul>
+          </div>
+
+          <div class="pcard-section">
+            <span class="lbl-impact">▸ 影响</span>:批准后规则软删除,Agent prompt 不再注入此规则;保留 30 天可恢复;30 天后永久删除。
+          </div>
+
+          <div class="pcard-actions">
+            <button class="btn-approve">✓ 批准 → 软删</button>
+            <button class="btn-reject">✗ 保留</button>
+            <button class="btn-later">稍后</button>
+          </div>
+        </div>
+
+        <!-- 已处理 -->
+        <div class="processed-section">
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.6rem">
+            ─── 已处理(最近 7 天)── 6 条 <a style="color:var(--accent);cursor:pointer;margin-left:0.4rem">展开</a>
+          </div>
+
+          <div class="processed-row approved">
+            <span><span class="pr-icon">✓</span>沉淀部门记忆:"引用 ISDA 优先于 GMRA"</span>
+            <span style="display:flex;align-items:center;gap:0.6rem">
+              <span style="color:var(--text-secondary);font-size:0.78rem">昨天</span>
+              <a class="pr-action">查看效果 →</a>
+            </span>
+          </div>
+          <div class="processed-row approved">
+            <span><span class="pr-icon">✓</span>补充 KB:"cloudmarging 录入 SOP"</span>
+            <span style="display:flex;align-items:center;gap:0.6rem">
+              <span style="color:var(--text-secondary);font-size:0.78rem">3 天前</span>
+              <a class="pr-action">查看工单 →</a>
+            </span>
+          </div>
+          <div class="processed-row rejected">
+            <span><span class="pr-icon">✗</span>沉淀部门记忆:"EUM = EU MTA" · <em style="color:var(--text-secondary)">这是某个用户的个人习惯,不是部门通用术语</em></span>
+            <span style="display:flex;align-items:center;gap:0.6rem">
+              <span style="color:var(--text-secondary);font-size:0.78rem">4 天前</span>
+              <a class="pr-action">查看 →</a>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 三段式信息结构 ============ -->
+  <div class="section">
+    <h3>② 三段式信息结构(每张提议卡通用)</h3>
+
+    <table class="compact">
+      <thead><tr><th style="width:14%">段</th><th>内容</th><th>价值</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>建议</strong></td>
+          <td>说人话的 Action(添加规则 X / 补充 Y 资料 / 下线 Z)</td>
+          <td>让 admin 立刻知道"该做什么"</td>
+        </tr>
+        <tr>
+          <td><strong>证据</strong></td>
+          <td>数据从哪来 — 涉及的 user 数 / query 数 / 命中率 + 可下钻看具体 Ledger 行</td>
+          <td>让 admin 不是凭感觉拍板,是看数据决策</td>
+        </tr>
+        <tr>
+          <td><strong>影响</strong></td>
+          <td>批准 / 拒绝后会发生什么 — 用"下次问答"现实语义,不用"prompt 注入"技术词</td>
+          <td>让 admin 知道点下去后果是什么</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-box" style="margin-top:1rem">
+      <strong>关键 UX 设计</strong>:不是"AI 给你列了个建议清单",而是"<u>系统观察到现象 X(证据),建议 Y(行动),会带来 Z(影响)</u>"。三段缺一不可,缺一段就退化成"普通管理后台",失去 self-improving 的差异化体感。
+    </div>
+  </div>
+
+  <!-- ============ 3. 反学习机制 ============ -->
+  <div class="section">
+    <h3>③ 反学习机制 — 拒绝原因驱动的二次提议</h3>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>系统也在学</strong>:<code class="inline">t_proposal_inbox.previous_rejection_id</code> 引用上一次拒绝。下次扫到同主题信号时附"上次被拒原因 + 本次新增证据"。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      <strong>例子(屏 6 第一张提议)</strong>:<br>
+      第 1 次:4 个用户用 EUM 简称 → 系统提议沉淀部门 → admin 拒绝"个人习惯不是部门通用"<br>
+      第 2 次(60 天后):新增 5 人,共 9 人,跨 3 个 sub-team → 重新提议,<u>显式提示"上次拒绝原因"+ 本次更强证据</u> → admin 此时大概率批准<br><br>
+      </span>
+      "被拒 → 新证据 → 再提议 → 可能批准"是 self-improving 在 admin 端最微妙的循环 — 拒绝不是死路,是校准。
+    </div>
+  </div>
+
+  <!-- ============ 4. 5 种提议形态 ============ -->
+  <div class="section">
+    <h3>④ 5 种提议形态在 inbox 的状态</h3>
+
+    <div class="form-grid">
+      <div class="form-card f-active">
+        <div class="form-icon">📚</div>
+        <div class="form-name">沉淀部门记忆</div>
+        <div class="form-stat">v1 已实现 · 规则触发</div>
+      </div>
+      <div class="form-card f-pending">
+        <div class="form-icon">🆕</div>
+        <div class="form-name">新 Task 卡片</div>
+        <div class="form-stat">v1 雏形 · 仅展示</div>
+      </div>
+      <div class="form-card f-active">
+        <div class="form-icon">🔍</div>
+        <div class="form-name">KB 补充候选</div>
+        <div class="form-stat">v1 已实现 · 派发工单</div>
+      </div>
+      <div class="form-card f-future">
+        <div class="form-icon">⚙</div>
+        <div class="form-name">Agent prompt 调优</div>
+        <div class="form-stat">v2 引入 · 需 LLM 分析</div>
+      </div>
+      <div class="form-card f-active">
+        <div class="form-icon">🗑</div>
+        <div class="form-name">部门记忆清理</div>
+        <div class="form-stat">v1 已实现 · 60 天命中率</div>
+      </div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      v1 试点期 = <strong>3 种规则做 + 1 种雏形 + 1 种 v2 接</strong>。不引入 LLM 抽提议(v2 Autodream),但 5 种里有 3 种用规则就能跑起来。
+    </p>
+  </div>
+
+  <!-- ============ 5. 关键设计 不能"全部批准" ============ -->
+  <div class="section">
+    <h3>⑤ 关键设计 — <u>不能</u>"全部批准"</h3>
+
+    <div class="insight-error" style="padding:1rem 1.25rem;border-left:3px solid var(--error);background:rgba(255,59,48,0.04);border-radius:6px;font-size:0.9rem">
+      <strong>不提供"全部批准"按钮</strong>。这不是性能问题 — 是产品价值。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      批量一键违背 self-improving 的本质 — <u>每一条决策都是产品进化</u>,需要 admin 看清证据/影响。<br><br>
+      <strong>设计配套</strong>:<br>
+      • 30 天没处理就过期(下次信号还在会再生),给 admin 喘息空间但保留压力<br>
+      • 顶部 tab 按类型切,admin 可以按精力批处理(集中处理"部门记忆"或"清理")<br>
+      • "稍后"按钮把当前条目推到下次进入时再看<br>
+      • 批准后 30 天内可逆(已处理屏的"恢复"按钮)— 避免 admin 拍错
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 6. 横切设计点 ============ -->
+  <div class="section">
+    <h3>⑥ 横切设计点</h3>
+
+    <table class="compact">
+      <thead><tr><th>点</th><th>设计</th></tr></thead>
+      <tbody>
+        <tr><td>数据刷新</td><td>每天凌晨 3 点跑提议规则引擎;当天新增提议在屏 6 顶部新条目</td></tr>
+        <tr><td>通知</td><td>dept admin 邮箱每周一发周报"上周新增 X 条提议待你处理"(v1 极简,不做实时通知)</td></tr>
+        <tr><td>空状态</td><td>"今天没有新提议。系统会持续观察部门使用情况,发现可改进的地方会通知你。"</td></tr>
+        <tr><td>移动端</td><td>v1 不做</td></tr>
+        <tr><td>提议数量上限</td><td>同类型同主题只生成 1 条 pending 提议;30 天过期清理</td></tr>
+        <tr><td>误操作</td><td>批准即时生效,但通过"已处理"屏的"恢复"按钮 30 天内可逆</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 7. 屏 6 ↔ schema(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑦ UX ↔ schema</h3>
+
+    <table class="compact">
+      <thead><tr><th>UI 元素</th><th>schema 字段</th></tr></thead>
+      <tbody>
+        <tr><td>提议卡(三段式)</td><td>proposal_payload(JSONB) + evidence_payload(JSONB)</td></tr>
+        <tr><td>"30 天后过期"</td><td>expires_at</td></tr>
+        <tr><td>"第 2 次提议"标签</td><td>previous_rejection_id 非空</td></tr>
+        <tr><td>"上次被拒原因"banner</td><td>JOIN previous_rejection 取 review_note</td></tr>
+        <tr><td>批准</td><td>UPDATE status='approved' + 触发对应沉淀动作(写 t_dept_memory / 派发 KB 工单 / 软删 memory)</td></tr>
+        <tr><td>拒绝</td><td>UPDATE status='rejected' + review_note 必填</td></tr>
+        <tr><td>30 天可逆</td><td>已处理项 status = 'approved' AND reviewed_at &gt; now()-30d → 可恢复</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 8. 屏 3 ↔ 屏 6 / 屏 5 衔接 ============ -->
+  <div class="section">
+    <h3>⑧ 多屏衔接</h3>
+
+    <table class="compact">
+      <thead><tr><th>来源</th><th>跳转目标</th><th>UX</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>屏 3 Insight 看板"💡 系统提议 top 3"卡</td>
+          <td>屏 6 单条详情</td>
+          <td>每条 [审 →] 直接打开;"全部提议 →"打开屏 6 完整列表</td>
+        </tr>
+        <tr>
+          <td>屏 6 "查看效果"</td>
+          <td>对应沉淀位置</td>
+          <td>沉淀部门记忆 → 屏 4 该条目;KB 补充 → 工单页</td>
+        </tr>
+        <tr>
+          <td>屏 5 用户提议箱(promote)</td>
+          <td>屏 4 dept memory 维护</td>
+          <td>批准后 dept memory 多一条;源 user memory 标记"已提升到部门"</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 9. 用户故事 ============ -->
+  <div class="section">
+    <h3>⑨ 用户故事 — 一次提议被拒后的反学习</h3>
+
+    <div class="insight-box">
+      <strong>第 1 次(60 天前)</strong>:系统检测到 4 个用户在 User Memory 写过 "EUM = EU MTA" 类似事实 → 生成提议 → 李四看到后觉得"4 个用户里有 2 个是同一个 sub-team,可能是局部习惯" → 拒绝,写原因"个人习惯,不是部门通用"<br><br>
+      <strong>第 2 次(今天)</strong>:60 天过去,系统再次扫到 — 这次 9 个用户,跨 3 个 sub-team 都在用 → 生成第 2 次提议 → <u>UI 显著标注"第 2 次提议" + 上次被拒原因 + 本次新增证据</u><br><br>
+      <strong>李四</strong>:"上次我担心是局部习惯,但现在跨 3 个 team 都在用,确实该入部门规则" → 一键批准<br><br>
+      <strong>沉淀</strong>:t_dept_memory 多一条 "EUM = EU MTA" → 部门所有人下次问"EUM 是多少"时 Agent 自动识别为"EU MTA" → 不再有人提"EUM 不被识别"的痛点
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      <u>这就是"产品在背后自己长大"的具体形态</u> — 李四只做了一次"批准",系统自己完成了证据收集 / 反学习 / 沉淀 / 注入。<br>
+      Reject 不是死路,是给系统的负反馈让它"再观察 60 天" — 这种产品形态在传统 SaaS 里是不存在的。
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>15. Ledger 双层 schema — 工程承载力 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+  .nav-bar .ch-tag { padding: 2px 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 0.74rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+  .insight-error { border-left-color: var(--error); background: rgba(255,59,48,0.04); }
+
+  /* Schema diagram */
+  .schema-stack {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .layer {
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--border);
+  }
+  .layer-1 { background: rgba(0,113,227,0.06); border-color: rgba(0,113,227,0.3); }
+  .layer-2 { background: rgba(88,86,214,0.06); border-color: rgba(88,86,214,0.3); }
+  .layer h4 { font-size: 0.95rem; margin-bottom: 0.4rem; }
+  .layer .layer-sub { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.6rem; }
+
+  .field-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+    font-size: 0.82rem;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+  }
+  @media (max-width: 700px) { .field-list { grid-template-columns: 1fr; } }
+  .field-item {
+    padding: 0.35rem 0.65rem;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .field-item .ftype { color: var(--accent); font-size: 0.74rem; }
+  .field-item .fnote { color: var(--text-secondary); font-size: 0.74rem; display: block; margin-top: 0.1rem; }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 500; }
+  .pill-green { background: rgba(52,199,89,0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255,159,10,0.15); color: #b25e00; }
+  .pill-blue { background: rgba(0,113,227,0.15); color: #0058b8; }
+  .pill-gray { background: var(--bg-tertiary); color: var(--text-secondary); }
+
+  /* Payload type cards */
+  .payload-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 700px) { .payload-grid { grid-template-columns: 1fr; } }
+  .payload-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .payload-card h4 { font-size: 0.95rem; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.4rem; }
+  .payload-card .pl-status { font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; }
+  .payload-card .pl-fields {
+    margin-top: 0.5rem;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .payload-card.v1 { border-top: 3px solid var(--success); }
+  .payload-card.v2 { border-top: 3px solid var(--warning); }
+
+  /* Code block */
+  .code-block {
+    background: var(--bg-tertiary);
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 0.6rem 0;
+  }
+  .code-block .kw { color: #0071e3; }
+  .code-block .str { color: #248a3d; }
+  .code-block .com { color: var(--text-secondary); font-style: italic; }
+
+  /* Constraint cards */
+  .constraint-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.85rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 800px) { .constraint-grid { grid-template-columns: 1fr; } }
+  .constraint-card {
+    padding: 0.85rem 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  .constraint-card h5 { font-size: 0.85rem; margin-bottom: 0.3rem; color: var(--accent); }
+  .constraint-card p { font-size: 0.82rem; color: var(--text-secondary); margin: 0; }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 15. Ledger 双层 schema — 工程承载力</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">终幕 · 深潜与闭环</span> &nbsp; 第 19/20 张</span>
+  <span>
+    <a href="09-cmd-troubleshoot-arch.html">← 09 复杂指令/问题排查</a>
+    &nbsp;|&nbsp;
+    <a href="21-overall-loop.html">下一张 · 21 整体闭环 →</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+  <h2>Ledger 双层 schema — 装下 5 类工作模式 + 不重构</h2>
+  <p class="subtitle">
+    五分法 / Self-improving / Insight / 评测自我迭代 — 全部依赖 Ledger 作为燃料。<br>
+    Ledger schema 一旦定错,后面所有上层应用都要重构。这张图回答 — 一份 Ledger 表如何<u>同时</u>装下 5 类形态 + 留好未来扩展位。
+  </p>
+
+  <!-- ============ 1. 设计动机 ============ -->
+  <div class="section">
+    <h3>① 为什么需要"双层"</h3>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>常见错误做法</strong>:全部用 <code class="inline">JSONB</code> 一把梭。看起来灵活,实际上:<br>
+      <ul style="margin:0.5rem 0 0 1.25rem;color:var(--text-secondary);font-size:0.85rem">
+        <li>查询不可索引 — Insight 想做"高频主题聚类",每次都全表扫</li>
+        <li>schema 漂移无约束 — 每个 Agent 自己决定 input/output 长什么样,半年后 5 类各有各的格式,跨任务聚合做不了</li>
+        <li>评测 / 提议机制无法立足 — 信号筛选器要识别 bad case,需要<u>结构化可查字段</u>,不是 JSONB 大杂烩</li>
+      </ul>
+    </div>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>正解 — 双层结构</strong>:<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      <strong>第一层</strong>:跨五类<u>通用强类型列</u>(所有 Agent 都填) — 索引可走、聚合可做、跨任务可比<br>
+      <strong>第二层</strong>:每类<u>独立 payload schema</u>(JSONB + payload_type 强校验) — 类型特化分析走第二层
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 2. 双层结构图 ============ -->
+  <div class="section">
+    <h3>② Ledger 双层 schema</h3>
+
+    <div class="schema-stack">
+      <div class="layer layer-1">
+        <h4>第 1 层 · 跨 5 类通用强类型列</h4>
+        <div class="layer-sub">所有 Agent 写入时<u>必填</u>;Insight 看板 / 评测信号筛选器走这层(走索引)</div>
+
+        <div class="field-list">
+          <div class="field-item">id <span class="ftype">BIGSERIAL PK</span></div>
+          <div class="field-item">task_instance_id <span class="ftype">BIGINT</span></div>
+          <div class="field-item">task_template <span class="ftype">VARCHAR(64)</span></div>
+          <div class="field-item">agent_names <span class="ftype">VARCHAR(256)</span></div>
+          <div class="field-item">user_id <span class="ftype">BIGINT</span></div>
+          <div class="field-item">dept_id <span class="ftype">BIGINT</span></div>
+          <div class="field-item">visibility_scope <span class="ftype">VARCHAR(16)</span><span class="fnote">DEFAULT 'DEPT' · 三层可见性预留</span></div>
+          <div class="field-item">primary_intent_text <span class="ftype">TEXT</span><span class="fnote">用户意图自然语言摘要</span></div>
+          <div class="field-item">primary_output_summary <span class="ftype">TEXT</span><span class="fnote">系统产出自然语言摘要</span></div>
+          <div class="field-item">status <span class="ftype">VARCHAR(16)</span><span class="fnote">success/partial/failed/cancelled</span></div>
+          <div class="field-item">trace_id <span class="ftype">VARCHAR(64)</span></div>
+          <div class="field-item">cost_tokens <span class="ftype">INTEGER</span></div>
+          <div class="field-item">cost_usd <span class="ftype">NUMERIC(10,4)</span></div>
+          <div class="field-item">duration_ms <span class="ftype">INTEGER</span></div>
+          <div class="field-item">user_feedback <span class="ftype">VARCHAR(16)</span><span class="fnote">v1 列预留 / v2 启用</span></div>
+          <div class="field-item">admin_review <span class="ftype">VARCHAR(16)</span><span class="fnote">promoted_eval / no_action</span></div>
+          <div class="field-item">sources_json <span class="ftype">JSONB</span><span class="fnote">⚠ 强约束:必填非空(可追溯不变量 I4)</span></div>
+          <div class="field-item">created_at <span class="ftype">TIMESTAMP</span></div>
+        </div>
+      </div>
+
+      <div style="text-align:center;color:var(--text-tertiary);font-size:0.85rem;margin:0.4rem 0">
+        ↓ 与 ↓ 共用一行 — 通过 payload_type 区分类型
+      </div>
+
+      <div class="layer layer-2">
+        <h4>第 2 层 · 分型 payload(每类独立 JSON schema)</h4>
+        <div class="layer-sub">写入时按 payload_type 强校验;每种 payload_type 对应 <code class="inline">payload-schemas/{type}.json</code> 资源文件</div>
+
+        <div class="field-list">
+          <div class="field-item">payload_type <span class="ftype">VARCHAR(32)</span><span class="fnote">knowledge_qa / doc_intel / cmd_exec / troubleshoot</span></div>
+          <div class="field-item">payload <span class="ftype">JSONB</span><span class="fnote">类型 schema 由 payload_type 决定</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      <strong>关键约束</strong>:写入时<u>必须</u>注册过的 JSON schema 强校验。新增第 6 类时只需注册新 schema,旧表不动。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      <strong>通用查询走第一层</strong>(不打开 JSONB);<strong>类型特化分析走第二层</strong>(每类各自字段已知)。两层各司其职 — 这就是"装下 5 类 + 不重构"的物理基础。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 3. 5 类 payload schema ============ -->
+  <div class="section">
+    <h3>③ 5 类 payload_type 各自的 schema</h3>
+
+    <div class="payload-grid">
+      <div class="payload-card v1">
+        <h4>💬 knowledge_qa <span class="pl-status pill pill-green">v1 实现</span></h4>
+        <div class="pl-fields">
+          rewritten_query<br>
+          intent_path<br>
+          channels_used[]<br>
+          retrieval_count<br>
+          rerank_kept<br>
+          kb_ids[]<br>
+          answer_has_citation: bool
+        </div>
+      </div>
+
+      <div class="payload-card v1">
+        <h4>📤 doc_intel <span class="pl-status pill pill-green">v1 实现</span></h4>
+        <div class="pl-fields">
+          skill: extract_full | targeted_screen<br>
+          uploaded_files[](extract)<br>
+          filter_criteria{}(screen)<br>
+          extraction_schema: ISDA / CSA / GMRA / ISDA+CSA<br>
+          fields_requested_count<br>
+          fields_extracted_count<br>
+          fields_low_confidence_count<br>
+          <strong>fields_human_corrected_count</strong> <span style="color:var(--accent)">←bad signal</span><br>
+          output_artifact_id
+        </div>
+      </div>
+
+      <div class="payload-card v2">
+        <h4>⚙ cmd_exec <span class="pl-status pill pill-yellow">v1 schema 占位</span></h4>
+        <div class="pl-fields">
+          tool_call_chain[]:<br>
+          &nbsp;&nbsp;{tool, args, result_status, latency}<br>
+          planning_iterations<br>
+          side_effects_summary
+        </div>
+      </div>
+
+      <div class="payload-card v2">
+        <h4>🔍 troubleshoot <span class="pl-status pill pill-yellow">v1 schema 占位</span></h4>
+        <div class="pl-fields">
+          symptom_class<br>
+          hypotheses_tried[]<br>
+          evidence_collected[]<br>
+          final_diagnosis<br>
+          suggested_action
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>v1 必须把所有 4 个 payload schema 都注册好</strong> — 即便 v1 后两类没实现 Agent。<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      这是"接口预留"的物理体现 — 否则 v2 接 cmd_exec 时还要回头改 t_task_ledger 表。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 4. 三个非显然的设计点 ============ -->
+  <div class="section">
+    <h3>④ 三个非显然的设计点</h3>
+
+    <div class="constraint-grid">
+      <div class="constraint-card">
+        <h5>① primary_*_text 是<u>顶级列</u></h5>
+        <p>Insight 的"高频主题聚类"和"bad case 排行"都需要直接读这两个字段;埋在 JSONB 里每个 Agent 自己定字段名 → 聚合时炸裂。这两列冗余存储但有索引 — <u>空间换 Insight 性能与一致性</u>。</p>
+      </div>
+      <div class="constraint-card">
+        <h5>② sources_json <u>强制</u>所有 Agent 填</h5>
+        <p>这是 I4 可追溯不变量的物理落地。ArchUnit 规则:任何 Agent 写 Ledger 时 sources_json 必须非空(空数组也行,空数组表示"诚实地说没来源")。</p>
+      </div>
+      <div class="constraint-card">
+        <h5>③ user_feedback v1 列预留</h5>
+        <p>试点 v1 不引入 thumbs UI(bad case 看 status=failed 就够),但<u>列要先建</u> — v2 加 UI 时不补字段 / 不补 schema 演化。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 5. 索引策略 ============ -->
+  <div class="section">
+    <h3>⑤ 索引策略</h3>
+
+    <div class="code-block">
+<span class="com">-- 用户 own 路径:per-user task instance 历史</span>
+<span class="kw">CREATE INDEX</span> idx_ledger_user_created <span class="kw">ON</span> t_task_ledger (user_id, created_at <span class="kw">DESC</span>);
+
+<span class="com">-- Dept Insight:按部门 + 任务类型 + 时间聚合</span>
+<span class="kw">CREATE INDEX</span> idx_ledger_dept_template <span class="kw">ON</span> t_task_ledger (dept_id, task_template, created_at <span class="kw">DESC</span>);
+
+<span class="com">-- bad case 看板加速:partial index 仅索引非 success 行</span>
+<span class="kw">CREATE INDEX</span> idx_ledger_status_dept <span class="kw">ON</span> t_task_ledger (dept_id, status)
+  <span class="kw">WHERE</span> status != <span class="str">'success'</span>;
+
+<span class="com">-- v2 thumbs 启用后查 feedback bad case</span>
+<span class="kw">CREATE INDEX</span> idx_ledger_feedback <span class="kw">ON</span> t_task_ledger (user_feedback)
+  <span class="kw">WHERE</span> user_feedback <span class="kw">IS NOT NULL</span>;
+
+<span class="com">-- 主题聚类:GIN 全文索引(v1 词袋,v2 升级向量)</span>
+<span class="kw">CREATE INDEX</span> idx_ledger_intent_gin <span class="kw">ON</span> t_task_ledger
+  <span class="kw">USING</span> GIN (to_tsvector(<span class="str">'simple'</span>, primary_intent_text));
+</div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      <code class="inline">status != 'success'</code> 的 partial index 是给 bad case 看板加速的 — v1 期间这是核心查询路径。<br>
+      GIN 索引让"高频主题"的全文聚合走索引,不全表扫。
+    </p>
+  </div>
+
+  <!-- ============ 6. 双投影查询(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ 双投影 — 同一份 Ledger 两个独立通道</h3>
+
+    <h4 style="font-size:0.95rem;margin-bottom:0.5rem">技术投影(给 global_admin)</h4>
+    <div class="code-block">
+<span class="com">-- 系统健康看板:错误率 / 延迟 / 模型可用性</span>
+<span class="kw">SELECT</span> task_template,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> total,
+       <span class="kw">SUM</span>(<span class="kw">CASE WHEN</span> status=<span class="str">'failed'</span> <span class="kw">THEN</span> 1 <span class="kw">END</span>) <span class="kw">AS</span> failed,
+       <span class="kw">PERCENTILE_CONT</span>(0.95) <span class="kw">WITHIN GROUP</span> (<span class="kw">ORDER BY</span> duration_ms) <span class="kw">AS</span> p95,
+       <span class="kw">SUM</span>(cost_tokens) <span class="kw">AS</span> tokens
+<span class="kw">FROM</span> t_task_ledger
+<span class="kw">WHERE</span> created_at &gt; now()-<span class="str">'30 days'</span>::interval
+<span class="kw">GROUP BY</span> task_template;
+</div>
+
+    <h4 style="font-size:0.95rem;margin-top:1rem;margin-bottom:0.5rem">业务投影(给 dept_admin Insight)</h4>
+    <div class="code-block">
+<span class="com">-- 高频主题 top 5(v1 词袋粗聚类)</span>
+<span class="kw">SELECT</span> primary_intent_text, <span class="kw">COUNT</span>(*) <span class="kw">AS</span> hits
+<span class="kw">FROM</span> t_task_ledger
+<span class="kw">WHERE</span> dept_id=:dept <span class="kw">AND</span> created_at &gt; now()-<span class="str">'30 days'</span>::interval
+<span class="kw">GROUP BY</span> topic_cluster(primary_intent_text)  <span class="com">-- v2 升级向量聚类</span>
+<span class="kw">ORDER BY</span> hits <span class="kw">DESC</span> <span class="kw">LIMIT</span> 5;
+
+<span class="com">-- bad case 按失败模式聚合</span>
+<span class="kw">SELECT</span> task_template,
+       payload-&gt;&gt;<span class="str">'fail_subclass'</span> <span class="kw">AS</span> subclass,
+       <span class="kw">COUNT</span>(*) <span class="kw">AS</span> n
+<span class="kw">FROM</span> t_task_ledger
+<span class="kw">WHERE</span> dept_id=:dept <span class="kw">AND</span> status <span class="kw">IN</span> (<span class="str">'failed'</span>,<span class="str">'partial'</span>)
+  <span class="kw">AND</span> created_at &gt; now()-<span class="str">'30 days'</span>::interval
+<span class="kw">GROUP BY</span> task_template, subclass
+<span class="kw">ORDER BY</span> n <span class="kw">DESC</span>;
+</div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      技术投影和业务投影<u>读字段几乎不重叠</u> — 这就是 PA4(双级 admin 视图独立)的物理实现。一张表,两套 view,各看各的。
+    </p>
+  </div>
+
+  <!-- ============ 7. v1 / v2 演进 ============ -->
+  <div class="section">
+    <h3>⑦ Ledger 在 v1 / v2 / v3 的演进</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:18%">阶段</th><th style="width:36%">Ledger 变更</th><th>不变</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>v1 试点</strong></td>
+          <td>新建 t_task_ledger 双层 schema · 4 种 payload schema 注册(2 种实际写入 + 2 种占位)</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><strong>v2 扩部门</strong></td>
+          <td>启用 user_feedback 列(thumbs UI) · cmd_exec / troubleshoot 开始写入(对应 Agent 上线) · 加 dept_agg / global_agg view</td>
+          <td>表结构不变 · payload schema 不变 · 索引不变</td>
+        </tr>
+        <tr>
+          <td><strong>v3 全员</strong></td>
+          <td>主题聚类升级为向量(嵌入存储到 vector 列) · 加跨任务 / 跨文档 insight 视图</td>
+          <td>核心 schema 不变 · 历史数据兼容</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>v1 一次设计,v2/v3 不重构</strong>。每个阶段都是"加 view / 加索引 / 启用列",不是"改表"。<br>
+      这是双层 schema 设计的根本价值 — 工程承载力。
+    </div>
+  </div>
+
+  <!-- ============ 8. 与上层应用的对应(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑧ Ledger ↔ 上层应用的依赖关系</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>上层应用</th><th>读 Ledger 的什么</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Dept Insight 看板(屏 3)</td><td>第 1 层 全部 + payload-&gt;&gt;'fail_subclass' 聚合</td></tr>
+        <tr><td>系统提议规则引擎</td><td>第 1 层 status / primary_intent_text + payload(no_kb_hit / human_corrected)</td></tr>
+        <tr><td>评测信号筛选器</td><td>第 1 层 status / user_feedback / 用户行为(30s 内重新提问)</td></tr>
+        <tr><td>Memory 注入命中统计</td><td>JOIN t_memory_injection_log · GROUP BY memory_id</td></tr>
+        <tr><td>用户最近列表(屏 1)</td><td>第 1 层 user_id / task_template / created_at(idx_ledger_user_created 走索引)</td></tr>
+        <tr><td>来源卡 / 字段卡 渲染</td><td>第 1 层 sources_json</td></tr>
+        <tr><td>系统健康看板(global)</td><td>第 1 层 status / cost_tokens / duration_ms / trace_id</td></tr>
+        <tr><td>用户 audit 视图("我哪条被下钻过")</td><td>JOIN t_insight_audit_log ON target_ledger_id</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 9. 总结 ============ -->
+  <div class="section">
+    <h3>⑨ 一句话总结</h3>
+
+    <div class="insight-box" style="font-size:1rem;padding:1.25rem 1.5rem">
+      <strong>Ledger 双层 schema = "通用强类型列(走索引)+ 分型 payload(走 schema)"</strong>。<br>
+      <span style="color:var(--text-secondary);font-size:0.9rem;display:block;margin-top:0.5rem">
+      一张表装下五分法所有形态 · 通用查询走第一层 · 类型特化走第二层 · v1 全部 4 种 payload schema 注册到位 · v2/v3 接新 Agent 不改表。<br>
+      这是 self-improving / Insight / 评测自我迭代<u>三个上层应用</u>能立足的工程基石。
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

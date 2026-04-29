@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>21. 整体闭环 — 一图看懂智能工作台 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+
+  .view-toggle {
+    display: inline-flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-toggle button {
+    background: transparent;
+    border: none;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .view-toggle button.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  table.compact {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.compact th, table.compact td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  /* 大架构图 */
+  .arch-diagram {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .arch-layer {
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border);
+  }
+  .arch-layer.l-user {
+    background: rgba(0,113,227,0.06);
+    border-color: rgba(0,113,227,0.25);
+  }
+  .arch-layer.l-task {
+    background: rgba(88,86,214,0.06);
+    border-color: rgba(88,86,214,0.25);
+  }
+  .arch-layer.l-agent {
+    background: rgba(52,199,89,0.06);
+    border-color: rgba(52,199,89,0.25);
+  }
+  .arch-layer.l-base {
+    background: var(--bg-tertiary);
+    border-color: var(--border);
+  }
+  .arch-layer.l-learn {
+    background: rgba(255,159,10,0.06);
+    border-color: rgba(255,159,10,0.3);
+  }
+  .arch-layer .layer-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+  }
+  .arch-layer .layer-sub {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.6rem;
+  }
+  .arch-layer .layer-content {
+    display: grid;
+    gap: 0.5rem;
+  }
+  .arch-cell {
+    padding: 0.55rem 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.82rem;
+    text-align: center;
+  }
+  .arrow-down {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 0.95rem;
+    margin: 0.2rem 0;
+  }
+
+  /* 闭环箭头 */
+  .loop-cycle {
+    background: linear-gradient(135deg, rgba(0,113,227,0.04), rgba(255,159,10,0.04));
+    border: 2px dashed var(--accent);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .loop-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  @media (max-width: 900px) { .loop-row { grid-template-columns: repeat(2, 1fr); } }
+  .loop-step {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 0.85rem 0.65rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    position: relative;
+  }
+  .loop-step .step-num {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 0.72rem;
+    line-height: 22px;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+  .loop-step strong { display:block; font-size:0.85rem; margin-bottom:0.2rem; }
+  .loop-step .step-detail { color: var(--text-secondary); font-size: 0.75rem; }
+  .loop-cycle-back {
+    text-align: center;
+    color: var(--accent);
+    font-size: 0.85rem;
+    margin-top: 0.85rem;
+    font-style: italic;
+  }
+
+  /* 价值卡 */
+  .value-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  @media (max-width: 700px) { .value-grid { grid-template-columns: 1fr; } }
+  .value-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+  .value-card .v-icon {
+    font-size: 1.4rem;
+    margin-bottom: 0.4rem;
+  }
+  .value-card h4 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .value-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+
+  .insight-box {
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+  .pill-green { background: rgba(52,199,89,0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255,159,10,0.15); color: #b25e00; }
+  .pill-gray { background: var(--bg-tertiary); color: var(--text-secondary); }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 21. 整体闭环 — 一图看懂智能工作台</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0.5rem 1.5rem;font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center">
+  <span><span style="padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:0.74rem">终幕 · 深潜与闭环</span> &nbsp; 第 20/20 张 · 终</span>
+  <span>
+    <a href="15-ledger-schema.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">← 15 Ledger schema</a>
+    &nbsp;|&nbsp;
+    <a href="index.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">回到总览 ↺</a>
+  </span>
+</div>
+<div id="claude-content">
+
+  <h2>整体闭环 — 智能工作台是怎么"长大"的</h2>
+  <p class="subtitle">
+    把所有讨论收束成一张图 — 五分法 / 三件事 / 双级 admin / Self-improving 不是孤立模块,是同一个产品形态的不同切面。<br>
+    这张图回答:把所有事情串起来,看上去是什么?
+  </p>
+
+  <!-- ============ 1. 总架构图 ============ -->
+  <div class="section">
+    <h3>① 整体架构 — 三层 + 横切持续学习</h3>
+
+    <div class="arch-diagram">
+
+      <!-- 用户层 -->
+      <div class="arch-layer l-user">
+        <div class="layer-title">用户层 · 业务零技术暴露</div>
+        <div class="layer-sub">业务用户进入工作台 · 看到能力区直接干活 · 永远不点"创建任务/配置 Agent"</div>
+        <div class="layer-content" style="grid-template-columns: repeat(3,1fr)">
+          <div class="arch-cell">💬 问知识(COB / SOP)</div>
+          <div class="arch-cell">📤 处理文档(提取 / 查询)</div>
+          <div class="arch-cell">📝 最近 + 部门提醒</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↕ 任务定义 = 80% 配置(KB 绑定 / prompt 片段 / UI 形态)</div>
+
+      <!-- Agent 层 -->
+      <div class="arch-layer l-agent">
+        <div class="layer-title">Agent 层 · 5 类工作模式 · 数量上界 5</div>
+        <div class="layer-sub">少数有 owner 的能力组件 · 20% 代码 · 共享底层</div>
+        <div class="layer-content" style="grid-template-columns: repeat(5,1fr)">
+          <div class="arch-cell"><strong>💬 KnowledgeQA</strong><br><span style="color:var(--text-secondary);font-size:0.74rem">检索-生成</span><br><span class="pill pill-green">v1</span></div>
+          <div class="arch-cell"><strong>📤 DocIntelligence</strong><br><span style="color:var(--text-secondary);font-size:0.74rem">extract_full + targeted_screen</span><br><span class="pill pill-green">v1</span></div>
+          <div class="arch-cell"><strong>⚙ ToolOrchestration</strong><br><span style="color:var(--text-secondary);font-size:0.74rem">工具规划-执行</span><br><span class="pill pill-yellow">v2 预留</span></div>
+          <div class="arch-cell"><strong>🔍 Troubleshoot</strong><br><span style="color:var(--text-secondary);font-size:0.74rem">ReAct 多轮诊断</span><br><span class="pill pill-yellow">v2 预留</span></div>
+          <div class="arch-cell"><strong>· 碎片化兜底</strong><br><span style="color:var(--text-secondary);font-size:0.74rem">通用聊天</span><br><span class="pill pill-gray">隐式</span></div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↕</div>
+
+      <!-- 底座 -->
+      <div class="arch-layer l-base">
+        <div class="layer-title">底座 · 共享治理</div>
+        <div class="layer-sub">所有 Agent 共享 · 不重复 · 统一升级</div>
+        <div class="layer-content" style="grid-template-columns: repeat(4,1fr)">
+          <div class="arch-cell">🗃 KB · 语料 / metadata 标签</div>
+          <div class="arch-cell">🔐 RBAC · security_level</div>
+          <div class="arch-cell">🛠 工具治理(v2 +)</div>
+          <div class="arch-cell">📋 管理员策略层(v2 +)</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">⇡⇣ 横切 ⇡⇣</div>
+
+      <!-- 持续学习层 -->
+      <div class="arch-layer l-learn">
+        <div class="layer-title">持续学习层 · self-improving 发动机</div>
+        <div class="layer-sub">Ledger 燃料 · 评测自我迭代 · 5 类提议 · admin 一键决策</div>
+        <div class="layer-content" style="grid-template-columns: repeat(4,1fr)">
+          <div class="arch-cell">🗃 Ledger 双层 schema</div>
+          <div class="arch-cell">🧪 评测黄金集自动入库</div>
+          <div class="arch-cell">💡 5 类提议引擎</div>
+          <div class="arch-cell">📊 双投影 · admin 看板</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ 2. 闭环 ============ -->
+  <div class="section">
+    <h3>② Self-improving 闭环 — 每一圈让产品长大一格</h3>
+
+    <div class="loop-cycle">
+      <div class="loop-row">
+        <div class="loop-step">
+          <span class="step-num">1</span>
+          <strong>用户执行任务</strong>
+          <span class="step-detail">问答 / 上传 / 查询<br>(注入 dept + user memory)</span>
+        </div>
+        <div class="loop-step">
+          <span class="step-num">2</span>
+          <strong>Ledger 落账</strong>
+          <span class="step-detail">通用列 + 分型 payload<br>+ sources_json 强约束</span>
+        </div>
+        <div class="loop-step">
+          <span class="step-num">3</span>
+          <strong>双投影分流</strong>
+          <span class="step-detail">技术 → global admin<br>业务 → dept admin</span>
+        </div>
+        <div class="loop-step">
+          <span class="step-num">4</span>
+          <strong>规则引擎扫描</strong>
+          <span class="step-detail">每天一次<br>5 类信号 → 提议</span>
+        </div>
+        <div class="loop-step">
+          <span class="step-num">5</span>
+          <strong>admin 一键决策</strong>
+          <span class="step-detail">证据 + 影响<br>Approve / Reject / 稍后</span>
+        </div>
+        <div class="loop-step">
+          <span class="step-num">6</span>
+          <strong>沉淀生效</strong>
+          <span class="step-detail">写 Dept Memory<br>派发 KB 工单 / 清理死条</span>
+        </div>
+      </div>
+      <div class="loop-cycle-back">
+        ⟲ 下次任务执行受益于沉淀 · 数据回到 ① · 新一轮闭环
+      </div>
+    </div>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>本质</strong>:产品形态本身在每一轮闭环中 <u>真的</u> 进化一格。Dept Memory 多一条规则 / KB 多一份资料 / 死规则被清理 / 用户的下次问答更精准 — 业务全程只面对二元决策,没看到一行 prompt、一行代码。
+    </div>
+  </div>
+
+  <!-- ============ 3. 4 个产品价值主张 ============ -->
+  <div class="section">
+    <h3>③ 四条对外价值主张</h3>
+
+    <div class="value-grid">
+      <div class="value-card">
+        <div class="v-icon">🚫</div>
+        <h4>反作坊 — 语料零重复 / 权限零旁路</h4>
+        <p>所有任务共享底座 KB,永不复制上传。任务自动继承 RBAC + security_level。Agent 升级所有任务受益,零迁移。</p>
+      </div>
+      <div class="value-card">
+        <div class="v-icon">🧠</div>
+        <h4>AI 越用越懂部门 + 越用越懂我</h4>
+        <p>个人记忆(隐私私有) · 部门记忆(admin 维护)分层注入。Promote 流程让个人沉淀部门资产。</p>
+      </div>
+      <div class="value-card">
+        <div class="v-icon">🌱</div>
+        <h4>产品形态自我进化(self-improving)</h4>
+        <p>Ledger 信号 → 5 类提议 → admin 一键决策 → 写回。被拒绝的提议也是反馈,系统也在学。</p>
+      </div>
+      <div class="value-card">
+        <div class="v-icon">🤝</div>
+        <h4>诚实失败 / 永远可追溯</h4>
+        <p>知识问答的来源卡 · 文档智能的字段引用 · 失败时主动语态给具体下一步,不用客气话挡住。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4. v1 试点 vs v3 完整 ============ -->
+  <div class="section">
+    <h3>④ v1 试点 → v3 完整版的演进路径</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:24%">能力</th>
+          <th style="width:25%">v1(Ops 试点)</th>
+          <th style="width:25%">v2(扩部门)</th>
+          <th>v3(全员)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Agent 数量</strong></td>
+          <td>2 实现(KQ + DI)</td>
+          <td>+ Troubleshoot(IT 自助)</td>
+          <td>+ ToolOrchestration</td>
+        </tr>
+        <tr>
+          <td><strong>权限</strong></td>
+          <td>双级 admin / dept 内部默认全开</td>
+          <td>多级 admin / 工具风险分级</td>
+          <td>跨部门授权 / OPA / OpenFGA</td>
+        </tr>
+        <tr>
+          <td><strong>持续学习</strong></td>
+          <td>用户主动声明 Memory · 规则提议</td>
+          <td>+ Autodream 自动抽取 · 集体记忆</td>
+          <td>+ 反哺 KB(LLM-wiki) · Pulse 推送</td>
+        </tr>
+        <tr>
+          <td><strong>UX 入口</strong></td>
+          <td>/workbench 主路径 + /spaces 兜底</td>
+          <td>/spaces 下线</td>
+          <td>多端(移动 / IM 集成)</td>
+        </tr>
+        <tr>
+          <td><strong>评测</strong></td>
+          <td>status + 行为信号筛 70% bad case</td>
+          <td>+ thumbs-up/down · 字段纠正信号</td>
+          <td>+ 跨任务 / 跨文档 insight</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      v1 已经能跑出最小可用闭环。v2 / v3 的增量都是"接已留好的接口" — 不需要重构。
+    </p>
+  </div>
+
+  <!-- ============ 5. 关键不变量(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑤ 跨阶段不变量 — v1/v2/v3 都不能违反</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:10%">#</th><th>不变量</th><th>含义</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>I1</strong></td><td>UI 零技术词</td><td>用户可见区域永不出现 task / agent / skill / prompt / schema 字眼</td></tr>
+        <tr><td><strong>I2</strong></td><td>语料零重复</td><td>所有任务共享底座 KB,永不为某一个 Agent / 任务复制语料</td></tr>
+        <tr><td><strong>I3</strong></td><td>权限零旁路</td><td>所有 Agent 执行走现有 RBAC + security_level + metadata filter,异步路径不读 UserContext</td></tr>
+        <tr><td><strong>I4</strong></td><td>可追溯</td><td>所有 Agent 产出必须能链回原始来源(知识问答→chunk · 文档智能→原文锚点 · 复杂指令→工具回执 · 问题排查→证据链)</td></tr>
+        <tr><td><strong>I5</strong></td><td>诚实失败</td><td>所有 Agent 失败时不能伪装成功(检索 0 → "未找到" · 字段空 → confidence=0,不杜撰)</td></tr>
+        <tr><td><strong>I6</strong></td><td>Agent ≤ 5</td><td>Agent 数量超过 5 = 切片角度错了,需要重新归纳分类法,不是再加一个</td></tr>
+        <tr><td><strong>I7</strong></td><td>User Memory 严格私有</td><td>即使 global_admin 也不能直接看 User Memory 内容</td></tr>
+        <tr><td><strong>I8</strong></td><td>Insight 双投影不混合</td><td>技术投影(global) vs 业务投影(dept) 永远不混合视图</td></tr>
+        <tr><td><strong>I9</strong></td><td>每条提议都要有证据 + 影响</td><td>不许做"全部批准";admin 必须看清证据/影响才能拍板</td></tr>
+        <tr><td><strong>I10</strong></td><td>反学习记录拒绝原因</td><td>提议被拒不是死路 · review_note 必填 · 下次再生提议必须附"上次被拒原因"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 6. 关键术语映射(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ 用户语义 vs 系统术语映射</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th>用户看到</th>
+          <th>系统 entity</th>
+          <th>UI 严禁说</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>💬 问知识</td><td>task_template = knowledge_qa</td><td>"任务模板"</td></tr>
+        <tr><td>📤 协议提取 / 🔍 协议查询</td><td>DocIntelligenceAgent.extract_full / .targeted_screen</td><td>"Agent / Skill"</td></tr>
+        <tr><td>📝 一段对话 / 一次提取 / 一次查询</td><td>task_instance</td><td>"任务实例"</td></tr>
+        <tr><td>"最近"</td><td>task_instance 历史列表</td><td>"实例列表"</td></tr>
+        <tr><td>🟢 COB / SOP chip</td><td>kb_id 集合</td><td>"知识库 ID"</td></tr>
+        <tr><td>📎 来源卡 / 字段卡</td><td>sources_json 渲染</td><td>"引用元数据"</td></tr>
+        <tr><td>"我的记忆" / "部门规则"</td><td>t_user_memory / t_dept_memory</td><td>"prompt 注入"</td></tr>
+        <tr><td>💡 系统提议 / 沉淀部门记忆</td><td>t_proposal_inbox</td><td>"自动 schema 演化"</td></tr>
+        <tr><td>📊 部门洞察</td><td>Ledger 业务投影聚合</td><td>"日志聚合"</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      PR review 时如发现 UI 文案出现禁用词,必须打回。<u>这条是产品形态质变的 UX 物理保证</u>。
+    </p>
+  </div>
+
+  <!-- ============ 7. 总结 ============ -->
+  <div class="section">
+    <h3>⑦ 一句话总结</h3>
+
+    <div class="insight-box" style="font-size:1rem;padding:1.25rem 1.5rem">
+      <strong>结构化工作台 = "5 类工作模式骨架 + 双级 admin 治理 + 持续学习自我迭代 + 业务零技术暴露"</strong> 的智能操作中枢。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.9rem">
+      <u>它不是一个工具,是一个会自己长大的产品形态。</u><br>
+      Ops 试点 = 最小可用闭环;扩部门 / 全员 = 接已留好的接口。<br>
+      所有关键决策在前 8 个 brainstorm 文档里逐一锁定,下一步是从 spec 修正(M1-M13) → 实施 plan → 渐进 PR 落地。
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

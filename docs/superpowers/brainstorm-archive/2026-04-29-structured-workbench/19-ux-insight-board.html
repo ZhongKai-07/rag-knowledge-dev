@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>19. UX 屏 3 · Dept Insight 看板 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+  .nav-bar .ch-tag { padding: 2px 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 0.74rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  /* Admin board mockup */
+  .admin-mock {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  @media (prefers-color-scheme: dark) { .admin-mock { background: #1a1a1c; } }
+  .admin-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 1.25rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .admin-title { font-weight: 600; }
+  .admin-user { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); font-size: 0.82rem; }
+  .admin-tab { display: inline-block; padding: 4px 10px; background: rgba(255,159,10,0.12); color: #b25e00; border-radius: 4px; font-size: 0.74rem; }
+
+  .admin-body { padding: 1.5rem 2rem; }
+
+  .filter-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+  }
+  .filter-row .filter-label { font-size: 0.85rem; color: var(--text-secondary); }
+  .filter-row .filter-tabs {
+    display: inline-flex;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 1px;
+  }
+  .filter-row .filter-tabs span {
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .filter-row .filter-tabs span.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+  }
+
+  /* 3 col + 1 col layout */
+  .top-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 700px) { .top-row { grid-template-columns: 1fr; } }
+  .stat-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .stat-card .stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .stat-card .stat-num { font-size: 1.6rem; font-weight: 600; }
+  .stat-card .stat-trend { font-size: 0.8rem; color: var(--success); margin-left: 0.5rem; }
+  .stat-card .stat-spark {
+    height: 30px;
+    margin-top: 0.4rem;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .stat-card .stat-spark span {
+    flex: 1;
+    background: rgba(0,113,227,0.4);
+    border-radius: 1px;
+  }
+
+  .bar-chart {
+    margin-top: 0.5rem;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.4rem 0;
+    font-size: 0.83rem;
+  }
+  .bar-row .bar-label { width: 90px; color: var(--text-secondary); }
+  .bar-row .bar-track {
+    flex: 1;
+    height: 18px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bar-row .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    color: white;
+    font-size: 0.74rem;
+  }
+  .bar-fill.kq { background: rgba(0,113,227,0.85); }
+  .bar-fill.screen { background: rgba(88,86,214,0.85); }
+  .bar-fill.extract { background: rgba(52,199,89,0.85); }
+
+  /* Hot topics */
+  .hot-topics-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .hot-topic {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .hot-topic:last-child { border-bottom: none; }
+  .hot-topic .ht-rank {
+    width: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .hot-topic .ht-label { flex: 1; }
+  .hot-topic .ht-count { color: var(--text-secondary); font-size: 0.8rem; width: 60px; text-align: right; }
+  .hot-topic .ht-bar {
+    width: 120px;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .hot-topic .ht-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), rgba(255,159,10,0.7));
+    border-radius: 3px;
+  }
+
+  /* Bad case + proposal cards */
+  .double-card-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 700px) { .double-card-row { grid-template-columns: 1fr; } }
+  .info-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .info-card-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .info-card-title a { color: var(--accent); font-size: 0.78rem; text-decoration: none; }
+  .info-card-item {
+    padding: 0.45rem 0;
+    font-size: 0.83rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-card-item:last-child { border-bottom: none; }
+  .info-card-item .item-meta {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+  }
+  .item-action {
+    font-size: 0.74rem;
+    color: var(--accent);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  /* Memory health */
+  .memory-health-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .health-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.3rem 0;
+    font-size: 0.83rem;
+  }
+  .health-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .health-dot.green { background: var(--success); }
+  .health-dot.yellow { background: var(--warning); }
+  .health-dot.red { background: var(--error); }
+
+  /* Drilldown sub-screen */
+  .drilldown-mock {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin: 0.75rem 0;
+    font-size: 0.85rem;
+  }
+  .drilldown-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .drilldown-group {
+    margin: 0.75rem 0;
+  }
+  .drilldown-group h4 {
+    font-size: 0.88rem;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .drilldown-detail {
+    padding: 0.4rem 0.6rem;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin: 0.2rem 0;
+  }
+  .audit-banner {
+    background: rgba(255,159,10,0.06);
+    border-left: 3px solid var(--warning);
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+  }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 19. UX 屏 3 · Dept Insight 看板</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">章 5 · 看见产品</span> &nbsp; 第 16/20 张</span>
+  <span>
+    <a href="18-ux-doc-handling.html">← 18 文档处理</a>
+    &nbsp;|&nbsp;
+    <a href="20-ux-proposal-inbox.html">下一张 · 20 提议箱 →</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+  <h2>屏 3 · Dept Insight — 业务管家的眼睛</h2>
+  <p class="subtitle">
+    dept admin 进入 → 5 秒内知道"我部门 AI 用得怎么样"。<br>
+    用量趋势 / 高频主题 / bad case / Memory 命中率 / 系统提议入口 — 五维一屏,业务运营者的运营中枢。
+  </p>
+
+  <!-- ============ 1. 主屏 mockup ============ -->
+  <div class="section">
+    <h3>① 主屏 mockup</h3>
+
+    <div class="admin-mock">
+      <div class="admin-topbar">
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <span style="color:var(--text-secondary)">Ops 工作台 ›</span>
+          <span class="admin-title">部门洞察</span>
+          <span class="admin-tab">dept_admin</span>
+        </div>
+        <div class="admin-user">
+          <span>李四 · Ops Lead</span>
+        </div>
+      </div>
+
+      <div class="admin-body">
+        <div class="filter-row">
+          <div class="filter-label">本部门 · 最近 30 天</div>
+          <div class="filter-tabs">
+            <span>7 天</span>
+            <span class="active">30 天</span>
+            <span>90 天</span>
+          </div>
+        </div>
+
+        <!-- 顶部两个统计卡 -->
+        <div class="top-row">
+          <div class="stat-card">
+            <div class="stat-label">📊 任务用量</div>
+            <div>
+              <span class="stat-num">612</span>
+              <span style="font-size:0.85rem;color:var(--text-secondary)">次任务</span>
+              <span class="stat-trend">↗ 较上月 +18%</span>
+            </div>
+            <div class="stat-spark">
+              <span style="height:20%"></span><span style="height:30%"></span><span style="height:45%"></span>
+              <span style="height:60%"></span><span style="height:55%"></span><span style="height:70%"></span>
+              <span style="height:75%"></span><span style="height:90%"></span><span style="height:80%"></span>
+              <span style="height:65%"></span><span style="height:75%"></span><span style="height:85%"></span>
+              <span style="height:80%"></span><span style="height:70%"></span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">🎯 任务结构</div>
+            <div class="bar-chart">
+              <div class="bar-row">
+                <span class="bar-label">知识问答</span>
+                <div class="bar-track"><div class="bar-fill kq" style="width:67%">412</div></div>
+              </div>
+              <div class="bar-row">
+                <span class="bar-label">协议查询</span>
+                <div class="bar-track"><div class="bar-fill screen" style="width:25%">156</div></div>
+              </div>
+              <div class="bar-row">
+                <span class="bar-label">协议提取</span>
+                <div class="bar-track"><div class="bar-fill extract" style="width:14%">83</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 高频主题 -->
+        <div class="hot-topics-card">
+          <div class="info-card-title">
+            🔥 本月高频主题
+            <a href="#">查看全部 →</a>
+          </div>
+          <div class="hot-topic">
+            <span class="ht-rank">1</span>
+            <span class="ht-label">EU MTA 阈值 / IA 调整</span>
+            <div class="ht-bar"><div class="ht-bar-fill" style="width:100%"></div></div>
+            <span class="ht-count">82 次</span>
+          </div>
+          <div class="hot-topic">
+            <span class="ht-rank">2</span>
+            <span class="ht-label">ISDA Notification Time</span>
+            <div class="ht-bar"><div class="ht-bar-fill" style="width:65%"></div></div>
+            <span class="ht-count">54 次</span>
+          </div>
+          <div class="hot-topic">
+            <span class="ht-rank">3</span>
+            <span class="ht-label">华泰系列对手方 协议查询</span>
+            <div class="ht-bar"><div class="ht-bar-fill" style="width:57%"></div></div>
+            <span class="ht-count">47 次</span>
+          </div>
+          <div class="hot-topic">
+            <span class="ht-rank">4</span>
+            <span class="ht-label">SOP 异常处理 (collateral 类)</span>
+            <div class="ht-bar"><div class="ht-bar-fill" style="width:46%"></div></div>
+            <span class="ht-count">38 次</span>
+          </div>
+          <div class="hot-topic">
+            <span class="ht-rank">5</span>
+            <span class="ht-label">cloudmarging 录入流程</span>
+            <div class="ht-bar"><div class="ht-bar-fill" style="width:32%"></div></div>
+            <span class="ht-count">26 次</span>
+          </div>
+        </div>
+
+        <!-- 关注事项 + 系统提议 双卡 -->
+        <div class="double-card-row">
+          <div class="info-card">
+            <div class="info-card-title">
+              ⚠ 需要关注 (本月 17 条 bad case)
+              <a href="#">查看 →</a>
+            </div>
+            <div class="info-card-item">
+              · 协议提取 · ISDA Independent Amount 抽空 ×8
+            </div>
+            <div class="info-card-item">
+              · 知识问答 · "EU 区域 IA 调整" 未找到 ×5
+            </div>
+            <div class="info-card-item">
+              · 协议查询 · 实体识别失败 ×4
+            </div>
+          </div>
+
+          <div class="info-card" style="border-left:3px solid var(--warning)">
+            <div class="info-card-title">
+              💡 系统提议 (3 待处理)
+              <a href="20-ux-proposal-inbox.html">全部提议 →</a>
+            </div>
+            <div class="info-card-item" style="display:flex;justify-content:space-between;align-items:center">
+              <span>· 提议沉淀部门记忆:"EUM = EU MTA"</span>
+              <a class="item-action">[审 →]</a>
+            </div>
+            <div class="info-card-item" style="display:flex;justify-content:space-between;align-items:center">
+              <span>· 提议补充 KB:"EU 区域 IA 调整"</span>
+              <a class="item-action">[审 →]</a>
+            </div>
+            <div class="info-card-item" style="display:flex;justify-content:space-between;align-items:center">
+              <span>· 提议下线:"数字保留两位小数"</span>
+              <a class="item-action">[审 →]</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Memory 健康度 -->
+        <div class="memory-health-card">
+          <div class="info-card-title">
+            📚 部门记忆健康度 · 共 23 条
+            <a href="#">管理 →</a>
+          </div>
+          <div class="health-line">
+            <span class="health-dot green"></span>
+            <span style="flex:1">高命中:<strong>12 条</strong> (&gt;50% 注入命中)</span>
+          </div>
+          <div class="health-line">
+            <span class="health-dot yellow"></span>
+            <span style="flex:1">中等:<strong>8 条</strong> (10-50% 命中)</span>
+          </div>
+          <div class="health-line">
+            <span class="health-dot red"></span>
+            <span style="flex:1">低命中:<strong>3 条</strong> (建议清理) <a class="item-action" style="margin-left:0.4rem">[查看 →]</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 8 个关键决策 ============ -->
+  <div class="section">
+    <h3>② 8 个关键设计决策</h3>
+
+    <table class="compact">
+      <thead><tr><th style="width:24%">决策点</th><th>决定</th><th>理由</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>看板布局</td>
+          <td>三段:用量趋势 / 内容洞察 / 行动入口</td>
+          <td>从"全貌"到"具体"递进 · 符合阅读习惯</td>
+        </tr>
+        <tr>
+          <td>时间窗切换</td>
+          <td>7 / 30 / 90 天三段(默认 30 天)</td>
+          <td>Ops Lead 关注的运营周期</td>
+        </tr>
+        <tr>
+          <td>任务结构</td>
+          <td>横向条形图(不饼图)</td>
+          <td>任务类型 ≤ 5 类 · 条形图更易读且能横向对比</td>
+        </tr>
+        <tr>
+          <td>高频主题</td>
+          <td>top 5 + "查看全部"展开</td>
+          <td>5 秒决策,不超载</td>
+        </tr>
+        <tr>
+          <td>bad case 卡</td>
+          <td>按"失败模式"聚合(不是按时间)</td>
+          <td>admin 关心"什么失败模式高频",不是"昨天哪条失败"</td>
+        </tr>
+        <tr>
+          <td>提议卡</td>
+          <td>显示数量 + top 3 摘要 + 单条 [审] 按钮 + 全部入口</td>
+          <td>让 admin 在看板就能处理简单提议,复杂的进 inbox</td>
+        </tr>
+        <tr>
+          <td>记忆健康度</td>
+          <td>三档着色,低命中直接给"查看"建议</td>
+          <td>self-improving 的体感;让 admin 看到"哪些规则该清"</td>
+        </tr>
+        <tr>
+          <td>不显示</td>
+          <td>用户排行榜 / 工时统计 / 单 query 原文 / 模型成本 / token / 错误率</td>
+          <td>隐私边界(PA2) + 双投影 PA4(成本/错误率是 global admin 的事)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 3. bad case 下钻流程 ============ -->
+  <div class="section">
+    <h3>③ bad case 下钻 — 透明且打 audit log</h3>
+
+    <h4 style="margin-top:1rem;font-size:0.95rem">第 1 跳:bad case 列表(按失败模式聚合)</h4>
+    <div class="drilldown-mock">
+      <div class="drilldown-header">
+        ⚠ bad case (最近 30 天 · 17 条)
+      </div>
+      <div class="drilldown-group">
+        <h4>▸ 协议提取 · ISDA Independent Amount 字段抽空 (8 条)</h4>
+        <div class="drilldown-detail">涉及文件:4 份 · 用户:3 人</div>
+        <div class="drilldown-detail">建议动作:[补充字段 example] / [改 schema 定位提示]</div>
+        <a class="item-action">查看明细 →</a>
+      </div>
+      <div class="drilldown-group">
+        <h4>▸ 知识问答 · "EU 区域 IA 调整" 未找到 (5 条)</h4>
+        <div class="drilldown-detail">用户:4 人 · 时间分布:本月集中后 10 天</div>
+        <div class="drilldown-detail">建议动作:[发起 KB 补充提议(已自动建议)]</div>
+        <a class="item-action">查看明细 →</a>
+      </div>
+      <div class="drilldown-group">
+        <h4>▸ 协议查询 · 实体识别失败 (4 条)</h4>
+        <div class="drilldown-detail">用户:3 人 · 失败原因:Counterparty 用了非标准简称</div>
+        <div class="drilldown-detail">建议动作:[查看具体 query → 考虑加 alias]</div>
+        <a class="item-action">查看明细 →</a>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1rem;font-size:0.95rem">第 2 跳:具体 bad case 明细(打 audit log)</h4>
+    <div class="drilldown-mock">
+      <div class="drilldown-header">
+        协议提取 · ISDA Independent Amount 抽空 (8 条)
+      </div>
+
+      <div class="audit-banner">
+        ⓘ 你正在查看部门 bad case 明细。<u>这次查看会被记录</u>。
+      </div>
+
+      <div style="font-size:0.83rem;color:var(--text-secondary);margin:0.5rem 0">── 8 条记录(按时间倒序)──</div>
+
+      <div style="padding:0.6rem;background:var(--bg-tertiary);border-radius:6px;margin-bottom:0.4rem;font-size:0.83rem">
+        <strong>用户 #3712</strong> · 2 天前 · ISDA_DEF.pdf<br>
+        Counterparty: 中信 / DEF Bank · ISDA<br>
+        所有字段: 17 抽中 / 1 字段抽空 (Independent Amount)<br>
+        <span style="display:flex;gap:0.5rem;margin-top:0.4rem">
+          <a class="item-action">[打开 PDF 跳到 §3]</a>
+          <a class="item-action">[标为评测样本]</a>
+        </span>
+      </div>
+
+      <div style="padding:0.6rem;background:var(--bg-tertiary);border-radius:6px;margin-bottom:0.4rem;font-size:0.83rem">
+        <strong>用户 #2156</strong> · 5 天前 · ISDA_GHI.pdf · ...
+      </div>
+
+      <div style="margin-top:0.85rem;border-top:1px solid var(--border);padding-top:0.5rem">
+        <strong style="font-size:0.85rem">行动:</strong>
+        <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
+          <button style="padding:6px 14px;background:var(--accent);color:white;border:none;border-radius:6px;font-size:0.82rem;cursor:pointer">对该字段加 example → 进入 schema 编辑</button>
+          <button style="padding:6px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;cursor:pointer">将 8 条全部标为评测样本 → 入黄金集</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.88rem;margin-top:1rem">
+      <strong>4 条下钻边界(已锁)</strong>:<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      ✅ 列表只显示主题摘要,不显示 user_id 或原文 · ✅ 明细显示部门匿名 ID(非真实 user_id) · ❌ 不提供"匿名 ID → 真实用户"映射 · ❌ 不导出。<br>
+      <strong>每次下钻打 audit log</strong> · 用户在自己 memory 页可看"我哪条对话被 admin 下钻过" — 这种"被看的可见性"比"绝对不被看"更可持续。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 4. 屏 3 ↔ 屏 6 衔接 ============ -->
+  <div class="section">
+    <h3>④ 屏 3(看板) ↔ 屏 6(提议箱)的衔接</h3>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>双层模式</strong>:屏 3 主屏的"💡 系统提议 (3 待处理)"卡是屏 6 的快捷入口。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      • 屏 3 只显示 top 3,每条带 [审 →] 直接进屏 6 单条详情<br>
+      • "全部提议 →"进屏 6 完整 inbox<br><br>
+      </span>
+      这样 admin 90% 时间在屏 3 一眼扫过,紧急的 3 条直接处理;周一 / 月初专门进屏 6 集中处理积压的。
+    </div>
+  </div>
+
+  <!-- ============ 5. 横切设计点 ============ -->
+  <div class="section">
+    <h3>⑤ 看板横切设计点</h3>
+
+    <table class="compact">
+      <thead><tr><th>点</th><th>设计</th></tr></thead>
+      <tbody>
+        <tr><td>数据刷新</td><td>按小时(用量趋势 / bad case 增量) + 按天(高频主题聚类 / 提议)</td></tr>
+        <tr><td>空状态</td><td>"还在收集数据" + 引导:"请部门成员开始使用工作台"</td></tr>
+        <tr><td>数据导出</td><td><strong>不提供</strong>(隐私边界 PA2)</td></tr>
+        <tr><td>异常颜色</td><td>灰 / 蓝 / 黄 / 红 四档 · 红只用于"必须立即看的" bad case</td></tr>
+        <tr><td>移动端</td><td>v1 不做(admin 看板桌面端为主)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 6. UX 后端对应(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ UX ↔ 后端实现的对应</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>UI 元素</th><th>后端聚合源</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>📊 任务用量趋势</td><td>SELECT count() FROM t_task_ledger WHERE dept_id GROUP BY day</td></tr>
+        <tr><td>🎯 任务结构</td><td>GROUP BY task_template</td></tr>
+        <tr><td>🔥 高频主题</td><td>主题词袋聚类(v1) · 向量聚类(v2)</td></tr>
+        <tr><td>⚠ bad case 列表</td><td>WHERE status IN ('failed','partial') GROUP BY (task_template, fail_subclass)</td></tr>
+        <tr><td>💡 系统提议 top 3</td><td>SELECT FROM t_proposal_inbox WHERE status='pending' ORDER BY created_at DESC LIMIT 3</td></tr>
+        <tr><td>📚 部门记忆健康度</td><td>JOIN t_memory_injection_log GROUP BY memory_id 算 hit_rate</td></tr>
+        <tr><td>下钻 audit</td><td>INSERT INTO t_insight_audit_log (admin_id, action='bad_case_drilldown', target_ledger_id)</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      所有数据走<strong>业务投影</strong>(task_template / kb_ids / aggregated_topics) — 不读 trace_id / cost_tokens / model_name(那是 global admin 的视图)。
+    </p>
+  </div>
+
+  <!-- ============ 7. 用户故事 ============ -->
+  <div class="section">
+    <h3>⑦ 用户故事 — Ops Lead 的周一晨会</h3>
+
+    <div class="insight-box">
+      <strong>9:00</strong> 李四(Ops Lead)周一晨会前打开 Insight 看板<br><br>
+      <strong>9:00:05</strong> 一眼看到任务用量 612 次 · ↗ +18% — 部门 AI 用量在涨<br><br>
+      <strong>9:00:15</strong> 看到 "EU 区域 IA 调整 未找到 ×5" — 这块缺资料,周会上要让 Mary 安排补<br><br>
+      <strong>9:00:30</strong> 看到 "提议沉淀部门记忆:EUM = EU MTA" — 4 个组员都用这个简称,确实该入部门规则 → 点 [审 →] → 进屏 6 → Approve<br><br>
+      <strong>9:01</strong> 看到 "数字保留两位小数 命中率 2.8%" — 这条规则是 4 个月前加的,确实没人用 → 点 [审 →] → Approve 下线<br><br>
+      <strong>9:02</strong> 收工。1 分钟内对部门 AI 状态有了完整 picture + 处理了 2 条系统提议 + 在周会上有具体行动项<br><br>
+      <strong>背后(李四感知不到)</strong>:Insight 数据从 Ledger 业务投影聚合 / Approve 写 t_dept_memory + audit log / 部门成员下次问答自动注入新规则
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      李四作为业务管家:看的是 AI 在帮部门干什么,不是 AI 怎么工作的。整个过程没有出现 "Agent / Skill / Schema / Prompt" 等技术词。
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>17. UX 屏 2a · 知识问答交互面 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+  .nav-bar .ch-tag { padding: 2px 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 0.74rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+  .insight-error { border-left-color: var(--error); background: rgba(255,59,48,0.04); }
+
+  /* App mockup */
+  .app-mock {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  @media (prefers-color-scheme: dark) { .app-mock { background: #1a1a1c; } }
+  .app-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 1.25rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .app-back {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .app-title { font-weight: 600; }
+
+  /* KB chip */
+  .kb-bar {
+    padding: 0.65rem 1.25rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.83rem;
+  }
+  .kb-bar-label { color: var(--text-secondary); margin-right: 0.5rem; }
+  .kb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    background: rgba(52,199,89,0.1);
+    border: 1px solid rgba(52,199,89,0.3);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    margin-right: 4px;
+    color: #248a3d;
+  }
+  .kb-chip.off {
+    background: var(--bg-tertiary);
+    border-color: var(--border);
+    color: var(--text-tertiary);
+  }
+  .kb-chip-add {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border: 1px dashed var(--border);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-left: 4px;
+  }
+
+  /* Chat area */
+  .chat-area {
+    padding: 1.5rem 2rem;
+    min-height: 400px;
+  }
+  .msg { margin-bottom: 1.5rem; }
+  .msg-user-line { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .msg-user-line .role-tag { color: var(--text-secondary); font-weight: 400; font-size: 0.82rem; }
+  .msg-text { font-size: 0.9rem; line-height: 1.55; color: var(--text-primary); margin-bottom: 0.6rem; }
+
+  .memory-banner {
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
+    padding: 0.45rem 0.7rem;
+    background: rgba(0,113,227,0.04);
+    border-left: 2px solid rgba(0,113,227,0.3);
+    border-radius: 4px;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+  }
+  .memory-banner-expanded {
+    background: rgba(0,113,227,0.06);
+    border-left: 2px solid var(--accent);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.82rem;
+  }
+  .memory-banner-expanded ul { margin: 0.4rem 0 0 1.1rem; color: var(--text-secondary); }
+  .memory-banner-expanded li { margin-bottom: 0.2rem; }
+  .memory-edit-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.82rem;
+  }
+
+  .source-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0.95rem;
+    margin: 0.4rem 0;
+    font-size: 0.83rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .source-card .src-info { display: flex; align-items: center; gap: 0.6rem; flex: 1; }
+  .source-card .src-icon { color: var(--text-secondary); }
+  .source-card .src-snippet { color: var(--text-secondary); font-style: italic; font-size: 0.78rem; margin-left: 0.4rem; }
+  .source-card .src-link {
+    color: var(--accent);
+    font-size: 0.78rem;
+    text-decoration: none;
+  }
+
+  .msg-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+  .msg-actions a, .msg-actions span {
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-secondary);
+  }
+  .msg-actions a:hover { color: var(--accent); }
+
+  .chat-input-bar {
+    padding: 0.85rem 1.25rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.5rem;
+  }
+  .chat-input {
+    flex: 1;
+    padding: 0.6rem 0.85rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.88rem;
+  }
+  .chat-send {
+    padding: 0.6rem 1.25rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+
+  /* Failure UX */
+  .failure-mock {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    font-size: 0.86rem;
+    margin: 0.5rem 0;
+  }
+  .failure-mock .fail-msg { margin-bottom: 0.6rem; }
+  .failure-mock .fail-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+  .failure-mock .fail-actions button {
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+  .failure-mock .fail-actions button.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 17. UX 屏 2a · 知识问答交互面</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">章 5 · 看见产品</span> &nbsp; 第 14/20 张</span>
+  <span>
+    <a href="16-ux-home.html">← 16 工作台首屏</a>
+    &nbsp;|&nbsp;
+    <a href="18-ux-doc-handling.html">下一张 · 18 文档处理 →</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+  <h2>屏 2a · 知识问答 — 像和懂部门规则的同事聊天</h2>
+  <p class="subtitle">
+    用户问问题 → 拿到带来源的答案 · 整个过程感觉像在和一个懂部门规则的同事聊天。<br>
+    Memory 透明栏 + 来源卡 + 反馈按钮三件套 — 让"AI 越用越懂我"和"诚实失败"都看得见。
+  </p>
+
+  <!-- ============ 1. mockup ============ -->
+  <div class="section">
+    <h3>① UI mockup</h3>
+
+    <div class="app-mock">
+      <div class="app-topbar">
+        <a class="app-back">← 返回</a>
+        <span class="app-title">💬 问知识</span>
+        <span style="color:var(--text-secondary);font-size:0.82rem">EU Ops</span>
+      </div>
+
+      <div class="kb-bar">
+        <span class="kb-bar-label">来源:</span>
+        <span class="kb-chip">🟢 COB 手册</span>
+        <span class="kb-chip">🟢 SOP 手册</span>
+        <span class="kb-chip-add">⊕ 限定</span>
+      </div>
+
+      <div class="chat-area">
+        <!-- 第 1 轮 -->
+        <div class="msg">
+          <div class="msg-user-line">你 <span class="role-tag">· 张三</span></div>
+          <div class="msg-text">EU 区域 MTA 默认值是多少?</div>
+        </div>
+
+        <div class="msg">
+          <div class="msg-user-line">助手</div>
+
+          <div class="memory-banner-expanded">
+            ⓘ 基于:
+            <ul>
+              <li>你的角色:EU Ops Team A · collateral analyst</li>
+              <li>你关注的:MTA / IA 阈值</li>
+              <li>部门规则:EUM = EU MTA · 引用 ISDA 优先于 GMRA · 金额需带币种</li>
+            </ul>
+            <a class="memory-edit-link">编辑我的记忆 →</a>
+          </div>
+
+          <div class="msg-text">
+            根据 COB 手册 §3.2,EU 区域 MTA 默认值为 <strong>€250,000</strong>;若交易对手为 Tier-1 银行,可下调至 <strong>€100,000</strong>。
+          </div>
+
+          <div class="source-card">
+            <div class="src-info">
+              <span class="src-icon">📎</span>
+              <span><strong>COB Manual §3.2</strong> · 第 14 页</span>
+              <span class="src-snippet">"EU region default MTA: €250,000..."</span>
+            </div>
+            <a class="src-link">→ 原文</a>
+          </div>
+
+          <div class="msg-actions">
+            <span>🔁 追问</span>
+            <span>👍 有用</span>
+            <span>👎 不准</span>
+            <span>📋 复制</span>
+          </div>
+        </div>
+
+        <!-- 第 2 轮 -->
+        <div class="msg">
+          <div class="msg-user-line">你</div>
+          <div class="msg-text">那 IA 怎么算?</div>
+        </div>
+
+        <div class="msg">
+          <div class="msg-user-line">助手</div>
+          <div class="memory-banner">
+            ⓘ 基于你的角色(EU Ops collateral analyst)+1 部门规则
+            &nbsp;&nbsp;<span style="color:var(--accent)">[展开]</span>
+          </div>
+          <div class="msg-text" style="color:var(--text-secondary);font-style:italic">
+            (...基于上下文继续回答...)
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-bar">
+        <input class="chat-input" placeholder="继续问...">
+        <button class="chat-send">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 关键设计点 ============ -->
+  <div class="section">
+    <h3>② 6 个关键设计决策</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:24%">决策点</th><th>决定</th><th>理由</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>顶部 KB chip</td>
+          <td>显示当前激活的 KB(默认全部),点 [⊕ 限定] 收窄范围</td>
+          <td>让用户随时知道"我在问哪个范围"</td>
+        </tr>
+        <tr>
+          <td>Memory 透明栏</td>
+          <td>每次问答上方两行小灰字:"基于角色 X · 部门规则 X" · 默认折叠</td>
+          <td>实现 P5 "透明但不打扰";展开后含"编辑我的记忆"快捷入口</td>
+        </tr>
+        <tr>
+          <td>来源卡形态</td>
+          <td>带页码 + 原文片段预览 + "→ 原文"按钮</td>
+          <td>实现 P3 "永远显示来源"</td>
+        </tr>
+        <tr>
+          <td>反馈按钮</td>
+          <td>👍 / 👎(v1 列预留 v2 启用) / 复制 / 追问</td>
+          <td>不要做成"评分"——二元就够;v1 没 thumbs UI 也行,但列建好</td>
+        </tr>
+        <tr>
+          <td>追问 vs 新问</td>
+          <td>同一对话内多轮(task instance 内) · 新建对话才换 instance</td>
+          <td>符合 spec §5.3 的 instance 边界</td>
+        </tr>
+        <tr>
+          <td>流式输出</td>
+          <td>必须流式(保留现有 SSE 实现)</td>
+          <td>让用户感到 AI 在"思考"</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 3. Memory 透明栏深入 ============ -->
+  <div class="section">
+    <h3>③ Memory 透明栏 — 透明但不打扰</h3>
+
+    <div class="insight-box">
+      <strong>设计哲学</strong>:用户想知道"AI 是基于什么回答我的",但又不想被技术细节淹没。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      <strong>默认折叠</strong>(1 行):告诉用户有"角色 + N 部门规则"在生效。<br>
+      <strong>点击展开</strong>:具体显示注入的 facts。<br>
+      <strong>"编辑我的记忆 →"</strong>:从聊天面直接进 <code class="inline">/profile/memory</code> — 让用户在聊天中发现"AI 不知道我的角色",一键改,下次就懂。<br><br>
+      </span>
+      这是"AI 越用越懂我"的反馈回路 — 不是单向注入,是<u>用户能感知 + 调整</u>的闭环。
+    </div>
+  </div>
+
+  <!-- ============ 4. 诚实失败的 4 种 UX ============ -->
+  <div class="section">
+    <h3>④ 诚实失败 — 4 种失败 4 种主动语态</h3>
+
+    <h4 style="margin-top:1rem;font-size:0.95rem">失败 1 · 检索 0 命中</h4>
+    <div class="failure-mock">
+      <div class="fail-msg">
+        在 COB / SOP 里没找到。可能:
+        <ul style="margin:0.4rem 0 0 1.25rem;color:var(--text-secondary)">
+          <li>该问题不在已上传的文档里</li>
+          <li>换个表述试试</li>
+          <li>这块缺资料,可以告诉 Lead</li>
+        </ul>
+      </div>
+      <div class="fail-actions">
+        <button>换个表述</button>
+        <button class="primary">📨 告诉 Lead 这块缺资料</button>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1.25rem;font-size:0.95rem">失败 2 · 检索命中但 LLM 拒答</h4>
+    <div class="failure-mock">
+      <div class="fail-msg">
+        找到一些段落但<strong>不能确定</strong>回答你的问题,建议看原文:
+      </div>
+      <div class="source-card">
+        <div class="src-info">
+          <span class="src-icon">📎</span>
+          <span><strong>COB Manual §5.1</strong> · 相关但不确定</span>
+        </div>
+        <a class="src-link">→ 原文</a>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1.25rem;font-size:0.95rem">失败 3 · 流式中断</h4>
+    <div class="failure-mock">
+      <div class="fail-msg" style="color:var(--text-secondary)">
+        (...已生成的部分答案保留...)
+      </div>
+      <div class="fail-actions">
+        <button class="primary">继续生成</button>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1.25rem;font-size:0.95rem">失败 4 · 越权命中(不应出现)</h4>
+    <div class="failure-mock" style="border-color:rgba(255,59,48,0.3)">
+      <div class="fail-msg" style="color:var(--error)">
+        ⚠ 系统拦截 + 自动告警 — 用户感知不到失败原因,但不会拿到不该看的内容。
+      </div>
+    </div>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>反对模式</strong>:❌ "抱歉,可能没有理解您的问题..." — 客气话挡住,用户不知道下一步该怎么办。<br>
+      <strong>正确模式</strong>:✅ 主动语态 + 给出具体行动(换说法 / 告诉 Lead / 看原文 / 继续生成)。
+    </div>
+  </div>
+
+  <!-- ============ 5. "告诉 Lead 这块缺资料"是 self-improving 用户出口 ============ -->
+  <div class="section">
+    <h3>⑤ "告诉 Lead 这块缺资料" — self-improving 在用户端的另一个出口</h3>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>价值</strong>:用户的一次"找不到"<u>自动变成</u> dept admin 的一条 KB 补充提议。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      点击按钮 → 系统自动构造一条 KB 补充候选(F3)写入 <code class="inline">t_proposal_inbox</code> · target = dept_admin · 证据 = 当前 query + 用户 + 时间。<br>
+      用户得到反馈:"已通知 Lead 这块需要补资料,等资料补上后会通知你"。<br><br>
+      </span>
+      这是用户端最强的 self-improving 信号通道 — 业务的痛点直接进入产品进化通道,不需要再"提需求 / 走流程"。
+    </div>
+  </div>
+
+  <!-- ============ 6. 横切组件(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ 横切组件清单(屏 2a 复用)</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:24%">组件</th><th>位置</th><th>v1 实现</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>顶栏(用户 / 部门)</td>
+          <td>所有屏</td>
+          <td>从 authStore 读 user + dept</td>
+        </tr>
+        <tr>
+          <td>Memory 透明栏</td>
+          <td>屏 2a / 屏 2b 协议查询</td>
+          <td>每次 Agent 响应渲染时附带 memoryBlock</td>
+        </tr>
+        <tr>
+          <td>来源卡 / 字段卡</td>
+          <td>屏 2a / 屏 2b</td>
+          <td>统一三段式(主信息 + 信息源 + 跳转)</td>
+        </tr>
+        <tr>
+          <td>反馈按钮(👍/👎/复制)</td>
+          <td>屏 2a / 屏 2b</td>
+          <td>v1 列预留 / v2 启用</td>
+        </tr>
+        <tr>
+          <td>诚实失败容器</td>
+          <td>所有屏</td>
+          <td>4 种失败模式统一组件</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 7. 屏 2a 与五分法的对应(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑦ 屏 2a ↔ 后端实现的对应</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>UI 元素</th><th>后端 entity</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>"💬 问知识" 入口</td><td>task_template = knowledge_qa</td></tr>
+        <tr><td>一段对话</td><td>1 个 task_instance · 含多个 messages</td></tr>
+        <tr><td>每次提问 + 回答</td><td>触发 KnowledgeQAAgent.execute(input, ctx)</td></tr>
+        <tr><td>KB chip 限定</td><td>写入 task_instance.kb_ids</td></tr>
+        <tr><td>来源卡</td><td>Ledger.sources_json 渲染</td></tr>
+        <tr><td>Memory 透明栏</td><td>ctx 中 user_memory + dept_memory 注入(MemoryInjector)</td></tr>
+        <tr><td>"告诉 Lead 缺资料"</td><td>POST /proposal/kb-supplement(自动写 t_proposal_inbox)</td></tr>
+        <tr><td>👍/👎</td><td>更新 Ledger.user_feedback</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      用户层永远只看到"问知识 / 来源 / 编辑我的记忆";系统层是 task_template / agent / ledger / memory injector — 严格不混淆。
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

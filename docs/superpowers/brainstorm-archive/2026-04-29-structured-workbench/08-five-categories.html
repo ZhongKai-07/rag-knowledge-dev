@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>8. 场景五分法 — 智能工厂 vs AI 作坊 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  /* 双层视图切换 */
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  body.full-mode .tech-detail-inline { display: inline; }
+  .tech-detail-inline { display: none; }
+
+  .view-toggle {
+    display: inline-flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-toggle button {
+    background: transparent;
+    border: none;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .view-toggle button.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  /* 紧凑表格 */
+  table.compact {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.compact th, table.compact td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.compact thead {
+    background: var(--bg-tertiary);
+  }
+  table.compact th {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  /* 状态色块 */
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+  .pill-green { background: rgba(52, 199, 89, 0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255, 159, 10, 0.15); color: #b25e00; }
+  .pill-gray { background: var(--bg-tertiary); color: var(--text-secondary); }
+
+  .insight-box {
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .insight-warn {
+    border-left-color: var(--warning);
+    background: rgba(255, 159, 10, 0.05);
+  }
+  .insight-success {
+    border-left-color: var(--success);
+    background: rgba(52, 199, 89, 0.05);
+  }
+
+  .axis-flow {
+    display: grid;
+    grid-template-columns: 1fr 60px 1fr;
+    gap: 1rem;
+    align-items: stretch;
+    margin: 1.5rem 0;
+  }
+  .axis-side {
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .axis-bad {
+    background: rgba(255, 59, 48, 0.04);
+    border-color: rgba(255, 59, 48, 0.25);
+  }
+  .axis-good {
+    background: rgba(52, 199, 89, 0.04);
+    border-color: rgba(52, 199, 89, 0.25);
+  }
+  .axis-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    font-size: 1.5rem;
+  }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 8. 场景五分法 — 从 AI 作坊到智能工厂</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0.5rem 1.5rem;font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center">
+  <span><span style="padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:0.74rem">章 1 · 困境与立意</span> &nbsp; 第 3/20 张</span>
+  <span>
+    <a href="paas-vs-workbench.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">← 03 PaaS vs 工作台</a>
+    &nbsp;|&nbsp;
+    <a href="task-vs-agent.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">下一章 · 02 Task vs Agent →</a>
+  </span>
+</div>
+<div id="claude-content">
+
+  <h2>从"AI 作坊"到"智能工厂"——场景的五分法</h2>
+  <p class="subtitle">
+    PaaS 助手市场看似遍地开花，但绝大部分助手是"高级定制款"。每个场景从需求对接到 Prompt 调优、工具集成、效果验证都是信息孤岛。<br>
+    要走出这个困境，需要把"按场景切片"换成"按工作模式切片"——这就是五分法的由来。
+  </p>
+
+  <!-- ============ 1. AI 作坊的根因 ============ -->
+  <div class="section">
+    <h3>① 困境：AI 作坊的根因不是工具不好,而是切片角度错了</h3>
+
+    <div class="axis-flow">
+      <div class="axis-side axis-bad">
+        <div class="label" style="color:var(--error);margin-bottom:0.6rem">PaaS 助手作坊</div>
+        <strong style="font-size:0.95rem">按场景切</strong>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.4rem">
+          每个业务场景独立造一个助手 — MAC 核对、单测、排障、催收……
+        </p>
+        <ul style="margin:0.75rem 0 0 1.25rem;font-size:0.82rem;color:var(--text-secondary)">
+          <li>16 个助手 = 16 份独立 prompt + 语料 + 工具 + eval</li>
+          <li>同一份制度文档被 5 个助手各自上传 5 份</li>
+          <li>没人能回答"底层有几种本质能力"</li>
+          <li>升级模型 = 16 个助手挨个改</li>
+          <li>用户找不到入口("哪个助手能做我这事?")</li>
+        </ul>
+      </div>
+      <div class="axis-arrow">→</div>
+      <div class="axis-side axis-good">
+        <div class="label" style="color:var(--success);margin-bottom:0.6rem">智能工厂</div>
+        <strong style="font-size:0.95rem">按工作模式切</strong>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.4rem">
+          先观察日常工作的共性,沉淀 5 类底层工作模式,再用少数几个 Agent 覆盖 80% 任务。
+        </p>
+        <ul style="margin:0.75rem 0 0 1.25rem;font-size:0.82rem;color:var(--text-secondary)">
+          <li>新场景 = 写一份配置(不写代码)</li>
+          <li>语料统一在底座,零重复</li>
+          <li>Agent 升级 = 所有依赖任务自动获益</li>
+          <li>RAGAS / 引用约束等"非作坊"基建天然共享</li>
+          <li>新增任务的边际成本递减</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      <strong>第一性原理</strong>:工作内容五花八门,但近 80% 的任务可以被归为四大类工作模式 + 一类碎片化兜底。<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">— 不是凭空抽象,是对日常工作"贴身观察"和行为分析后的归纳。</span>
+    </div>
+  </div>
+
+  <!-- ============ 2. 五分法 ============ -->
+  <div class="section">
+    <h3>② 五分法 — 4 类主干 + 1 类兜底</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:22%">类别</th>
+          <th>本质特征(工作流骨架)</th>
+          <th>典型场景</th>
+          <th style="width:14%">v1 状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>💬 知识问答</strong><br><span style="color:var(--text-secondary);font-size:0.78rem">Knowledge QA</span></td>
+          <td>检索 → 引用约束 → 多轮对话<br><span style="color:var(--text-secondary);font-size:0.78rem">输入是 NL query,输出是答案+来源</span></td>
+          <td>COB 守则咨询 / SOP 操作流程</td>
+          <td><span class="pill pill-green">v1 实现</span></td>
+        </tr>
+        <tr>
+          <td><strong>📤 文档智能</strong><br><span style="color:var(--text-secondary);font-size:0.78rem">Doc Intelligence</span></td>
+          <td>解析 → 按 schema 抽 → 渲染产出<br><span style="color:var(--text-secondary);font-size:0.78rem">输入是文档,输出是结构化产出+引用</span></td>
+          <td>协议提取(ISDA/CSA/GMRA → Excel)<br>协议查询(NL → 字段值)</td>
+          <td><span class="pill pill-green">v1 实现</span></td>
+        </tr>
+        <tr>
+          <td><strong>⚙ 复杂指令执行</strong><br><span style="color:var(--text-secondary);font-size:0.78rem">Cmd Execution</span></td>
+          <td>意图识别 → 工具规划(过滤引擎) → 执行 → 总结<br><span style="color:var(--text-secondary);font-size:0.78rem">工具链由 LLM 运行时规划,有真实业务副作用</span></td>
+          <td>"给我弄张优惠券"(身份验证→查状态→发券→回执)</td>
+          <td><span class="pill pill-yellow">v1 接口预留</span></td>
+        </tr>
+        <tr>
+          <td><strong>🔍 问题排查</strong><br><span style="color:var(--text-secondary);font-size:0.78rem">Troubleshooting</span></td>
+          <td>意图分类 → ReAct 多轮迭代 → 知识+工具交错 → 诊断<br><span style="color:var(--text-secondary);font-size:0.78rem">从"表象"到"根因"的 RCA 推理</span></td>
+          <td>"软件用不了"→ 追问→查证→ 诊断"账号风控"</td>
+          <td><span class="pill pill-yellow">v1 接口预留</span></td>
+        </tr>
+        <tr>
+          <td><strong>· 碎片化兜底</strong><br><span style="color:var(--text-secondary);font-size:0.78rem">Fragments</span></td>
+          <td>不属于以上 4 类的零散小杂活</td>
+          <td>(不专门做 Agent,落到通用聊天兜底)</td>
+          <td><span class="pill pill-gray">隐式存在</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-secondary)">
+      💡 同类内部的"工作流骨架"高度同构 — COB 问答和 SOP 问答骨架完全一样,差的只是绑哪份语料;ISDA 提取和 GMRA 提取骨架完全一样,差的只是 schema。这种同构性正是"智能工厂"能成立的物理前提。
+    </p>
+  </div>
+
+  <!-- ============ 3. 五分法的硬条件(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>③ 五分法成立的四条硬条件</h3>
+    <p class="subtitle">一套场景分类法要能撑起"智能工厂",必须同时满足下面四条;缺一条就退化成"事后归纳的标签"。</p>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:8%">#</th><th style="width:24%">条件</th><th>含义</th><th>不满足时的症状</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>C1</strong></td>
+          <td>正交性</td>
+          <td>一个场景只能落进一类,落不进两类</td>
+          <td>出现"既是 A 又是 B"的灰色场景 → 分类粒度错</td>
+        </tr>
+        <tr>
+          <td><strong>C2</strong></td>
+          <td>完备性</td>
+          <td>80% 任务能落进 4 类(碎片化兜底剩余 20%)</td>
+          <td>高频场景被迫塞进"碎片化" → 分类太窄</td>
+        </tr>
+        <tr>
+          <td><strong>C3</strong></td>
+          <td>同类同构</td>
+          <td>同类内不同场景的"工作流骨架"几乎一样</td>
+          <td>同类两个场景骨架差很多 → 分类太宽</td>
+        </tr>
+        <tr>
+          <td><strong>C4</strong></td>
+          <td>跨类可组合</td>
+          <td>跨类任务能用"Task 编排层"组合解决,不需要造第 6 类</td>
+          <td>总有"四不像"任务 → 分类的维度选错了</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 4. Ops 场景压测 ============ -->
+  <div class="section tech-detail">
+    <h3>④ Ops 4 场景压测结果</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>Ops 场景</th><th>落在哪类</th><th>C1 正交</th><th>C3 同构</th><th>备注</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>COB 问答</td>
+          <td>知识问答</td>
+          <td>✅ 干净</td>
+          <td>✅ 与 SOP 同构</td>
+          <td>第 1 类的明确锚点</td>
+        </tr>
+        <tr>
+          <td>SOP 问答</td>
+          <td>知识问答</td>
+          <td>✅ 干净</td>
+          <td>✅ 同上</td>
+          <td>同上</td>
+        </tr>
+        <tr>
+          <td>协议提取</td>
+          <td>文档智能 (extract_full)</td>
+          <td>✅ 干净</td>
+          <td>✅ ISDA/GMRA 同构</td>
+          <td>第 2 类的明确锚点</td>
+        </tr>
+        <tr>
+          <td>Collateral 智能筛查</td>
+          <td>文档智能 (targeted_screen)</td>
+          <td>✅ 同 Agent 内 skill 切分</td>
+          <td>—</td>
+          <td>不是跨 Agent;是 DocIntelligenceAgent 的另一个 skill</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="margin-top:1rem;font-size:0.85rem;color:var(--text-secondary)">
+      Ops 4 场景验证了第 1 + 2 类。第 3 + 4 类 Ops 当前没有真实场景(复杂指令需业务系统 API 开放;问题排查更多是 IT 场景),但骨架清晰,值得在 v1 预留接口。
+    </p>
+  </div>
+
+  <!-- ============ 5. v1 = 2 + 3 + 1 ============ -->
+  <div class="section">
+    <h3>⑤ v1 试点工程范围 = 2 实现 + 3 预留 + 1 兜底</h3>
+
+    <div class="split">
+      <div class="mockup">
+        <div class="mockup-header">v1 实际实现的 Agent</div>
+        <div class="mockup-body">
+          <div style="display:flex;flex-direction:column;gap:0.6rem">
+            <div style="padding:0.75rem;background:rgba(52,199,89,0.08);border-radius:8px">
+              <strong>💬 KnowledgeQAAgent</strong>
+              <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:0.25rem">
+                包装现有 RAG pipeline。服务 COB / SOP 问答。
+              </div>
+            </div>
+            <div style="padding:0.75rem;background:rgba(52,199,89,0.08);border-radius:8px">
+              <strong>📤 DocIntelligenceAgent</strong>
+              <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:0.25rem">
+                两个 skill:<code>extract_full</code>(协议提取) + <code>targeted_screen</code>(协议查询)
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-header">v1 预留接口 / v2-v3 实现</div>
+        <div class="mockup-body">
+          <div style="display:flex;flex-direction:column;gap:0.6rem">
+            <div style="padding:0.75rem;background:rgba(255,159,10,0.08);border-radius:8px">
+              <strong>⚙ ToolOrchestrationAgent</strong>
+              <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:0.25rem">
+                等业务系统 API / MCP 开放后实现。
+              </div>
+            </div>
+            <div style="padding:0.75rem;background:rgba(255,159,10,0.08);border-radius:8px">
+              <strong>🔍 TroubleshootAgent</strong>
+              <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:0.25rem">
+                v2 候选;承接 IT 自助答疑场景。
+              </div>
+            </div>
+            <div style="padding:0.75rem;background:var(--bg-tertiary);border-radius:8px">
+              <strong>· 碎片化兜底</strong>
+              <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:0.25rem">
+                不专门建 Agent,通用聊天承接长尾。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>"预留"的具体含义</strong>:不是写一份 stub class — 是 v1 的 Agent 接口、Task 编排层、底座横切能力(工具治理/策略配置/评测闭环)<u>必须能在 v2 接两类新 Agent 时不需要重构</u>。这是分类法的真正价值 — 给未来留好接口位,避免每次新场景都"急造"。
+    </div>
+  </div>
+
+  <!-- ============ 6. 治理风险 ============ -->
+  <div class="section">
+    <h3>⑥ 治理硬约束 — Agent 数量上界 = 5</h3>
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>红线</strong>:Agent 数量 &gt; 5 = 切片角度又错了,需要重新归纳分类法,而不是再加一个 Agent。<br><br>
+      <span style="color:var(--text-secondary)">
+      新增 Agent 必须走架构 review;ArchUnit 规则限制新 agent 包必须实现 <code>Agent</code> 接口;任意 PR 增加超过 1 个 Agent 必须 spec。<u>这是治理问题,不是技术问题。</u>
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

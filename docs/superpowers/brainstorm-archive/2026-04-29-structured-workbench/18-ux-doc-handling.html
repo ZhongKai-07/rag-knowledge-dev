@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>18. UX 屏 2b · 文档处理(协议查询 + 协议提取) — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+  .nav-bar .ch-tag { padding: 2px 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 0.74rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 500; }
+  .pill-green { background: rgba(52,199,89,0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255,159,10,0.15); color: #b25e00; }
+  .pill-red { background: rgba(255,59,48,0.15); color: #c41e1e; }
+  .pill-blue { background: rgba(0,113,227,0.12); color: #0058b8; }
+
+  .app-mock {
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  @media (prefers-color-scheme: dark) { .app-mock { background: #1a1a1c; } }
+  .app-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 1.25rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .app-back { color: var(--accent); cursor: pointer; }
+  .app-title { font-weight: 600; }
+
+  /* Two-card entry */
+  .entry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    padding: 2rem;
+  }
+  @media (max-width: 700px) { .entry-grid { grid-template-columns: 1fr; } }
+  .entry-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+  }
+  .entry-card .e-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+  .entry-card h4 { font-size: 1.05rem; margin-bottom: 0.4rem; }
+  .entry-card p { font-size: 0.85rem; color: var(--text-secondary); margin: 0.3rem 0; }
+  .entry-card .e-cta { display: inline-block; margin-top: 0.6rem; color: var(--accent); font-size: 0.85rem; font-weight: 500; }
+
+  .recent-mini {
+    padding: 0 2rem 2rem;
+  }
+  .section-divider {
+    color: var(--text-tertiary);
+    font-size: 0.8rem;
+    margin: 0.6rem 0;
+  }
+  .recent-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 0.35rem;
+    font-size: 0.85rem;
+  }
+  .recent-row button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 3px 10px;
+    font-size: 0.78rem;
+    color: var(--accent);
+    cursor: pointer;
+  }
+
+  /* Screening sub-screen */
+  .screening-area {
+    padding: 1.5rem 2rem;
+  }
+  .nl-input-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .nl-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+  .nl-input {
+    width: 100%;
+    min-height: 60px;
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: none;
+  }
+  .nl-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.6rem;
+  }
+  .nl-hint ul { margin: 0.3rem 0 0 1.1rem; }
+  .nl-fillin {
+    margin-top: 0.6rem;
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .fillin-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .nl-submit {
+    margin-top: 0.85rem;
+    padding: 0.55rem 1.5rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+
+  /* Recognition banner */
+  .recog-banner {
+    background: rgba(0,113,227,0.05);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 0.7rem 1rem;
+    font-size: 0.84rem;
+    margin: 0.75rem 0;
+  }
+
+  /* Field card */
+  .field-card-list {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+  }
+  .field-card {
+    display: grid;
+    grid-template-columns: 200px 1fr 70px 90px;
+    gap: 0.75rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    font-size: 0.85rem;
+  }
+  .field-card:last-child { border-bottom: none; }
+  .field-name { color: var(--text-secondary); }
+  .field-value { font-weight: 500; }
+  .field-value-low { color: var(--warning); }
+  .field-value-na { color: var(--text-tertiary); font-style: italic; }
+  .field-conf {
+    text-align: center;
+    font-size: 0.78rem;
+  }
+  .field-conf.green { color: var(--success); }
+  .field-conf.yellow { color: var(--warning); }
+  .field-conf.red { color: var(--error); }
+  .field-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.78rem;
+    text-align: right;
+  }
+  .field-warning {
+    grid-column: 1 / -1;
+    font-size: 0.78rem;
+    color: var(--warning);
+    padding: 0.3rem 0 0.2rem;
+  }
+  .field-warning button {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.74rem;
+    margin-left: 0.4rem;
+    cursor: pointer;
+  }
+
+  /* Upload area */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: var(--bg-secondary);
+    margin-bottom: 1rem;
+  }
+  .upload-zone .upload-icon { font-size: 2rem; margin-bottom: 0.6rem; }
+  .upload-zone strong { font-size: 1rem; display: block; margin-bottom: 0.3rem; }
+  .upload-zone p { font-size: 0.82rem; color: var(--text-secondary); }
+  .upload-zone .upload-btn {
+    margin-top: 0.85rem;
+    padding: 0.5rem 1.25rem;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .progress-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin: 0.75rem 0;
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    margin: 0.6rem 0;
+    overflow: hidden;
+  }
+  .progress-bar .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 60%;
+    transition: width 0.3s;
+  }
+
+  .recog-fields {
+    display: grid;
+    grid-template-columns: 130px 1fr 30px;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.85rem;
+  }
+  .recog-fields .rkey { color: var(--text-secondary); }
+  .recog-fields .redit { color: var(--accent); cursor: pointer; }
+
+  .field-list-info {
+    padding: 0.75rem 1rem;
+    background: rgba(0,113,227,0.05);
+    border-radius: 8px;
+    font-size: 0.83rem;
+    margin: 0.75rem 0;
+  }
+  .field-list-info .fl-tags {
+    margin-top: 0.4rem;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+  }
+
+  .download-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    align-items: center;
+  }
+  .download-bar button {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .download-bar button.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 18. UX 屏 2b · 文档处理(协议查询 + 协议提取)</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">章 5 · 看见产品</span> &nbsp; 第 15/20 张</span>
+  <span>
+    <a href="17-ux-knowledge-qa.html">← 17 知识问答</a>
+    &nbsp;|&nbsp;
+    <a href="19-ux-insight-board.html">下一张 · 19 Insight 看板 →</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+  <h2>屏 2b · 文档处理 — 两个子形态共享一个组件</h2>
+  <p class="subtitle">
+    📤 协议提取(字段集固定)+ 🔍 协议查询(字段集开放)= 同 Agent 两个 skill。<br>
+    用户只看到两个能力区,不感知"skill"概念;UI 共享字段卡组件,视觉一致性自然落地。
+  </p>
+
+  <!-- ============ 1. 子形态选择(进入屏) ============ -->
+  <div class="section">
+    <h3>① 进入屏 · 选择子形态</h3>
+
+    <div class="app-mock">
+      <div class="app-topbar">
+        <a class="app-back">← 返回</a>
+        <span class="app-title">📤 处理文档</span>
+        <span style="color:var(--text-secondary);font-size:0.82rem">EU Ops</span>
+      </div>
+
+      <div class="entry-grid">
+        <div class="entry-card">
+          <div class="e-icon">🔍</div>
+          <h4>协议查询</h4>
+          <p>直接问问题,比如:</p>
+          <p style="font-style:italic;color:var(--text-tertiary)">"华泰和 HSBC 的 ISDA MTA 是多少"</p>
+          <span class="e-cta">开始问 →</span>
+        </div>
+        <div class="entry-card">
+          <div class="e-icon">📤</div>
+          <h4>协议提取</h4>
+          <p>上传 ISDA / CSA / GMRA</p>
+          <p>→ 跑出全套字段 Excel</p>
+          <span class="e-cta">上传文件 →</span>
+        </div>
+      </div>
+
+      <div class="recent-mini">
+        <div class="section-divider">最近处理</div>
+        <div class="recent-row">
+          <span>🔍 华泰 HSBC ISDA Notification Time</span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <span style="color:var(--text-secondary);font-size:0.78rem">2 小时前</span>
+            <button>查看</button>
+          </span>
+        </div>
+        <div class="recent-row">
+          <span>📤 ISDA_HSBC_2026.pdf · 已提取 18 字段</span>
+          <span style="display:flex;align-items:center;gap:0.6rem">
+            <span style="color:var(--text-secondary);font-size:0.78rem">昨天</span>
+            <button>下载 Excel</button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.5rem">
+      <strong>关键文案选择</strong>:用<u>示例 query</u> 直接展示协议查询的"问法",而非"勾选字段"——避免用户误解为"必须从清单选"。两个能力区视觉权重平等,避免误导用户必须先查询再提取。
+    </p>
+  </div>
+
+  <!-- ============ 2. 协议查询子屏 ============ -->
+  <div class="section">
+    <h3>② 协议查询(targeted_screen)— 自由文本 + 结构化兜底</h3>
+
+    <div class="app-mock">
+      <div class="app-topbar">
+        <a class="app-back">← 返回</a>
+        <span class="app-title">🔍 协议查询</span>
+        <span></span>
+      </div>
+
+      <div class="screening-area">
+        <div class="nl-input-card">
+          <div class="nl-label">问点什么?</div>
+          <textarea class="nl-input" placeholder="比如:华泰和 HSBC 交易的 ISDA&CSA 下的 Notification Time 是多少?">华泰和 HSBC 交易的 ISDA&CSA 下的 Notification Time 是多少?</textarea>
+
+          <div class="nl-hint">
+            💡 也可以这样问:
+            <ul style="color:var(--text-tertiary)">
+              <li>"ABC Bank 的 ISDA Threshold"</li>
+              <li>"对手方 XYZ 的 GMRA Eligible Collateral"</li>
+            </ul>
+          </div>
+
+          <div class="nl-fillin">
+            <span class="fillin-chip">▾ Counterparty</span>
+            <span class="fillin-chip">▾ Agreement</span>
+            <span class="fillin-chip">+ 字段</span>
+            <span style="font-size:0.78rem;color:var(--text-tertiary);align-self:center;margin-left:0.4rem">← 不会措辞? 用下拉拼一句</span>
+          </div>
+
+          <button class="nl-submit">问 →</button>
+        </div>
+
+        <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border)">
+          <div style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.5rem">
+            ── 上一次回答 ──
+          </div>
+
+          <div style="font-size:0.88rem;margin-bottom:0.4rem">
+            <strong>你</strong>:华泰和 HSBC 的 ISDA&CSA 下的 MTA 是多少?
+          </div>
+
+          <div class="recog-banner">
+            ⓘ <strong>已识别</strong>:华泰 + HSBC · ISDA & CSA · MTA
+          </div>
+
+          <div class="field-card-list">
+            <div class="field-card">
+              <span class="field-name">Minimum Transfer Amount</span>
+              <span class="field-value">€100,000</span>
+              <span class="field-conf green">🟢 0.95</span>
+              <a class="field-link">→ 原文 P23</a>
+            </div>
+            <div style="padding:0.5rem 0.75rem;font-size:0.78rem;color:var(--text-secondary);background:var(--bg-tertiary);border-radius:4px;margin-top:0.4rem">
+              来自:OTCD - ISDA & CSA in same doc.pdf
+            </div>
+          </div>
+
+          <div style="margin-top:0.75rem">
+            <button style="padding:6px 14px;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;font-size:0.82rem;cursor:pointer">🔁 再问华泰 HSBC ISDA 的另一个字段</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1rem;font-size:0.95rem">协议查询的 7 个关键决策</h4>
+    <table class="compact">
+      <thead>
+        <tr><th style="width:24%">决策点</th><th>决定</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>主输入框</td><td>完全自由文本,不强制结构 — 保留自然语言入口</td></tr>
+        <tr><td>引导填空</td><td>给两类用户兼容:熟悉的人直接打字,不熟悉的人用下拉拼一句(主路径自由 + 兜底结构化)</td></tr>
+        <tr><td>实体识别透明</td><td>提交后显示"已识别:X + Y · Z · W",让用户知道系统理解对了没</td></tr>
+        <tr><td>Counterparty 模糊匹配</td><td>"华泰" 应该能命中 "Hua Tai Securities Co., Ltd." — 底层用 alias 表 + 模糊相似度</td></tr>
+        <tr><td>多对手方 / 多协议</td><td>"华泰和 HSBC 的 ISDA&CSA" → 4 元组 counterparty/agreement 都是数组;命中文件可能多于 1 份</td></tr>
+        <tr><td>识别失败时</td><td>不降级到向量检索 — 直接说"未找到"+ 重新填空 + 可选"附加:试试模糊检索 →"</td></tr>
+        <tr><td>追问入口</td><td>字段卡下方"再问 X 的另一个字段" — 保留 Counterparty + Agreement,字段位空出</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 3. 协议提取子屏 ============ -->
+  <div class="section">
+    <h3>③ 协议提取(extract_full)— 上传 + 元数据自动识别 + 全套字段</h3>
+
+    <div class="app-mock">
+      <div class="app-topbar">
+        <a class="app-back">← 返回</a>
+        <span class="app-title">📤 协议提取</span>
+        <span></span>
+      </div>
+
+      <div style="padding:2rem">
+        <div class="upload-zone">
+          <div class="upload-icon">📄</div>
+          <strong>把 ISDA / CSA / GMRA 拖到这里</strong>
+          <p>支持 PDF · 单份 &lt; 30MB</p>
+          <button class="upload-btn">选择文件</button>
+        </div>
+
+        <div style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem">
+          ── 上传后(已识别)──
+        </div>
+
+        <div class="progress-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.88rem">
+            <span><strong>📄 ISDA_HSBC_2026.pdf</strong> · 已上传</span>
+          </div>
+
+          <div style="margin-top:0.85rem">
+            <div class="recog-fields">
+              <span class="rkey">Counterparty A:</span>
+              <span>华泰证券</span>
+              <span class="redit">✏</span>
+            </div>
+            <div class="recog-fields">
+              <span class="rkey">Counterparty B:</span>
+              <span>HSBC</span>
+              <span class="redit">✏</span>
+            </div>
+            <div class="recog-fields">
+              <span class="rkey">Agreement Type:</span>
+              <span>ISDA + CSA</span>
+              <span class="redit">✏</span>
+            </div>
+            <div class="recog-fields">
+              <span class="rkey">签订日期:</span>
+              <span>2026-01-15</span>
+              <span class="redit">✏</span>
+            </div>
+          </div>
+
+          <p style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.4rem">
+            ⓘ 不对? 点 ✏ 修改
+          </p>
+        </div>
+
+        <div class="field-list-info">
+          <strong>将提取以下 18 个字段</strong>(按 ISDA + CSA 标准):
+          <div class="fl-tags">
+            Threshold · MTA · Rounding · Eligible Collateral · Regular Settlement Day · Valuation Date Location · Notification Time · Resolution Time · Interest Rate · Interest Period · Daily Interest Compounding · Valuation Agent · Independent Amount · ...
+          </div>
+        </div>
+
+        <button style="padding:0.65rem 2rem;background:var(--accent);color:white;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer">开始提取 →</button>
+
+        <div style="margin-top:1.5rem;font-size:0.82rem;color:var(--text-secondary)">
+          ── 提取中(示例进度)──
+        </div>
+        <div class="progress-card">
+          <div style="font-size:0.88rem">📄 ISDA_HSBC_2026.pdf · 解析 PDF... 60%</div>
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div style="font-size:0.76rem;color:var(--text-secondary)">阶段:解析 → 抽取 → 校验 → 渲染</div>
+        </div>
+
+        <div style="margin-top:1.5rem;font-size:0.82rem;color:var(--text-secondary)">
+          ── 完成 ──
+        </div>
+
+        <div style="font-size:0.88rem;margin-bottom:0.5rem">
+          📄 ISDA_HSBC_2026.pdf · <strong>已提取 18/20 字段</strong> · ⚠ 2 个低置信
+        </div>
+
+        <div class="field-card-list">
+          <div class="field-card">
+            <span class="field-name">Party A</span>
+            <span class="field-value">ABC Bank Ltd</span>
+            <span class="field-conf green">🟢 0.98</span>
+            <a class="field-link">→ 原文 §1.2</a>
+          </div>
+          <div class="field-card">
+            <span class="field-name">Party B</span>
+            <span class="field-value">XYZ Capital Inc</span>
+            <span class="field-conf green">🟢 0.96</span>
+            <a class="field-link">→ 原文 §1.2</a>
+          </div>
+          <div class="field-card">
+            <span class="field-name">Threshold</span>
+            <span class="field-value">€250,000</span>
+            <span class="field-conf green">🟢 0.94</span>
+            <a class="field-link">→ 原文 §3.1</a>
+          </div>
+          <div class="field-card">
+            <span class="field-name">MTA</span>
+            <span class="field-value field-value-low">€100,000</span>
+            <span class="field-conf yellow">🟡 0.71</span>
+            <a class="field-link">→ 原文 §3.2</a>
+            <div class="field-warning">
+              ⚠ 原文中找到两个候选值
+              <button>确认这个</button>
+              <button>改</button>
+            </div>
+          </div>
+          <div class="field-card">
+            <span class="field-name">Independent Amount</span>
+            <span class="field-value field-value-na">?</span>
+            <span class="field-conf red">🔴 N/A</span>
+            <a class="field-link">未找到</a>
+            <div class="field-warning">
+              该字段在文档中未出现
+              <button>跳过</button>
+              <button>手填</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="download-bar">
+          <button class="primary">📥 下载 Excel</button>
+          <button>📋 复制 JSON</button>
+          <button>👍</button>
+          <button>👎</button>
+        </div>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1rem;font-size:0.95rem">协议提取的 8 个关键决策</h4>
+    <table class="compact">
+      <thead>
+        <tr><th style="width:24%">决策点</th><th>决定</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>上传形态</td><td>拖拽 + 点击两可</td></tr>
+        <tr><td>不让用户选字段</td><td>字段集是协议类型决定的(ISDA / CSA / GMRA / ISDA+CSA 各有固定字段集)</td></tr>
+        <tr><td>metadata 自动识别</td><td>上传后展示"已识别:Counterparty / Agreement / 日期",一次确认</td></tr>
+        <tr><td>进度形态</td><td>进度条 + 当前阶段(解析 / 抽取 / 校验 / 渲染) — 不显示技术细节如"调用 LLM 中"</td></tr>
+        <tr><td>字段卡置信度</td><td>三色:🟢 ≥0.85 / 🟡 0.6-0.85 / 🔴 &lt;0.6 或 N/A</td></tr>
+        <tr><td>低置信字段交互</td><td>🟡 显示候选值 + [确认/改] · 🔴 [跳过/手填]</td></tr>
+        <tr><td>同步 vs 异步</td><td>&lt;30s 同步页面停留 · ≥30s 切异步可关页面 + 完成时通知</td></tr>
+        <tr><td>用户改字段后</td><td>不自动重抽 · 仅更新本字段 · 标 <code class="inline">human_corrected = true</code> 进 Ledger</td></tr>
+      </tbody>
+    </table>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong><code class="inline">human_corrected = true</code> 这件事很重要</strong> — 它是"用户行为反哺评测"在 UX 上的物理实现。<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      用户改一个字段就是给系统一个明确的 bad signal,不需要 thumbs-down 也能进 b2 评测自我迭代闭环。这在 v1 没有 thumbs UI 的情况下,是<u>额外的 30% bad case 信号源</u>。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 4. 字段卡 / 来源卡统一规范 ============ -->
+  <div class="section">
+    <h3>④ 字段卡 ↔ 来源卡 — 统一三段式</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:18%">元素</th><th>来源卡(知识问答)</th><th>字段卡(文档智能)</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>主体</td>
+          <td>文档名 + 章节 + 片段预览</td>
+          <td>字段名 + 抽出值</td>
+        </tr>
+        <tr>
+          <td>置信度</td>
+          <td>不显示(v1)</td>
+          <td>三色 + 数值</td>
+        </tr>
+        <tr>
+          <td>跳转</td>
+          <td>→ 原文(KB 文档 viewer)</td>
+          <td>→ 原文(PDF 第 N 页 + 高亮)</td>
+        </tr>
+        <tr>
+          <td>视觉容器</td>
+          <td>浅灰边框卡片,左侧 📎</td>
+          <td>浅灰边框卡片,无图标</td>
+        </tr>
+        <tr>
+          <td>状态色</td>
+          <td>中性灰</td>
+          <td>🟢🟡🔴</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>统一三段式</strong>:主信息 → 信息源 → 跳转回原文。<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      用户在不同 Agent / 不同 skill 之间切换时<u>没有学习成本</u> — 所有 AI 产出都"长得一样"。<br>
+      这是"可追溯不变量"(I4)在视觉层的物理体现 — 用户视觉上 internalize"可追溯"是产品的硬承诺。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 5. 失败 UX 汇总(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑤ 文档处理的诚实失败 6 种</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>失败种类</th><th>UX 形态</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>实体识别失败(查询)</td>
+          <td>"无法识别 Counterparty / Agreement / 字段,请重新填空 → [▾ Counterparty] [▾ Agreement] [+ 字段]" + 可选"附加:试试模糊检索 →"</td>
+        </tr>
+        <tr>
+          <td>未匹配协议(查询)</td>
+          <td>"未找到该 Counterparty + Agreement 的协议。可能 (1) 该协议未归档 (2) 对手方简称不准 [📨 告诉 Lead 缺资料]"</td>
+        </tr>
+        <tr>
+          <td>文件解析失败(扫描件)</td>
+          <td>"这是扫描件,需要先 OCR。当前不支持自动 OCR — [联系 IT 处理]"</td>
+        </tr>
+        <tr>
+          <td>metadata 识别失败(提取)</td>
+          <td>"无法识别协议类型,请手动选择 → [ISDA / CSA / GMRA / ISDA+CSA]"</td>
+        </tr>
+        <tr>
+          <td>字段全空(提取)</td>
+          <td>"解析了文档但没找到任何 ISDA 字段。可能这不是 ISDA → [切换 schema] / [联系支持]"</td>
+        </tr>
+        <tr>
+          <td>超时(&gt;30s)</td>
+          <td>"处理时间较长,已切到后台。完成时会通知你。可以关闭这个页面。"</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 6. UX ↔ 后端对应(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ UX ↔ 后端实现的对应</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>UI 元素</th><th>后端 entity</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>"🔍 协议查询" 入口</td><td>task_template = collateral_screening<br>调用 DocIntelligenceAgent.targeted_screen</td></tr>
+        <tr><td>"📤 协议提取" 入口</td><td>task_template = agreement_extraction<br>调用 DocIntelligenceAgent.extract_full</td></tr>
+        <tr><td>"已识别"banner</td><td>实体识别 LLM 调用结果(query → 4 元组)</td></tr>
+        <tr><td>字段卡</td><td>字段级并行 LLM 抽取结果(value + confidence + source_anchor)</td></tr>
+        <tr><td>"已识别 metadata"</td><td>PDF 头部解析 + LLM 识别 → 写 task_instance.attrs</td></tr>
+        <tr><td>"将提取 N 个字段"</td><td>从 YAML schema 加载 fields 列表</td></tr>
+        <tr><td>用户改字段</td><td>更新 Ledger.payload.fields_human_corrected_count</td></tr>
+        <tr><td>"📨 告诉 Lead 缺资料"</td><td>POST /proposal/kb-supplement 写 t_proposal_inbox</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 7. 用户故事 ============ -->
+  <div class="section">
+    <h3>⑦ 用户故事 — 张三处理一份 ISDA</h3>
+
+    <div class="insight-box">
+      <strong>14:00</strong> 张三收到上传 ISDA_HSBC.pdf 的需求 → 进入"📤 处理文档" → 选"📤 协议提取"<br><br>
+      <strong>14:01</strong> 拖拽文件 → 上传 → 系统识别"华泰证券 / HSBC / ISDA + CSA / 2026-01-15" → 张三看一眼,确认对 → 点"开始提取"<br><br>
+      <strong>14:01-14:01:25</strong> 进度条 60% → 80% → 100% (25 秒)<br><br>
+      <strong>14:01:25</strong> 字段卡列表出现 — 18 个绿色 / 1 个黄色 / 1 个红色<br>
+      &nbsp;&nbsp;&nbsp;张三看到 MTA 黄色 + "原文中找到两个候选值" → 点"→ 原文 §3.2" → 看了下 → 点"确认这个"<br>
+      &nbsp;&nbsp;&nbsp;张三看到 Independent Amount 红色 + "未找到" → 这个 ISDA 确实没填 IA → 点"跳过"<br><br>
+      <strong>14:03</strong> 点"📥 下载 Excel" → Excel 到本地 → 导入 cloudmarging<br><br>
+      <strong>背后(用户感知不到)</strong>:Ledger 落账 / human_corrected=true / 评测信号入库 / 部门 Insight 该字段低置信率 +1
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      <u>3 分钟完成原本人工 30 分钟的工作</u>。整个过程张三只看到:上传 → 确认 metadata → 看字段卡 → 改 1 个 / 跳 1 个 → 下载。<br>
+      没有任何技术词出现 — 没有 "Agent / Skill / Schema / LLM / Prompt"。
+    </p>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

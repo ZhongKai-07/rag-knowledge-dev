@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>10. v1 / v2 / v3 切分 — 试点先行的工程范围 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 500; }
+  .pill-green { background: rgba(52,199,89,0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255,159,10,0.15); color: #b25e00; }
+  .pill-gray { background: var(--bg-tertiary); color: var(--text-secondary); }
+  .pill-blue { background: rgba(0,113,227,0.15); color: #0058b8; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  .stage-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+  @media (max-width: 800px) { .stage-grid { grid-template-columns: 1fr; } }
+  .stage {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+  }
+  .stage-v1 { border-top: 4px solid var(--success); }
+  .stage-v2 { border-top: 4px solid var(--warning); }
+  .stage-v3 { border-top: 4px solid var(--text-tertiary); }
+  .stage h4 { font-size: 1rem; margin-bottom: 0.3rem; }
+  .stage-tag { display:inline-block; font-size:0.7rem; padding:2px 8px; border-radius:999px; background:var(--bg-tertiary); color:var(--text-secondary); margin-bottom:0.6rem; }
+  .stage ul { margin: 0.5rem 0 0 1.1rem; font-size: 0.83rem; color: var(--text-secondary); }
+  .stage li { margin-bottom: 0.3rem; }
+
+  .pr-list { display: grid; gap: 0.5rem; margin: 1rem 0; }
+  .pr-item {
+    display: grid;
+    grid-template-columns: 50px 1fr 220px 100px;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    align-items: center;
+    font-size: 0.85rem;
+  }
+  .pr-item .pr-num {
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    padding: 4px 8px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+  }
+  .pr-item .pr-title { font-weight: 500; }
+  .pr-item .pr-modules { color: var(--text-secondary); font-size: 0.78rem; }
+  .pr-item .pr-status { text-align: right; }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 10. v1 / v2 / v3 切分 — 试点先行的工程范围</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0.5rem 1.5rem;font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center">
+  <span><span style="padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:0.74rem">章 3 · v1 范围与治理</span> &nbsp; 第 7/20 张</span>
+  <span>
+    <a href="v1-scope-and-paths.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">← 05 v1 范围 + 路径</a>
+    &nbsp;|&nbsp;
+    <a href="11-pilot-permission.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">下一张 · 11 试点权限取舍 →</a>
+  </span>
+</div>
+<div id="claude-content">
+
+  <h2>v1 / v2 / v3 切分 — 试点先行</h2>
+  <p class="subtitle">
+    五分法 + 三件事 + 双级 admin + 持续学习 — 看上去野心大,但 v1 工程范围严格收敛。<br>
+    试点先在 Ops 单部门跑通最小闭环,再扩部门、扩能力。每一阶段都接已留好的接口,不重构。
+  </p>
+
+  <!-- ============ 1. 三阶段定位 ============ -->
+  <div class="section">
+    <h3>① 三阶段定位</h3>
+
+    <div class="stage-grid">
+      <div class="stage stage-v1">
+        <div class="stage-tag">阶段</div>
+        <h4>v1 · Ops 单部门试点</h4>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin:0">
+          目标:跑通最小可用闭环。验证产品形态、收集数据、验证 self-improving 闭环。
+        </p>
+        <ul>
+          <li>2 个 Agent 实现 + 3 个预留接口 + 1 个兜底</li>
+          <li>双级 admin 雏形(global + dept)</li>
+          <li>Memory + Insight + 3 类规则提议</li>
+          <li>新旧入口并存(<code class="inline">/workbench</code> 主推 + <code class="inline">/spaces</code> 兜底)</li>
+        </ul>
+      </div>
+
+      <div class="stage stage-v2">
+        <div class="stage-tag">下一阶段</div>
+        <h4>v2 · 扩部门 + 工具/排查</h4>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin:0">
+          目标:扩到 2-5 个部门。加复杂指令 / 问题排查 Agent。
+        </p>
+        <ul>
+          <li>多级 admin 完整(KB / Agent admin)</li>
+          <li>工具治理流水线 + 工具风险分级</li>
+          <li>Autodream 自动抽 Memory + 集体记忆</li>
+          <li>thumbs-up/down + 字段纠正信号</li>
+          <li><code class="inline">/spaces</code> 下线</li>
+        </ul>
+      </div>
+
+      <div class="stage stage-v3">
+        <div class="stage-tag">远期</div>
+        <h4>v3 · 全员 / 跨域</h4>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin:0">
+          目标:全公司部门级铺开。AI 反哺人类知识库。
+        </p>
+        <ul>
+          <li>跨部门授权 / OPA / OpenFGA</li>
+          <li>反哺 KB(LLM-wiki source)</li>
+          <li>Pulse 推送(站内卡片/邮件/IM)</li>
+          <li>跨任务 / 跨文档 insight</li>
+          <li>多端(移动 / IM 集成)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>关键判断</strong>:v2 / v3 的所有增量 = "<u>接已留好的接口</u>",不是重构。<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      ArchUnit 规则 + Agent 接口 + Ledger schema(双层) + 提议引擎 + Memory 注入钩子 — 全部在 v1 落地时就预留好了 v2/v3 的扩展位。每一阶段的工程改动是"加,不是改"。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 2. v1 = 2+3+1 ============ -->
+  <div class="section">
+    <h3>② v1 工程范围 = 2 实现 + 3 预留 + 1 兜底</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:18%">类别</th>
+          <th style="width:18%">v1 状态</th>
+          <th>具体落地内容</th>
+          <th style="width:24%">背后真实场景驱动</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>💬 知识问答</td>
+          <td><span class="pill pill-green">v1 实现</span></td>
+          <td>KnowledgeQAAgent · 包装现有 RAG pipeline · 服务 COB / SOP 问答</td>
+          <td>Ops 部门已有制度文档咨询需求</td>
+        </tr>
+        <tr>
+          <td>📤 文档智能</td>
+          <td><span class="pill pill-green">v1 实现</span></td>
+          <td>DocIntelligenceAgent · 两个 skill:<code class="inline">extract_full</code>(协议提取) + <code class="inline">targeted_screen</code>(协议查询)</td>
+          <td>ISDA / CSA / GMRA 协议入档 + cloudmarging 录入</td>
+        </tr>
+        <tr>
+          <td>⚙ 复杂指令</td>
+          <td><span class="pill pill-yellow">接口预留</span></td>
+          <td>Agent 接口可注册一个未来的 ToolOrchestrationAgent · ArchUnit 规则就位</td>
+          <td>等业务系统 API / MCP 开放后实现</td>
+        </tr>
+        <tr>
+          <td>🔍 问题排查</td>
+          <td><span class="pill pill-yellow">接口预留</span></td>
+          <td>Agent 接口可注册 TroubleshootAgent · ReAct 推理框架预研</td>
+          <td>v2 候选(IT 自助答疑场景)</td>
+        </tr>
+        <tr>
+          <td>· 碎片化兜底</td>
+          <td><span class="pill pill-gray">隐式存在</span></td>
+          <td>不专门建 Agent · 通用聊天承接长尾问题</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 3. 横切底座 ============ -->
+  <div class="section">
+    <h3>③ 横切底座的四块 — v1 必做哪些</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:25%">横切底座</th>
+          <th style="width:18%">v1 范围</th>
+          <th>v1 具体落地</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1. KB · RBAC · Trace · RAGAS</td>
+          <td><span class="pill pill-blue">现状沿用</span></td>
+          <td>OpenSearch 主路径 / KbAccessCalculator / RagTraceContext / 现有 t_eval_* 表</td>
+        </tr>
+        <tr>
+          <td>2. 工具治理 / 入驻链</td>
+          <td><span class="pill pill-yellow">v2 实现</span></td>
+          <td>v1 不实现;复杂指令 v1 不实现,工具治理可推</td>
+        </tr>
+        <tr>
+          <td>3. 管理员策略层</td>
+          <td><span class="pill pill-yellow">部分 v1 + v2 完整</span></td>
+          <td>v1: 双级 admin 雏形(global + dept) + 简单字段集维护;v2: 多级 admin / 推理策略 / 话术映射</td>
+        </tr>
+        <tr>
+          <td>4. 持续学习层</td>
+          <td><span class="pill pill-green">v1 必做</span></td>
+          <td>Ledger 双层 schema + User Memory + Dept Memory + Insight 看板 + 3 类规则提议 + promote 流程</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>试点期权重</strong>:横切底座的"持续学习层"是 v1 重头戏,占工程量 ~40%。"工具治理"和"管理员策略层"绝大部分推到 v2 — 试点期 Ops 单部门内部默认互信,先验证产品形态,不深耕治理。
+    </div>
+  </div>
+
+  <!-- ============ 4. v1 PR 拆分(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>④ v1 PR 拆分(初步) — 6-8 周完成</h3>
+
+    <div class="pr-list">
+      <div class="pr-item">
+        <div class="pr-num">PR1</div>
+        <div class="pr-title">架构骨架 · Task / Agent / Ledger 三域空壳 + ArchUnit 规则</div>
+        <div class="pr-modules">workbench / agent / ledger / framework</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR2</div>
+        <div class="pr-title">KnowledgeQAAgent + COB/SOP 模板 + skill 路由</div>
+        <div class="pr-modules">agent / workbench</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR3</div>
+        <div class="pr-title">Ledger 双层 schema + 落账钩子 + 通用列 sources_json 强约束</div>
+        <div class="pr-modules">ledger / workbench / framework</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR4</div>
+        <div class="pr-title">DocIntelligenceAgent + extract_full(ISDA / CSA / GMRA / ISDA+CSA)</div>
+        <div class="pr-modules">agent / workbench / 字段 schema YAML</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR5</div>
+        <div class="pr-title">DocIntelligenceAgent.targeted_screen + 实体识别 + KB metadata 多值匹配</div>
+        <div class="pr-modules">agent / knowledge metadata 增强</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR6</div>
+        <div class="pr-title">User Memory + Dept Memory + 注入钩子 + 透明栏 UX</div>
+        <div class="pr-modules">memory / framework / frontend</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR7</div>
+        <div class="pr-title">Insight 看板(屏 3) + bad case 列表 + 下钻 audit log</div>
+        <div class="pr-modules">admin / frontend / ledger 聚合服务</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR8</div>
+        <div class="pr-title">提议引擎(3 规则)+ 提议 inbox(屏 6) + 反学习机制 + promote 流程(屏 5)</div>
+        <div class="pr-modules">admin / proposal engine / frontend</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+      <div class="pr-item">
+        <div class="pr-num">PR9</div>
+        <div class="pr-title">前端主路径(屏 1 + 屏 2a + 屏 2b)+ /spaces 引流条</div>
+        <div class="pr-modules">frontend / 路由 / UI 组件</div>
+        <div class="pr-status"><span class="pill pill-green">v1</span></div>
+      </div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      9 个 PR · 每周 1-2 个 · 6-8 周完成。每个 PR 各自走 brainstorm(必要时) → spec → plan → impl 的 superpowers 流程。
+    </p>
+  </div>
+
+  <!-- ============ 5. 工程改动量(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑤ v1 工程改动量盘点</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>分类</th><th>数量</th><th>明细</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>新增数据库表</td>
+          <td>~7 张</td>
+          <td>t_task_ledger(可重建) · t_user_memory · t_dept_memory · t_memory_promote_request · t_memory_injection_log · t_insight_audit_log · t_proposal_inbox</td>
+        </tr>
+        <tr>
+          <td>新增 service</td>
+          <td>~15 个</td>
+          <td>TaskTemplateRegistry / TaskInstanceService / AgentRegistry / LedgerWriter / SignalFilter / ProposalEngine / UserMemoryService / DeptMemoryService / MemoryInjector / InsightAggregator / PromoteService / AuditLogger / etc.</td>
+        </tr>
+        <tr>
+          <td>新增前端页面</td>
+          <td>~9 屏</td>
+          <td>/workbench(屏 1) · 知识问答(屏 2a) · 文档处理(屏 2b 含两子屏) · /profile/memory · /admin/insight(屏 3) · /admin/dept-memory(屏 4) · /admin/memory-inbox(屏 5) · /admin/proposal-inbox(屏 6) · /admin/dept-fields(屏 7)</td>
+        </tr>
+        <tr>
+          <td>新增 ArchUnit 规则</td>
+          <td>~5 条</td>
+          <td>workbench 不得 import 其他域 mapper / agent 不得 import knowledge.dao 或 rag.dao / 新 agent 必须实现 Agent 接口 / Ledger 写入 sources_json 必须非空 / 异步路径不读 UserContext</td>
+        </tr>
+        <tr>
+          <td>YAML 资源文件</td>
+          <td>4 份 schema</td>
+          <td>isda.yaml / csa.yaml / gmra.yaml / isda+csa.yaml(每份含字段定义 + aliases + examples)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      改动面看似多,但每一项都对应明确的产品价值点。<u>没有"为重构而重构"的改动</u>;现有 RAG pipeline / KB CRUD / RBAC 链路完全沿用,不动。
+    </p>
+  </div>
+
+  <!-- ============ 6. 渐进改造的双轨 ============ -->
+  <div class="section">
+    <h3>⑥ 渐进改造的双轨期</h3>
+
+    <div class="insight-box">
+      <strong>v1 期间 <code class="inline">/spaces</code> 与 <code class="inline">/workbench</code> 并存</strong>:前者是老体验、后者是新体验。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      可通过看板对比两套入口的活跃度 / 任务完成率 / RAGAS 分数,作为 <strong>v2 决定旧入口下线时机</strong>的依据。<br>
+      顶部导航栏加"Ops 工作台"链接到 <code class="inline">/workbench</code>,并在 <code class="inline">/spaces</code> 页面顶部加一条引流条("试试新版工作台 →"),不强制跳转。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 7. 验收标准(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑦ v1 整体验收标准</h3>
+
+    <table class="compact">
+      <thead><tr><th style="width:6%">#</th><th>验收项</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code class="inline">/workbench</code> 主入口可访问,不需要"创建任务"动作即可开始问答 / 上传</td></tr>
+        <tr><td>2</td><td>COB 问答结果与现有 <code class="inline">/chat</code> 在同一 query 下答案一致性 ≥ 95%(RAGAS 对照)</td></tr>
+        <tr><td>3</td><td>协议提取(ISDA)字段准确率 baseline ≥ 80%</td></tr>
+        <tr><td>4</td><td>协议查询(targeted_screen)实体识别准确率 ≥ 85%</td></tr>
+        <tr><td>5</td><td>任意一次任务执行后 <code class="inline">t_task_ledger</code> 有对应行 + trace_id 串通</td></tr>
+        <tr><td>6</td><td>所有 Agent 产出 <code class="inline">sources_json</code> 必填非空(I4 可追溯不变量)</td></tr>
+        <tr><td>7</td><td><code class="inline">/profile/memory</code> 用户可手填 / 编辑 / 删除 memory,下次提问 prompt 含 memory 段</td></tr>
+        <tr><td>8</td><td>所有任务执行受现有 RBAC + security_level 拦截,零旁路</td></tr>
+        <tr><td>9</td><td>ArchUnit 新规则全部 green</td></tr>
+        <tr><td>10</td><td>UI 文案 review 通过:零"任务/任务模板/任务实例/Agent/Skill"等技术词</td></tr>
+        <tr><td>11</td><td><code class="inline">/spaces</code> + <code class="inline">/chat</code> 老路径在 v1 内仍可用(兜底)</td></tr>
+        <tr><td>12</td><td>提议引擎跑通:30 天内至少生成过 3 类提议各 1 条;反学习字段 <code class="inline">previous_rejection_id</code> 串通</td></tr>
+        <tr><td>13</td><td>双投影:dept admin 看 Insight / global admin 看系统健康 — 两者数据视图不混合</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 8. 风险与缓解 ============ -->
+  <div class="section">
+    <h3>⑧ 关键风险与缓解</h3>
+
+    <table class="compact">
+      <thead><tr><th>风险</th><th>严重度</th><th>缓解</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>架构纪律失守 → Agent 数量爆炸退化为 PaaS</strong></td>
+          <td><span class="pill pill-yellow">高</span></td>
+          <td>新增 Agent 必须走架构 review;ArchUnit 规则限制;PR 增加 &gt; 1 个 Agent 必须 spec</td>
+        </tr>
+        <tr>
+          <td>协议提取/查询准确率不达标</td>
+          <td><span class="pill pill-yellow">中</span></td>
+          <td>v1 限定 4 种 schema · 字段级评测 baseline ≥ 80%</td>
+        </tr>
+        <tr>
+          <td>试点扩部门时数据污染</td>
+          <td><span class="pill pill-yellow">中</span></td>
+          <td>Ledger <code class="inline">visibility_scope</code> 字段已建好;v1 默认 DEPT;v2 加 view 即可分层</td>
+        </tr>
+        <tr>
+          <td>Memory 注入 prompt 失控(爆 token)</td>
+          <td><span class="pill pill-gray">低</span></td>
+          <td>MemoryInjector 限定 ≤ 500 token;超过截断</td>
+        </tr>
+        <tr>
+          <td>PII 隐私(用户主动声明形态较安全)</td>
+          <td><span class="pill pill-gray">低</span></td>
+          <td>v1 全部 user-visible / user-editable / user-deletable</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

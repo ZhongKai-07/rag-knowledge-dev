@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>13. Self-improving 发动机 — 5 种提议机制 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+
+  .view-toggle {
+    display: inline-flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-toggle button {
+    background: transparent;
+    border: none;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .view-toggle button.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  table.compact {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.compact th, table.compact td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+  .pill-green { background: rgba(52,199,89,0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255,159,10,0.15); color: #b25e00; }
+  .pill-gray { background: var(--bg-tertiary); color: var(--text-secondary); }
+
+  .insight-box {
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-error { border-left-color: var(--error); background: rgba(255,59,48,0.04); }
+
+  /* 闭环流程图 */
+  .flow-diagram {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .flow-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.6rem;
+    margin: 0.5rem 0;
+  }
+  @media (max-width: 800px) { .flow-row { grid-template-columns: 1fr; } }
+  .flow-step {
+    padding: 0.7rem 0.85rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    text-align: center;
+  }
+  .flow-step strong { display: block; margin-bottom: 0.2rem; font-size: 0.85rem; }
+  .flow-step .step-detail { color: var(--text-secondary); font-size: 0.76rem; }
+  .flow-step.s-source { background: rgba(0,113,227,0.08); border-color: rgba(0,113,227,0.3); }
+  .flow-step.s-engine { background: rgba(88,86,214,0.08); border-color: rgba(88,86,214,0.3); }
+  .flow-step.s-inbox { background: rgba(255,159,10,0.08); border-color: rgba(255,159,10,0.3); }
+  .flow-step.s-decide { background: rgba(255,159,10,0.12); border-color: rgba(255,159,10,0.4); }
+  .flow-step.s-effect { background: rgba(52,199,89,0.08); border-color: rgba(52,199,89,0.3); }
+  .flow-arrow-row { text-align: center; color: var(--text-tertiary); font-size: 1.1rem; margin: 0.2rem 0; }
+
+  /* 提议卡片 */
+  .proposal-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.85rem;
+  }
+  .proposal-card .pcard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+  .proposal-card .pcard-title {
+    font-weight: 500;
+    font-size: 1rem;
+    margin: 0.4rem 0;
+  }
+  .proposal-card .pcard-evidence,
+  .proposal-card .pcard-impact {
+    font-size: 0.85rem;
+    margin: 0.5rem 0;
+    padding-left: 0.5rem;
+    border-left: 2px solid var(--border);
+  }
+  .proposal-card .pcard-evidence strong { color: var(--accent); }
+  .proposal-card .pcard-impact strong { color: var(--success); }
+  .proposal-card .pcard-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+  }
+  .proposal-card .pcard-actions button {
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .proposal-card .pcard-actions button.btn-approve {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+  }
+  .proposal-card .pcard-actions button.btn-reject {
+    background: var(--bg-secondary);
+    color: var(--error);
+    border-color: rgba(255,59,48,0.3);
+  }
+  .proposal-card .pcard-actions button.btn-later {
+    color: var(--text-secondary);
+  }
+  .relearn-banner {
+    padding: 0.6rem 0.85rem;
+    background: rgba(255,159,10,0.1);
+    border-left: 3px solid var(--warning);
+    border-radius: 4px;
+    font-size: 0.82rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+  }
+
+  code.inline {
+    background: var(--bg-tertiary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 13. Self-improving 发动机 — 5 种提议机制</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0.5rem 1.5rem;font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center">
+  <span><span style="padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:0.74rem">章 4 · Self-improving 闭环</span> &nbsp; 第 12/20 张</span>
+  <span>
+    <a href="12-three-pillars.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">← 12 三件事关系</a>
+    &nbsp;|&nbsp;
+    <a href="16-ux-home.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">下一章 · 16 工作台首屏 →</a>
+  </span>
+</div>
+<div id="claude-content">
+
+  <h2>Self-improving 发动机 — 产品如何自己长大</h2>
+  <p class="subtitle">
+    "AI 原生工作台"区别于"AI 加壳的 SaaS"的核心,在于产品形态本身能进化。<br>
+    机制 = 察觉(Ledger 信号) → 提议(规则引擎) → admin 一键决策 → 沉淀(产品形态进化)。
+  </p>
+
+  <!-- ============ 1. 价值主张 ============ -->
+  <div class="section">
+    <h3>① 价值主张 — 业务永远只面对二元决策</h3>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>核心承诺</strong>:业务用户(包括 dept admin)<u>永远不需要思考</u> KB / Agent / Skill / Prompt / Schema 这些技术概念。<br><br>
+      <span style="color:var(--text-secondary)">
+      他们只需要在 inbox 看到:"系统建议你做 X,因为 Y" — 然后按一个按钮 Approve / Reject。<br>
+      系统在背后自己沉淀部门记忆 / 提议新入口 / 清理死规则 / 派发 KB 补充工单。<br><br>
+      </span>
+      <strong>这是产品形态从"工具"到"操作中枢"的质变点</strong> — 业务面对二元决策,产品在背后长大。
+    </div>
+  </div>
+
+  <!-- ============ 2. 闭环流程图 ============ -->
+  <div class="section">
+    <h3>② 闭环流程</h3>
+
+    <div class="flow-diagram">
+      <div class="flow-row">
+        <div class="flow-step s-source">
+          <strong>① 燃料</strong>
+          <div class="step-detail">Ledger 落账(每次任务执行)</div>
+        </div>
+        <div class="flow-step s-engine">
+          <strong>② 规则引擎</strong>
+          <div class="step-detail">每天扫一次 · 5 类信号</div>
+        </div>
+        <div class="flow-step s-inbox">
+          <strong>③ 提议 inbox</strong>
+          <div class="step-detail">证据 + 影响 + 30 天过期</div>
+        </div>
+        <div class="flow-step s-decide">
+          <strong>④ admin 一键决策</strong>
+          <div class="step-detail">Approve / Reject / 稍后</div>
+        </div>
+        <div class="flow-step s-effect">
+          <strong>⑤ 沉淀生效</strong>
+          <div class="step-detail">写 Memory · KB 工单 · 清理死条</div>
+        </div>
+      </div>
+      <div class="flow-arrow-row">↓ 下次任务执行受益于沉淀 → 数据回到 Ledger,新一轮闭环 ↓</div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.5rem">
+      核心是循环:每一个 admin 一键决策 = 产品真的进化一格。被拒绝的提议也有用 — 拒绝原因被记录,下次同类信号再生时附上"上次被拒的原因",系统也在学习什么时候该提议、什么时候不该。
+    </p>
+  </div>
+
+  <!-- ============ 3. 5 种提议形态 ============ -->
+  <div class="section">
+    <h3>③ 5 种提议形态 — 5 条产品进化路径</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:8%">#</th>
+          <th style="width:22%">形态</th>
+          <th>信号源</th>
+          <th>沉淀到</th>
+          <th>v1 状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>F1</strong></td>
+          <td>📚 沉淀部门记忆</td>
+          <td>≥ 3 个用户 30 天内写过相似 User Memory</td>
+          <td><code class="inline">t_dept_memory</code></td>
+          <td><span class="pill pill-green">v1 做(规则)</span></td>
+        </tr>
+        <tr>
+          <td><strong>F2</strong></td>
+          <td>🆕 新 Task 卡片</td>
+          <td>≥ 50 次 query 命中同 (KB 子集 + 主题词袋簇)</td>
+          <td>提议给开发(v1 仅展示)</td>
+          <td><span class="pill pill-yellow">v1 雏形</span></td>
+        </tr>
+        <tr>
+          <td><strong>F3</strong></td>
+          <td>🔍 KB 补充候选</td>
+          <td>"未找到"模式 query 主题聚类 top N</td>
+          <td>派发 KB 补充工单(走人工 ingestion)</td>
+          <td><span class="pill pill-green">v1 做(规则)</span></td>
+        </tr>
+        <tr>
+          <td><strong>F4</strong></td>
+          <td>⚙ Agent prompt 调优</td>
+          <td>bad case 集中在某一类失败模式</td>
+          <td>改 Agent 内置 prompt(走开发 PR)</td>
+          <td><span class="pill pill-gray">v2(需 LLM 分析)</span></td>
+        </tr>
+        <tr>
+          <td><strong>F5</strong></td>
+          <td>🗑 部门记忆清理</td>
+          <td>某条 Dept Memory 60 天命中率 &lt; 5%</td>
+          <td>软删除(30 天可恢复)</td>
+          <td><span class="pill pill-green">v1 做(规则)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-box" style="margin-top:1rem">
+      <strong>v1 试点期 = 3 种规则做 + 1 种雏形 + 1 种 v2 接</strong>。<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      不引入 LLM 抽提议(那是 v2 Autodream),但 5 种里有 3 种用规则就能跑起来,足够撑起试点期最小可用闭环。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 4. 提议卡的三段式 ============ -->
+  <div class="section">
+    <h3>④ 提议卡 — 永远三段式(建议 / 证据 / 影响)</h3>
+
+    <div class="proposal-card">
+      <div class="pcard-header">
+        <span>📚 沉淀部门记忆 · 3 天前生成</span>
+        <span>30 天后过期</span>
+      </div>
+      <div class="pcard-title">建议添加规则:"EUM = EU MTA"</div>
+
+      <div class="pcard-evidence">
+        <strong>▸ 证据</strong>:4 个用户在过去 30 天 User Memory 里写过相似术语
+        <ul style="margin:0.4rem 0 0 1.25rem;font-size:0.82rem;color:var(--text-secondary)">
+          <li>用户 #3712 · "我说 EUM 都指 EU MTA"     2026-04-15</li>
+          <li>用户 #2156 · "EUM = European MTA"       2026-04-18</li>
+          <li>用户 #4901 · "EUM is EU MTA"            2026-04-22</li>
+          <li>用户 #3712 · 工作台问答中使用过该简称   3 次</li>
+        </ul>
+      </div>
+
+      <div class="pcard-impact">
+        <strong>▸ 影响</strong>:批准后,所有部门成员的下一次问答 prompt 会自动注入此规则;用户问"EUM 是多少"时 Agent 自动转 query 为"EU MTA"。
+      </div>
+
+      <div class="pcard-actions">
+        <button class="btn-approve">✓ 批准</button>
+        <button class="btn-reject">✗ 拒绝(需写原因)</button>
+        <button class="btn-later">稍后</button>
+      </div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.5rem">
+      <strong>三段固定</strong>:建议(说人话什么) · 证据(数据从哪来) · 影响(批了会怎样)。<br>
+      让 admin 不是凭感觉拍板,是看数据决策;不是猜测后果,是知道点下去会发生什么。
+    </p>
+  </div>
+
+  <!-- ============ 5. 反学习机制 ============ -->
+  <div class="section">
+    <h3>⑤ 反学习机制 — 拒绝是有用的负反馈</h3>
+
+    <div class="proposal-card">
+      <div class="pcard-header">
+        <span>📚 沉淀部门记忆 · <strong style="color:var(--warning)">第 2 次提议</strong></span>
+        <span>30 天后过期</span>
+      </div>
+
+      <div class="relearn-banner">
+        ⚠ <strong>上次被拒原因</strong>:"这是某个用户的个人习惯,不是部门通用术语" · 本次新增 5 个用户支持,共 9 人使用
+      </div>
+
+      <div class="pcard-title">建议添加规则:"EUM = EU MTA"</div>
+
+      <div class="pcard-evidence">
+        <strong>▸ 证据(更新)</strong>:9 个用户在过去 90 天使用该简称(原 4 人 + 新增 5 人) · 跨 3 个 sub-team
+      </div>
+
+      <div class="pcard-impact">
+        <strong>▸ 影响</strong>:同上次。批准后所有部门成员问答 prompt 注入此规则。
+      </div>
+
+      <div class="pcard-actions">
+        <button class="btn-approve">✓ 批准</button>
+        <button class="btn-reject">✗ 拒绝</button>
+        <button class="btn-later">稍后</button>
+      </div>
+    </div>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>系统也在学</strong>:<code class="inline">t_proposal_inbox.previous_rejection_id</code> 引用上一次的拒绝。下次规则引擎扫到同主题信号时附上"上次被拒原因 + 本次新增证据"。<br><br>
+      <span style="color:var(--text-secondary)">
+      这条机制让"提议被拒"不是死路 — 它是一次校准。<u>"被拒 → 新证据 → 再提议 → 可能批准"</u>是 self-improving 在 admin 端最微妙的循环。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 6. 用户端的 self-improving 出口 ============ -->
+  <div class="section">
+    <h3>⑥ self-improving 在用户端的两个细微出口</h3>
+
+    <div class="split">
+      <div class="mockup">
+        <div class="mockup-header">出口 1 · 首屏"部门提醒"</div>
+        <div class="mockup-body">
+          <pre style="font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.78rem;line-height:1.7;background:var(--bg-tertiary);padding:0.85rem;border-radius:6px;margin:0">─── 部门提醒 ────────────────
+ⓘ 本部门最近有人在问"EU 区域 IA
+  调整",要看吗?</pre>
+          <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:0.6rem">
+            过去 7 天部门有 ≥ 5 次同主题查询 + 当前用户没问过 → 显示。<u>不打扰</u>(无红点 / 仅 1 行)。让员工感到"AI 在背后看着部门趋势"。
+          </p>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-header">出口 2 · "告诉 Lead 这块缺资料"</div>
+        <div class="mockup-body">
+          <pre style="font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.78rem;line-height:1.7;background:var(--bg-tertiary);padding:0.85rem;border-radius:6px;margin:0">在 COB / SOP 里没找到。可能:
+(1) 不在已上传文档
+(2) 换个说法
+(3) [告诉 Lead 这块缺资料]</pre>
+          <p style="font-size:0.83rem;color:var(--text-secondary);margin-top:0.6rem">
+            点击 → 自动构造一条 KB 补充候选(F3)写入 t_proposal_inbox。<u>业务的一次"找不到"自动变成 dept admin 的一条提议</u>。
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 7. 屏 6 inbox(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑦ 屏 6 系统提议 inbox 完整 mockup</h3>
+
+    <div class="mockup">
+      <div class="mockup-header">/admin/proposal-inbox</div>
+      <div class="mockup-body" style="background:var(--bg-primary)">
+        <div style="display:flex;gap:0.5rem;font-size:0.8rem;margin-bottom:1rem">
+          <span style="padding:4px 10px;background:var(--accent);color:white;border-radius:6px">全部 8</span>
+          <span style="padding:4px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px">📚 部门记忆 3</span>
+          <span style="padding:4px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px">🔍 KB 补充 2</span>
+          <span style="padding:4px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px">🗑 清理 2</span>
+          <span style="padding:4px 10px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:6px">🆕 新入口 1</span>
+        </div>
+
+        <div class="proposal-card">
+          <div class="pcard-header"><span>🔍 补充 KB · 5 天前生成</span><span>25 天后过期</span></div>
+          <div class="pcard-title">建议补充:"EU 区域 IA 调整规则"相关资料</div>
+          <div class="pcard-evidence"><strong>▸ 证据</strong>:过去 30 天有 5 次"未找到"的查询都涉及该主题(query 列表 5 条)</div>
+          <div class="pcard-impact"><strong>▸ 影响</strong>:批准后,会创建一条 KB 补充工单分配给资料团队;工单完成后下次同类查询将能命中。</div>
+          <div class="pcard-actions"><button class="btn-approve">✓ 批准 → 派发工单</button><button class="btn-reject">✗ 拒绝</button><button class="btn-later">稍后</button></div>
+        </div>
+
+        <div class="proposal-card">
+          <div class="pcard-header"><span>🗑 下线规则 · 7 天前生成</span><span>23 天后过期</span></div>
+          <div class="pcard-title">建议下线:"数字保留两位小数"</div>
+          <div class="pcard-evidence"><strong>▸ 证据</strong>:该规则注入次数 142 / 命中改写 4 次(命中率 2.8%) · 命中率连续 60 天 &lt; 5% · 添加于 4 个月前</div>
+          <div class="pcard-impact"><strong>▸ 影响</strong>:批准后规则软删除,Agent prompt 不再注入此规则;保留 30 天可恢复;30 天后永久删除。</div>
+          <div class="pcard-actions"><button class="btn-approve">✓ 批准 → 软删</button><button class="btn-reject">✗ 保留</button><button class="btn-later">稍后</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 8. schema 与规则(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑧ t_proposal_inbox schema</h3>
+    <div class="mockup">
+      <div class="mockup-body">
+<pre style="font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.82rem;line-height:1.6;background:var(--bg-tertiary);padding:1rem;border-radius:8px;overflow-x:auto;margin:0">CREATE TABLE t_proposal_inbox (
+  id                BIGSERIAL PRIMARY KEY,
+  proposal_type     VARCHAR(32),    -- F1-F5
+  target_dept_id    BIGINT,
+  target_admin_role VARCHAR(16),    -- dept_admin / global_admin
+  proposal_payload  JSONB,          -- 提议具体内容
+  evidence_payload  JSONB,          -- 支持证据(涉及的 ledger 行/user 数/频次)
+  status            VARCHAR(16),    -- pending / approved / rejected / expired
+  reviewed_by       BIGINT NULL,
+  review_note       TEXT NULL,
+  previous_rejection_id BIGINT NULL,  -- 反学习引用
+  expires_at        TIMESTAMP,      -- 30 天没处理自动 expired
+  created_at        TIMESTAMP,
+  reviewed_at       TIMESTAMP NULL
+);</pre>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1.5rem">v1 三条规则伪代码</h4>
+    <table class="compact">
+      <thead>
+        <tr><th>提议类型</th><th>触发条件</th><th>提议生成内容</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>F1 沉淀部门记忆</strong></td>
+          <td>SELECT term FROM t_user_memory<br>GROUP BY semantic_cluster<br>HAVING COUNT(DISTINCT user_id) ≥ 3<br>AND created_at &gt; now()-30d</td>
+          <td>建议添加规则: term · 证据: 涉及的 user_id 列表(匿名)</td>
+        </tr>
+        <tr>
+          <td><strong>F3 KB 补充</strong></td>
+          <td>SELECT topic FROM t_task_ledger<br>WHERE status='partial' AND payload-&gt;'no_kb_hit'=true<br>GROUP BY topic_cluster<br>HAVING COUNT &gt; threshold</td>
+          <td>建议补充资料: topic · 证据: 5+ 条未找到的 query</td>
+        </tr>
+        <tr>
+          <td><strong>F5 部门记忆清理</strong></td>
+          <td>SELECT memory_id FROM t_memory_injection_log<br>WHERE memory_type='dept'<br>GROUP BY memory_id<br>HAVING hit_rate(60d) &lt; 0.05</td>
+          <td>建议下线: memory_id · 证据: 命中率 / 注入次数 / 添加日期</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 9. 防误用 ============ -->
+  <div class="section">
+    <h3>⑨ 关键设计 — 不能做"全部批准"</h3>
+
+    <div class="insight-error" style="padding:1rem 1.25rem;border-left:3px solid var(--error);background:rgba(255,59,48,0.04);border-radius:6px;font-size:0.9rem">
+      <strong>不提供"全部批准"按钮</strong>。这不是性能问题 — 是产品价值。<br><br>
+      <span style="color:var(--text-secondary)">
+      批量一键违背 self-improving 的本质 — <u>每一条决策都是产品进化</u>,需要 admin 看清证据/影响。<br>
+      30 天没处理就过期(下次信号还在会再生),给 admin 喘息空间但保留压力。<br>
+      批准后 30 天内可逆("已处理"屏的"恢复"按钮),避免 admin 拍错。
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

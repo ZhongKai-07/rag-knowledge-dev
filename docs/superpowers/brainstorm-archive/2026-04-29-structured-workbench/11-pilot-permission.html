@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>11. 试点权限取舍 — 90% 可省 / 信任契约不可省 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 500; }
+  .pill-green { background: rgba(52,199,89,0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255,159,10,0.15); color: #b25e00; }
+  .pill-red { background: rgba(255,59,48,0.12); color: #c41e1e; }
+  .pill-gray { background: var(--bg-tertiary); color: var(--text-secondary); }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+  .insight-error { border-left-color: var(--error); background: rgba(255,59,48,0.04); }
+
+  .axis-flow { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 1rem; margin: 1.5rem 0; }
+  .axis-side { padding: 1.25rem; border-radius: 12px; border: 1px solid var(--border); }
+  .axis-formal { background: rgba(255,59,48,0.04); border-color: rgba(255,59,48,0.2); }
+  .axis-pilot { background: rgba(52,199,89,0.04); border-color: rgba(52,199,89,0.25); }
+  .axis-arrow { display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); font-size: 1.5rem; }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 11. 试点权限取舍 — 不重 / 不漏</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0.5rem 1.5rem;font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center">
+  <span><span style="padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:0.74rem">章 3 · v1 范围与治理</span> &nbsp; 第 8/20 张</span>
+  <span>
+    <a href="10-v1-v2-v3-scope.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">← 10 v1/v2/v3 切分</a>
+    &nbsp;|&nbsp;
+    <a href="14-dual-admin.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">下一张 · 14 双级 admin →</a>
+  </span>
+</div>
+<div id="claude-content">
+
+  <h2>试点权限 — 90% 可省,但 10% 不能漏</h2>
+  <p class="subtitle">
+    Ops 单部门试点 = 封闭场景。这改变了权限设计的核心矛盾 — 不再是"防跨部门泄漏",而是"用户体验是否 OK + 数据是否能学"。<br>
+    试点期 90% 的传统权限设计可以延后,但 User Memory 私有 / Ledger 双投影 / 文件归属 / 双级 admin 雏形 — 这 10% 不能漏。
+  </p>
+
+  <!-- ============ 1. 核心矛盾的转变 ============ -->
+  <div class="section">
+    <h3>① 试点改变了权限的"核心矛盾"</h3>
+
+    <div class="axis-flow">
+      <div class="axis-side axis-formal">
+        <div style="font-size:0.7rem;color:var(--error);text-transform:uppercase;margin-bottom:0.6rem">多部门正式上线场景</div>
+        <strong style="font-size:0.95rem">主要威胁:跨部门数据泄漏</strong>
+        <ul style="margin:0.75rem 0 0 1.25rem;font-size:0.82rem;color:var(--text-secondary)">
+          <li>核心权限问题:谁能看谁的数据</li>
+          <li>必须多级 admin(global / dept / kb / agent)</li>
+          <li>工具调用必须分级</li>
+          <li>Memory 个人 vs 部门必须严格隔离</li>
+          <li>Ledger 必须三层可见性切片</li>
+          <li>文件归属必须严格</li>
+          <li>……</li>
+        </ul>
+      </div>
+      <div class="axis-arrow">→</div>
+      <div class="axis-side axis-pilot">
+        <div style="font-size:0.7rem;color:var(--success);text-transform:uppercase;margin-bottom:0.6rem">Ops 单部门试点</div>
+        <strong style="font-size:0.95rem">主要关切:UX OK 吗 / 数据能学吗</strong>
+        <ul style="margin:0.75rem 0 0 1.25rem;font-size:0.82rem;color:var(--text-secondary)">
+          <li>跨部门数据泄漏问题:几乎不存在</li>
+          <li>管理员粒度:全局 + 部门一级足够</li>
+          <li>工具授权:部门内默认全开</li>
+          <li>Memory 隔离:依然必须严格(信任契约)</li>
+          <li>Ledger 可见性:一层(部门)够用</li>
+          <li>文件归属:打标即可,不严校验</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      <strong>试点权限设计逻辑</strong>:90% 的传统权限设计可以延后,但 <u>10% 不能延后</u> — 这 10% 不是"为了安全",是为了让 self-improving 学到正确的东西 + 守住用户信任契约。
+    </div>
+  </div>
+
+  <!-- ============ 2. 10 个权限缺口 ============ -->
+  <div class="section">
+    <h3>② 五分法引出的 10 个权限缺口 — v1 / v2 / v3 切分</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:6%">#</th>
+          <th style="width:22%">缺口</th>
+          <th>问题</th>
+          <th style="width:16%">v1 决定</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>G1</strong></td>
+          <td>工具调用授权</td>
+          <td>用户/角色 能不能调 X 工具</td>
+          <td><span class="pill pill-gray">v2(复杂指令时)</span></td>
+        </tr>
+        <tr>
+          <td><strong>G2</strong></td>
+          <td>副作用可逆性等级</td>
+          <td>发券 vs 查询 vs 改单 — 高风险工具调用前需确认</td>
+          <td><span class="pill pill-gray">v2</span></td>
+        </tr>
+        <tr>
+          <td><strong>G3</strong></td>
+          <td>工具入驻准入</td>
+          <td>作者 → 冲突检测 → 上线 — 工具治理流水线</td>
+          <td><span class="pill pill-gray">v2</span></td>
+        </tr>
+        <tr>
+          <td><strong>G4</strong></td>
+          <td>跨主体查询</td>
+          <td>员工查自己 vs IT admin 查任何人 — 问题排查场景</td>
+          <td><span class="pill pill-gray">v2</span></td>
+        </tr>
+        <tr>
+          <td><strong>G5</strong></td>
+          <td>多级管理员</td>
+          <td>global / dept / kb / agent admin 分级</td>
+          <td><span class="pill pill-yellow">v1 雏形(双级)</span></td>
+        </tr>
+        <tr>
+          <td><strong>G6</strong></td>
+          <td>Ledger 三层可见性</td>
+          <td>own / dept-aggregated / global-aggregated</td>
+          <td><span class="pill pill-yellow">v1 字段建,v2 view</span></td>
+        </tr>
+        <tr>
+          <td><strong>G7</strong></td>
+          <td>Memory 双层归属</td>
+          <td>个人 mem 私有 vs 部门 mem 共享</td>
+          <td><span class="pill pill-red">v1 必做</span></td>
+        </tr>
+        <tr>
+          <td><strong>G8</strong></td>
+          <td>提议 inbox 接收角色</td>
+          <td>self-improving 提议给谁</td>
+          <td><span class="pill pill-yellow">v1 接口预留</span></td>
+        </tr>
+        <tr>
+          <td><strong>G9</strong></td>
+          <td>文件归属</td>
+          <td>uploader / dept / kb 三选一</td>
+          <td><span class="pill pill-red">v1 必做(打标即可)</span></td>
+        </tr>
+        <tr>
+          <td>G10</td>
+          <td>跨 Agent 调用权限传递</td>
+          <td>—</td>
+          <td><span class="pill pill-green">已对齐(AgentContext)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      v1 试点期 — 4 个红/黄缺口(G5/G6/G7/G9) + 接口预留(G8)。其他 5 个推到 v2/v3。
+    </p>
+  </div>
+
+  <!-- ============ 3. 信任契约 ============ -->
+  <div class="section">
+    <h3>③ G7 是不能省的核心 — 信任契约</h3>
+
+    <div class="insight-error" style="padding:1rem 1.25rem;border-left:3px solid var(--error);background:rgba(255,59,48,0.04);border-radius:6px;font-size:0.9rem;margin-bottom:1rem">
+      <strong>关键决策(不可妥协)</strong>:User Memory 严格用户私有,<u>即使 global_admin 也不能直接看</u>。<br><br>
+      <span style="color:var(--text-secondary)">
+      这不是因为权限模型限制 — 是产品的<u>用户信任契约</u>。员工如果发现"我的个人偏好被部门同事看到了" / "我的角色信息被领导看到了",对 AI 信任会崩。<br>
+      <strong>和部门数量无关。试点期单部门也不能省。</strong>
+      </span>
+    </div>
+
+    <table class="compact">
+      <thead>
+        <tr><th>决策点</th><th>v1 试点决定</th><th>理由</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>User Memory 写入者</td>
+          <td>仅用户自己</td>
+          <td>v1 不引入 LLM 自动抽取,避免 PII 风险</td>
+        </tr>
+        <tr>
+          <td>User Memory 读取者</td>
+          <td>仅用户 + Agent prompt 注入</td>
+          <td>admin 绝对不可读;Agent 注入是写入 prompt 不是读出来</td>
+        </tr>
+        <tr>
+          <td>用户能否导出</td>
+          <td>必须可导出</td>
+          <td>合规底线 + 信任契约</td>
+        </tr>
+        <tr>
+          <td>用户能否删除</td>
+          <td>hard delete(物理删除)</td>
+          <td>合规要求"被删除即不可恢复"</td>
+        </tr>
+        <tr>
+          <td>Insight 看 bad case 下钻</td>
+          <td>显示部门匿名 ID,不显示真实 user_id;每次下钻打 audit log</td>
+          <td>员工知道 bad case 可能被看,但<u>何时被看是透明的</u>(可在自己 memory 页查"我哪条对话被 admin 下钻过")</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 4. 试点权限极简方案 ============ -->
+  <div class="section">
+    <h3>④ 试点期权限极简方案</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:25%">项目</th><th>试点决定</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>角色模型</strong></td>
+          <td>现状不动(user / role / dept)。dept 设为 "ops",dept_admin = Ops Lead。<u>不引入</u> KB / Agent admin。</td>
+        </tr>
+        <tr>
+          <td><strong>双级 admin</strong></td>
+          <td>global_admin(技术部门) + dept_admin(业务部门 Lead)。视角完全分割,不共享数据视图。</td>
+        </tr>
+        <tr>
+          <td><strong>工具授权</strong></td>
+          <td>部门内默认全开。仅打标 <code class="inline">tool.scope = "dept_internal"</code>(为 v2 工具治理留位)。</td>
+        </tr>
+        <tr>
+          <td><strong>KB / RBAC / security_level</strong></td>
+          <td>现状链路完全沿用,零改动。AuthzPostProcessor / MetadataFilterBuilder / KbAccessCalculator 不动。</td>
+        </tr>
+        <tr>
+          <td><strong>文件归属</strong></td>
+          <td>必填 <code class="inline">uploader_user_id</code> + <code class="inline">owner_dept_id</code>。试点期 dept 内任意成员可访问(不严校验)。</td>
+        </tr>
+        <tr>
+          <td><strong>Ledger 可见性</strong></td>
+          <td>落账时 <code class="inline">visibility_scope</code> 字段建好(默认 <code class="inline">DEPT</code>),<u>但读取路径试点期只做 own / dept 两 view</u>,不做 global 聚合。</td>
+        </tr>
+        <tr>
+          <td><strong>User Memory</strong></td>
+          <td>严格用户私有(<code class="inline">user_id</code> PK) + 用户可见 / 编辑 / 删除 / 导出(合规底线)。</td>
+        </tr>
+        <tr>
+          <td><strong>Dept Memory</strong></td>
+          <td>部门共享(<code class="inline">dept_id</code> PK) + 仅 dept_admin 可写 + 部门全员可读。</td>
+        </tr>
+        <tr>
+          <td><strong>Dept Insight</strong></td>
+          <td>v1 雏形:dept_admin 看部门聚合。bad case 下钻显示匿名 ID,打 audit log。</td>
+        </tr>
+        <tr>
+          <td><strong>跨用户读取</strong></td>
+          <td>试点期默认禁止(即使在 dept 内,user A 也不能看 user B 的对话历史)。Insight 只看脱敏聚合。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>方案改动量</strong>:基本是"现状权限链路 + Memory 三件套 + Ledger 一个字段 + 文件三个字段"。试点能很快上线 — <u>没有"重做权限系统"的工作量</u>。
+    </div>
+  </div>
+
+  <!-- ============ 5. 双级 admin 视角 ============ -->
+  <div class="section">
+    <h3>⑤ 双级 admin 的视角分割(关键)</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:22%">维度</th>
+          <th style="width:38%">global_admin(技术部门)</th>
+          <th>dept_admin(业务部门 Lead)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>角色画像</strong></td>
+          <td>系统医生 — 平台运营者</td>
+          <td>业务管家 — 业务运营者</td>
+        </tr>
+        <tr>
+          <td><strong>关心什么</strong></td>
+          <td>系统健康 / 成本 / 链路追踪 / 异常</td>
+          <td>部门工作效率 / 知识沉淀 / AI 是否真帮上忙</td>
+        </tr>
+        <tr>
+          <td><strong>Ledger 投影</strong></td>
+          <td>技术投影:trace_id / cost_tokens / latency / status / model_name</td>
+          <td>业务投影:task_template / kb_ids / aggregated_topics / bad_case_count</td>
+        </tr>
+        <tr>
+          <td><strong>看板</strong></td>
+          <td>/global/system · /global/cost · /global/trace</td>
+          <td>/admin/insight · /admin/dept-memory · /admin/proposal-inbox</td>
+        </tr>
+        <tr>
+          <td><strong>不能看</strong></td>
+          <td>不读 query 原文 / 不看 dept memory 内容 / 不下钻 bad case</td>
+          <td>不关心 token 成本 / 不看 trace 调用链 / 不看模型版本</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-box" style="margin-top:1rem">
+      <strong>关键洞察</strong>:两级 admin <u>看的不是同一份数据的不同切片,是两套完全不同的数据维度</u>。<br>
+      技术部门看 AI 平台是"系统",业务部门看 AI 平台是"工具",两个视角互不打扰。这种分离让"权限隔离"和"职责清晰"在同一个动作里完成。
+    </div>
+  </div>
+
+  <!-- ============ 6. 扩部门时补什么(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ 扩到第二个部门时必须补什么</h3>
+
+    <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:0.75rem">
+      v1 试点验证后扩部门时<strong>必须补</strong>:
+    </p>
+
+    <table class="compact">
+      <thead><tr><th>补什么</th><th>v1 是否留好钩子</th><th>扩展时改动</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>G6 Ledger 三层可见性的全套读路径</td>
+          <td>✅ <code class="inline">visibility_scope</code> 字段已建</td>
+          <td>加 dept_agg / global_agg 两个 view,无需迁移数据</td>
+        </tr>
+        <tr>
+          <td>G5 dept_admin / global_admin 切开的角色判定</td>
+          <td>✅ 已是 role 类型分级</td>
+          <td>RoleService 加判定逻辑,前端按角色过滤入口</td>
+        </tr>
+        <tr>
+          <td>跨部门 KB 访问的精确控制</td>
+          <td>✅ KbAccessCalculator 现状沿用</td>
+          <td>无新代码,配置即可</td>
+        </tr>
+        <tr>
+          <td>提议 inbox 路由(每部门 admin 看自己部门)</td>
+          <td>✅ <code class="inline">target_dept_id</code> 字段已建</td>
+          <td>查询 where 过滤即可</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      <u>v1 留好的钩子让扩部门是配置改动 + 加 view,不是数据迁移 / schema 变更</u>。这是分阶段切分的真正价值。
+    </p>
+  </div>
+
+  <!-- ============ 7. 总结 ============ -->
+  <div class="section">
+    <h3>⑦ 一句话总结</h3>
+    <div class="insight-success" style="padding:1.25rem 1.5rem;font-size:1rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px">
+      <strong>试点权限的设计哲学</strong>:不重(90% 传统权限可省)、不漏(信任契约 + 必要钩子不省)。<br>
+      <span style="color:var(--text-secondary);font-size:0.9rem;margin-top:0.5rem;display:block">
+      <u>4 个 v1 必做增量(双级 admin / Memory 双层 / Ledger 字段 / 文件归属)</u> 落地工作量比"重做权限系统"小一个数量级,但已经为 v2 / v3 扩展铺好了所有钩子。<br>
+      关键设计决策不在"做多少",在"<u>哪些不能漏</u>"。
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

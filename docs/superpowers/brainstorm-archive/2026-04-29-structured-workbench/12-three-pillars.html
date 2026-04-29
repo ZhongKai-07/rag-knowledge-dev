@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>12. 三件事 — User Memory / Dept Memory / Dept Insight — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+
+  .view-toggle {
+    display: inline-flex;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-toggle button {
+    background: transparent;
+    border: none;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .view-toggle button.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  table.compact {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table.compact th, table.compact td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+  }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  /* 三件事卡片网格 */
+  .pillar-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  @media (max-width: 800px) { .pillar-grid { grid-template-columns: 1fr; } }
+  .pillar {
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+  }
+  .pillar-user { border-top: 4px solid #5856d6; }
+  .pillar-dept { border-top: 4px solid #34c759; }
+  .pillar-insight { border-top: 4px solid #ff9f0a; }
+  .pillar h4 { font-size: 1rem; margin-bottom: 0.4rem; }
+  .pillar .pillar-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    margin-bottom: 0.6rem;
+  }
+  .pillar p { font-size: 0.85rem; color: var(--text-secondary); margin: 0.5rem 0; }
+  .pillar ul {
+    margin: 0.5rem 0 0 1.1rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+  }
+  .pillar li { margin-bottom: 0.25rem; }
+
+  /* 关系图 */
+  .relation-diagram {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .ledger-bar {
+    background: linear-gradient(90deg, rgba(0,113,227,0.08), rgba(0,113,227,0.18), rgba(0,113,227,0.08));
+    border: 1px solid rgba(0,113,227,0.3);
+    padding: 0.85rem 1.25rem;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.8rem;
+    margin: 1rem 0;
+  }
+  .col-box {
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+  }
+  .col-box.user-c { background: rgba(88,86,214,0.08); border-color: rgba(88,86,214,0.3); }
+  .col-box.dept-c { background: rgba(52,199,89,0.08); border-color: rgba(52,199,89,0.3); }
+  .col-box.insight-c { background: rgba(255,159,10,0.08); border-color: rgba(255,159,10,0.3); }
+  .col-box .role { display:block; font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.3rem; }
+
+  .channel {
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+  }
+  .channel strong { color: var(--text-primary); }
+
+  .insight-box {
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+
+  code.inline {
+    background: var(--bg-tertiary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+  }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 12. 三件事 — User Memory / Dept Memory / Dept Insight</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0.5rem 1.5rem;font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center">
+  <span><span style="padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:0.74rem">章 4 · Self-improving 闭环</span> &nbsp; 第 11/20 张</span>
+  <span>
+    <a href="continual-learning.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">← 04 持续学习层</a>
+    &nbsp;|&nbsp;
+    <a href="13-self-improving-engine.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">下一张 · 13 Self-improving 发动机 →</a>
+  </span>
+</div>
+<div id="claude-content">
+
+  <h2>持续学习层的核心三件事</h2>
+  <p class="subtitle">
+    试点期不需要重权限管理,但 User Memory / Dept Memory / Dept Insight 必须做对。<br>
+    它们不是三个独立功能 — 是同一个 self-improving 闭环上的三个支点。
+  </p>
+
+  <!-- ============ 1. 三件事是什么 ============ -->
+  <div class="section">
+    <h3>① 三件事各是什么</h3>
+
+    <div class="pillar-grid">
+      <div class="pillar pillar-user">
+        <div class="pillar-tag">个人层 · 私有</div>
+        <h4>👤 User Memory</h4>
+        <p>用户主动告诉 AI"关于我,请记住这些"的事实集合。注入个人 prompt。</p>
+        <ul>
+          <li>角色 / 偏好 / 关注主题 / 习惯术语 / 个人快捷</li>
+          <li>用户随时可看 / 可编辑 / 可删除 / 可导出</li>
+          <li>严格私有 — 即使 admin 也不能直接看</li>
+          <li>v1 上限 50 条</li>
+        </ul>
+      </div>
+
+      <div class="pillar pillar-dept">
+        <div class="pillar-tag">部门层 · 共享</div>
+        <h4>🏢 Dept Memory</h4>
+        <p>部门内对所有人 Agent 行为生效的"部门级共识"。注入所有部门成员的 prompt。</p>
+        <ul>
+          <li>术语 / 规则 / 风格 / 警示 / 流程</li>
+          <li>由 dept admin 维护</li>
+          <li>部门全员可读,仅 admin 可写</li>
+          <li>v1 上限 100 条</li>
+        </ul>
+      </div>
+
+      <div class="pillar pillar-insight">
+        <div class="pillar-tag">运营层 · 聚合</div>
+        <h4>📊 Dept Insight</h4>
+        <p>Ledger 数据按部门聚合后的脱敏可视化。给 dept admin 决策"AI 在我部门用得怎么样"。</p>
+        <ul>
+          <li>任务用量 / 高频主题 / bad case / 命中率</li>
+          <li>仅 dept admin 可见</li>
+          <li>默认聚合不暴露个人,bad case 下钻打 audit log</li>
+          <li>self-improving 提议机制的素材库</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. 关系图 ============ -->
+  <div class="section">
+    <h3>② 三件事的关系 — 闭环图</h3>
+
+    <div class="relation-diagram">
+      <div class="ledger-bar">
+        🗃 <strong>底座 Ledger</strong>(所有任务执行结构化落账,部门可见)
+      </div>
+
+      <div style="text-align:center;color:var(--text-tertiary);font-size:0.85rem;margin:0.5rem 0">
+        ↓ 双投影 ↓
+      </div>
+
+      <div class="three-col">
+        <div class="col-box user-c">
+          <strong>👤 User Memory</strong>
+          <span class="role">用户主动写</span>
+        </div>
+        <div class="col-box dept-c">
+          <strong>🏢 Dept Memory</strong>
+          <span class="role">admin 维护</span>
+        </div>
+        <div class="col-box insight-c">
+          <strong>📊 Dept Insight</strong>
+          <span class="role">系统聚合给 admin</span>
+        </div>
+      </div>
+
+      <div style="text-align:center;color:var(--text-tertiary);font-size:0.85rem;margin:0.5rem 0">
+        ↓ 注入 / 反哺 ↓
+      </div>
+
+      <div style="text-align:center;padding:0.75rem;background:var(--bg-tertiary);border-radius:8px;font-size:0.85rem">
+        <strong>下次 Agent 执行</strong> 注入两层 memory · 受益于 admin 改进
+      </div>
+
+      <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px dashed var(--border)">
+        <div class="channel">
+          <strong>↑ 自下而上(promote)</strong>
+          用户在 User Memory 写了一条偏部门通用的事实 → 主动提议提升 → admin 在 inbox approve → <em>复制</em>(不是迁移)到 Dept Memory。提议人那条保留,标记"已提升到部门"。
+        </div>
+        <div class="channel">
+          <strong>↓ 自上而下(insight 驱动改进)</strong>
+          admin 看 Insight 看板发现 bad case 集中 / 高频主题 / 死规则 → 直接改 Dept Memory / 派发 KB 补充工单 / 下线无效规则。
+        </div>
+        <div class="channel">
+          <strong>⟲ 系统主动提议</strong>
+          规则引擎扫 Ledger → 生成 4 类提议放进 admin inbox → admin 一键 Approve / Reject → 写回 Dept Memory / KB 工单。
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem">
+      <strong>核心闭环</strong>:Ledger 是燃料 · Insight 是 admin 的眼睛 · Dept Memory 是部门的记忆 + Insight 改进的落点 · User Memory 是个人的记忆 + Dept Memory 的人才储备 · promote + insight + 系统提议 三条通道让闭环跑起来。
+    </div>
+  </div>
+
+  <!-- ============ 3. 严格的产品约束 ============ -->
+  <div class="section">
+    <h3>③ 产品约束(信任契约)</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>关键决策</th><th>User Memory</th><th>Dept Memory</th><th>Dept Insight</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>谁可写</td>
+          <td>用户自己</td>
+          <td>仅 dept admin</td>
+          <td>系统(只读)</td>
+        </tr>
+        <tr>
+          <td>谁可读</td>
+          <td>仅用户自己 + Agent 注入</td>
+          <td>部门全员 + Agent 注入</td>
+          <td>仅 dept admin</td>
+        </tr>
+        <tr>
+          <td>admin 能看吗</td>
+          <td><strong style="color:var(--error)">绝对不能</strong></td>
+          <td>是,自己维护</td>
+          <td>是,主用</td>
+        </tr>
+        <tr>
+          <td>个人 ID 暴露</td>
+          <td>—</td>
+          <td>—</td>
+          <td>聚合默认匿名;bad case 下钻显示部门匿名 ID</td>
+        </tr>
+        <tr>
+          <td>下钻打 audit log</td>
+          <td>—</td>
+          <td>—</td>
+          <td>每次下钻必打;用户在自己 memory 页可看"我哪条对话被 admin 下钻过"</td>
+        </tr>
+        <tr>
+          <td>导出</td>
+          <td>用户可导出自己的</td>
+          <td>不导出</td>
+          <td>不导出(防止数据外流)</td>
+        </tr>
+        <tr>
+          <td>删除是否可逆</td>
+          <td>hard delete(合规底线)</td>
+          <td>软删 30 天可恢复</td>
+          <td>—</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-warn" style="padding:1rem 1.25rem;border-left:3px solid var(--warning);background:rgba(255,159,10,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>关键边界</strong>:User Memory 严格私有 — 这不是因为权限模型限制,而是<u>用户信任契约</u>。员工如果发现"我的个人偏好被部门同事看到了",对 AI 信任会崩。和部门数量无关,试点期也不能省。
+    </div>
+  </div>
+
+  <!-- ============ 4. promote 流程 ============ -->
+  <div class="section">
+    <h3>④ promote 流程 — 个人沉淀部门</h3>
+
+    <div class="mockup">
+      <div class="mockup-header">流程示意</div>
+      <div class="mockup-body" style="padding:1.25rem">
+        <div style="display:flex;flex-direction:column;gap:0.6rem;font-size:0.88rem">
+          <div style="padding:0.7rem;background:rgba(88,86,214,0.08);border-radius:8px">
+            <strong>1. 用户在 /profile/memory 写下:</strong> "EUM = EU MTA"
+          </div>
+          <div style="text-align:center;color:var(--text-tertiary)">↓ 点击 [提议给 Ops Lead] 按钮</div>
+          <div style="padding:0.7rem;background:rgba(0,113,227,0.08);border-radius:8px">
+            <strong>2. admin 看板 /admin/memory-inbox 出现一项:</strong>
+            <div style="margin-top:0.3rem;color:var(--text-secondary)">
+              提议人: 张三 · 类型: 术语 · 内容: "EUM = EU MTA"
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--text-tertiary)">↓</div>
+          <div style="padding:0.7rem;background:rgba(52,199,89,0.08);border-radius:8px">
+            <strong>3a. admin Approve →</strong> 复制到 t_dept_memory(标记 source_user_id) · 用户该条标记"已提升到部门"
+          </div>
+          <div style="padding:0.7rem;background:rgba(255,59,48,0.06);border-radius:8px">
+            <strong>3b. admin Reject →</strong> 用户收到通知 + 原因
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      <strong>"复制式提升"的设计原因</strong>:用户 User Memory 那条<u>保留</u>,只是状态变成"已提升到部门"。这样 — 用户离职/调岗时个人 memory 删除不影响 dept memory;dept admin 修改/下线 dept memory 不影响用户那条。所有权清楚,不互相阻塞。
+    </div>
+  </div>
+
+  <!-- ============ 5. 注入策略(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑤ Memory 注入到 Agent prompt 的具体形态</h3>
+
+    <div class="mockup">
+      <div class="mockup-header">每次 Agent.execute 的 prompt 构造</div>
+      <div class="mockup-body">
+<pre style="font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.82rem;line-height:1.6;background:var(--bg-tertiary);padding:1rem;border-radius:8px;overflow-x:auto">[基础 system prompt]
++ [部门上下文]   ← 注入 Dept Memory(去重后的核心规则/术语)
++ [个人上下文]   ← 注入 User Memory(按 type 分组渲染)
++ [用户当前 query]</pre>
+        <p style="font-size:0.85rem;margin-top:0.75rem;color:var(--text-secondary)">
+          <strong>注入次序固定</strong>:Dept 先于 User — 部门规则是约束(不能违背),个人偏好是偏好(在约束下生效)。两者冲突时<u>部门胜出</u>。
+        </p>
+        <p style="font-size:0.85rem;margin-top:0.5rem;color:var(--text-secondary)">
+          <strong>token 预算</strong>:User Memory 注入段 ≤ 500 tokens(超出按相关性截断,v1 用 query 词袋粗判)。
+        </p>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1.5rem">用户面 Memory 透明栏(屏 2a 知识问答)</h4>
+    <div class="mockup">
+      <div class="mockup-header">默认折叠 → 单行小灰字</div>
+      <div class="mockup-body">
+<pre style="font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.8rem;line-height:1.7;background:var(--bg-tertiary);padding:1rem;border-radius:8px">ⓘ 基于你的角色(EU Ops collateral analyst)+1 部门规则     [展开]</pre>
+        <p style="font-size:0.85rem;margin-top:0.5rem;color:var(--text-secondary)">
+          展开后显示具体注入了什么 + <strong>"编辑我的记忆 →"</strong> 快捷入口直接进 /profile/memory。让"AI 越用越懂我"有反馈回路。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 6. 数据库 schema(完整模式) ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ 数据库 schema 草案(v1 试点)</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>表</th><th>核心字段</th><th>用途</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code class="inline">t_user_memory</code></td>
+          <td>user_id, type, content, tags, promoted_to_dept_id</td>
+          <td>个人记忆 · type ∈ {role, preference, topic, term, shortcut}</td>
+        </tr>
+        <tr>
+          <td><code class="inline">t_dept_memory</code></td>
+          <td>dept_id, type, content, priority, source_user_id, created_by</td>
+          <td>部门记忆 · type ∈ {term, rule, style, warning, process}</td>
+        </tr>
+        <tr>
+          <td><code class="inline">t_memory_promote_request</code></td>
+          <td>user_memory_id, user_id, dept_id, status, reviewed_by, review_note</td>
+          <td>promote 提议箱(用户 → 部门)</td>
+        </tr>
+        <tr>
+          <td><code class="inline">t_memory_injection_log</code></td>
+          <td>task_instance_id, memory_type, memory_id</td>
+          <td>注入命中日志 · 用于 Dept Memory 命中率统计</td>
+        </tr>
+        <tr>
+          <td><code class="inline">t_insight_audit_log</code></td>
+          <td>admin_id, action, target_ledger_id</td>
+          <td>bad case 下钻审计 · 用户可看"我哪条被看过"</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      共 5 张新表;实际改动量比"重做权限系统"小一个数量级。详细 SQL 见 spec(待 M1-M13 修正后回写)。
+    </p>
+  </div>
+
+  <!-- ============ 7. v2 扩展 ============ -->
+  <div class="section">
+    <h3>⑦ v1 试点 → v2 完整版的边界</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th>能力</th><th>v1 试点</th><th>v2 完整</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>User Memory 抽取方式</td>
+          <td>仅用户主动声明</td>
+          <td>+ Autodream 自动抽取(标 source=auto,与 manual 区分)</td>
+        </tr>
+        <tr>
+          <td>Dept Memory 维护</td>
+          <td>admin 手动维护 + 用户 promote</td>
+          <td>+ 系统提议自动生成候选</td>
+        </tr>
+        <tr>
+          <td>Insight 主题聚类</td>
+          <td>词袋 + TF-IDF</td>
+          <td>向量聚类</td>
+        </tr>
+        <tr>
+          <td>bad case 信号源</td>
+          <td>仅 status=failed/partial</td>
+          <td>+ 用户 thumbs-down + 改字段信号</td>
+        </tr>
+        <tr>
+          <td>Insight → Dept Memory 回写</td>
+          <td>admin 看完 insight 自己改</td>
+          <td>系统提议"是否新增/修改 Dept Memory"</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

@@ -4,6 +4,213 @@
 <meta charset="utf-8">
 <title>Brainstorm Archive · 2026-04-29 Structured Workbench</title>
 <link rel="stylesheet" href="_frame.css">
+<style>
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, rgba(0,113,227,0.06), rgba(88,86,214,0.05), rgba(255,159,10,0.04));
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 2rem 2.5rem;
+    margin-bottom: 2.5rem;
+  }
+  .hero h2 {
+    font-size: 1.7rem;
+    margin-bottom: 0.5rem;
+  }
+  .hero .hero-sub {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin-bottom: 1rem;
+  }
+  .hero .hero-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    flex-wrap: wrap;
+  }
+  .hero .hero-meta strong { color: var(--text-secondary); }
+
+  /* Audience paths */
+  .paths-section {
+    margin-bottom: 2.5rem;
+  }
+  .paths-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+  .paths-sub {
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+  }
+  .paths-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  @media (max-width: 900px) { .paths-grid { grid-template-columns: 1fr; } }
+  .path-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .path-card.exec { border-top: 4px solid #5856d6; }
+  .path-card.biz { border-top: 4px solid var(--success); }
+  .path-card.eng { border-top: 4px solid var(--warning); }
+  .path-card .path-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+  .path-card h4 {
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
+  }
+  .path-card .path-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.85rem;
+  }
+  .path-card .path-list {
+    flex: 1;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .path-card .path-list li {
+    counter-increment: path;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .path-card .path-list li:last-child { border-bottom: none; }
+  .path-card .path-list li:before {
+    content: counter(path);
+    width: 22px; height: 22px;
+    background: var(--bg-tertiary);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+  .path-card .path-list { counter-reset: path; }
+  .path-card .path-list li a {
+    color: inherit;
+    text-decoration: none;
+    flex: 1;
+  }
+  .path-card .path-list li a:hover { color: var(--accent); }
+  .path-card .path-list li .pl-id {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.74rem;
+    color: var(--text-tertiary);
+    width: 26px;
+  }
+
+  /* Chapter sections */
+  .chapter {
+    margin-bottom: 2rem;
+  }
+  .chapter-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+  }
+  .chapter-num {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: var(--bg-secondary);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .chapter-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .chapter-sub {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+  }
+
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+  @media (max-width: 700px) { .toc-grid { grid-template-columns: 1fr; } }
+  .toc-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .toc-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,113,227,0.08);
+  }
+  .toc-card .toc-id {
+    font-family: 'SF Mono', Monaco, Consolas, monospace;
+    font-size: 0.74rem;
+    color: var(--text-tertiary);
+    background: var(--bg-tertiary);
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .toc-card .toc-content {
+    flex: 1;
+  }
+  .toc-card .toc-title {
+    font-size: 0.92rem;
+    font-weight: 500;
+    margin-bottom: 0.15rem;
+  }
+  .toc-card .toc-desc {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+
+  /* Closing block */
+  .closing {
+    margin-top: 2rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-secondary);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    font-size: 0.88rem;
+  }
+  .closing strong { display: block; margin-bottom: 0.4rem; }
+  .closing ul { margin: 0.5rem 0 0 1.25rem; color: var(--text-secondary); }
+  .closing li { margin-bottom: 0.25rem; }
+  .closing a { color: var(--accent); text-decoration: none; }
+  .closing a:hover { text-decoration: underline; }
+</style>
 </head>
 <body>
 <div class="archive-header">
@@ -12,105 +219,295 @@
 </div>
 <div id="claude-content">
 
-  <h2>结构化工作台 v1 设计 — Brainstorm 过程归档</h2>
-  <p class="subtitle">以下 6 个 mockup 是设计文档（spec）落地前的探索过程，按对话推进顺序排列。Spec 是结论，这里是结论的来路。</p>
-
-  <div class="section">
-    <p><strong>背景</strong>：2026-04-29 与产品方对齐 Ops 部门的 4 个 AI 应用场景（COB / SOP / Collateral 筛查 / 协议提取）的产品形态。最终决策落到 <a href="../../specs/2026-04-29-structured-workbench-design.md"><code>docs/superpowers/specs/2026-04-29-structured-workbench-design.md</code></a>。</p>
+  <!-- Hero -->
+  <div class="hero">
+    <h2>结构化工作台 v1 设计 — 完整 brainstorm 归档</h2>
+    <div class="hero-sub">
+      Ops 部门 4 个 AI 应用场景驱动的产品形态升级 — 从 KB 中心化 RAG 问答 → 办公助手 → 结构化工作台。<br>
+      五分法工作模式 + Self-improving 闭环 + 双级 admin 治理 + 业务零技术暴露 = AI 原生操作中枢。
+    </div>
+    <div class="hero-meta">
+      <span><strong>20 张设计文档</strong> · 5 章 + 终幕</span>
+      <span><strong>双层视图</strong>:演示模式 / 完整模式</span>
+      <span><strong>面向</strong>:领导汇报 + 业务分享 + 工程 review</span>
+    </div>
   </div>
 
-  <h3>探索顺序</h3>
+  <!-- 推荐路径 -->
+  <div class="paths-section">
+    <div class="paths-title">📍 按视角的推荐阅读路径</div>
+    <div class="paths-sub">不同听众有不同关切 — 选一条路径,按顺序看 5-10 张 HTML,完整理解一遍这套设计。点击进入会自动锁定该模式,后续 prev/next 按该路径跳。</div>
 
-  <div class="cards" style="margin-top:1rem">
+    <div class="paths-grid">
+      <div class="path-card exec">
+        <div class="path-icon">🎯</div>
+        <h4>领导汇报版</h4>
+        <div class="path-meta">5 张 · 约 5 分钟 · 决策叙事 + 价值主张</div>
+        <ol class="path-list">
+          <li><span class="pl-id">03</span><a href="paas-vs-workbench.html?mode=exec">为什么不走 PaaS 助手作坊</a></li>
+          <li><span class="pl-id">08</span><a href="08-five-categories.html?mode=exec">场景五分法 · 智能工厂</a></li>
+          <li><span class="pl-id">13</span><a href="13-self-improving-engine.html?mode=exec">Self-improving 发动机</a></li>
+          <li><span class="pl-id">19</span><a href="19-ux-insight-board.html?mode=exec">业务管家的眼睛(看板)</a></li>
+          <li><span class="pl-id">21</span><a href="21-overall-loop.html?mode=exec">整体闭环 · 一句话总结</a></li>
+        </ol>
+      </div>
 
-    <a class="card" href="product-shape.html" style="text-decoration:none;color:inherit;display:block">
-      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
-        <div style="text-align:center">
-          <div style="font-size:1.6rem;margin-bottom:0.4rem">1️⃣</div>
-          <strong>产品形态选择</strong>
-        </div>
+      <div class="path-card biz">
+        <div class="path-icon">📋</div>
+        <h4>业务分享版</h4>
+        <div class="path-meta">10 张 · 约 10 分钟 · 看见产品 + 价值主张</div>
+        <ol class="path-list">
+          <li><span class="pl-id">03</span><a href="paas-vs-workbench.html?mode=biz">PaaS vs 工作台</a></li>
+          <li><span class="pl-id">08</span><a href="08-five-categories.html?mode=biz">场景五分法</a></li>
+          <li><span class="pl-id">06</span><a href="ux-task-hidden.html?mode=biz">UX 术语锁定 · 业务零技术暴露</a></li>
+          <li><span class="pl-id">12</span><a href="12-three-pillars.html?mode=biz">三件事 · Memory/Insight</a></li>
+          <li><span class="pl-id">13</span><a href="13-self-improving-engine.html?mode=biz">Self-improving 发动机</a></li>
+          <li><span class="pl-id">16</span><a href="16-ux-home.html?mode=biz">工作台首屏</a></li>
+          <li><span class="pl-id">17</span><a href="17-ux-knowledge-qa.html?mode=biz">知识问答交互面</a></li>
+          <li><span class="pl-id">18</span><a href="18-ux-doc-handling.html?mode=biz">文档处理 · 协议查询/提取</a></li>
+          <li><span class="pl-id">19</span><a href="19-ux-insight-board.html?mode=biz">Insight 看板</a></li>
+          <li><span class="pl-id">20</span><a href="20-ux-proposal-inbox.html?mode=biz">系统提议 inbox</a></li>
+        </ol>
       </div>
-      <div class="card-body">
-        <h3>KB 中心化 vs Chatbot 集合 vs 结构化工作台</h3>
-        <p>三种产品形态对比，最终选 C：结构化工作台。</p>
-      </div>
-    </a>
 
-    <a class="card" href="task-vs-agent.html" style="text-decoration:none;color:inherit;display:block">
-      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
-        <div style="text-align:center">
-          <div style="font-size:1.6rem;margin-bottom:0.4rem">2️⃣</div>
-          <strong>抽象层级</strong>
-        </div>
+      <div class="path-card eng">
+        <div class="path-icon">📖</div>
+        <h4>叙事 / 工程 review 版</h4>
+        <div class="path-meta">全 20 张 · 约 30 分钟 · 按章节顺序通读</div>
+        <ol class="path-list">
+          <li>章 1:<a href="product-shape.html?mode=narrative">01</a> → <a href="paas-vs-workbench.html?mode=narrative">03</a> → <a href="08-five-categories.html?mode=narrative">08</a></li>
+          <li>章 2:<a href="task-vs-agent.html?mode=narrative">02</a> → <a href="ux-task-hidden.html?mode=narrative">06</a></li>
+          <li>章 3:<a href="v1-scope-and-paths.html?mode=narrative">05</a> → <a href="10-v1-v2-v3-scope.html?mode=narrative">10</a> → <a href="11-pilot-permission.html?mode=narrative">11</a> → <a href="14-dual-admin.html?mode=narrative">14</a></li>
+          <li>章 4:<a href="continual-learning.html?mode=narrative">04</a> → <a href="12-three-pillars.html?mode=narrative">12</a> → <a href="13-self-improving-engine.html?mode=narrative">13</a></li>
+          <li>章 5:<a href="16-ux-home.html?mode=narrative">16</a> → <a href="17-ux-knowledge-qa.html?mode=narrative">17</a> → <a href="18-ux-doc-handling.html?mode=narrative">18</a> → <a href="19-ux-insight-board.html?mode=narrative">19</a> → <a href="20-ux-proposal-inbox.html?mode=narrative">20</a></li>
+          <li>终幕:<a href="09-cmd-troubleshoot-arch.html?mode=narrative">09</a> → <a href="15-ledger-schema.html?mode=narrative">15</a> → <a href="21-overall-loop.html?mode=narrative">21</a></li>
+        </ol>
       </div>
-      <div class="card-body">
-        <h3>Task vs Agent+Skill 不是二选一</h3>
-        <p>用户层是任务，系统层是 Agent+Skill，两层都要。</p>
-      </div>
-    </a>
-
-    <a class="card" href="paas-vs-workbench.html" style="text-decoration:none;color:inherit;display:block">
-      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
-        <div style="text-align:center">
-          <div style="font-size:1.6rem;margin-bottom:0.4rem">3️⃣</div>
-          <strong>差异化 vs PaaS 作坊</strong>
-        </div>
-      </div>
-      <div class="card-body">
-        <h3>为什么不是 agent 拖拽平台</h3>
-        <p>PaaS 助手平台问题在复用单位错了，不是工具不好。</p>
-      </div>
-    </a>
-
-    <a class="card" href="continual-learning.html" style="text-decoration:none;color:inherit;display:block">
-      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
-        <div style="text-align:center">
-          <div style="font-size:1.6rem;margin-bottom:0.4rem">4️⃣</div>
-          <strong>持续学习横切层</strong>
-        </div>
-      </div>
-      <div class="card-body">
-        <h3>Self-Improving + 知识运营</h3>
-        <p>Ledger 为底盘的 self-improving + 部门 insight 闭环。</p>
-      </div>
-    </a>
-
-    <a class="card" href="v1-scope-and-paths.html" style="text-decoration:none;color:inherit;display:block">
-      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
-        <div style="text-align:center">
-          <div style="font-size:1.6rem;margin-bottom:0.4rem">5️⃣</div>
-          <strong>v1 范围 + 实施路径</strong>
-        </div>
-      </div>
-      <div class="card-body">
-        <h3>4 任务 + 2 Agent + 最小闭环</h3>
-        <p>3 种实施路径对比，最终选 A：渐进改造（试点期保留新旧并存）。</p>
-      </div>
-    </a>
-
-    <a class="card" href="ux-task-hidden.html" style="text-decoration:none;color:inherit;display:block">
-      <div class="card-image" style="aspect-ratio:auto;padding:1.5rem">
-        <div style="text-align:center">
-          <div style="font-size:1.6rem;margin-bottom:0.4rem">6️⃣</div>
-          <strong>UX 术语锁定</strong>
-        </div>
-      </div>
-      <div class="card-body">
-        <h3>Task 是后端 entity 不是 UI 概念</h3>
-        <p>用户看到的是"知识问答 / 文档处理 / 最近"，不是"任务"。</p>
-      </div>
-    </a>
-
+    </div>
   </div>
 
-  <div class="section" style="margin-top:2.5rem;padding:1rem;background:var(--bg-secondary);border-left:3px solid var(--accent);border-radius:6px">
-    <strong>关键决策落点（在 spec 里继续展开）</strong>：
-    <ul style="margin-top:0.5rem;margin-left:1.25rem">
-      <li>三层架构：用户层（Task）+ Agent 层 + 底座，加横切持续学习层</li>
-      <li>v1 范围：4 任务 / 2 Agent / Ledger 多任务 schema / User Memory v1（用户主动声明）</li>
-      <li>实施路径 A：新增 <code>/tasks</code> 入口，老 <code>/spaces</code> 兜底，试点期可比对</li>
-      <li>UX 术语：UI 上零"任务"二字；TaskInstance / TaskTemplate 仅存活在后端代码</li>
+  <!-- 完整目录 -->
+  <h3 style="margin-bottom:1rem">📚 完整目录(按叙事章节)</h3>
+
+  <!-- 章 1 -->
+  <div class="chapter">
+    <div class="chapter-header">
+      <span class="chapter-num">章 1</span>
+      <span class="chapter-title">困境与立意 · why</span>
+      <span class="chapter-sub">为什么不走老路?</span>
+    </div>
+    <div class="toc-grid">
+      <a class="toc-card" href="product-shape.html">
+        <span class="toc-id">01</span>
+        <div class="toc-content">
+          <div class="toc-title">产品形态选择</div>
+          <div class="toc-desc">KB 中心化 vs Chatbot 集合 vs 结构化工作台 — 三种形态对比,最终选 C。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="paas-vs-workbench.html">
+        <span class="toc-id">03</span>
+        <div class="toc-content">
+          <div class="toc-title">PaaS 作坊 vs 工作台</div>
+          <div class="toc-desc">为什么不是 agent 拖拽平台 — 复用单位错了,不是工具不好。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="08-five-categories.html">
+        <span class="toc-id">08</span>
+        <div class="toc-content">
+          <div class="toc-title">场景五分法 · 智能工厂</div>
+          <div class="toc-desc">按工作模式切片,用少数几类 Agent 覆盖 80% 任务 — 4 类主干 + 1 类兜底。</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 章 2 -->
+  <div class="chapter">
+    <div class="chapter-header">
+      <span class="chapter-num">章 2</span>
+      <span class="chapter-title">架构骨架 · what</span>
+      <span class="chapter-sub">三层抽象怎么切?</span>
+    </div>
+    <div class="toc-grid">
+      <a class="toc-card" href="task-vs-agent.html">
+        <span class="toc-id">02</span>
+        <div class="toc-content">
+          <div class="toc-title">Task vs Agent+Skill</div>
+          <div class="toc-desc">用户层是任务,系统层是 Agent+Skill — 两层都要,各司其职。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="ux-task-hidden.html">
+        <span class="toc-id">06</span>
+        <div class="toc-content">
+          <div class="toc-title">UX 术语锁定</div>
+          <div class="toc-desc">Task 是后端 entity 不是 UI 概念 — 用户看到的是"知识问答 / 文档处理"。</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 章 3 -->
+  <div class="chapter">
+    <div class="chapter-header">
+      <span class="chapter-num">章 3</span>
+      <span class="chapter-title">v1 范围与治理 · how(工程版)</span>
+      <span class="chapter-sub">试点要做多少?怎么治理?</span>
+    </div>
+    <div class="toc-grid">
+      <a class="toc-card" href="v1-scope-and-paths.html">
+        <span class="toc-id">05</span>
+        <div class="toc-content">
+          <div class="toc-title">v1 范围 + 实施路径</div>
+          <div class="toc-desc">3 种实施路径对比,最终选 A:渐进改造(试点期保留新旧并存)。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="10-v1-v2-v3-scope.html">
+        <span class="toc-id">10</span>
+        <div class="toc-content">
+          <div class="toc-title">v1 / v2 / v3 切分</div>
+          <div class="toc-desc">2 实现 + 3 预留 + 1 兜底 · v1 拆 9 个 PR · 6-8 周完成。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="11-pilot-permission.html">
+        <span class="toc-id">11</span>
+        <div class="toc-content">
+          <div class="toc-title">试点权限取舍</div>
+          <div class="toc-desc">90% 传统权限可省,但 G7 信任契约不能漏 — 不重不漏。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="14-dual-admin.html">
+        <span class="toc-id">14</span>
+        <div class="toc-content">
+          <div class="toc-title">双级 admin 视角分割</div>
+          <div class="toc-desc">系统医生 vs 业务管家 — 同一份 Ledger 双投影,看完全不同的世界。</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 章 4 -->
+  <div class="chapter">
+    <div class="chapter-header">
+      <span class="chapter-num">章 4</span>
+      <span class="chapter-title">Self-improving 闭环</span>
+      <span class="chapter-sub">产品怎么自己长大?</span>
+    </div>
+    <div class="toc-grid">
+      <a class="toc-card" href="continual-learning.html">
+        <span class="toc-id">04</span>
+        <div class="toc-content">
+          <div class="toc-title">持续学习横切层</div>
+          <div class="toc-desc">Ledger 为底盘的 self-improving + 部门 insight 闭环。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="12-three-pillars.html">
+        <span class="toc-id">12</span>
+        <div class="toc-content">
+          <div class="toc-title">三件事关系</div>
+          <div class="toc-desc">User Memory / Dept Memory / Dept Insight — 试点期持续学习的核心三件事。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="13-self-improving-engine.html">
+        <span class="toc-id">13</span>
+        <div class="toc-content">
+          <div class="toc-title">Self-improving 发动机</div>
+          <div class="toc-desc">5 种提议机制 + 反学习 + 业务永远只面对二元决策。</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 章 5 -->
+  <div class="chapter">
+    <div class="chapter-header">
+      <span class="chapter-num">章 5</span>
+      <span class="chapter-title">看见产品 · see</span>
+      <span class="chapter-sub">用户会看到什么?</span>
+    </div>
+    <div class="toc-grid">
+      <a class="toc-card" href="16-ux-home.html">
+        <span class="toc-id">16</span>
+        <div class="toc-content">
+          <div class="toc-title">UX 屏 1 · 工作台首屏</div>
+          <div class="toc-desc">能力区 + 最近 + 部门提醒 · 用户进入即可干活,无技术词。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="17-ux-knowledge-qa.html">
+        <span class="toc-id">17</span>
+        <div class="toc-content">
+          <div class="toc-title">UX 屏 2a · 知识问答</div>
+          <div class="toc-desc">KB chip + Memory 透明栏 + 来源卡 + 4 种诚实失败 + "告诉 Lead"出口。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="18-ux-doc-handling.html">
+        <span class="toc-id">18</span>
+        <div class="toc-content">
+          <div class="toc-title">UX 屏 2b · 文档处理</div>
+          <div class="toc-desc">协议查询(NL)+ 协议提取(上传) · 字段卡 + 6 种失败 UX。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="19-ux-insight-board.html">
+        <span class="toc-id">19</span>
+        <div class="toc-content">
+          <div class="toc-title">UX 屏 3 · Insight 看板</div>
+          <div class="toc-desc">业务管家的眼睛 — 用量 / 主题 / bad case / 提议 / Memory 健康度。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="20-ux-proposal-inbox.html">
+        <span class="toc-id">20</span>
+        <div class="toc-content">
+          <div class="toc-title">UX 屏 6 · 系统提议 inbox</div>
+          <div class="toc-desc">三段式提议卡 + 反学习二次提议 + 不能"全部批准"边界。</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 终幕 -->
+  <div class="chapter">
+    <div class="chapter-header">
+      <span class="chapter-num">终幕</span>
+      <span class="chapter-title">深潜与闭环</span>
+      <span class="chapter-sub">工程承载 + 一图收束</span>
+    </div>
+    <div class="toc-grid">
+      <a class="toc-card" href="09-cmd-troubleshoot-arch.html">
+        <span class="toc-id">09</span>
+        <div class="toc-content">
+          <div class="toc-title">复杂指令 + 问题排查架构</div>
+          <div class="toc-desc">五分法另两类的工程骨架 — v1 接口预留 / v2 接入。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="15-ledger-schema.html">
+        <span class="toc-id">15</span>
+        <div class="toc-content">
+          <div class="toc-title">Ledger 双层 schema</div>
+          <div class="toc-desc">通用强类型列 + 分型 payload — 一张表装下 5 类形态,v1 一次设计 v2/v3 不重构。</div>
+        </div>
+      </a>
+      <a class="toc-card" href="21-overall-loop.html">
+        <span class="toc-id">21</span>
+        <div class="toc-content">
+          <div class="toc-title">整体闭环 · finale</div>
+          <div class="toc-desc">五分法 + 三件事 + 双级 admin + Self-improving 收束 · 10 条不变量 + 术语映射。</div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- 关键决策落点 -->
+  <div class="closing">
+    <strong>关键决策落点(spec 中继续展开)</strong>
+    <ul>
+      <li>三层架构:用户层(Task)+ Agent 层 + 底座 + 横切持续学习层</li>
+      <li>v1 范围:2 个 Agent 实现 + 3 个预留 + 1 个兜底 · 双级 admin 雏形 · Memory + Insight + 3 类规则提议</li>
+      <li>实施路径 A:新增 <code>/workbench</code> 入口,老 <code>/spaces</code> 兜底,试点期可比对</li>
+      <li>UX 术语:UI 上零"任务"二字 · TaskInstance / TaskTemplate 仅存活在后端代码</li>
+      <li>10 条不变量(I1-I10)跨 v1/v2/v3 都不能违反 — 见 <a href="21-overall-loop.html">21 整体闭环</a> 完整模式</li>
     </ul>
+    <p style="margin-top:0.85rem;color:var(--text-secondary);font-size:0.82rem">
+      → 最终 spec(待 M1-M13 修正回写):<a href="../../specs/2026-04-29-structured-workbench-design.md"><code>docs/superpowers/specs/2026-04-29-structured-workbench-design.md</code></a>
+    </p>
   </div>
 
 </div>

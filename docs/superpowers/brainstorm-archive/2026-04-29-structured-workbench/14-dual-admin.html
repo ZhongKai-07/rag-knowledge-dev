@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>14. 双级 admin 视角分割 — 系统医生 vs 业务管家 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  /* 双角色对比 */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 1.5rem 0; }
+  @media (max-width: 800px) { .role-grid { grid-template-columns: 1fr; } }
+  .role-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .role-global { border-top: 4px solid #5856d6; }
+  .role-dept { border-top: 4px solid #34c759; }
+  .role-card .role-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+  .role-card h3 { font-size: 1.05rem; margin-bottom: 0.2rem; }
+  .role-card .role-tag { display: inline-block; font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; background: var(--bg-tertiary); color: var(--text-secondary); margin-bottom: 0.6rem; }
+  .role-card .role-portrait { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1rem; line-height: 1.6; }
+  .role-card h5 { font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; margin: 0.85rem 0 0.4rem; }
+  .role-card ul { margin: 0 0 0 1.1rem; font-size: 0.83rem; color: var(--text-primary); }
+  .role-card li { margin-bottom: 0.25rem; }
+  .role-card .seebox {
+    background: rgba(52,199,89,0.06);
+    border-left: 2px solid var(--success);
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    margin: 0.4rem 0;
+  }
+  .role-card .nobox {
+    background: rgba(255,59,48,0.04);
+    border-left: 2px solid var(--error);
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    margin: 0.4rem 0;
+    color: var(--text-secondary);
+  }
+
+  /* 双投影示意 */
+  .projection-diagram {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .ledger-source {
+    background: linear-gradient(90deg, rgba(0,113,227,0.06), rgba(0,113,227,0.18), rgba(0,113,227,0.06));
+    border: 1px solid rgba(0,113,227,0.3);
+    padding: 0.85rem 1.25rem;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+  .split-arrow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+    margin: 0.5rem 0;
+  }
+  .projection-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .proj-card {
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .proj-tech {
+    background: rgba(88,86,214,0.06);
+    border-color: rgba(88,86,214,0.3);
+  }
+  .proj-biz {
+    background: rgba(52,199,89,0.06);
+    border-color: rgba(52,199,89,0.3);
+  }
+
+  /* 看板 mockup */
+  .dashboard-mock {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    font-size: 0.78rem;
+    line-height: 1.4;
+  }
+  .dashboard-mock .dash-title {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .dashboard-mock .dash-tile {
+    background: var(--bg-tertiary);
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    margin: 0.3rem 0;
+  }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 14. 双级 admin 视角分割 — 系统医生 vs 业务管家</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div style="background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:0.5rem 1.5rem;font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center">
+  <span><span style="padding:2px 8px;background:var(--bg-tertiary);border-radius:4px;font-size:0.74rem">章 3 · v1 范围与治理</span> &nbsp; 第 9/20 张</span>
+  <span>
+    <a href="11-pilot-permission.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">← 11 试点权限取舍</a>
+    &nbsp;|&nbsp;
+    <a href="continual-learning.html" style="color:var(--accent);text-decoration:none;font-size:0.82rem">下一章 · 04 持续学习层 →</a>
+  </span>
+</div>
+<div id="claude-content">
+
+  <h2>双级 admin — 看完全不同的世界</h2>
+  <p class="subtitle">
+    技术部门和业务部门看 AI 平台,该看的事完全不同 — 不是"同一份数据的不同切片",是<u>两套完全不同的数据维度</u>。<br>
+    把这两个角色的视角彻底分开,让权限隔离和职责清晰在同一个动作里完成。
+  </p>
+
+  <!-- ============ 1. 两个角色画像 ============ -->
+  <div class="section">
+    <h3>① 两个角色的产品画像</h3>
+
+    <div class="role-grid">
+      <div class="role-card role-global">
+        <div class="role-icon">🩺</div>
+        <span class="role-tag">技术部门</span>
+        <h3>global_admin · 系统医生</h3>
+        <div class="role-portrait">
+          平台运营者 · 关心 AI 平台是不是健康的"系统"。<br>
+          每天想知道:今天 AI 跑得稳吗 / 烧了多少钱 / 哪条链路出错了。
+        </div>
+
+        <h5>看什么</h5>
+        <div class="seebox">系统健康(错误率 / p95 延迟 / 模型可用性 / SLA)</div>
+        <div class="seebox">成本(总 token / 各模型用量 / 部门分布)</div>
+        <div class="seebox">链路追踪(按 trace_id 查全链路 span 树)</div>
+
+        <h5>不看什么</h5>
+        <div class="nobox">业务 query 原文 / 答案内容</div>
+        <div class="nobox">Dept Memory 内容</div>
+        <div class="nobox">User Memory(绝对不可看)</div>
+        <div class="nobox">bad case 业务下钻</div>
+
+        <h5>典型问题</h5>
+        <ul>
+          <li>"今天哪个模型挂了?"</li>
+          <li>"上月 token 烧了多少?"</li>
+          <li>"trace_id=abc 这次问答全链路是怎么走的?"</li>
+        </ul>
+      </div>
+
+      <div class="role-card role-dept">
+        <div class="role-icon">📋</div>
+        <span class="role-tag">业务部门</span>
+        <h3>dept_admin · 业务管家</h3>
+        <div class="role-portrait">
+          业务运营者(部门 Lead)· 关心 AI 是不是真在帮部门干活。<br>
+          每天想知道:部门用 AI 干什么多 / 哪里 AI 答得不好 / 系统给我什么提议。
+        </div>
+
+        <h5>看什么</h5>
+        <div class="seebox">Dept Insight(任务用量 / 高频主题 / bad case)</div>
+        <div class="seebox">Dept Memory(部门规则 / 注入命中率)</div>
+        <div class="seebox">系统提议 inbox(沉淀部门记忆 / KB 补充 / 死条清理)</div>
+        <div class="seebox">用户提议 inbox(promote 审批)</div>
+
+        <h5>不看什么</h5>
+        <div class="nobox">token 成本 / 模型版本</div>
+        <div class="nobox">trace 调用链</div>
+        <div class="nobox">系统错误率 / SLA</div>
+        <div class="nobox">User Memory(绝对不可看)</div>
+        <div class="nobox">个人 user_id(看 bad case 走匿名 ID)</div>
+
+        <h5>典型问题</h5>
+        <ul>
+          <li>"我部门最近问 AI 什么多?"</li>
+          <li>"哪类问题 AI 答得不好?"</li>
+          <li>"系统建议我做什么?"</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2. Ledger 双投影 ============ -->
+  <div class="section">
+    <h3>② Ledger 双投影 — 同一份数据,两个完全独立的读取通道</h3>
+
+    <div class="projection-diagram">
+      <div class="ledger-source">
+        🗃 <strong>底座 Ledger</strong>(每次任务执行结构化落账)
+      </div>
+
+      <div class="split-arrow">
+        <div>↓ 技术投影 ↓</div>
+        <div>↓ 业务投影 ↓</div>
+      </div>
+
+      <div class="projection-row">
+        <div class="proj-card proj-tech">
+          <strong>给 global_admin</strong>
+          <div style="margin-top:0.4rem">字段:trace_id / cost_tokens / cost_usd / duration_ms / status / model_name / latency_p95</div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem">→ 技术看板(系统健康 / 成本 / 链路)</div>
+        </div>
+        <div class="proj-card proj-biz">
+          <strong>给 dept_admin</strong>
+          <div style="margin-top:0.4rem">字段:task_template / kb_ids / aggregated_topics / bad_case_count / memory_hit_rate</div>
+          <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.5rem">→ 业务看板(Dept Insight / 提议 inbox)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-box">
+      <strong>关键约束</strong>:这两个投影<u>永远不混合</u>。一份 Ledger 表,两个完全独立的读取通道。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      不是"权限隔离"得到的结果,是"产品视角分割"的物理实现。dept_admin 的看板上找不到任何 token / trace 字段;global_admin 的看板上找不到任何 query 内容。<br>
+      在 v1 就要做对,否则 v2 时要打散补 — 数据投影分裂不是事后能切干净的事。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 3. 看板 mockup 对比 ============ -->
+  <div class="section">
+    <h3>③ 看板对比示意</h3>
+
+    <div class="role-grid">
+      <div>
+        <h5 style="font-size:0.8rem;color:var(--text-secondary);text-transform:uppercase;margin-bottom:0.5rem">
+          🩺 global_admin 看板(技术)
+        </h5>
+        <div class="dashboard-mock">
+          <div class="dash-title">/global/system · 系统健康(实时)</div>
+          <div class="dash-tile">⚡ 错误率 0.42% · ↗ 较昨日 +0.1%</div>
+          <div class="dash-tile">⏱ p95 延迟 1.8s</div>
+          <div class="dash-tile">🤖 模型可用性 Qwen-Max ✅ / GPT-4 ⚠️</div>
+          <div class="dash-tile">📡 SLA 99.78%</div>
+          <br>
+          <div class="dash-title">/global/cost · 30 天</div>
+          <div class="dash-tile">💰 总 token 4.2M / 总成本 ¥3,100</div>
+          <div class="dash-tile">📊 模型分布 Qwen 68% / GPT 24% / 其他 8%</div>
+          <div class="dash-tile">🏢 部门分布 Ops 100%(试点)</div>
+          <br>
+          <div class="dash-title">/global/trace · 链路</div>
+          <div class="dash-tile">🔍 输入 trace_id 查 span 树</div>
+        </div>
+      </div>
+
+      <div>
+        <h5 style="font-size:0.8rem;color:var(--text-secondary);text-transform:uppercase;margin-bottom:0.5rem">
+          📋 dept_admin 看板(业务)
+        </h5>
+        <div class="dashboard-mock">
+          <div class="dash-title">/admin/insight · Dept Insight</div>
+          <div class="dash-tile">📊 任务用量 612 次 · ↗ +18%</div>
+          <div class="dash-tile">🎯 任务结构 KQ 412 / 查询 156 / 提取 83</div>
+          <div class="dash-tile">🔥 高频主题 EU MTA / IA / Notification...</div>
+          <div class="dash-tile">⚠ bad case 17 条(待关注)</div>
+          <div class="dash-tile">📚 部门记忆 23 条 · 12 高 / 8 中 / 3 低</div>
+          <br>
+          <div class="dash-title">/admin/proposal-inbox · 系统提议</div>
+          <div class="dash-tile">💡 沉淀部门记忆 3 条待审</div>
+          <div class="dash-tile">🔍 KB 补充 2 条待审</div>
+          <div class="dash-tile">🗑 死条清理 2 条待审</div>
+          <br>
+          <div class="dash-title">/admin/memory-inbox · 用户提议</div>
+          <div class="dash-tile">📥 promote 待审 5 条</div>
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      两个看板放在一起 — 一个像"运维仪表盘",一个像"业务管理后台"。完全不同的视觉语言、不同的关注维度,各自满足角色心智。
+    </p>
+  </div>
+
+  <!-- ============ 4. 设计原则 PA1-PA4 ============ -->
+  <div class="section">
+    <h3>④ 双级 admin 设计的 4 条原则</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:10%">#</th><th style="width:25%">原则</th><th>含义</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>PA1</strong></td>
+          <td>admin 路径也禁技术词</td>
+          <td>dept_admin 是<u>业务管家不是工程师</u> · 看板里禁 "Agent / Skill / Task 模板 / Prompt / Schema" 字眼</td>
+        </tr>
+        <tr>
+          <td><strong>PA2</strong></td>
+          <td>默认脱敏 + 聚合</td>
+          <td>admin 看到的所有数据默认脱敏 · 下钻到原文必须打 audit log · 用户可看"我哪条被下钻过"</td>
+        </tr>
+        <tr>
+          <td><strong>PA3</strong></td>
+          <td>核心动作是一键决策</td>
+          <td>admin 的核心动作是 Approve / Reject / Mark / Drilldown · 不是复杂配置</td>
+        </tr>
+        <tr>
+          <td><strong>PA4</strong></td>
+          <td>双级看板完全独立</td>
+          <td>同一组件树、不同投影 · 不混合视图 · 不共享数据维度</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 5. v1 / v2 演进 ============ -->
+  <div class="section">
+    <h3>⑤ v1 / v2 / v3 演进</h3>
+
+    <table class="compact">
+      <thead>
+        <tr><th style="width:18%">阶段</th><th style="width:30%">admin 层级</th><th>具体能力</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>v1 试点</strong></td>
+          <td>双级:global_admin + dept_admin</td>
+          <td>视角完全分割 · 共 8 屏(global 3 屏 + dept 5 屏) · 双投影 Ledger</td>
+        </tr>
+        <tr>
+          <td><strong>v2 扩部门</strong></td>
+          <td>+ kb_admin + agent_admin</td>
+          <td>跨部门 KB 共享精细化 · 工具治理多级 · Autodream 写 Memory 时打 audit</td>
+        </tr>
+        <tr>
+          <td><strong>v3 全员</strong></td>
+          <td>+ OPA / OpenFGA(灵活授权)</td>
+          <td>跨域授权 · 反哺 KB 审核流</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      v1 双级雏形已经为 v2 / v3 扩展铺好接口。每一阶段是"加新角色 + 改 RoleService 判定逻辑",不破坏 v1 的数据视图。
+    </p>
+  </div>
+
+  <!-- ============ 6. 完整模式 - 实现细节 ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ 实现细节</h3>
+
+    <h4 style="margin-top:1rem">角色判定服务</h4>
+    <div class="dashboard-mock" style="font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.82rem">
+      <pre style="margin:0;background:transparent">RoleService:
+  isGlobalAdmin(user) → user.roles contains GLOBAL_ADMIN
+  isDeptAdmin(user, dept_id) → user.roles contains DEPT_ADMIN AND user.dept_id == dept_id
+  canViewSystemDashboard(user) → isGlobalAdmin(user)
+  canViewDeptInsight(user, dept_id) → isDeptAdmin(user, dept_id) OR isGlobalAdmin(user)
+  canDrilldownBadCase(user, ledger_row) → isDeptAdmin(user, ledger_row.dept_id)
+  canReadUserMemory(user, memory.user_id) → user.id == memory.user_id  // 仅本人</pre>
+    </div>
+
+    <h4 style="margin-top:1.5rem">前端路由分割</h4>
+    <table class="compact">
+      <thead><tr><th>路由</th><th>守卫</th><th>对应屏</th></tr></thead>
+      <tbody>
+        <tr><td><code class="inline">/global/*</code></td><td>RequireGlobalAdmin</td><td>屏 8 / 9 / 10</td></tr>
+        <tr><td><code class="inline">/admin/*</code></td><td>RequireDeptAdmin(dept_id)</td><td>屏 3 / 4 / 5 / 6 / 7</td></tr>
+        <tr><td><code class="inline">/profile/memory</code></td><td>RequireAuth</td><td>个人 memory 页</td></tr>
+        <tr><td><code class="inline">/workbench</code></td><td>RequireAuth</td><td>主工作台(屏 1 / 2a / 2b)</td></tr>
+      </tbody>
+    </table>
+
+    <h4 style="margin-top:1.5rem">导航栏行为</h4>
+    <ul style="font-size:0.85rem;color:var(--text-secondary);margin-left:1.25rem">
+      <li>普通用户:看到 <code class="inline">/workbench</code> + <code class="inline">/profile/memory</code></li>
+      <li>dept_admin:额外看到 <code class="inline">/admin/*</code> 入口</li>
+      <li>global_admin:额外看到 <code class="inline">/global/*</code> 入口</li>
+      <li>三种入口在同一个顶栏切换 — 用户切换时<u>不跳出当前会话</u>(沿用现有 SPA 行为)</li>
+    </ul>
+  </div>
+
+  <!-- ============ 7. 总结 ============ -->
+  <div class="section">
+    <h3>⑦ 一句话总结</h3>
+    <div class="insight-success" style="padding:1.25rem 1.5rem;font-size:1rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px">
+      <strong>双级 admin = 两个完全不同的视角 · 同一份 Ledger 双投影</strong>。<br>
+      <span style="color:var(--text-secondary);font-size:0.9rem;margin-top:0.5rem;display:block">
+      技术部门是系统医生 — 看健康 / 成本 / 链路;业务部门是业务管家 — 看 Insight / Memory / 提议。<br>
+      两个看板互不打扰 — 这种分离让"权限隔离"和"职责清晰"在同一个动作里完成,也是"避免向业务暴露技术语言"在 admin 路径的物理保证。
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>9. 复杂指令 + 问题排查架构图 — Brainstorm Archive</title>
+<link rel="stylesheet" href="_frame.css">
+<style>
+  .tech-detail { display: none; }
+  body.full-mode .tech-detail { display: block; }
+  .view-toggle { display: inline-flex; background: var(--bg-tertiary); border-radius: 8px; padding: 3px; gap: 2px; }
+  .view-toggle button { background: transparent; border: none; padding: 5px 14px; font-size: 0.78rem; color: var(--text-secondary); border-radius: 6px; cursor: pointer; }
+  .view-toggle button.active { background: var(--bg-secondary); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+  .nav-bar { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+  .nav-bar .ch-tag { padding: 2px 8px; background: var(--bg-tertiary); border-radius: 4px; font-size: 0.74rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+  .nav-bar a:hover { text-decoration: underline; }
+
+  table.compact { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: var(--bg-secondary); border-radius: 8px; overflow: hidden; }
+  table.compact th, table.compact td { padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  table.compact thead { background: var(--bg-tertiary); }
+  table.compact th { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+  table.compact tbody tr:last-child td { border-bottom: none; }
+
+  .insight-box { padding: 1rem 1.25rem; background: var(--bg-secondary); border-left: 3px solid var(--accent); border-radius: 6px; font-size: 0.9rem; }
+  .insight-success { border-left-color: var(--success); background: rgba(52,199,89,0.05); }
+  .insight-warn { border-left-color: var(--warning); background: rgba(255,159,10,0.05); }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+  .arch-row {
+    display: grid;
+    grid-template-columns: 200px 1fr 200px;
+    gap: 0.6rem;
+    align-items: center;
+    margin: 0.4rem 0;
+  }
+  .arch-row.center { grid-template-columns: 1fr; justify-items: center; }
+  .arch-node {
+    padding: 0.6rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+  }
+  .arch-node.agent {
+    background: rgba(52,199,89,0.08);
+    border-color: rgba(52,199,89,0.3);
+    font-weight: 500;
+  }
+  .arch-node.algo {
+    background: rgba(0,113,227,0.08);
+    border-color: rgba(0,113,227,0.3);
+  }
+  .arch-node.input { background: var(--bg-tertiary); }
+  .arch-node.tool { background: rgba(88,86,214,0.06); border-color: rgba(88,86,214,0.25); font-size: 0.78rem; }
+  .arch-node.policy { background: rgba(255,159,10,0.08); border-color: rgba(255,159,10,0.3); font-size: 0.78rem; }
+  .arch-node strong { display: block; }
+  .arch-arrow {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 0.95rem;
+    margin: 0.15rem 0;
+  }
+
+  .legend {
+    display: flex;
+    gap: 1rem;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend-color {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 500; }
+  .pill-green { background: rgba(52,199,89,0.15); color: #248a3d; }
+  .pill-yellow { background: rgba(255,159,10,0.15); color: #b25e00; }
+  .pill-blue { background: rgba(0,113,227,0.15); color: #0058b8; }
+
+  /* Compare two arch */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  @media (max-width: 800px) { .compare-grid { grid-template-columns: 1fr; } }
+  .compare-card {
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+  }
+  .compare-card.cmd { border-top: 4px solid #5856d6; }
+  .compare-card.tsh { border-top: 4px solid var(--warning); }
+  .compare-card h4 { font-size: 1rem; margin-bottom: 0.4rem; }
+  .compare-card ul { margin: 0.5rem 0 0 1.1rem; font-size: 0.83rem; color: var(--text-secondary); }
+  .compare-card li { margin-bottom: 0.25rem; }
+
+  code.inline { background: var(--bg-tertiary); padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; }
+</style>
+</head>
+<body class="demo-mode">
+<div class="archive-header">
+  <h1>Brainstorm Archive · 9. 复杂指令 + 问题排查架构图</h1>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <div class="view-toggle">
+      <button class="active" onclick="setMode('demo')">演示模式</button>
+      <button onclick="setMode('full')">完整模式</button>
+    </div>
+    <a href="index.html">← 返回总览</a>
+  </div>
+</div>
+<div class="nav-bar">
+  <span><span class="ch-tag">终幕 · 深潜与闭环</span> &nbsp; 第 18/20 张</span>
+  <span>
+    <a href="20-ux-proposal-inbox.html">← 20 提议箱</a>
+    &nbsp;|&nbsp;
+    <a href="15-ledger-schema.html">下一张 · 15 Ledger schema →</a>
+  </span>
+</div>
+
+<div id="claude-content">
+
+  <h2>复杂指令 + 问题排查 — 五分法另两类的工程骨架</h2>
+  <p class="subtitle">
+    v1 不实现这两类 Agent,但骨架要清晰、接口要预留 — 否则 v2 接入时会"急造"。<br>
+    这两张架构图回答:这两类 Agent 的工作流到底长什么样,和已实现的两类有什么本质差别。
+  </p>
+
+  <!-- ============ 1. 复杂指令架构 ============ -->
+  <div class="section">
+    <h3>① ⚙ 复杂指令执行(ToolOrchestrationAgent · v1 预留)</h3>
+
+    <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:1rem">
+      <strong>本质</strong>:工具链<u>由 LLM 在运行时规划</u>,而不是预先写死。<br>
+      <strong>典型例子</strong>:用户说"给我弄张优惠券" → AI 自动完成"身份验证 → 查询用户状态 → 寻找可用券模板 → 调用发券接口 → 返回结果"等一系列精密操作。
+    </p>
+
+    <div class="arch-diagram">
+      <div class="arch-row center">
+        <div class="arch-node input">用户 query</div>
+      </div>
+      <div class="arch-arrow">↓</div>
+
+      <div class="arch-row center">
+        <div class="arch-node">预处理</div>
+      </div>
+      <div class="arch-arrow">↓</div>
+
+      <div class="arch-row">
+        <div class="arch-node tool">📌 个人 mem<br>📌 项目 mem</div>
+        <div class="arch-node agent">意图识别 <span style="font-size:0.74rem;color:var(--text-secondary)">(agent)</span></div>
+        <div></div>
+      </div>
+      <div class="arch-arrow">↓ IntentResult</div>
+
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-node">意图处理 <span style="font-size:0.78rem;color:var(--text-secondary)">(原始 query + 执行步骤 + 备选工具)</span></div>
+        <div class="arch-node algo"><strong>过滤引擎</strong><br><span style="font-size:0.74rem">核心算法</span></div>
+      </div>
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-arrow">↓</div>
+      </div>
+
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-node agent">推理 &amp; 执行 <span style="font-size:0.74rem;color:var(--text-secondary)">(agent)</span></div>
+        <div class="arch-node tool">🔧 工具库<br>ToolEssentialModel</div>
+      </div>
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-arrow">↓ MCP 调用</div>
+        <div></div>
+      </div>
+
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-node agent">总结 &amp; 交互 <span style="font-size:0.74rem;color:var(--text-secondary)">(agent)</span></div>
+        <div></div>
+      </div>
+      <div class="arch-arrow">↓</div>
+
+      <div class="arch-row center">
+        <div class="arch-node input">用户(产生副作用 · 拿到回执)</div>
+      </div>
+
+      <hr style="margin:1.5rem 0;border:none;border-top:1px dashed var(--border)">
+
+      <h4 style="font-size:0.95rem;margin-bottom:0.5rem">🛠 工具治理流水线(横切 · v2 引入)</h4>
+      <div class="arch-row">
+        <div class="arch-node input">作者(开发者)</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node algo">冲突检测</div>
+      </div>
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-arrow">↓</div>
+        <div></div>
+      </div>
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-node agent">工具解析 <span style="font-size:0.74rem;color:var(--text-secondary)">(agent)</span></div>
+        <div class="arch-arrow">→ MCP 工具池</div>
+      </div>
+
+      <hr style="margin:1.5rem 0;border:none;border-top:1px dashed var(--border)">
+
+      <h4 style="font-size:0.95rem;margin-bottom:0.5rem">📊 评测闭环(横切)</h4>
+      <div class="arch-row">
+        <div class="arch-node tool">good case · bad case</div>
+        <div class="arch-arrow">→</div>
+        <div class="arch-node algo">评测构造 → 评测库</div>
+      </div>
+      <div class="arch-row center" style="margin-top:0.4rem">
+        <div style="font-size:0.78rem;color:var(--text-secondary)">↓ 反馈到意图处理 / 推理 / 总结各环节</div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-color" style="background:rgba(52,199,89,0.15)"></span>agent</div>
+      <div class="legend-item"><span class="legend-color" style="background:rgba(0,113,227,0.15)"></span>核心算法</div>
+      <div class="legend-item"><span class="legend-color" style="background:rgba(88,86,214,0.1)"></span>工具入驻</div>
+      <div class="legend-item"><span class="legend-color" style="background:rgba(255,159,10,0.15)"></span>策略 / 评测</div>
+    </div>
+
+    <h4 style="margin-top:1rem;font-size:0.95rem">复杂指令的关键特征</h4>
+    <table class="compact">
+      <thead><tr><th style="width:24%">特征</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td>工具链来源</td><td><strong>运行时由 LLM 规划</strong>(过滤引擎从工具库挑出本次该用的工具子集)</td></tr>
+        <tr><td>工具池</td><td>开放 + MCP 动态接入 + 冲突检测(治理流水线)</td></tr>
+        <tr><td>任务终态</td><td><strong>副作用</strong>(发了券 / 改了单 / 发了邮件)</td></tr>
+        <tr><td>失败成本</td><td><strong>高</strong>(误调工具有真实业务后果)</td></tr>
+        <tr><td>Memory 用法</td><td><strong>驱动决策</strong>(个人偏好 + 项目上下文影响选哪个工具)</td></tr>
+        <tr><td>核心算法</td><td>"<strong>过滤引擎</strong>" — 在工具库里挑出本次该用的工具子集</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 2. 问题排查架构 ============ -->
+  <div class="section">
+    <h3>② 🔍 问题排查(TroubleshootAgent · v1 预留)</h3>
+
+    <p style="font-size:0.9rem;color:var(--text-secondary);margin-bottom:1rem">
+      <strong>本质</strong>:从"表象"到"根因"的 RCA(Root Cause Analysis)过程,工具调用与人工经验融合的层层推理。<br>
+      <strong>典型例子</strong>:用户说"软件用不了" → AI 像侦探一样追问、查证 → "什么时候用的? 什么错误提示? 我查一下你的账号状态... 哦,发现是账号被风控了"。
+    </p>
+
+    <div class="arch-diagram">
+      <div class="arch-row center">
+        <div class="arch-node input">用户 query</div>
+      </div>
+      <div class="arch-arrow">↓</div>
+
+      <div class="arch-row center">
+        <div class="arch-node">预处理</div>
+      </div>
+      <div class="arch-arrow">↓</div>
+
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-node agent">意图识别(问题分类) <span style="font-size:0.74rem;color:var(--text-secondary)">(agent)</span></div>
+        <div class="arch-node policy">📋 问题分类规则<br><span style="font-size:0.72rem">管理员配置</span></div>
+      </div>
+      <div class="arch-arrow">↓ IntentResult</div>
+
+      <div class="arch-row center">
+        <div class="arch-node">意图路由</div>
+      </div>
+      <div class="arch-row">
+        <div style="text-align:right;font-size:0.78rem;color:var(--text-secondary)">业务咨询 ↙</div>
+        <div></div>
+        <div style="text-align:left;font-size:0.78rem;color:var(--text-secondary)">↘ 问题排查</div>
+      </div>
+
+      <div class="arch-row">
+        <div class="arch-node algo">知识问答流程<br><span style="font-size:0.74rem">query 改写 → 知识汰换 → 答案生成</span></div>
+        <div></div>
+        <div class="arch-node">工具召回 → 工具池</div>
+      </div>
+      <div class="arch-row">
+        <div class="arch-arrow">↓</div>
+        <div></div>
+        <div class="arch-arrow">↓</div>
+      </div>
+
+      <div class="arch-row">
+        <div class="arch-node input">用户</div>
+        <div></div>
+        <div class="arch-node agent" style="position:relative">
+          <strong>ReAct 推理</strong> <span style="font-size:0.74rem;color:var(--text-secondary)">(agent · 多轮迭代)</span>
+        </div>
+      </div>
+      <div class="arch-row">
+        <div></div>
+        <div></div>
+        <div class="arch-node policy">📋 推理策略 / 人工经验<br><span style="font-size:0.72rem">管理员配置</span></div>
+      </div>
+      <div class="arch-row">
+        <div></div>
+        <div></div>
+        <div style="display:flex;justify-content:center;gap:0.6rem;font-size:0.78rem;color:var(--text-secondary)">
+          ⇄ 知识召回 &nbsp;|&nbsp; ⇄ 执行引擎(ToolExecChain)
+        </div>
+      </div>
+      <div class="arch-arrow">↓</div>
+
+      <div class="arch-row">
+        <div></div>
+        <div class="arch-node agent">交互 agent</div>
+        <div class="arch-node policy">📋 话术映射<br><span style="font-size:0.72rem">管理员配置</span></div>
+      </div>
+      <div class="arch-arrow">↓</div>
+
+      <div class="arch-row center">
+        <div class="arch-node input">用户(诊断结论 + 补救建议)</div>
+      </div>
+    </div>
+
+    <h4 style="margin-top:1rem;font-size:0.95rem">问题排查的关键特征</h4>
+    <table class="compact">
+      <thead><tr><th style="width:24%">特征</th><th>含义</th></tr></thead>
+      <tbody>
+        <tr><td>推理形态</td><td><strong>ReAct 多轮迭代</strong>(边走边看,根据上一步结果决定下一步)</td></tr>
+        <tr><td>知识 vs 工具</td><td><strong>知识召回 + 工具执行交错</strong> — 同时消费 KB(对照症状库 / FAQ)+ 工具池(实时查系统状态)</td></tr>
+        <tr><td>控制策略</td><td>三件套管理员配置:<u>问题分类规则 + 推理策略 / 人工经验 + 话术映射</u></td></tr>
+        <tr><td>意图路由</td><td>分两条:业务咨询 → 走知识问答流程 · 问题排查 → 走 ReAct 链路</td></tr>
+        <tr><td>终态</td><td>诊断结论(+ 可能附带补救动作)</td></tr>
+        <tr><td>时间形态</td><td>多轮追问("什么时候用的? 错误提示? 让我查你账号...")</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============ 3. 三类对比 ============ -->
+  <div class="section">
+    <h3>③ 三类(知识问答 / 复杂指令 / 问题排查)的本质对比</h3>
+
+    <table class="compact">
+      <thead>
+        <tr>
+          <th style="width:18%">维度</th>
+          <th>💬 知识问答</th>
+          <th>⚙ 复杂指令</th>
+          <th>🔍 问题排查</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>工具链</td>
+          <td>固定(检索→生成)</td>
+          <td><strong>运行时 LLM 规划</strong></td>
+          <td><strong>ReAct 边走边看</strong></td>
+        </tr>
+        <tr>
+          <td>工具池</td>
+          <td>不需要</td>
+          <td>开放 + MCP 动态</td>
+          <td>有限 + 诊断专用</td>
+        </tr>
+        <tr>
+          <td>知识 vs 工具</td>
+          <td>仅 KB</td>
+          <td>主要工具池</td>
+          <td><strong>双源消费</strong>(KB + 工具)</td>
+        </tr>
+        <tr>
+          <td>任务终态</td>
+          <td>信息产出</td>
+          <td><strong>副作用</strong></td>
+          <td>诊断结论 + 补救</td>
+        </tr>
+        <tr>
+          <td>失败成本</td>
+          <td>低</td>
+          <td><strong>高</strong></td>
+          <td>中</td>
+        </tr>
+        <tr>
+          <td>Memory 用法</td>
+          <td>注入 prompt 增强</td>
+          <td><strong>驱动决策</strong></td>
+          <td>影响推理路径</td>
+        </tr>
+        <tr>
+          <td>核心算法</td>
+          <td>检索 + 重排</td>
+          <td><strong>过滤引擎</strong></td>
+          <td><strong>ReAct + 状态机</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-box" style="margin-top:1rem">
+      <strong>关键洞察</strong>:三类 Agent 在<u>推理形态、工具消费方式、Memory 用法、失败模型</u>四个维度完全不同。把它们硬塞到同一个 Agent 实现里会让护栏体系撕裂。<br><br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      所以问题排查<u>不是复杂指令的子模式</u> — 它有自己的核心算法(ReAct + 双源消费),独立成类。<br>
+      五分法的正交性(C1)在这两类的对比中得到再次验证。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 4. 这两张图给底座的横切贡献 ============ -->
+  <div class="section">
+    <h3>④ 这两张图给底座的<u>横切贡献</u> — 不是某一类专属</h3>
+
+    <div class="compare-grid">
+      <div class="compare-card cmd">
+        <h4>从复杂指令图提取的横切</h4>
+        <ul>
+          <li><strong>工具治理流水线</strong>(作者 → 冲突检测 → 工具解析 → MCP 工具池)— v2 引入</li>
+          <li><strong>评测闭环</strong>(good/bad case → 评测构造 → 反馈库)— 与 b2 评测自我迭代统一</li>
+          <li><strong>Memory 双层</strong>(个人 mem + 项目 mem)— 与 v1 三件事统一</li>
+        </ul>
+      </div>
+      <div class="compare-card tsh">
+        <h4>从问题排查图提取的横切</h4>
+        <ul>
+          <li><strong>管理员可配置策略层</strong>(问题分类规则 + 推理策略 / 人工经验 + 话术映射)— 给所有 Agent 用</li>
+          <li><strong>意图路由</strong>(分流到不同 Agent)— Task 编排层的能力</li>
+          <li><strong>双源消费 ReAct</strong>(KB + 工具交错)— 是工具编排的特殊形态</li>
+        </ul>
+      </div>
+    </div>
+
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-top:0.75rem">
+      <u>"工具治理 / 评测闭环 / 管理员策略层 / 意图路由"全部下沉到底座作为横切能力</u> — 不是某一类 Agent 专属,而是整个智能工厂的"产线公共设施"。这给了底座清晰的扩展骨架。
+    </p>
+  </div>
+
+  <!-- ============ 5. v1 接口预留 ============ -->
+  <div class="section">
+    <h3>⑤ v1 必须为这两类 Agent 留的接口</h3>
+
+    <table class="compact">
+      <thead><tr><th>预留位</th><th>v1 落地形式</th><th>v2 接入时</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Agent 接口可扩展</td>
+          <td>AgentRegistry 设计为可注册任意实现 Agent 接口的类 + skill 路由机制</td>
+          <td>注册 ToolOrchestrationAgent / TroubleshootAgent + 注册新 skill,不改接口</td>
+        </tr>
+        <tr>
+          <td>Ledger 多 payload_type</td>
+          <td>v1 注册 4 种 payload schema(含 cmd_exec / troubleshoot 占位)</td>
+          <td>新 payload 字段写入 → 不改 t_task_ledger 表</td>
+        </tr>
+        <tr>
+          <td>意图路由钩子</td>
+          <td>workbench TaskExecutionOrchestrator 预留分流入口</td>
+          <td>追加问题排查路由分支</td>
+        </tr>
+        <tr>
+          <td>Memory 注入钩子</td>
+          <td>Agent.enrichPrompt(ctx) hook · 双层 memory 已就位</td>
+          <td>项目 mem 接入(v2 范畴)</td>
+        </tr>
+        <tr>
+          <td>评测信号筛选器</td>
+          <td>SignalFilter 按 payload_type 路由分类规则</td>
+          <td>新增工具调用失败 / 诊断错误的 bad case 信号规则</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="insight-success" style="padding:1rem 1.25rem;border-left:3px solid var(--success);background:rgba(52,199,89,0.05);border-radius:6px;font-size:0.9rem;margin-top:1rem">
+      <strong>v1 不实现 = v1 不写实际代码</strong>,但 v1 必须把"接口扩展位、表 schema 占位、Orchestrator 路由钩子、Memory 双层 hook、SignalFilter 路由"<u>全部留好</u>。<br>
+      <span style="color:var(--text-secondary);font-size:0.85rem">
+      这是分类法的真正价值 — 给未来留好接口位,避免每次新场景都"急造"。
+      </span>
+    </div>
+  </div>
+
+  <!-- ============ 6. 完整模式:具体接口 ============ -->
+  <div class="section tech-detail">
+    <h3>⑥ Agent 接口预留(代码层面)</h3>
+
+    <div style="background:var(--bg-tertiary);padding:1rem;border-radius:8px;font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.82rem;line-height:1.6;overflow-x:auto">
+<pre style="margin:0">// v1 已实现的 Agent 接口 — v2 新 Agent 直接 implement 即可
+public interface Agent&lt;I, O&gt; {
+  String name();
+  AgentCapability[] capabilities();
+  default String enrichPrompt(String basePrompt, AgentContext ctx) { return basePrompt; }
+  O execute(I input, AgentContext ctx);
+
+  // v2 ToolOrchestrationAgent 加这个:
+  // List&lt;Tool&gt; planTools(I input, ToolRegistry registry, AgentContext ctx);
+
+  // v2 TroubleshootAgent 加这个:
+  // ReActStep nextStep(I input, List&lt;Observation&gt; history, AgentContext ctx);
+}
+
+// v1 注册接口 — 已支持任意 Agent 注册
+@Component
+public class AgentRegistry {
+  private final Map&lt;String, Agent&lt;?,?&gt;&gt; agents;
+
+  public &lt;I,O&gt; Agent&lt;I,O&gt; resolve(String name) { ... }
+  public void register(Agent&lt;?,?&gt; agent) { ... }   // v2 新 Agent 在 @PostConstruct 自注册
+}</pre>
+    </div>
+
+    <h4 style="margin-top:1rem">Ledger payload schema 预留</h4>
+    <div style="background:var(--bg-tertiary);padding:1rem;border-radius:8px;font-family:'SF Mono', Monaco, Consolas, monospace;font-size:0.82rem;line-height:1.6;overflow-x:auto">
+<pre style="margin:0">// 4 种 payload_type 全部 v1 注册(后两类占位)
+payload_type ∈ {
+  knowledge_qa,        // v1 实现
+  doc_intel,           // v1 实现
+  cmd_exec,            // v1 占位 schema
+  troubleshoot         // v1 占位 schema
+}
+
+// cmd_exec payload schema(v1 注册,无 Agent 写入)
+{
+  tool_call_chain: [{tool, args, result_status, latency}, ...],
+  planning_iterations: int,
+  side_effects_summary: string
+}
+
+// troubleshoot payload schema(v1 注册,无 Agent 写入)
+{
+  symptom_class: string,
+  hypotheses_tried: [string, ...],
+  evidence_collected: [string, ...],
+  final_diagnosis: string,
+  suggested_action: string
+}</pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setMode(mode) {
+    document.body.classList.toggle('full-mode', mode === 'full');
+    document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.view-toggle button[onclick*="${mode}"]`).classList.add('active');
+  }
+</script>
+<script src="_paths.js"></script>
+</body>
+</html>
