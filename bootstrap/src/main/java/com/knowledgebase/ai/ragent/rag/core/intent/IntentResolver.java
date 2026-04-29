@@ -26,6 +26,7 @@ import com.knowledgebase.ai.ragent.rag.enums.IntentKind;
 import com.knowledgebase.ai.ragent.framework.trace.RagTraceNode;
 import com.knowledgebase.ai.ragent.rag.core.rewrite.RewriteResult;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +43,7 @@ import static com.knowledgebase.ai.ragent.rag.enums.IntentKind.SYSTEM;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class IntentResolver {
 
     @Qualifier("defaultIntentClassifier")
@@ -56,7 +58,14 @@ public class IntentResolver {
                 : List.of(rewriteResult.rewrittenQuestion());
         List<CompletableFuture<SubQuestionIntent>> tasks = subQuestions.stream()
                 .map(q -> CompletableFuture.supplyAsync(
-                        () -> new SubQuestionIntent(q, classifyIntents(q)),
+                        () -> {
+                            try {
+                                return new SubQuestionIntent(q, classifyIntents(q));
+                            } catch (Exception e) {
+                                log.error("Sub-question intent classification failed, question: {}", q, e);
+                                return new SubQuestionIntent(q, List.of());
+                            }
+                        },
                         intentClassifyExecutor
                 ))
                 .toList();
