@@ -155,6 +155,25 @@ public class ThreadPoolExecutorConfig {
     }
 
     /**
+     * 对话记忆加载线程池（并行加载摘要与历史记录）
+     */
+    @Bean
+    public Executor memoryLoadThreadPoolExecutor() {
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                Math.max(2, CPU_COUNT >> 1),
+                Math.max(4, CPU_COUNT),
+                60,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(200),
+                ThreadFactoryBuilder.create()
+                        .setNamePrefix("memory_load_executor_")
+                        .build(),
+                new ThreadPoolExecutor.CallerRunsPolicy()
+        );
+        return TtlExecutors.getTtlExecutor(executor);
+    }
+
+    /**
      * 模型流式输出线程池
      */
     @Bean

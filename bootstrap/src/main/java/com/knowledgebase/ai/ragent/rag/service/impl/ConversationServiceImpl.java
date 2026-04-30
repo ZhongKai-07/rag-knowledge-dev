@@ -20,7 +20,6 @@ package com.knowledgebase.ai.ragent.rag.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.knowledgebase.ai.ragent.rag.config.MemoryProperties;
-import com.knowledgebase.ai.ragent.rag.controller.request.ConversationCreateRequest;
 import com.knowledgebase.ai.ragent.rag.controller.request.ConversationUpdateRequest;
 import com.knowledgebase.ai.ragent.rag.controller.vo.ConversationVO;
 import com.knowledgebase.ai.ragent.rag.dao.entity.ConversationDO;
@@ -36,6 +35,7 @@ import com.knowledgebase.ai.ragent.framework.exception.ClientException;
 import com.knowledgebase.ai.ragent.infra.chat.LLMService;
 import com.knowledgebase.ai.ragent.rag.core.prompt.PromptTemplateLoader;
 import com.knowledgebase.ai.ragent.rag.service.ConversationService;
+import com.knowledgebase.ai.ragent.rag.service.bo.ConversationCreateBO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -109,7 +109,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public void createOrUpdate(ConversationCreateRequest request) {
+    public void createOrUpdate(ConversationCreateBO request) {
         String userId = request.getUserId();
         String conversationId = request.getConversationId();
         String question = request.getQuestion();
