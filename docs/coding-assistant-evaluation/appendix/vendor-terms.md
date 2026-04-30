@@ -14,7 +14,7 @@ Copilot Business 和 Copilot Enterprise 用户的交互数据**不用于**模型
 
 ### 1.2 数据留存
 
-Business/Enterprise 提供代码保留控制（Code Retention Controls）。GitHub Enterprise Cloud 支持地理数据驻留（Geographic Data Residency），可将数据限定在特定地理区域内。具体可选驻留区域（如欧洲、美国等）未在本次调研中明确获取，属于信息缺口（见第 4 节，缺口 #6）。
+Business/Enterprise 提供代码保留控制（Code Retention Controls）。GitHub Enterprise Cloud 支持地理数据驻留（Geographic Data Residency），可将数据限定在特定地理区域内。具体可选驻留区域（如欧洲、美国等）未在本次调研中明确获取。
 
 ### 1.3 审计 / 日志
 
