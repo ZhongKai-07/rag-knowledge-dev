@@ -8,7 +8,46 @@
 ---
 
 ## 第 0 章 TL;DR + 推荐总览
-<!-- TBD: Task 14 -->
+
+### 一句话结论
+
+> **建议采用"组合 A"：GitHub Copilot Enterprise（研发 / 量化辅助 / 算法备选）+ Gemini Code Assist Standard（EST / PWM / 业务 / PM / 运营）+ Gemini Code Assist Enterprise（算法）+ AWS Kiro（限研发 spec-driven 项目试点池）。详见 § 5.5。**
+
+### 部门 × 工具推荐速览
+
+（精简版矩阵，从 § 4.1 拷贝核心；只列 ★★★ 单元）
+
+| 部门 | 首选 | 关键理由 |
+|---|---|---|
+| 1.1 研发 | Copilot Enterprise | IDE 覆盖最广 / 大仓库检索成熟 / Marketplace 生态丰富 |
+| 1.2 量化研究 | Copilot Enterprise（仅辅助脚本，红线严格） | 模型选单宽 / JetBrains 友好 |
+| 1.3 算法（AI / ML） | Gemini Code Assist Enterprise | 1M token 长上下文 / GCP 生态 |
+| 1.4 EST | Gemini Code Assist Standard（仅辅助脚本，红线严格） | 计费亲民 / Web 友好 / 自然语言强 |
+| 1.5 PWM 数据分析 | Gemini Code Assist Standard | BigQuery 集成 / SQL 能力强 |
+| 1.6 业务通用 | Gemini Code Assist Standard | 计费亲民 / Web / 自然语言 |
+| 1.7 产品经理 / PoC | Gemini Code Assist Standard | Agent Mode 1M / 0-1 PoC 友好 |
+| 1.8 运营 | Gemini Code Assist Standard | 自然语言强 / 池化自助 |
+| 试点池 | AWS Kiro | 限研发 spec-driven 项目，5~10 席位，3 个月评估 |
+
+### 三款工具一句话定位
+
+- **GitHub Copilot Enterprise**（$39/user/月）：IDE 覆盖最广 / 大仓库检索成熟 / GitHub 生态深度绑定 — 研发部门主力之选
+- **Gemini Code Assist (Standard $19 / Enterprise $45)**：长上下文优势 / 算法 ML 场景适配 / GCP 集成 — 算法 / 业务 / 运营场景的经济性最优解
+- **AWS Kiro**（Pro $20 / Pro+ $40 / Power $200）：Spec-driven 流程差异化 / 原生 MCP / 但 GA 仅 5 个月，成熟度需警示 — 限试点池
+
+### 关键风险红线（3 条）
+
+1. **大陆访问需走代理**：三款均无大陆区，所有流量出境到海外厂商（§ 7.1）
+2. **核心资产规避 SaaS prompt**：量化策略代码 / EST 客户订单 / PWM 客户画像不进 prompt（§ 7.3 红线规则）
+3. **Kiro 限试点池**：GA 仅 5 个月 + 数据训练承诺信息缺口 #3，不作主力（§ 6.1 成熟度风险）
+
+### 如何阅读本报告
+
+- **技术管理层 / 产品经理快读路径**（30 分钟）：本章 → § 1（部门画像）→ § 4（适配矩阵）→ § 5（推荐组合）→ § 6（风险路线图）
+- **技术深度路径**（深度阅读）：§ 2（工具速览）→ § 3（核心能力对比，含 Claude Code 基准对照）→ § 7（合规约束）
+- **采购 / 合规对账路径**：§ 7（合规约束）→ [appendix/vendor-terms.md](appendix/vendor-terms.md)（厂商条款）→ § 6.3（退出策略）
+
+> 本报告时效性：截至 2026-04-29。三款工具均为快速迭代产品，建议每 6 个月复审。
 
 ## 第 1 章 部门场景画像 & 推荐结论
 
