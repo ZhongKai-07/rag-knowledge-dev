@@ -26,6 +26,7 @@ import com.knowledgebase.ai.ragent.rag.enums.IntentLevel;
 import com.knowledgebase.ai.ragent.rag.core.intent.IntentNode;
 import com.knowledgebase.ai.ragent.rag.core.intent.IntentNodeRegistry;
 import com.knowledgebase.ai.ragent.rag.core.intent.NodeScore;
+import com.knowledgebase.ai.ragent.rag.core.intent.NodeScoreFilters;
 import com.knowledgebase.ai.ragent.rag.core.prompt.PromptTemplateLoader;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -72,7 +73,7 @@ public class IntentGuidanceService {
             return null;
         }
 
-        List<NodeScore> candidates = filterCandidates(subIntents.get(0).nodeScores());
+        List<NodeScore> candidates = NodeScoreFilters.kb(subIntents.get(0).nodeScores(), RAGConstant.INTENT_MIN_SCORE);
         if (candidates.size() < 2) {
             return null;
         }
@@ -100,16 +101,6 @@ public class IntentGuidanceService {
             return null;
         }
         return new AmbiguityGroup(topicName, trimOptions(optionIds));
-    }
-
-    private List<NodeScore> filterCandidates(List<NodeScore> scores) {
-        if (CollUtil.isEmpty(scores)) {
-            return List.of();
-        }
-        return scores.stream()
-                .filter(ns -> ns.getScore() >= RAGConstant.INTENT_MIN_SCORE)
-                .filter(ns -> ns.getNode() != null && ns.getNode().isKB())
-                .toList();
     }
 
     private List<String> collectSystemOptions(List<NodeScore> groupScores) {

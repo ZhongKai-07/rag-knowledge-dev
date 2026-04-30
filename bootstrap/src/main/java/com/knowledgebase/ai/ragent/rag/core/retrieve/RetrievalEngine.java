@@ -22,11 +22,11 @@ import cn.hutool.core.util.StrUtil;
 import com.knowledgebase.ai.ragent.rag.dto.KbResult;
 import com.knowledgebase.ai.ragent.rag.dto.RetrievalContext;
 import com.knowledgebase.ai.ragent.rag.dto.SubQuestionIntent;
-import com.knowledgebase.ai.ragent.rag.enums.IntentKind;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
 import com.knowledgebase.ai.ragent.framework.trace.RagTraceNode;
 import com.knowledgebase.ai.ragent.rag.core.intent.IntentNode;
 import com.knowledgebase.ai.ragent.rag.core.intent.NodeScore;
+import com.knowledgebase.ai.ragent.rag.core.intent.NodeScoreFilters;
 import com.knowledgebase.ai.ragent.rag.core.mcp.MCPParameterExtractor;
 import com.knowledgebase.ai.ragent.rag.core.mcp.MCPRequest;
 import com.knowledgebase.ai.ragent.rag.core.mcp.MCPResponse;
@@ -143,8 +143,8 @@ public class RetrievalEngine {
 
     private SubQuestionContext buildSubQuestionContext(SubQuestionIntent intent, RetrievalPlan plan,
                                                        RetrievalScope scope) {
-        List<NodeScore> kbIntents = filterKbIntents(intent.nodeScores());
-        List<NodeScore> mcpIntents = filterMCPIntents(intent.nodeScores());
+        List<NodeScore> kbIntents = NodeScoreFilters.kb(intent.nodeScores(), INTENT_MIN_SCORE);
+        List<NodeScore> mcpIntents = NodeScoreFilters.mcp(intent.nodeScores(), INTENT_MIN_SCORE);
 
         KbResult kbResult = retrieveAndRerank(intent, kbIntents, plan, scope);
 
@@ -164,7 +164,7 @@ public class RetrievalEngine {
      */
     private RetrievalPlan resolveSubQuestionPlan(SubQuestionIntent intent,
                                                   int globalRecall, int globalRerank) {
-        int effectiveRerank = filterKbIntents(intent.nodeScores()).stream()
+        int effectiveRerank = NodeScoreFilters.kb(intent.nodeScores(), INTENT_MIN_SCORE).stream()
                 .map(NodeScore::getNode)
                 .filter(Objects::nonNull)
                 .map(IntentNode::getTopK)
@@ -181,27 +181,6 @@ public class RetrievalEngine {
                 .append("**子问题**：").append(question).append("\n\n")
                 .append("**相关文档**：\n")
                 .append(context).append("\n\n");
-    }
-
-    private List<NodeScore> filterMCPIntents(List<NodeScore> nodeScores) {
-        return nodeScores.stream()
-                .filter(ns -> ns.getScore() >= INTENT_MIN_SCORE)
-                .filter(ns -> ns.getNode() != null && ns.getNode().getKind() == IntentKind.MCP)
-                .filter(ns -> StrUtil.isNotBlank(ns.getNode().getMcpToolId()))
-                .toList();
-    }
-
-    private List<NodeScore> filterKbIntents(List<NodeScore> nodeScores) {
-        return nodeScores.stream()
-                .filter(ns -> ns.getScore() >= INTENT_MIN_SCORE)
-                .filter(ns -> {
-                    IntentNode node = ns.getNode();
-                    if (node == null) {
-                        return false;
-                    }
-                    return node.getKind() == null || node.getKind() == IntentKind.KB;
-                })
-                .toList();
     }
 
     private String executeMcpAndMerge(String question, List<NodeScore> mcpIntents) {
