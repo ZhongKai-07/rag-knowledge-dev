@@ -77,7 +77,12 @@
       "Bash(python -m markitdown \"E:\\\\AI Application\\\\智小北阶段性总结.pptx\")",
       "Bash(pip install *)",
       "Read(//tmp/**)",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(awk '{print $1}')",
+      "Bash(git commit -m ' *)",
+      "Bash(bash docs/dev/verification/permission-pr1-controllers-clean.sh)",
+      "Bash(bash docs/dev/verification/permission-pr2-kb-access-retired.sh)",
+      "Bash(bash docs/dev/verification/permission-pr3-leak-free.sh)"
     ]
   }
 }
