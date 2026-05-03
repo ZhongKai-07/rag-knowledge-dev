@@ -86,9 +86,12 @@ public class CollateralSeedData {
         if (StrUtil.isBlank(raw)) {
             return "";
         }
+        // 中文连接词 "和" 归一化为 "&"：query rewriter 会把 "ISDA&CSA" 改写成 "ISDA和CSA"，
+        // 必须在 executor 端再吸收一次，否则 LLM 抽参后的 agreementType 永远不命中 seed canonical。
         return raw.replaceAll("\\s+", "")
                 .replace("-", "&")
                 .replace("+", "&")
+                .replace("和", "&")
                 .toUpperCase(Locale.ROOT);
     }
 

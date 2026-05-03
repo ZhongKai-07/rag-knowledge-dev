@@ -74,6 +74,15 @@ class CollateralSeedDataTest {
     }
 
     @Test
+    void normalizeAgreementType_chineseConjunctionMapsToAmpersand() {
+        // query rewriter 会把 "ISDA&CSA" 改写成 "ISDA和CSA"，executor 端必须吸收，
+        // 否则 LLM 抽参后 agreementType="ISDA和CSA" 永远不命中 seed canonical。
+        assertThat(data.normalizeAgreementType("ISDA和CSA")).isEqualTo("ISDA&CSA");
+        assertThat(data.normalizeAgreementType("ISDA 和 CSA")).isEqualTo("ISDA&CSA");
+        assertThat(data.findAgreement("HSBC", "ISDA和CSA")).isPresent();
+    }
+
+    @Test
     void blankOrNullInputs_returnSafeDefaults() {
         assertThat(data.resolveCounterparty("")).isEmpty();
         assertThat(data.resolveCounterparty(null)).isEmpty();
