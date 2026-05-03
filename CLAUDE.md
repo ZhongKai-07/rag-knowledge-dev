@@ -130,6 +130,7 @@ Upgrade scripts in `resources/database/`:
 - `upgrade_v1.8_to_v1.9.sql` — 为 `t_message` 增加 `sources_json` 列（Answer Sources PR4 持久化）
 - `upgrade_v1.9_to_v1.10.sql` — 新增 eval 域 4 张表（`t_eval_gold_dataset / t_eval_gold_item / t_eval_run / t_eval_result`）
 - `upgrade_v1.10_to_v1.11.sql` — 修 eval 黄金集软删唯一键为 partial unique index（仅约束 `deleted=0`）
+- `upgrade_v1.11_to_v1.12.sql` — 新增 Collateral 字段筛查 MCP 全局意图节点（`mcp_collateral_field_lookup` / `kb_id=NULL` / `kind=2`）；上线后须清 Redis key `ragent:intent:tree`
 
 Full dev-environment wipe + rebuild (**dev only — destroys all data**):
 
