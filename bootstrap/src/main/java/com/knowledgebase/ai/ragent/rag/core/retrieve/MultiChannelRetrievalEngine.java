@@ -32,7 +32,6 @@ import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import com.knowledgebase.ai.ragent.rag.dto.SubQuestionIntent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -61,7 +60,6 @@ public class MultiChannelRetrievalEngine {
     private final RetrieverService retrieverService;
     private final KbMetadataReader kbMetadataReader;
     private final MetadataFilterBuilder metadataFilterBuilder;
-    @Qualifier("ragRetrievalThreadPoolExecutor")
     private final Executor ragRetrievalExecutor;
 
     /**

@@ -22,6 +22,12 @@ function InfoItem({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
+function maskApiKey(apiKey?: string | null): string {
+  if (!apiKey) return "-";
+  if (apiKey.length <= 10) return "******";
+  return `${apiKey.slice(0, 6)}***${apiKey.slice(-4)}`;
+}
+
 export function SystemSettingsPage() {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,8 +96,6 @@ export function SystemSettingsPage() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
           <InfoItem label="Enabled" value={<BoolBadge value={rag.queryRewrite.enabled} />} />
-          <InfoItem label="Max History Messages" value={rag.queryRewrite.maxHistoryMessages} />
-          <InfoItem label="Max History Chars" value={rag.queryRewrite.maxHistoryChars} />
         </CardContent>
       </Card>
 
@@ -143,7 +147,7 @@ export function SystemSettingsPage() {
                 <TableRow key={name}>
                   <TableCell className="font-medium">{name}</TableCell>
                   <TableCell>{provider.url}</TableCell>
-                  <TableCell>{provider.apiKey ? provider.apiKey : "-"}</TableCell>
+                  <TableCell>{maskApiKey(provider.apiKey)}</TableCell>
                   <TableCell>
                     <div className="space-y-1 text-xs text-muted-foreground">
                       {Object.entries(provider.endpoints).map(([key, value]) => (

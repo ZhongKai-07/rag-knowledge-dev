@@ -33,10 +33,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -44,7 +42,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.knowledgebase.ai.ragent.rag.constant.RAGConstant.CONVERSATION_SUMMARY_PROMPT_PATH;
@@ -56,7 +53,6 @@ public class JdbcConversationMemorySummaryService implements ConversationMemoryS
 
     private static final String SUMMARY_PREFIX = "对话摘要：";
     private static final String SUMMARY_LOCK_PREFIX = "ragent:memory:summary:lock:";
-    private static final Duration SUMMARY_LOCK_TTL = Duration.ofMinutes(5);
 
     private final ConversationGroupService conversationGroupService;
     private final ConversationMessageService conversationMessageService;
@@ -64,8 +60,6 @@ public class JdbcConversationMemorySummaryService implements ConversationMemoryS
     private final LLMService llmService;
     private final PromptTemplateLoader promptTemplateLoader;
     private final RedissonClient redissonClient;
-
-    @Qualifier("memorySummaryThreadPoolExecutor")
     private final Executor memorySummaryExecutor;
 
     @Override
@@ -113,7 +107,7 @@ public class JdbcConversationMemorySummaryService implements ConversationMemoryS
 
         String lockKey = SUMMARY_LOCK_PREFIX + buildLockKey(conversationId, userId);
         RLock lock = redissonClient.getLock(lockKey);
-        if (!tryLock(lock)) {
+        if (!lock.tryLock()) {
             return;
         }
         try {
@@ -172,15 +166,6 @@ public class JdbcConversationMemorySummaryService implements ConversationMemoryS
             if (lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
-        }
-    }
-
-    private boolean tryLock(RLock lock) {
-        try {
-            return lock.tryLock(0, SUMMARY_LOCK_TTL.toMillis(), TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            return false;
         }
     }
 
