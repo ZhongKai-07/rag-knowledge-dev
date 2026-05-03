@@ -72,4 +72,21 @@ class CollateralSeedDataTest {
         assertThat(data.normalizeAgreementType("ISDA+CSA")).isEqualTo("ISDA&CSA");
         assertThat(data.normalizeAgreementType("isda&csa")).isEqualTo("ISDA&CSA");
     }
+
+    @Test
+    void blankOrNullInputs_returnSafeDefaults() {
+        assertThat(data.resolveCounterparty("")).isEmpty();
+        assertThat(data.resolveCounterparty(null)).isEmpty();
+        assertThat(data.isHouseParty("")).isFalse();
+        assertThat(data.isHouseParty(null)).isFalse();
+        assertThat(data.normalizeAgreementType("")).isEqualTo("");
+        assertThat(data.normalizeAgreementType(null)).isEqualTo("");
+        assertThat(data.resolveField("")).isEmpty();
+        assertThat(data.resolveField(null)).isEmpty();
+        assertThat(data.findAgreement(null, "ISDA&CSA")).isEmpty();
+        assertThat(data.findAgreement("HSBC", null)).isEmpty();
+        assertThat(data.findField(null, "ISDA&CSA", "MTA")).isEmpty();
+        assertThat(data.findField("HSBC", null, "MTA")).isEmpty();
+        assertThat(data.findField("HSBC", "ISDA&CSA", null)).isEmpty();
+    }
 }

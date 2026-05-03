@@ -86,11 +86,10 @@ public class CollateralSeedData {
         if (StrUtil.isBlank(raw)) {
             return "";
         }
-        String squeezed = raw.replaceAll("\\s+", "")
+        return raw.replaceAll("\\s+", "")
                 .replace("-", "&")
                 .replace("+", "&")
                 .toUpperCase(Locale.ROOT);
-        return squeezed;
     }
 
     public Optional<String> resolveField(String raw) {
