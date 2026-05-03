@@ -38,7 +38,6 @@ import com.knowledgebase.ai.ragent.rag.core.retrieve.scope.RetrievalScope;
 import com.knowledgebase.ai.ragent.rag.config.RagRetrievalProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -71,9 +70,7 @@ public class RetrievalEngine {
     private final MCPToolRegistry mcpToolRegistry;
     private final MultiChannelRetrievalEngine multiChannelRetrievalEngine;
     private final RagRetrievalProperties ragRetrievalProperties;
-    @Qualifier("ragContextThreadPoolExecutor")
     private final Executor ragContextExecutor;
-    @Qualifier("mcpBatchThreadPoolExecutor")
     private final Executor mcpBatchExecutor;
 
     /**

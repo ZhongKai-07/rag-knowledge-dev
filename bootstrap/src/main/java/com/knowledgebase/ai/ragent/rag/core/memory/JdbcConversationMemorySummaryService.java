@@ -33,7 +33,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -61,8 +60,6 @@ public class JdbcConversationMemorySummaryService implements ConversationMemoryS
     private final LLMService llmService;
     private final PromptTemplateLoader promptTemplateLoader;
     private final RedissonClient redissonClient;
-
-    @Qualifier("memorySummaryThreadPoolExecutor")
     private final Executor memorySummaryExecutor;
 
     @Override

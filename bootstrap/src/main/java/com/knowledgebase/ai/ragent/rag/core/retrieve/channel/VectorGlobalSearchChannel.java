@@ -27,7 +27,6 @@ import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.strategy.CollectionParallelRetriever;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -52,7 +51,7 @@ public class VectorGlobalSearchChannel implements SearchChannel {
                                      SearchChannelProperties properties,
                                      KbMetadataReader kbMetadataReader,
                                      MetadataFilterBuilder metadataFilterBuilder,
-                                     @Qualifier("ragInnerRetrievalThreadPoolExecutor") Executor innerRetrievalExecutor) {
+                                     Executor innerRetrievalExecutor) {
         this.properties = properties;
         this.kbMetadataReader = kbMetadataReader;
         this.metadataFilterBuilder = metadataFilterBuilder;

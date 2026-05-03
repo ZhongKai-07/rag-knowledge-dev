@@ -27,7 +27,6 @@ import com.knowledgebase.ai.ragent.rag.core.retrieve.RetrieverService;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.channel.strategy.IntentParallelRetriever;
 import com.knowledgebase.ai.ragent.rag.core.retrieve.filter.MetadataFilterBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -51,10 +50,10 @@ public class IntentDirectedSearchChannel implements SearchChannel {
     public IntentDirectedSearchChannel(RetrieverService retrieverService,
                                        SearchChannelProperties properties,
                                        MetadataFilterBuilder metadataFilterBuilder,
-                                       @Qualifier("ragInnerRetrievalThreadPoolExecutor") Executor ragInnerRetrievalExecutor) {
+                                       Executor innerRetrievalExecutor) {
         this.properties = properties;
         this.parallelRetriever = new IntentParallelRetriever(
-                retrieverService, metadataFilterBuilder, ragInnerRetrievalExecutor);
+                retrieverService, metadataFilterBuilder, innerRetrievalExecutor);
     }
 
     @Override
