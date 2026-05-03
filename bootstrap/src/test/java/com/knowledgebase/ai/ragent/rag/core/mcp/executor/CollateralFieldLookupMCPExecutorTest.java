@@ -125,6 +125,19 @@ class CollateralFieldLookupMCPExecutorTest {
     }
 
     @Test
+    void execute_houseAliasFallback_nullUserQuestion_returnsCounterpartyMissingText() {
+        // 边界：counterparty 命中 house party 但 userQuestion 为 null
+        // resolveEffectiveCounterparty 走 StrUtil.isBlank(userQuestion) 短路 → null
+        // → execute() 返回 counterparty 缺失文案
+        MCPResponse resp = executor.execute(req(
+                null,
+                "华泰", "ISDA&CSA", "MTA"));
+        assertThat(resp.getTextResult())
+                .contains("请补充更多信息以定位文档")
+                .contains("Please provide Counterparty");
+    }
+
+    @Test
     void execute_bMiss_unknownAgreement() {
         MCPResponse resp = executor.execute(req(
                 "华泰和HSBC交易的GMRA下的 MTA 是多少", "HSBC", "GMRA", "MTA"));
