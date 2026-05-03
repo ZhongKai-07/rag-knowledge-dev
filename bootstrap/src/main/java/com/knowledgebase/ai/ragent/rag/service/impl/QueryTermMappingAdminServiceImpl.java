@@ -27,7 +27,7 @@ import com.knowledgebase.ai.ragent.rag.controller.request.QueryTermMappingCreate
 import com.knowledgebase.ai.ragent.rag.controller.request.QueryTermMappingPageRequest;
 import com.knowledgebase.ai.ragent.rag.controller.request.QueryTermMappingUpdateRequest;
 import com.knowledgebase.ai.ragent.rag.controller.vo.QueryTermMappingVO;
-import com.knowledgebase.ai.ragent.rag.core.rewrite.QueryTermMappingService;
+import com.knowledgebase.ai.ragent.rag.core.rewrite.QueryTermMappingCacheManager;
 import com.knowledgebase.ai.ragent.rag.dao.entity.QueryTermMappingDO;
 import com.knowledgebase.ai.ragent.rag.dao.mapper.QueryTermMappingMapper;
 import com.knowledgebase.ai.ragent.rag.service.QueryTermMappingAdminService;
@@ -39,7 +39,7 @@ import org.springframework.stereotype.Service;
 public class QueryTermMappingAdminServiceImpl implements QueryTermMappingAdminService {
 
     private final QueryTermMappingMapper queryTermMappingMapper;
-    private final QueryTermMappingService queryTermMappingService;
+    private final QueryTermMappingCacheManager queryTermMappingCacheManager;
 
     @Override
     public String create(QueryTermMappingCreateRequest requestParam) {
@@ -58,7 +58,7 @@ public class QueryTermMappingAdminServiceImpl implements QueryTermMappingAdminSe
         record.setRemark(StrUtil.trimToNull(requestParam.getRemark()));
 
         queryTermMappingMapper.insert(record);
-        queryTermMappingService.loadMappings();
+        queryTermMappingCacheManager.clearCache();
         return String.valueOf(record.getId());
     }
 
@@ -91,14 +91,14 @@ public class QueryTermMappingAdminServiceImpl implements QueryTermMappingAdminSe
         }
 
         queryTermMappingMapper.updateById(record);
-        queryTermMappingService.loadMappings();
+        queryTermMappingCacheManager.clearCache();
     }
 
     @Override
     public void delete(String id) {
         QueryTermMappingDO record = loadById(id);
         queryTermMappingMapper.deleteById(record.getId());
-        queryTermMappingService.loadMappings();
+        queryTermMappingCacheManager.clearCache();
     }
 
     @Override

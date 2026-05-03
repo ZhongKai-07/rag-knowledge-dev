@@ -72,8 +72,6 @@ public class RAGSettingsController {
                         .defaultConfig(toDefaultSettings(ragDefaultProperties))
                         .queryRewrite(SystemSettingsVO.QueryRewriteSettings.builder()
                                 .enabled(ragConfigProperties.getQueryRewriteEnabled())
-                                .maxHistoryMessages(ragConfigProperties.getQueryRewriteMaxHistoryMessages())
-                                .maxHistoryChars(ragConfigProperties.getQueryRewriteMaxHistoryChars())
                                 .build())
                         .rateLimit(SystemSettingsVO.RateLimitSettings.builder()
                                 .global(SystemSettingsVO.GlobalRateLimit.builder()

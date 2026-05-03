@@ -50,18 +50,6 @@ public class RAGConfigProperties {
     private Boolean queryRewriteEnabled;
 
     /**
-     * 改写时用于承接上下文的最大历史消息数
-     */
-    @Value("${rag.query-rewrite.max-history-messages:4}")
-    private Integer queryRewriteMaxHistoryMessages;
-
-    /**
-     * 改写时用于承接上下文的最大字符数
-     */
-    @Value("${rag.query-rewrite.max-history-chars:500}")
-    private Integer queryRewriteMaxHistoryChars;
-
-    /**
      * 推荐问题功能总开关
      */
     @Value("${rag.suggestions.enabled:true}")
