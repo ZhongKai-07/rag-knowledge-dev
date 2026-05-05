@@ -43,15 +43,25 @@ public class DocumentParserSelector {
 
     private final List<DocumentParser> strategies;
     private final Map<String, DocumentParser> strategyMap;
+    /** ENHANCED 路径返回的实例（singleton，构造期一次性建好）。见 {@link #buildEnhancedParser()}。*/
+    private final DocumentParser enhancedParser;
 
     public DocumentParserSelector(List<DocumentParser> parsers) {
+        // 显式禁止把 FallbackParserDecorator 当 DocumentParser bean 注入：decorator 的
+        // getParserType() 返回 primaryName（如 "Docling"），如果 Spring 把 decorator 也收进
+        // parsers 列表，会与真正的 Docling parser 冲突 / 顺序不确定地相互遮蔽。
+        for (DocumentParser p : parsers) {
+            if (p instanceof FallbackParserDecorator) {
+                throw new IllegalArgumentException(
+                        "FallbackParserDecorator must not be registered as a DocumentParser bean — it is constructed "
+                                + "internally by selectByParseMode(ENHANCED). Found: " + p.getClass().getName());
+            }
+        }
         this.strategies = parsers;
         this.strategyMap = parsers.stream()
                 .collect(Collectors.toMap(
-                        DocumentParser::getParserType,
-                        Function.identity(),
-                        (existing, replacement) -> existing
-                ));
+                        DocumentParser::getParserType, Function.identity(), (existing, replacement) -> existing));
+        this.enhancedParser = buildEnhancedParser();
     }
 
     /**
@@ -83,17 +93,20 @@ public class DocumentParserSelector {
     public DocumentParser selectByParseMode(ParseMode mode) {
         return switch (mode) {
             case BASIC -> select(ParserType.TIKA.getType());
-            case ENHANCED -> selectEnhanced();
+            case ENHANCED -> enhancedParser;
         };
     }
 
-    private DocumentParser selectEnhanced() {
+    /**
+     * 构造期一次性建好 ENHANCED 路径对应的 decorator。Selector 是单例 Spring bean，
+     * decorator 自身无可变状态（{@code stamp()} 内 HashMap 是方法局部变量），多线程并发调用安全。
+     * 这样可避免每次 ingestion 调用 {@link #selectByParseMode(ParseMode)} 都重新分配
+     * decorator + 在 degraded 模式下重复打 INFO 日志。
+     */
+    private DocumentParser buildEnhancedParser() {
         DocumentParser tika = select(ParserType.TIKA.getType());
         DocumentParser docling = strategyMap.get(ParserType.DOCLING.getType());
         if (docling == null) {
-            // Docling 未注册（PR 5 之前的常态）—— 用 degraded factory：每次 parse 直接走 Tika，
-            // metadata stamp requested=Docling / actual=Tika / reason=primary_unavailable，
-            // 前端可据此提示「增强解析尚未启用，已使用基础解析」。
             return FallbackParserDecorator.degraded(
                     tika,
                     ParserType.DOCLING.getType(),

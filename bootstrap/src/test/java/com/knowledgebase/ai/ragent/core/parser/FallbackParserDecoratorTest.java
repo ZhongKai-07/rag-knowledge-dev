@@ -86,32 +86,42 @@ class FallbackParserDecoratorTest {
     @Test
     void primaryFails_fallbackInvoked_metadataStamped() {
         FallbackParserDecorator dec =
-                new FallbackParserDecorator(ALWAYS_FAIL, FALLBACK, "docling", "tika");
+                new FallbackParserDecorator(ALWAYS_FAIL, FALLBACK, ParserType.DOCLING.getType(), ParserType.TIKA.getType());
 
         ParseResult r = dec.parse(new byte[0], "application/pdf", new HashMap<>());
 
         assertEquals("fallback-text", r.text());
-        assertEquals("docling", r.metadata().get("parse_engine_requested"));
-        assertEquals("tika", r.metadata().get("parse_engine_actual"));
-        assertEquals("primary_failed", r.metadata().get("parse_fallback_reason"));
+        assertEquals(
+                ParserType.DOCLING.getType(),
+                r.metadata().get(FallbackParserDecorator.META_ENGINE_REQUESTED));
+        assertEquals(
+                ParserType.TIKA.getType(),
+                r.metadata().get(FallbackParserDecorator.META_ENGINE_ACTUAL));
+        assertEquals(
+                FallbackParserDecorator.REASON_PRIMARY_FAILED,
+                r.metadata().get(FallbackParserDecorator.META_FALLBACK_REASON));
     }
 
     @Test
     void primarySucceeds_metadataMarksRequestedEngine() {
         FallbackParserDecorator dec =
-                new FallbackParserDecorator(FALLBACK, ALWAYS_FAIL, "docling", "tika");
+                new FallbackParserDecorator(FALLBACK, ALWAYS_FAIL, ParserType.DOCLING.getType(), ParserType.TIKA.getType());
 
         ParseResult r = dec.parse(new byte[0], "application/pdf", new HashMap<>());
 
         assertEquals("fallback-text", r.text());
-        assertEquals("docling", r.metadata().get("parse_engine_requested"));
-        assertEquals("docling", r.metadata().get("parse_engine_actual"));
+        assertEquals(
+                ParserType.DOCLING.getType(),
+                r.metadata().get(FallbackParserDecorator.META_ENGINE_REQUESTED));
+        assertEquals(
+                ParserType.DOCLING.getType(),
+                r.metadata().get(FallbackParserDecorator.META_ENGINE_ACTUAL));
     }
 
     @Test
     void extractTextFallback_alsoWorks() {
         FallbackParserDecorator dec =
-                new FallbackParserDecorator(ALWAYS_FAIL, FALLBACK, "docling", "tika");
+                new FallbackParserDecorator(ALWAYS_FAIL, FALLBACK, ParserType.DOCLING.getType(), ParserType.TIKA.getType());
 
         InputStream is = new ByteArrayInputStream(new byte[0]);
 
@@ -122,13 +132,20 @@ class FallbackParserDecoratorTest {
     void degradedFactory_skipsPrimary_stampsActualAsFallback_andStampsReason() {
         FallbackParserDecorator dec =
                 FallbackParserDecorator.degraded(
-                        FALLBACK, "docling", "tika", FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
+                        FALLBACK,
+                        ParserType.DOCLING.getType(),
+                        ParserType.TIKA.getType(),
+                        FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
 
         ParseResult r = dec.parse(new byte[0], "application/pdf", new HashMap<>());
 
         assertEquals("fallback-text", r.text());
-        assertEquals("docling", r.metadata().get(FallbackParserDecorator.META_ENGINE_REQUESTED));
-        assertEquals("tika", r.metadata().get(FallbackParserDecorator.META_ENGINE_ACTUAL));
+        assertEquals(
+                ParserType.DOCLING.getType(),
+                r.metadata().get(FallbackParserDecorator.META_ENGINE_REQUESTED));
+        assertEquals(
+                ParserType.TIKA.getType(),
+                r.metadata().get(FallbackParserDecorator.META_ENGINE_ACTUAL));
         assertEquals(
                 FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE,
                 r.metadata().get(FallbackParserDecorator.META_FALLBACK_REASON));
@@ -140,7 +157,10 @@ class FallbackParserDecoratorTest {
         // it constructs with primary == fallback under the hood.
         FallbackParserDecorator dec =
                 FallbackParserDecorator.degraded(
-                        FALLBACK, "docling", "tika", FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
+                        FALLBACK,
+                        ParserType.DOCLING.getType(),
+                        ParserType.TIKA.getType(),
+                        FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
 
         InputStream is = new ByteArrayInputStream(new byte[0]);
         assertEquals("fallback-text", dec.extractText(is, "f.pdf"));
