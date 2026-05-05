@@ -82,6 +82,51 @@ public class KnowledgeChunkDO {
     private Integer tokenCount;
 
     /**
+     * 显示用页码提示；page_start/page_end 才是规范化证据范围
+     */
+    private Integer pageNumber;
+
+    /**
+     * 该 chunk 起始的源 1-based 页号
+     */
+    private Integer pageStart;
+
+    /**
+     * 该 chunk 末尾的源 1-based 页号
+     */
+    private Integer pageEnd;
+
+    /**
+     * 祖先标题路径（JSON 数组）
+     */
+    private String headingPath;
+
+    /**
+     * 块类型：TITLE|PARAGRAPH|TABLE|HEADER|FOOTER|LIST|CAPTION|OTHER
+     */
+    private String blockType;
+
+    /**
+     * 来源 layout block id 列表（JSON 数组）
+     */
+    private String sourceBlockIds;
+
+    /**
+     * 来源 bbox 引用（JSON 数组）
+     */
+    private String bboxRefs;
+
+    /**
+     * 文本层类型：NATIVE_TEXT|OCR|MIXED|UNKNOWN
+     */
+    private String textLayerType;
+
+    /**
+     * 解析器输出的 layout 置信度
+     */
+    private Double layoutConfidence;
+
+    /**
      * 是否启用 0：禁用 1：启用
      */
     private Integer enabled;
