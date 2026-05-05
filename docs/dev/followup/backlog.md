@@ -197,6 +197,29 @@ GROUP BY dataset_id, review_status
 
 ---
 
+## 🔵 Agentic 化（PoC 启动中）
+
+> 设计文档：[`docs/dev/design/2026-05-04-agentscope-agentic-poc-design.md`](../design/2026-05-04-agentscope-agentic-poc-design.md)
+> 路线：边界 PoC（不动现有 `/chat`，新增 `/agent` 链路）；外层 Plan-and-Execute + 子步骤 ReAct 兜底。
+
+### AGENT-1. 接入 AgentScope-java（PoC 阶段 1：依赖 + LLM 桥接 + Tool 适配）
+
+**范围**：PR1 + PR2（~700 LOC）。引入 `agentscope-spring-boot-starter:1.0.12`，把 `BaiLianChatClient` 适配为 `Model`，把 `RetrievalEngine` + 2 个 MCP 工具包装为 AgentScope `Toolkit`。
+**前置**：Spring Boot 3.5.7 与 AgentScope 1.0.12 依赖兼容性手验。
+**风险**：版本冲突 → 退路是只引 `agentscope-core`，自己装配 bean。
+
+### AGENT-2. Plan-and-Execute 主干 + HITL（PoC 阶段 2）
+
+**范围**：PR3 + PR4（~800 LOC）。`PlannerService` / `PlanExecutor` / `SynthesizerService` / `HumanApprovalGate`；新表 `t_agent_plan` + `t_agent_step_run`（`upgrade_v1.11_to_v1.12.sql`）；副作用工具走 HITL Redis 队列。
+**关键约束**：六道闸门（步数 / token / 单 Tool 次数 / 重复参数 / 总耗时 / 失败降级）必须全部生效，否则不上线。
+
+### AGENT-3. 可观测 + 评估（PoC 阶段 3，可选）
+
+**范围**：PR5（~200 LOC）。OpenTelemetry 接入 + `EvaluationCollector` 扩展收集 Agent 轨迹 + Grafana 看板（步数分布 / token 消耗 / HITL 通过率 / 终止原因）。
+**优先级**：P2，PoC 跑通后视实际流量再做。
+
+---
+
 ## 🟢 小清理
 
 ### ~~CLEAN-1. 错误吞咽~~ ✅ 已解决（2026-04-14, `feature/cleanup-error-swallows`）

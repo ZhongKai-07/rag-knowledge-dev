@@ -95,7 +95,7 @@ Fetcher → Parser → [Enhancer] → Chunker → [Enricher] → Indexer
 | 节点 | 接口 | 典型实现 |
 | --- | --- | --- |
 | Fetcher | `FetcherNode` → `FetcherStrategy` | LocalFile / HttpUrl / S3 / Feishu |
-| Parser | `ParserNode` | `TikaDocumentParser`（内嵌 Tika 3.2） |
+| Parser | `ParserNode` | 数据驱动（PR 1 起）：BASIC → `TikaDocumentParser`；ENHANCED → `FallbackParserDecorator`（PR 2 起包装 Tika，PR 5 起 wrap `DoclingDocumentParser` 并以 Tika 兜底） |
 | Enhancer | `EnhancerNode`（可选） | LLM 文档级改写（标题/摘要） |
 | Chunker | `ChunkerNode` + `ChunkingStrategy` | FixedSizeText / StructureAware，产出后直接 batch embed |
 | Enricher | `EnricherNode`（可选） | LLM 分块级增强（问答对、关键词） |

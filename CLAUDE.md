@@ -73,7 +73,7 @@ The bootstrap module organizes code by **domain** (not by technical layer):
 - **rag/** — Core RAG orchestration: query rewriting, intent classification, multi-channel retrieval, conversation memory, prompt engineering, vector search, MCP tool dispatch, full-chain tracing.
 - **ingestion/** — Document ETL pipeline using a **node composition pattern**: fetch → parse → enhance → chunk → vectorize → store. Nodes are composable processing units orchestrated by a pipeline engine.
 - **knowledge/** — Knowledge base/collection CRUD, document management, chunk management, status tracking. Uses RocketMQ for async event-driven updates.
-- **core/** — Document parsing (Apache Tika) and chunking strategies.
+- **core/** — Document parsing (engine-pluggable via `ParseMode` + `DocumentParserSelector`; Tika today, Docling slot reserved for Phase 2.5 PR 5) and chunking strategies.
 - **admin/** — Dashboard KPIs, overview statistics.
 - **user/** — Authentication (Sa-Token), user management, RBAC role-based knowledge base access control.
 
@@ -98,7 +98,7 @@ Within each domain, code follows a standard layered pattern: `controller/` → `
 | Cache          | Redis + Redisson                                                  |
 | Message Queue  | RocketMQ 5.x                                                      |
 | Object Storage | S3-compatible (RustFS)                                            |
-| Doc Parsing    | Apache Tika 3.2                                                   |
+| Doc Parsing    | Apache Tika 3.2 (+ `ParserType.DOCLING` enum slot reserved, Phase 2.5 plan)|
 | Auth           | Sa-Token 1.43                                                     |
 | Code Format    | Spotless (enforced in build)                                      |
 | Frontend       | React 18 + Vite + TypeScript + TailwindCSS                        |

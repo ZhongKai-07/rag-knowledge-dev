@@ -84,6 +84,7 @@
 - **执行**：`KnowledgeDocumentServiceImpl.executeChunk()`
   - CHUNK 模式：Extract → Chunk → Embed → Persist（简短）
   - PIPELINE 模式：走 `IngestionEngine` 节点链
+- **解析模式（正交于 CHUNK/PIPELINE，Phase 2.5 PR 1+2 起）**：`ParseMode.BASIC` / `ENHANCED` 通过 `NodeConfig.settings.parseMode` 数据驱动；BASIC = 原始 Tika；ENHANCED = `FallbackParserDecorator` 缓存实例。Docling 未注册时 stamp 三个 metadata（`parse_engine_requested` / `parse_engine_actual` / `parse_fallback_reason`）降级到 Tika 给前端可见。详见 `bootstrap/CLAUDE.md` 关键类表 + `gotchas.md` §8。
 - **状态：** `t_knowledge_document.status` + `t_knowledge_document_chunk_log`
 - **图**：`diagram/sequence/kb_ingestion_sequence.drawio`
 

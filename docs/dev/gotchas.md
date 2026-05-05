@@ -107,6 +107,20 @@
 
 ---
 
+## 8. 文档解析 / Parser 域（Phase 2.5 PR 1+2 起）
+
+跨 PR 不变量集中区。改动 `bootstrap/.../core/parser/` 或 `ingestion/node/ParserNode.java` 前先扫一遍。memory: `project_parser_pr1.md`，plan: `docs/superpowers/plans/2026-05-05-parser-enhancement-docling.md`。
+
+- **`ParseResult` 2-arg ctor + `ofText` / `of` 工厂永久保留**：4-arg ctor `(text, metadata, pages, tables)` 是 PR 1 引入；老调用方（`TikaDocumentParser` / `MarkdownDocumentParser`）一律继续用 2-arg。改 `ParseResult` 别强制迁移老代码 —— 现有 `record` 的 compact ctor 已把 null 转 `Map.of()` / `List.of()`，2-arg 重载内部转 4-arg 调用。
+- **`@JsonIgnoreProperties(ignoreUnknown=true)` 在 `ParserSettings` 上不可删**：`NodeConfig.settings` 是单一 JSON 节点，同时承载 `parseMode` + `rules` 字段；注解去掉会爆 `UnrecognizedPropertyException`。新加路由字段（如 PR 5 的 `doclingTimeout`）要么建模到 `ParserSettings`，要么靠注解兜底。
+- **`ParserNode.readParseMode` 是 null-safe 入口**：`null` / missing / blank → `ParseMode.BASIC`（不抛）；未知字符串 → `IllegalArgumentException`（由 `ParseMode.fromValue` 抛）。加新模式（如 `OCR`）必须扩 `ParseMode` enum，**不绕过** `readParseMode`。
+- **ENHANCED → fallback 对外行为不可弱化**：Docling 未注册时由 `DocumentParserSelector.buildEnhancedParser()` 用 `FallbackParserDecorator.degraded(...)` 兜底；ingestion 永远不应整链路因 Docling 不可用而失败。`parse_engine_requested` / `parse_engine_actual` / `parse_fallback_reason` 三个 metadata 必须 stamp 给前端读以渲染降级提示。PR 5 接真 Docling 时只是把 selector 内的 degraded 分支替换为 healthy ctor，对外 metadata 行为对称等强。
+- **layout 数据结构是 engine-neutral**：`BlockType` / `LayoutBlock` / `DocumentPageText` / `LayoutTable` 不依赖任何具体引擎字段；换引擎（marker / unstructured）走适配器层 mapping（PR 5 的 `DoclingResponseAdapter`），这四个 record 不动。
+- **`FallbackParserDecorator` 不可注册成 Spring bean**（PR 2 起）：`DocumentParserSelector` 构造期 `instanceof FallbackParserDecorator` 后 `IllegalArgumentException` fail-fast。Decorator 由 selector 内部 `buildEnhancedParser()` 一次性建好缓存为 `enhancedParser` final 字段；走 Spring 注入会让 `decorator.getParserType() == "Docling"` 在 `strategyMap` 里和真正的 Docling parser 互相遮蔽（key 冲突 + 顺序不确定）。PR 5 加 `@Component DoclingDocumentParser` 时不能误把 decorator 也声明成 bean。
+- **metadata 键的单一真相源在 decorator 类上**（PR 2 起）：`FallbackParserDecorator.META_ENGINE_REQUESTED` / `META_ENGINE_ACTUAL` / `META_FALLBACK_REASON` / `REASON_PRIMARY_FAILED`（健康模式失败用）/ `REASON_PRIMARY_UNAVAILABLE`（degraded factory 用）—— 5 个 public static final。**不要拼字面量**。如果 PR 5+ 多个消费方（多个 parser / adapter / 前端 mapper）开始引用，按 `VectorMetadataFields` 模式抽到 `ParserMetadataFields`。
+
+---
+
 ## 新增坑点指南
 
 当你修完一个非显而易见的 bug，问自己：

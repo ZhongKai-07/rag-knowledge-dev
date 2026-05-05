@@ -42,7 +42,7 @@ ingestion/                        ← 文档入库域（64 文件）
 │   └── IngestionEngine           ← 节点链编排器（核心）
 ├── node/                         ← 6 类节点
 │   ├── FetcherNode               ← 文档获取（LocalFile/HttpUrl/S3/Feishu）
-│   ├── ParserNode                ← Tika 解析
+│   ├── ParserNode                ← 数据驱动解析（PR 1 起）：从 NodeConfig.settings.parseMode 路由 BASIC/ENHANCED
 │   ├── EnhancerNode              ← LLM 文档级增强
 │   ├── ChunkerNode               ← 分块 + Embedding
 │   ├── EnricherNode              ← LLM 分块级增强
@@ -62,10 +62,16 @@ knowledge/                        ← 知识库管理域（61 文件）
 │   └── KnowledgeDocumentChunkTransactionChecker
 └── schedule/                     ← URL 源定时重分块、分布式锁
 
-core/                             ← 基础能力域（17 文件）
+core/                             ← 基础能力域
 ├── chunk/                        ← ChunkEmbeddingService, ChunkingStrategy, VectorChunk
 │   └── strategy/                 ← FixedSizeTextChunker, StructureAwareTextChunker
-└── parser/                       ← DocumentParserSelector, TikaDocumentParser
+└── parser/                       ← DocumentParserSelector, ParseMode (BASIC/ENHANCED),
+                                    ParserType (TIKA/MARKDOWN/DOCLING enum slot),
+                                    TikaDocumentParser, MarkdownDocumentParser,
+                                    FallbackParserDecorator (PR 2 起 ENHANCED 降级 + metadata stamp),
+                                    ParseResult (text + metadata + pages + tables, 4-arg ctor + legacy 2-arg),
+                                    layout/ (BlockType, LayoutBlock, DocumentPageText, LayoutTable —
+                                             engine-neutral，PR 5 起由 DoclingResponseAdapter mapping 填充)
 
 user/                             ← 用户与权限域
 ├── controller/

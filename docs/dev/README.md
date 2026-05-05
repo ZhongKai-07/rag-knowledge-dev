@@ -44,6 +44,7 @@
 | [`design/2026-04-19-access-center-redesign.md`](design/2026-04-19-access-center-redesign.md) | 权限中心 4-Tab 重构（P0-P2） |
 | [`design/2026-04-19-kb-delete-cascade-plan.md`](design/2026-04-19-kb-delete-cascade-plan.md) | KB 删除级联回收 |
 | [`design/2026-04-20-access-center-followup-p3.md`](design/2026-04-20-access-center-followup-p3.md) | 权限中心 P3 后续跟进 |
+| [`design/2026-05-04-agentscope-agentic-poc-design.md`](design/2026-05-04-agentscope-agentic-poc-design.md) | Agentic 化 PoC（AgentScope-java + Plan-and-Execute，新增 `/agent` 链路） |
 
 ---
 

@@ -24,7 +24,7 @@ $env:NO_PROXY='localhost,127.0.0.1'; mvn -pl bootstrap spring-boot:run
 rag/          ← RAG 问答核心（最大，含检索、向量、记忆、Prompt、意图等）
 ingestion/    ← 文档 ETL 流水线（节点链模式）
 knowledge/    ← 知识库 CRUD、文档管理、RocketMQ 异步更新
-core/         ← 文档解析（Tika）和分块策略
+core/         ← 文档解析（Tika + 数据驱动 ParseMode 路由，Docling 槽预留 PR 5）+ 分块策略
 admin/        ← 仪表板统计（只读跨域聚合）
 user/         ← 认证（Sa-Token）、用户、RBAC 权限
 ```
@@ -87,7 +87,9 @@ user/         ← 认证（Sa-Token）、用户、RBAC 权限
 | `IngestionEngine` | 节点链编排器，顺序执行各节点 |
 | `IngestionNode` | 节点接口，所有节点实现此接口 |
 | `FetcherNode` | 从 LocalFile/HttpUrl/S3/Feishu 获取文档 |
-| `ParserNode` | 调用 Tika 解析文档内容 |
+| `ParserNode` | 数据驱动解析（PR 1 起）：从 `NodeConfig.settings.parseMode` 读 BASIC/ENHANCED → 委托 `DocumentParserSelector.selectByParseMode`；`readParseMode` 是 null-safe 入口（null/missing/blank → BASIC） |
+| `DocumentParserSelector` | 解析器选择器；`selectByParseMode(BASIC)` → 原始 Tika 实例；`selectByParseMode(ENHANCED)` → 缓存的 `FallbackParserDecorator` 实例（构造期一次性建好）。构造器拒绝 `FallbackParserDecorator` bean（fail-fast `IllegalArgumentException`） |
+| `FallbackParserDecorator` | ENHANCED 路径降级 decorator（PR 2 起）：try primary → 失败 fallback Tika，stamp `parse_engine_requested / parse_engine_actual / parse_fallback_reason` 三个 metadata。`degraded()` 静态工厂用于 Docling 未注册场景，跳过 primary、构造期 INFO 日志一次 |
 | `ChunkerNode` | 分块 + Embedding 向量化 |
 | `EnhancerNode` | LLM 文档级增强（可选） |
 | `EnricherNode` | LLM 分块级增强（可选） |
