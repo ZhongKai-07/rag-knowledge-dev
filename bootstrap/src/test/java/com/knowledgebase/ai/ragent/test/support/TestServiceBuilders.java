@@ -139,7 +139,9 @@ public final class TestServiceBuilders {
                 mock(TransactionOperations.class),
                 mock(MessageQueueProducer.class),
                 mock(KnowledgeScheduleProperties.class),
-                mock(RemoteFileFetcher.class));
+                mock(RemoteFileFetcher.class),
+                new com.knowledgebase.ai.ragent.knowledge.service.support.ParseModePolicy(),
+                new com.knowledgebase.ai.ragent.knowledge.service.support.ParseModeRouter());
     }
 
     public static RoleServiceImpl roleService(KbManageAccessPort kbManageAccess) {

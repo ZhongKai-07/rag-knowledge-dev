@@ -74,6 +74,9 @@ import com.knowledgebase.ai.ragent.knowledge.schedule.CronScheduleHelper;
 import com.knowledgebase.ai.ragent.knowledge.service.KnowledgeChunkService;
 import com.knowledgebase.ai.ragent.knowledge.service.KnowledgeDocumentScheduleService;
 import com.knowledgebase.ai.ragent.knowledge.service.KnowledgeDocumentService;
+import com.knowledgebase.ai.ragent.knowledge.service.support.ParseModeDecision;
+import com.knowledgebase.ai.ragent.knowledge.service.support.ParseModePolicy;
+import com.knowledgebase.ai.ragent.knowledge.service.support.ParseModeRouter;
 import com.knowledgebase.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.knowledgebase.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.knowledgebase.ai.ragent.rag.core.vector.VectorStoreAdmin;
@@ -129,6 +132,14 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final MessageQueueProducer messageQueueProducer;
     private final KnowledgeScheduleProperties scheduleProperties;
     private final RemoteFileFetcher remoteFileFetcher;
+    private final ParseModePolicy parseModePolicy;
+    private final ParseModeRouter parseModeRouter;
+
+    /**
+     * Stable id of the seeded ENHANCED pipeline (see upgrade_v1.13_to_v1.14.sql).
+     * Used as a fallback when the user picks ENHANCED but does not specify a pipelineId.
+     */
+    static final String DEFAULT_ENHANCED_PIPELINE_ID = "enhanced-default";
 
     @Value("knowledge-document-chunk_topic${unique-name:}")
     private String chunkTopic;
@@ -145,6 +156,26 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         SourceType sourceType = SourceType.normalize(requestParam.getSourceType());
         validateSourceAndSchedule(sourceType, requestParam);
         StoredFileDTO stored = resolveStoredFile(kbDO.getCollectionName(), sourceType, requestParam.getSourceLocation(), file);
+
+        // PR 4: parseMode is the UX-level switch; ParseModePolicy resolves the effective mode,
+        // ParseModeRouter maps it to the internal ProcessMode (BASIC→CHUNK, ENHANCED→PIPELINE).
+        // This intentionally overrides any processMode the frontend sends — the upload UI no
+        // longer exposes processMode after PR 4.
+        ParseMode requestedParseMode = ParseMode.fromValue(requestParam.getParseMode());
+        ParseModeDecision parseModeDecision = parseModePolicy.decide(kbId, requestedParseMode);
+        ProcessMode resolvedProcessMode = parseModeRouter.resolve(parseModeDecision.parseMode());
+        // Mutate the request copy in-place so the existing resolveProcessModeConfig contract
+        // (which validates processMode + pipelineId) sees the post-policy values. When the
+        // user picks ENHANCED but didn't specify a pipelineId, fall back to the seeded default.
+        requestParam.setProcessMode(resolvedProcessMode.getValue());
+        if (resolvedProcessMode == ProcessMode.PIPELINE
+                && !StringUtils.hasText(requestParam.getPipelineId())) {
+            requestParam.setPipelineId(DEFAULT_ENHANCED_PIPELINE_ID);
+        }
+        log.info("Resolved document parse mode, kbId={}, requested={}, effective={}, processMode={}, pipelineId={}, reason={}",
+                kbId, requestedParseMode, parseModeDecision.parseMode(),
+                resolvedProcessMode, requestParam.getPipelineId(), parseModeDecision.reason());
+
         ProcessModeConfig modeConfig = resolveProcessModeConfig(requestParam);
 
         KnowledgeDocumentDO documentDO = KnowledgeDocumentDO.builder()
@@ -165,7 +196,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 .chunkConfig(modeConfig.chunkConfig())
                 .pipelineId(modeConfig.pipelineId())
                 .securityLevel(requestParam.getSecurityLevel() != null ? requestParam.getSecurityLevel() : 0)
-                .parseMode(ParseMode.fromValue(requestParam.getParseMode()).getValue())
+                .parseMode(parseModeDecision.parseMode().getValue())
                 .createdBy(UserContext.getUsername())
                 .updatedBy(UserContext.getUsername())
                 .build();
@@ -384,6 +415,11 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(documentDO.getKbId());
 
         PipelineDefinition pipelineDef = ingestionPipelineService.getDefinition(pipelineId);
+        // PR 4: inject the document's effective parseMode into the parser node's settings
+        // so ParserNode picks BASIC vs ENHANCED via DocumentParserSelector.selectByParseMode.
+        // Uses the helper to deep-copy nodes so the cached pipeline definition is not mutated.
+        ParseMode docParseMode = ParseMode.fromValue(documentDO.getParseMode());
+        pipelineDef = pipelineDef.withParserNodeSetting("parseMode", docParseMode.getValue());
 
         byte[] fileBytes;
         try (InputStream is = fileStorageService.openStream(documentDO.getFileUrl())) {
@@ -402,6 +438,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                         .build())
                 .kbId(documentDO.getKbId())
                 .securityLevel(documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0)
+                .parseMode(docParseMode.getValue())
                 .skipIndexerWrite(true)
                 .build();
 

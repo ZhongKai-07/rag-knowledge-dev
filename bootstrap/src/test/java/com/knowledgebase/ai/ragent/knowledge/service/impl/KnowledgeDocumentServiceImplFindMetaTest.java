@@ -113,7 +113,9 @@ class KnowledgeDocumentServiceImplFindMetaTest {
                 transactionOperations,
                 messageQueueProducer,
                 scheduleProperties,
-                remoteFileFetcher
+                remoteFileFetcher,
+                new com.knowledgebase.ai.ragent.knowledge.service.support.ParseModePolicy(),
+                new com.knowledgebase.ai.ragent.knowledge.service.support.ParseModeRouter()
         );
     }
 
