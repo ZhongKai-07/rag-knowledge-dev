@@ -64,7 +64,13 @@ log/error.log
 log/diagnostic/
 .claude/ralph-loop.local.md
 .claude/.ralph-loop.local.md
+.claude/scheduled_tasks.lock
+.codex-tmp/
 .worktrees/
+
+### Local secrets / scratch ###
+.env
+tmp/
 
 ### Local screenshots / scratch images ###
 /*.png
