@@ -35,7 +35,12 @@ public enum ParserType {
     /**
      * Markdown 解析器
      */
-    MARKDOWN("Markdown");
+    MARKDOWN("Markdown"),
+
+    /**
+     * Docling 解析器（结构化版面解析，PR 2 起注册为 bean）
+     */
+    DOCLING("Docling");
 
     /**
      * 解析器类型名称

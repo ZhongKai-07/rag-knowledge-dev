@@ -65,6 +65,29 @@ public class DocumentParserSelector {
     }
 
     /**
+     * 按解析模式选择解析器。
+     * <ul>
+     *   <li>{@link ParseMode#BASIC} → Tika</li>
+     *   <li>{@link ParseMode#ENHANCED} → Docling；若 Docling 尚未注册（PR 1 末态）则回退 Tika，
+     *       PR 2 起 Docling bean 可用后由 fallback decorator 控制兜底语义。</li>
+     * </ul>
+     */
+    public DocumentParser selectByParseMode(ParseMode mode) {
+        return switch (mode) {
+            case BASIC -> select(ParserType.TIKA.getType());
+            case ENHANCED -> selectEnhanced();
+        };
+    }
+
+    private DocumentParser selectEnhanced() {
+        DocumentParser docling = strategyMap.get(ParserType.DOCLING.getType());
+        if (docling == null) {
+            return select(ParserType.TIKA.getType());
+        }
+        return docling;
+    }
+
+    /**
      * 根据 MIME 类型自动选择合适的解析策略
      * <p>
      * 遍历所有可用的解析器，返回第一个支持该 MIME 类型的解析器。
