@@ -138,4 +138,11 @@ public class IngestionContext {
      */
     @Builder.Default
     private boolean skipIndexerWrite = false;
+
+    /**
+     * 解析模式语义值（{@code basic} / {@code enhanced}），由 upload 期 ParseModePolicy 决议得到。
+     * 仅作传递与审计；ParserNode 实际从 NodeConfig.settings.parseMode 读取（见 PR 1）。
+     * 此处的字段为后续 IndexerNode / 监控埋点保留 hand-off 通道。
+     */
+    private String parseMode;
 }

@@ -17,11 +17,15 @@
 
 package com.knowledgebase.ai.ragent.ingestion.domain.pipeline;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.knowledgebase.ai.ragent.ingestion.domain.enums.IngestionNodeType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,7 +35,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class PipelineDefinition {
 
     /**
@@ -54,4 +58,38 @@ public class PipelineDefinition {
      * 按执行顺序排列的节点配置
      */
     private List<NodeConfig> nodes;
+
+    /**
+     * 返回一个新的 {@link PipelineDefinition}：把 {@code key=value} 注入到所有
+     * {@code nodeType == "parser"} 的 {@link NodeConfig#getSettings()} ObjectNode 中。
+     * <p>
+     * 用途：上传期把用户选择的 {@code parseMode}（BASIC/ENHANCED）注入到 ParserNode 的运行时
+     * settings，避免修改 cached pipeline definition。本方法不变更原 definition 与原 NodeConfig；
+     * 通过 deep copy 保持线程安全。
+     * </p>
+     *
+     * @param key   要注入的 settings 字段名
+     * @param value 字段值
+     * @return 新的 {@link PipelineDefinition} 实例
+     */
+    public PipelineDefinition withParserNodeSetting(String key, String value) {
+        if (nodes == null || nodes.isEmpty()) {
+            return this;
+        }
+        ObjectMapper om = new ObjectMapper();
+        String parserType = IngestionNodeType.PARSER.getValue();
+        List<NodeConfig> copy = new ArrayList<>(nodes.size());
+        for (NodeConfig n : nodes) {
+            if (n != null && parserType.equals(n.getNodeType())) {
+                ObjectNode settings = n.getSettings() == null
+                        ? om.createObjectNode()
+                        : ((ObjectNode) n.getSettings()).deepCopy();
+                settings.put(key, value);
+                copy.add(n.toBuilder().settings(settings).build());
+            } else {
+                copy.add(n);
+            }
+        }
+        return this.toBuilder().nodes(copy).build();
+    }
 }
