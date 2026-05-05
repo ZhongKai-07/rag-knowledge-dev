@@ -46,6 +46,7 @@ public class IntentResolver {
 
     @Qualifier("defaultIntentClassifier")
     private final IntentClassifier intentClassifier;
+    @Qualifier("intentClassifyExecutor")
     private final Executor intentClassifyExecutor;
 
     @RagTraceNode(name = "intent-resolve", type = "INTENT")
