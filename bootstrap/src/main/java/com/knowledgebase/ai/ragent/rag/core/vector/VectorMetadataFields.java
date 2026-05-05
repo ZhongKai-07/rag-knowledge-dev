@@ -38,6 +38,33 @@ public final class VectorMetadataFields {
     /** 分块在文档内的顺序索引. 写路径同 DOC_ID. 读路径回填到 {@link com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk#getChunkIndex()}. */
     public static final String CHUNK_INDEX = "chunk_index";
 
+    /** 显示用页码提示；PAGE_START/PAGE_END 才是规范化证据范围. */
+    public static final String PAGE_NUMBER = "page_number";
+
+    /** 该 chunk 起始的源 1-based 页号（layout 证据）. */
+    public static final String PAGE_START = "page_start";
+
+    /** 该 chunk 末尾的源 1-based 页号（layout 证据）. */
+    public static final String PAGE_END = "page_end";
+
+    /** 祖先标题路径（JSON 数组），用于结构化引用展示. */
+    public static final String HEADING_PATH = "heading_path";
+
+    /** 块类型：TITLE|PARAGRAPH|TABLE|HEADER|FOOTER|LIST|CAPTION|OTHER. */
+    public static final String BLOCK_TYPE = "block_type";
+
+    /** 来源 layout block id 列表（JSON 数组）. */
+    public static final String SOURCE_BLOCK_IDS = "source_block_ids";
+
+    /** 来源 bbox 引用（JSON 数组），供前端高亮定位使用. */
+    public static final String BBOX_REFS = "bbox_refs";
+
+    /** 文本层类型：NATIVE_TEXT|OCR|MIXED|UNKNOWN（解析器输出）. */
+    public static final String TEXT_LAYER_TYPE = "text_layer_type";
+
+    /** 解析器输出的 layout 置信度（enhanced 路径专用）. */
+    public static final String LAYOUT_CONFIDENCE = "layout_confidence";
+
     private VectorMetadataFields() {
     }
 }
