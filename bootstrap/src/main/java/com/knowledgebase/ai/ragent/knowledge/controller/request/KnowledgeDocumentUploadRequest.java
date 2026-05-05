@@ -71,4 +71,10 @@ public class KnowledgeDocumentUploadRequest {
      * 文档安全等级：0=PUBLIC（默认）, 1=INTERNAL, 2=CONFIDENTIAL, 3=RESTRICTED
      */
     private Integer securityLevel;
+
+    /**
+     * 解析模式：basic（基础解析，Tika）/ enhanced（增强解析，Docling）。
+     * 缺省为 basic，向后兼容老客户端。
+     */
+    private String parseMode;
 }

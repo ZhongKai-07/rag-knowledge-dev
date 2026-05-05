@@ -139,6 +139,11 @@ public class KnowledgeDocumentDO {
     private Integer securityLevel;
 
     /**
+     * 解析模式：basic / enhanced
+     */
+    private String parseMode;
+
+    /**
      * 创建人
      */
     private String createdBy;
