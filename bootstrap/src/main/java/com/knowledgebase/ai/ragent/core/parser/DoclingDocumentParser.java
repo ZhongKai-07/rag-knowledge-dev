@@ -20,6 +20,7 @@ package com.knowledgebase.ai.ragent.core.parser;
 import com.knowledgebase.ai.ragent.framework.exception.ServiceException;
 import com.knowledgebase.ai.ragent.infra.parser.docling.DoclingClient;
 import com.knowledgebase.ai.ragent.infra.parser.docling.dto.DoclingConvertResponse;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -48,6 +49,11 @@ public class DoclingDocumentParser implements DocumentParser {
 
     private final DoclingClient client;
     private final DoclingResponseAdapter adapter;
+
+    @PostConstruct
+    void onRegister() {
+        log.info("DoclingDocumentParser registered as ENHANCED primary (docling.service.enabled=true)");
+    }
 
     @Override
     public String getParserType() {
