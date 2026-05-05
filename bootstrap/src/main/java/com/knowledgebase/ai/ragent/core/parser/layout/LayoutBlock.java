@@ -15,35 +15,26 @@
  * limitations under the License.
  */
 
-package com.knowledgebase.ai.ragent.core.parser;
+package com.knowledgebase.ai.ragent.core.parser.layout;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
 /**
- * 文档解析器类型枚举
+ * Engine-neutral layout block. Adapters from Docling / future engines produce these.
  */
-@Getter
-@RequiredArgsConstructor
-public enum ParserType {
+public record LayoutBlock(
+        String blockId,
+        BlockType blockType,
+        int pageNo,
+        Bbox bbox,
+        String text,
+        Integer readingOrder,
+        Double confidence,
+        Integer headingLevel,
+        List<String> headingPath) {
+    public LayoutBlock {
+        if (headingPath == null) headingPath = List.of();
+    }
 
-    /**
-     * Tika 解析器（支持 PDF、Word、Excel、PPT 等多种格式）
-     */
-    TIKA("Tika"),
-
-    /**
-     * Markdown 解析器
-     */
-    MARKDOWN("Markdown"),
-
-    /**
-     * Docling 解析器（结构化版面解析，PR 2 起注册为 bean）
-     */
-    DOCLING("Docling");
-
-    /**
-     * 解析器类型名称
-     */
-    private final String type;
+    public record Bbox(double x, double y, double width, double height) {}
 }

@@ -15,35 +15,15 @@
  * limitations under the License.
  */
 
-package com.knowledgebase.ai.ragent.core.parser;
+package com.knowledgebase.ai.ragent.core.parser.layout;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-/**
- * 文档解析器类型枚举
- */
-@Getter
-@RequiredArgsConstructor
-public enum ParserType {
-
-    /**
-     * Tika 解析器（支持 PDF、Word、Excel、PPT 等多种格式）
-     */
-    TIKA("Tika"),
-
-    /**
-     * Markdown 解析器
-     */
-    MARKDOWN("Markdown"),
-
-    /**
-     * Docling 解析器（结构化版面解析，PR 2 起注册为 bean）
-     */
-    DOCLING("Docling");
-
-    /**
-     * 解析器类型名称
-     */
-    private final String type;
+public enum BlockType {
+    TITLE,
+    PARAGRAPH,
+    TABLE,
+    HEADER,
+    FOOTER,
+    LIST,
+    CAPTION,
+    OTHER;
 }

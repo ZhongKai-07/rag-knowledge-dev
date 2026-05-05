@@ -17,33 +17,28 @@
 
 package com.knowledgebase.ai.ragent.core.parser;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+public enum ParseMode {
+    BASIC("basic"),
+    ENHANCED("enhanced");
 
-/**
- * 文档解析器类型枚举
- */
-@Getter
-@RequiredArgsConstructor
-public enum ParserType {
+    private final String value;
 
-    /**
-     * Tika 解析器（支持 PDF、Word、Excel、PPT 等多种格式）
-     */
-    TIKA("Tika"),
+    ParseMode(String value) {
+        this.value = value;
+    }
 
-    /**
-     * Markdown 解析器
-     */
-    MARKDOWN("Markdown"),
+    public String getValue() {
+        return value;
+    }
 
-    /**
-     * Docling 解析器（结构化版面解析，PR 2 起注册为 bean）
-     */
-    DOCLING("Docling");
-
-    /**
-     * 解析器类型名称
-     */
-    private final String type;
+    public static ParseMode fromValue(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return BASIC;
+        }
+        String norm = raw.trim().toLowerCase();
+        for (ParseMode m : values()) {
+            if (m.value.equals(norm)) return m;
+        }
+        throw new IllegalArgumentException("Unknown parseMode: " + raw);
+    }
 }
