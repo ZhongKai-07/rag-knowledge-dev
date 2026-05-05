@@ -1,0 +1,1460 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HT KnowledgeBase · RAG 走读手稿</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,30..100,0..1;1,9..144,300..900,30..100,0..1&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper:    #f1e9d9;
+    --paper-2:  #ebe2cf;
+    --paper-3:  #e3d8c0;
+    --ink:      #1a2138;
+    --ink-2:    #3a4061;
+    --ink-mute: #6e6a55;
+    --ink-dim:  #94907a;
+    --rule:     #c6bba0;
+    --rule-2:   #b3a786;
+    --vermillion: #c1442a;
+    --vermillion-2: #d8643d;
+    --olive:    #5b6a39;
+    --mustard:  #b78628;
+    --deep:     #0e1226;
+    --sl0: #5e8a3b;  --sl1: #b78628;  --sl2: #c87726;  --sl3: #b13a25;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--paper); color: var(--ink);
+    height: 100vh; width: 100vw;
+    overflow: hidden;
+  }
+  body {
+    font-family: "Fraunces", "Noto Serif SC", Georgia, serif;
+    font-feature-settings: "ss01" 1, "ss02" 1, "ss03" 1, "tnum" 1;
+    font-variation-settings: "opsz" 14, "SOFT" 60, "WONK" 0;
+    line-height: 1.55;
+  }
+  body::before {
+    content:""; position: fixed; inset: 0;
+    background:
+      radial-gradient(1200px 800px at 80% -10%, rgba(193,68,42,0.06), transparent 60%),
+      radial-gradient(1000px 600px at -10% 110%, rgba(91,106,57,0.07), transparent 70%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.3' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.10 0 0 0 0 0.13 0 0 0 0 0.22 0 0 0 0.05 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    background-size: cover, cover, 180px 180px;
+    pointer-events: none; z-index: 1; mix-blend-mode: multiply; opacity: .9;
+  }
+  code, .mono {
+    font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-feature-settings: "zero" 1, "ss01" 1;
+    font-size: 0.86em;
+  }
+  .sans {
+    font-family: "Noto Sans SC", system-ui, sans-serif;
+    font-feature-settings: normal;
+  }
+
+  .stage { position: fixed; inset: 0; z-index: 2; }
+  .track {
+    position: absolute; inset: 0; display: flex;
+    transition: transform .55s cubic-bezier(.7,.05,.25,1);
+    will-change: transform;
+  }
+  .slide {
+    flex: 0 0 100vw; height: 100vh;
+    position: relative;
+    padding: 48px 72px 70px;
+    display: flex; flex-direction: column;
+  }
+  .slide-inner { flex: 1; display: flex; flex-direction: column; min-height: 0; gap: 14px; }
+
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .chapter {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 300;
+    font-size: 13px; letter-spacing: 0.32em; color: var(--vermillion);
+    text-transform: uppercase;
+  }
+  .chapter::before {
+    content: ""; display: inline-block; width: 28px; height: 1px;
+    background: var(--vermillion); vertical-align: middle;
+    margin-right: 12px; opacity: .8;
+  }
+  .deck-title {
+    font-family: "Fraunces", serif; font-style: italic;
+    font-size: 12px; letter-spacing: 0.2em; color: var(--ink-mute);
+    text-transform: uppercase;
+  }
+
+  .botbar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 14px 72px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--rule);
+  }
+  .progress-pills { display: flex; gap: 5px; }
+  .pp {
+    width: 18px; height: 4px; background: var(--rule);
+    border: 0; padding: 0; cursor: pointer;
+    transition: all .25s ease;
+  }
+  .pp.active { background: var(--vermillion); width: 36px; }
+  .pp:hover  { background: var(--ink-2); }
+  .navctl {
+    display: flex; align-items: center; gap: 18px;
+    font-size: 12px; color: var(--ink-mute);
+    letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .navctl button {
+    background: transparent; border: 1px solid var(--rule);
+    width: 30px; height: 30px; border-radius: 50%;
+    cursor: pointer; color: var(--ink);
+    font-family: serif; font-size: 14px;
+    transition: all .2s ease;
+  }
+  .navctl button:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .pageno { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--ink-mute); letter-spacing: 0.05em; }
+  .pageno b { color: var(--vermillion); font-weight: 500; }
+
+  h1.slide-h {
+    font-family: "Fraunces", "Noto Serif SC", serif;
+    font-weight: 400; font-size: 52px; line-height: 1.05;
+    letter-spacing: -0.02em; margin: 0 0 8px;
+    font-variation-settings: "opsz" 144, "SOFT" 100, "WONK" 1;
+  }
+  h1.slide-h em { font-style: italic; color: var(--vermillion); font-weight: 300; }
+  h2.slide-sub {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 300;
+    font-size: 16px; color: var(--ink-2);
+    margin: 0 0 18px; max-width: 880px;
+  }
+
+  /* Cover */
+  .cover-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 60px; flex: 1; align-items: center; }
+  .cover-title {
+    font-family: "Fraunces", "Noto Serif SC", serif;
+    font-size: clamp(64px, 8vw, 124px);
+    font-weight: 300; line-height: 0.94; letter-spacing: -0.04em;
+    font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 1;
+  }
+  .cover-title .l1 { display: block; }
+  .cover-title .l2 { display: block; font-style: italic; color: var(--vermillion); font-weight: 300; margin-left: 1.0em; }
+  .cover-title .l3 { display: block; font-size: 0.34em; font-style: italic; color: var(--ink-2); letter-spacing: 0.02em; margin-top: 22px; margin-left: 0.2em; font-weight: 400; line-height: 1.4; }
+  .cover-meta { display: flex; flex-direction: column; gap: 18px; }
+  .cover-meta .stamp {
+    border: 1.5px solid var(--vermillion); color: var(--vermillion);
+    padding: 9px 14px;
+    font-family: "Fraunces", serif; font-style: italic;
+    font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+    align-self: flex-start; transform: rotate(-2deg);
+  }
+  .toc { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--rule); }
+  .toc li {
+    display: grid; grid-template-columns: 28px 1fr auto; align-items: baseline; gap: 12px;
+    padding: 7px 0; border-bottom: 1px solid var(--rule);
+    font-family: "Noto Sans SC", sans-serif; font-size: 13px;
+    cursor: pointer; transition: padding .2s ease, color .2s ease;
+  }
+  .toc li:hover { padding-left: 8px; color: var(--vermillion); }
+  .toc li .rn { font-family: "Fraunces", serif; font-style: italic; color: var(--vermillion); font-size: 12px; }
+  .toc li .pg { font-family: "JetBrains Mono", monospace; color: var(--ink-mute); font-size: 11px; }
+
+  /* Editorial primitives */
+  .grid { display: grid; gap: 14px; }
+  .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  .grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
+
+  .ed-card {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 2px; padding: 14px 16px; position: relative;
+  }
+  .ed-card .corner {
+    position: absolute; top: -1px; left: -1px;
+    width: 16px; height: 16px;
+    border-top: 2px solid var(--vermillion);
+    border-left: 2px solid var(--vermillion);
+  }
+  .ed-card .num { font-family: "Fraunces", serif; font-style: italic; color: var(--vermillion); font-size: 12px; letter-spacing: 0.2em; }
+  .ed-card h3 { font-family: "Fraunces", serif; font-weight: 500; font-size: 17px; margin: 4px 0 6px; letter-spacing: -0.005em; }
+  .ed-card p  { margin: 0; color: var(--ink-2); font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; line-height: 1.6; }
+
+  table.editorial { width: 100%; border-collapse: collapse; font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; }
+  table.editorial th {
+    text-align: left; padding: 8px 12px 6px;
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 400;
+    color: var(--vermillion); border-bottom: 1px solid var(--ink);
+    font-size: 13px; letter-spacing: 0.05em;
+  }
+  table.editorial td { padding: 8px 12px; border-bottom: 1px dashed var(--rule); vertical-align: top; color: var(--ink-2); }
+  table.editorial td:first-child { color: var(--ink); font-weight: 500; }
+  table.editorial code { color: var(--olive); background: rgba(91,106,57,0.08); padding: 1px 5px; border-radius: 2px; }
+
+  /* Tabs */
+  .tabs-row { display: flex; gap: 0; border-bottom: 1px solid var(--ink); }
+  .tab {
+    background: transparent; border: 1px solid transparent; border-bottom: 0;
+    padding: 9px 18px; font-family: "Fraunces", serif; font-style: italic;
+    font-size: 14px; cursor: pointer; color: var(--ink-mute);
+    margin-right: -1px; margin-bottom: -1px;
+  }
+  .tab.active { background: var(--paper); border-color: var(--ink); color: var(--vermillion); font-weight: 500; }
+  .tab-body {
+    border: 1px solid var(--ink); border-top: 0;
+    padding: 18px 22px; background: var(--paper);
+    font-family: "Noto Sans SC", sans-serif;
+    font-size: 13px; color: var(--ink-2); line-height: 1.7;
+    flex: 1; min-height: 0; overflow: hidden;
+    display: none;
+  }
+  .tab-body.active { display: block; }
+  .tab-body h4 { font-family: "Fraunces", serif; font-style: italic; font-weight: 500; color: var(--ink); margin: 0 0 8px; font-size: 16px; }
+  .tab-body p  { margin: 0 0 8px; }
+  .tab-body ul { list-style: none; padding: 0; margin: 4px 0 8px; }
+  .tab-body ul li { padding: 3px 0 3px 14px; position: relative; }
+  .tab-body ul li::before { content: "·"; color: var(--vermillion); position: absolute; left: 0; font-weight: 700; }
+  .tab-body .row2 { display: grid; grid-template-columns: 1.2fr 1fr; gap: 24px; }
+  .tab-body code { color: var(--olive); background: rgba(91,106,57,0.08); padding: 1px 5px; }
+
+  /* Role / persona cards */
+  .role-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; align-items: stretch; }
+  .role-card {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    padding: 24px 22px 18px; position: relative;
+    transition: all .25s ease; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .role-card[data-r="a"] { --rc: var(--vermillion); }
+  .role-card[data-r="b"] { --rc: var(--olive); }
+  .role-card[data-r="c"] { --rc: var(--mustard); }
+  .role-card::before { content:""; position: absolute; top:0; left:0; height: 6px; width: 100%; background: var(--rc); }
+  .role-card .roman { font-family: "Fraunces", serif; font-style: italic; font-size: 56px; color: var(--rc); opacity: .35; position: absolute; top: 14px; right: 20px; line-height: 1; }
+  .role-card .role-tag { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--rc); letter-spacing: 0.18em; margin-top: 12px; }
+  .role-card h4 { font-family: "Fraunces", serif; font-size: 28px; font-weight: 400; margin: 4px 0 6px; letter-spacing: -0.01em; }
+  .role-card .scope { font-family: "Fraunces", serif; font-style: italic; color: var(--ink-2); font-size: 13.5px; margin-bottom: 10px; }
+  .role-card ul { list-style: none; padding: 0; margin: 0; font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; color: var(--ink-2); }
+  .role-card ul li { padding: 5px 0; border-top: 1px dashed var(--rule); line-height: 1.5; }
+  .role-card ul li::before { content: "§"; color: var(--rc); margin-right: 8px; font-family: "Fraunces", serif; font-style: italic; }
+
+  /* Six-step horizontal flow */
+  .flow6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; align-items: stretch; }
+  .step {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    padding: 14px 14px 12px; position: relative;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .step::before {
+    content:""; position: absolute; top: -1px; left: -1px;
+    width: 14px; height: 14px;
+    border-top: 2px solid var(--vermillion);
+    border-left: 2px solid var(--vermillion);
+  }
+  .step .roi { font-family: "Fraunces", serif; font-style: italic; color: var(--vermillion); font-size: 12px; letter-spacing: 0.2em; }
+  .step h5  { font-family: "Fraunces", serif; font-weight: 500; font-size: 17px; margin: 0; line-height: 1.2; }
+  .step p   { font-family: "Noto Sans SC", sans-serif; font-size: 11.5px; color: var(--ink-mute); margin: 0; line-height: 1.5; }
+  .step .cls { font-family: "JetBrains Mono", monospace; font-size: 10.5px; color: var(--olive); margin-top: auto; padding-top: 6px; border-top: 1px dashed var(--rule); }
+
+  /* SVG schematic shells */
+  .schema, .seq-wrap {
+    flex: 1; min-height: 0;
+    border: 1px solid var(--rule); position: relative;
+    background: var(--paper);
+  }
+  .schema svg, .seq-wrap svg { width: 100%; height: 100%; display: block; }
+
+  /* Simulator */
+  .sim-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 22px; flex: 1; min-height: 0; }
+  .sim-controls {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; overflow: auto;
+  }
+  .sim-controls h4 {
+    font-family: "Fraunces", serif; font-style: italic; font-weight: 500;
+    color: var(--vermillion); margin: 0 0 4px;
+    font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  .sim-cases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .case-chip {
+    background: var(--paper); border: 1px solid var(--rule);
+    padding: 9px 11px; text-align: left; cursor: pointer;
+    font-family: "Noto Sans SC", sans-serif; font-size: 11.5px;
+    color: var(--ink-2); line-height: 1.4;
+    transition: all .2s ease; border-left: 3px solid transparent;
+  }
+  .case-chip strong {
+    display: block;
+    font-family: "Fraunces", serif; font-style: italic;
+    font-size: 13px; color: var(--ink); margin-bottom: 2px; font-weight: 500;
+  }
+  .case-chip:hover { border-left-color: var(--vermillion); transform: translateX(3px); }
+  .case-chip.active { border-left-color: var(--vermillion); border-color: var(--vermillion); background: rgba(193,68,42,0.06); }
+
+  .form-row { display: grid; grid-template-columns: 88px 1fr; align-items: center; gap: 10px; }
+  .form-row label { font-family: "Fraunces", serif; font-style: italic; font-size: 12px; color: var(--ink-mute); letter-spacing: 0.05em; }
+  .form-row select {
+    background: var(--paper); border: 1px solid var(--rule-2);
+    padding: 5px 10px;
+    font-family: "Noto Sans SC", sans-serif; font-size: 12px;
+    color: var(--ink); border-radius: 0;
+  }
+  .form-row select:focus { outline: 1px solid var(--vermillion); }
+
+  .sim-stage { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+  .sim-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sim-step {
+    background: var(--paper-2); border: 1px solid var(--rule);
+    padding: 11px 12px; position: relative;
+    transition: all .3s ease; min-height: 70px;
+  }
+  .sim-step .step-i {
+    position: absolute; top: -10px; left: 12px;
+    background: var(--paper); padding: 0 6px;
+    font-family: "Fraunces", serif; font-style: italic;
+    font-size: 11px; color: var(--vermillion); letter-spacing: 0.15em;
+  }
+  .sim-step .stitle { font-family: "JetBrains Mono", monospace; font-size: 10.5px; color: var(--ink-mute); letter-spacing: 0.05em; margin-bottom: 5px; }
+  .sim-step .sresult { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--ink); line-height: 1.4; }
+  .sim-step.pass { border-color: var(--olive); background: rgba(91,106,57,0.08); }
+  .sim-step.pass .sresult { color: var(--olive); font-weight: 500; }
+  .sim-step.fail { border-color: var(--vermillion); background: rgba(193,68,42,0.08); }
+  .sim-step.fail .sresult { color: var(--vermillion); font-weight: 500; }
+  .sim-step.skip { opacity: 0.4; }
+  .sim-summary {
+    border: 1.5px solid var(--ink); padding: 12px 16px;
+    background: var(--paper);
+    font-family: "Noto Sans SC", sans-serif; font-size: 13.5px;
+    color: var(--ink); line-height: 1.5;
+  }
+  .sim-summary.allow { border-color: var(--olive); background: rgba(91,106,57,0.05); }
+  .sim-summary.deny  { border-color: var(--vermillion); background: rgba(193,68,42,0.06); }
+  .sim-summary.skip  { border-color: var(--mustard); background: rgba(183,134,40,0.06); }
+  .sim-summary code { color: var(--vermillion); font-weight: 500; }
+  .sim-summary .verdict { font-family: "Fraunces", serif; font-style: italic; font-size: 22px; margin-right: 10px; }
+
+  /* Roadmap & risks */
+  .road-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+  .stage-card { background: var(--paper-2); border: 1px solid var(--rule); padding: 11px 11px; position: relative; }
+  .stage-card .id   { font-family: "Fraunces", serif; font-style: italic; font-size: 11px; color: var(--vermillion); letter-spacing: 0.18em; }
+  .stage-card .nm   { font-family: "Noto Sans SC", sans-serif; font-size: 12.5px; font-weight: 500; margin-top: 4px; line-height: 1.3; }
+  .stage-card .stat { font-family: "JetBrains Mono", monospace; font-size: 9.5px; letter-spacing: 0.15em; margin-top: 6px; color: var(--ink-mute); }
+  .stage-card[data-st="done"]   { border-color: var(--olive); }
+  .stage-card[data-st="done"] .stat   { color: var(--olive); }
+  .stage-card[data-st="active"] { border-color: var(--vermillion); box-shadow: 4px 4px 0 var(--vermillion); }
+  .stage-card[data-st="active"] .stat { color: var(--vermillion); }
+  .stage-card[data-st="todo"]   { opacity: 0.6; }
+
+  .invariants { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .inv-card { background: var(--paper); border: 1px solid var(--ink); padding: 10px 12px; }
+  .inv-card .it { font-family: "Fraunces", serif; font-style: italic; font-size: 13px; color: var(--vermillion); }
+  .inv-card .ib { font-family: "Noto Sans SC", sans-serif; font-size: 12px; color: var(--ink-2); margin-top: 4px; line-height: 1.5; }
+
+  /* Hint banner */
+  .hint {
+    background: rgba(193,68,42,0.06); border-left: 3px solid var(--vermillion);
+    padding: 9px 14px;
+    font-family: "Fraunces", serif; font-style: italic; font-size: 13px; color: var(--ink);
+  }
+  .hint b   { font-weight: 500; color: var(--vermillion); font-style: normal; }
+  .hint kbd {
+    display: inline-block; border: 1px solid var(--rule-2);
+    background: var(--paper); padding: 1px 6px; border-radius: 3px;
+    font-family: "JetBrains Mono", monospace; font-size: 10.5px;
+    color: var(--ink); font-style: normal; margin: 0 2px;
+  }
+
+  /* Slide entrance */
+  .slide.in .slide-inner > * { opacity: 0; animation: fadeUp .55s ease forwards; }
+  .slide.in .slide-inner > *:nth-child(1) { animation-delay: 0.05s; }
+  .slide.in .slide-inner > *:nth-child(2) { animation-delay: 0.13s; }
+  .slide.in .slide-inner > *:nth-child(3) { animation-delay: 0.21s; }
+  .slide.in .slide-inner > *:nth-child(4) { animation-delay: 0.29s; }
+  .slide.in .slide-inner > *:nth-child(5) { animation-delay: 0.37s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-height: 800px) {
+    .slide { padding: 32px 56px 60px; }
+    h1.slide-h { font-size: 42px; }
+    h2.slide-sub { font-size: 14px; margin-bottom: 14px; }
+    .botbar { padding: 10px 56px 14px; }
+  }
+  @media (max-width: 1200px) {
+    .slide { padding: 32px 44px 60px; }
+    .botbar { padding: 10px 44px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="track" id="track">
+
+    <!-- ╔════════ SLIDE I · COVER ════════╗ -->
+    <section class="slide" data-id="cover">
+      <div class="topbar">
+        <span class="chapter">I &mdash; Frontispiece</span>
+        <span class="deck-title">HT KNOWLEDGEBASE · RAG WALKTHROUGH</span>
+      </div>
+      <div class="slide-inner cover-grid">
+        <div>
+          <div class="cover-title">
+            <span class="l1">知识 · 检索</span>
+            <span class="l2">· 生成 &mdash;</span>
+            <span class="l3">从一篇文档到一句答案的完整旅程<br/>HT KnowledgeBase · 一份给业务与产品同学的走读手稿</span>
+          </div>
+        </div>
+        <div class="cover-meta">
+          <div class="stamp">RAG WALKTHROUGH · 2026</div>
+          <div>
+            <div style="font-family:'Fraunces',serif; font-style:italic; color:var(--vermillion); font-size:13px; letter-spacing:0.18em; text-transform:uppercase;">— TABLE OF CHAPTERS</div>
+            <ol class="toc">
+              <li data-go="1"><span class="rn">II</span><span>产品视角 / 我们在解决什么</span><span class="pg">02</span></li>
+              <li data-go="2"><span class="rn">III</span><span>角色与知识空间</span><span class="pg">03</span></li>
+              <li data-go="3"><span class="rn">IV</span><span>体系架构 一张图</span><span class="pg">04</span></li>
+              <li data-go="4"><span class="rn">V</span><span>文档入库 流水线</span><span class="pg">05</span></li>
+              <li data-go="5"><span class="rn">VI</span><span>问答六步走</span><span class="pg">06</span></li>
+              <li data-go="6"><span class="rn">VII</span><span>关键模块详解</span><span class="pg">07</span></li>
+              <li data-go="7"><span class="rn">VIII</span><span>多路召回 与 MCP 工具</span><span class="pg">08</span></li>
+              <li data-go="8"><span class="rn">IX</span><span>一次问答的全景时序</span><span class="pg">09</span></li>
+              <li data-go="9"><span class="rn">X</span><span>沙盒 · 走哪条路 / Roadmap</span><span class="pg">10</span></li>
+            </ol>
+          </div>
+          <div class="hint">
+            <b>翻阅 ·</b> <kbd>←</kbd><kbd>→</kbd> 翻页，数字 <kbd>1</kbd>–<kbd>9</kbd> 直达，触屏可左右滑动。
+          </div>
+        </div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE II · PRODUCT VIEW ════════╗ -->
+    <section class="slide" data-id="product">
+      <div class="topbar">
+        <span class="chapter">II &mdash; Product View</span>
+        <span class="deck-title">我们在解决什么</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">一个问题， / <em>一份带出处的依据</em>。</h1>
+        <h2 class="slide-sub">业务同学每天都在文档堆里"找一句话"。HT KnowledgeBase 把"找文档 → 读文档 → 给答案"压缩成一次对话，并且每一句答案后面都跟着可点击的引用。</h2>
+        <div class="grid cols-4">
+          <div class="ed-card"><span class="corner"></span><div class="num">i.</div><h3>谁在用</h3><p>业务、产品、客服、管理者，按部门入座。每个人看到的是被授权的那部分知识。</p></div>
+          <div class="ed-card"><span class="corner"></span><div class="num">ii.</div><h3>在做什么</h3><p>选一个知识空间 → 提一个问题 → 拿到答案 + 引用 + 后续追问建议。</p></div>
+          <div class="ed-card"><span class="corner"></span><div class="num">iii.</div><h3>痛点</h3><p>文档散乱、术语不统一、问得不准。传统检索给链接，不给答案。</p></div>
+          <div class="ed-card"><span class="corner"></span><div class="num">iv.</div><h3>价值</h3><p>答案带引用 → 可追溯；权限分级 → 可审计；评估闭环 → 可持续迭代。</p></div>
+        </div>
+        <table class="editorial">
+          <thead><tr><th style="width:24%;">业务诉求</th><th style="width:30%;">产品功能</th><th style="width:30%;">背后的技术能力</th><th>不变量</th></tr></thead>
+          <tbody>
+            <tr><td>"我只想问，不想翻文档"</td><td>对话式问答 / 流式输出</td><td>查询改写 + 多路召回 + LLM 生成</td><td>每句答案附 <code>[^n]</code> 引用</td></tr>
+            <tr><td>"答案不能编"</td><td>引用卡片 / 来源回链</td><td>检索结果 → Prompt 注入 → 引用 ID 对齐</td><td>引用必须可点回原 chunk</td></tr>
+            <tr><td>"我不能看见别人的资料"</td><td>知识空间 / 部门隔离</td><td>RBAC + KB 绑定 + 检索阶段过滤</td><td>无授权即拒绝（fail-closed）</td></tr>
+            <tr><td>"答得好不好要量化"</td><td>评估管理 / 黄金集</td><td>RAGAS + 评估采集 + 离线运行</td><td>每次回答都被采样可追溯</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE III · ROLES ════════╗ -->
+    <section class="slide" data-id="roles">
+      <div class="topbar">
+        <span class="chapter">III &mdash; Personae</span>
+        <span class="deck-title">三种角色，一道围栏</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">谁在场， / <em>谁能看到什么</em>。</h1>
+        <h2 class="slide-sub">权限围绕"知识空间"展开 —— 一个 KB 即一道隔离边界，<code>kb_id</code> 同时锁住会话、检索结果与 UI 入口。</h2>
+        <div class="role-row">
+          <div class="role-card" data-r="a">
+            <span class="roman">I</span>
+            <div class="role-tag">USER · 普通用户</div>
+            <h4>问答者</h4>
+            <div class="scope">在被授权的知识空间里提问、追问、收藏答案。</div>
+            <ul>
+              <li>只能进入分配给自己角色的 KB</li>
+              <li>问答历史按 KB 隔离，跨空间不可见</li>
+              <li>看到的引用 = 自己有权读到的 chunk</li>
+            </ul>
+          </div>
+          <div class="role-card" data-r="b">
+            <span class="roman">II</span>
+            <div class="role-tag">DEPT_ADMIN · 部门管理员</div>
+            <h4>看护者</h4>
+            <div class="scope">管理本部门的知识空间、文档与角色，不能跨部门越线。</div>
+            <ul>
+              <li>建/改 KB；上传 / 重切 文档</li>
+              <li>分配本部门用户到角色</li>
+              <li>查看本部门的问答追踪与评估</li>
+            </ul>
+          </div>
+          <div class="role-card" data-r="c">
+            <span class="roman">III</span>
+            <div class="role-tag">SUPER_ADMIN · 超管</div>
+            <h4>设计者</h4>
+            <div class="scope">全局：模型路由、意图树、评估套件、部门与角色拓扑。</div>
+            <ul>
+              <li>配置 LLM / Embedding / Rerank 候选与降级</li>
+              <li>编辑意图树（域 → 类目 → 主题）</li>
+              <li>跑评估、看大盘、定基线</li>
+            </ul>
+          </div>
+        </div>
+        <table class="editorial" style="margin-top:6px;">
+          <thead><tr><th style="width:20%;">隔离维度</th><th>实现位置</th><th>不变量</th></tr></thead>
+          <tbody>
+            <tr><td>会话归属</td><td><code>t_conversation.kb_id</code> + 前端 URL <code>?kbId=</code></td><td>无 <code>kbId</code> 不能开会话；旧会话 <code>NULL</code> 视为不归属任何空间</td></tr>
+            <tr><td>检索范围</td><td>OpenSearch index 按 <code>collectionName</code> 一对一</td><td>问答只查当前 KB 的 index，不会"串味"</td></tr>
+            <tr><td>结果可见性</td><td><code>AuthzPostProcessor</code>（重排前）</td><td>无权访问的 chunk 在召回结果中直接剔除</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE IV · ARCHITECTURE ════════╗ -->
+    <section class="slide" data-id="arch">
+      <div class="topbar">
+        <span class="chapter">IV &mdash; Architecture</span>
+        <span class="deck-title">体系架构 一张图</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">五层 / <em>从一次点击到一行向量</em>。</h1>
+        <h2 class="slide-sub">前端只管交互，接入层只管身份；真正的"决策"集中在编排层，能力按职责切片，存储沿一根轴落地。</h2>
+        <div class="schema">
+          <svg viewBox="0 0 1200 540" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#1a2138"/>
+              </marker>
+              <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#c1442a"/>
+              </marker>
+              <pattern id="hatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#c1442a" stroke-opacity="0.18" stroke-width="1"/>
+              </pattern>
+            </defs>
+
+            <!-- Lane 1: 用户/前端 -->
+            <rect x="20" y="20" width="1160" height="80" fill="#ebe2cf" stroke="#c6bba0" stroke-width="1"/>
+            <text x="32" y="42" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">i · 用户层</text>
+            <text x="32" y="58" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55" letter-spacing="1.5">FRONTEND · React 18 + Vite + TS</text>
+            <g font-family="Noto Sans SC" font-size="12" fill="#1a2138">
+              <rect x="200" y="32" width="160" height="58" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+              <text x="280" y="55" text-anchor="middle">聊天 ChatPage</text>
+              <text x="280" y="75" text-anchor="middle" font-size="10.5" fill="#6e6a55">SSE 流式答案</text>
+              <rect x="380" y="32" width="160" height="58" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+              <text x="460" y="55" text-anchor="middle">知识空间 Spaces</text>
+              <text x="460" y="75" text-anchor="middle" font-size="10.5" fill="#6e6a55">登录后默认入口</text>
+              <rect x="560" y="32" width="160" height="58" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+              <text x="640" y="55" text-anchor="middle">后台 Admin</text>
+              <text x="640" y="75" text-anchor="middle" font-size="10.5" fill="#6e6a55">KB / 文档 / 意图 / 评估</text>
+              <rect x="740" y="32" width="160" height="58" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+              <text x="820" y="55" text-anchor="middle">权限中心</text>
+              <text x="820" y="75" text-anchor="middle" font-size="10.5" fill="#6e6a55">成员 / 角色 / 部门</text>
+            </g>
+
+            <!-- Lane 2: 接入层 -->
+            <rect x="20" y="115" width="1160" height="60" fill="#ebe2cf" stroke="#c6bba0" stroke-width="1"/>
+            <text x="32" y="137" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">ii · 接入层</text>
+            <text x="32" y="153" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55" letter-spacing="1.5">SA-TOKEN · Controllers · SSE</text>
+            <g font-family="Noto Sans SC" font-size="12" fill="#1a2138">
+              <rect x="280" y="124" width="180" height="42" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+              <text x="370" y="150" text-anchor="middle">认证 / 鉴权 / 限流</text>
+              <rect x="480" y="124" width="180" height="42" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+              <text x="570" y="150" text-anchor="middle">RAGChatController</text>
+              <rect x="680" y="124" width="220" height="42" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+              <text x="790" y="150" text-anchor="middle">KnowledgeDocumentController</text>
+            </g>
+
+            <!-- Lane 3: 编排层 -->
+            <rect x="20" y="190" width="1160" height="80" fill="url(#hatch)" stroke="#c1442a" stroke-width="1.5"/>
+            <rect x="20" y="190" width="1160" height="80" fill="none" stroke="#c1442a" stroke-width="1.5"/>
+            <text x="32" y="212" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">iii · 编排层 · 决策中心</text>
+            <text x="32" y="228" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55" letter-spacing="1.5">ORCHESTRATION · 唯一可决策的地方</text>
+            <g font-family="Noto Sans SC" font-size="12" fill="#1a2138">
+              <rect x="280" y="200" width="240" height="58" fill="#f1e9d9" stroke="#c1442a" stroke-width="1.5"/>
+              <text x="400" y="222" text-anchor="middle" font-style="italic" font-family="Fraunces" font-size="14">RAGChatService</text>
+              <text x="400" y="242" text-anchor="middle" font-size="10.5" fill="#6e6a55">问答主链编排 · streamChat()</text>
+              <rect x="540" y="200" width="240" height="58" fill="#f1e9d9" stroke="#c1442a" stroke-width="1.5"/>
+              <text x="660" y="222" text-anchor="middle" font-style="italic" font-family="Fraunces" font-size="14">IngestionEngine</text>
+              <text x="660" y="242" text-anchor="middle" font-size="10.5" fill="#6e6a55">入库主链编排 · execute()</text>
+              <rect x="800" y="200" width="200" height="58" fill="#f1e9d9" stroke="#c1442a" stroke-width="1.5"/>
+              <text x="900" y="222" text-anchor="middle" font-style="italic" font-family="Fraunces" font-size="14">RagTraceContext</text>
+              <text x="900" y="242" text-anchor="middle" font-size="10.5" fill="#6e6a55">全链路追踪 · TTL 跨线程</text>
+            </g>
+
+            <!-- Lane 4: 能力层 -->
+            <rect x="20" y="285" width="1160" height="100" fill="#ebe2cf" stroke="#c6bba0" stroke-width="1"/>
+            <text x="32" y="307" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">iv · 能力层</text>
+            <text x="32" y="323" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55" letter-spacing="1.5">CAPABILITIES · 单一职责 · 可替换</text>
+            <g font-family="Noto Sans SC" font-size="11.5" fill="#1a2138">
+              <rect x="160" y="332" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="220" y="350" text-anchor="middle">查询改写</text>
+              <text x="220" y="365" text-anchor="middle" font-size="10" fill="#6e6a55">QueryRewrite</text>
+              <rect x="290" y="332" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="350" y="350" text-anchor="middle">意图分类</text>
+              <text x="350" y="365" text-anchor="middle" font-size="10" fill="#6e6a55">IntentResolver</text>
+              <rect x="420" y="332" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="480" y="350" text-anchor="middle">多路召回</text>
+              <text x="480" y="365" text-anchor="middle" font-size="10" fill="#6e6a55">RetrievalEngine</text>
+              <rect x="550" y="332" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="610" y="350" text-anchor="middle">MCP 工具</text>
+              <text x="610" y="365" text-anchor="middle" font-size="10" fill="#6e6a55">MCPExecutor</text>
+              <rect x="680" y="332" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="740" y="350" text-anchor="middle">去重重排</text>
+              <text x="740" y="365" text-anchor="middle" font-size="10" fill="#6e6a55">PostProcessor</text>
+              <rect x="810" y="332" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="870" y="350" text-anchor="middle">Embedding</text>
+              <text x="870" y="365" text-anchor="middle" font-size="10" fill="#6e6a55">RoutingEmbedding</text>
+              <rect x="940" y="332" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="1000" y="350" text-anchor="middle">LLM 路由</text>
+              <text x="1000" y="365" text-anchor="middle" font-size="10" fill="#6e6a55">百炼/Ollama/SF</text>
+            </g>
+
+            <!-- Lane 5: 存储层 -->
+            <rect x="20" y="400" width="1160" height="80" fill="#ebe2cf" stroke="#c6bba0" stroke-width="1"/>
+            <text x="32" y="422" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">v · 存储与中间件</text>
+            <text x="32" y="438" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55" letter-spacing="1.5">PERSISTENCE · 事实之锚</text>
+            <g font-family="Noto Sans SC" font-size="11.5" fill="#1a2138">
+              <rect x="180" y="430" width="130" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="245" y="448" text-anchor="middle">PostgreSQL</text>
+              <text x="245" y="463" text-anchor="middle" font-size="10" fill="#6e6a55">业务/用户/追踪</text>
+              <rect x="320" y="430" width="120" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="380" y="448" text-anchor="middle">Redis</text>
+              <text x="380" y="463" text-anchor="middle" font-size="10" fill="#6e6a55">缓存 / 锁</text>
+              <rect x="450" y="430" width="130" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="515" y="448" text-anchor="middle">RocketMQ</text>
+              <text x="515" y="463" text-anchor="middle" font-size="10" fill="#6e6a55">异步入库 / 状态</text>
+              <rect x="590" y="430" width="160" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="670" y="448" text-anchor="middle">OpenSearch 2.18</text>
+              <text x="670" y="463" text-anchor="middle" font-size="10" fill="#6e6a55">向量 + 倒排</text>
+              <rect x="760" y="430" width="130" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="825" y="448" text-anchor="middle">RustFS / S3</text>
+              <text x="825" y="463" text-anchor="middle" font-size="10" fill="#6e6a55">原文档</text>
+              <rect x="900" y="430" width="160" height="42" fill="#f1e9d9" stroke="#1a2138"/>
+              <text x="980" y="448" text-anchor="middle">LLM Providers</text>
+              <text x="980" y="463" text-anchor="middle" font-size="10" fill="#6e6a55">百炼 / SF / Ollama</text>
+            </g>
+
+            <!-- 连线 -->
+            <line x1="600" y1="93" x2="600" y2="120" stroke="#1a2138" stroke-width="1.2" marker-end="url(#arr)"/>
+            <line x1="600" y1="170" x2="600" y2="195" stroke="#1a2138" stroke-width="1.2" marker-end="url(#arr)"/>
+            <line x1="400" y1="263" x2="400" y2="328" stroke="#1a2138" stroke-width="1.2" marker-end="url(#arr)"/>
+            <line x1="660" y1="263" x2="660" y2="328" stroke="#1a2138" stroke-width="1.2" marker-end="url(#arr)"/>
+            <line x1="600" y1="378" x2="600" y2="425" stroke="#1a2138" stroke-width="1.2" marker-end="url(#arr)"/>
+
+            <!-- 旁注 -->
+            <text x="1090" y="232" font-family="Fraunces" font-style="italic" font-size="11" fill="#c1442a" text-anchor="middle">所有决策</text>
+            <text x="1090" y="247" font-family="Fraunces" font-style="italic" font-size="11" fill="#c1442a" text-anchor="middle">汇于此处</text>
+          </svg>
+        </div>
+        <div class="hint"><b>读图 ·</b> 从上往下跟着箭头走。中间被红色斜线打底的那条带，是整个系统唯一允许做"决策"的地方 —— 上面是 UI，下面是能力，存储沿一根轴落地。</div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE V · INGESTION ════════╗ -->
+    <section class="slide" data-id="ingestion">
+      <div class="topbar">
+        <span class="chapter">V &mdash; Ingestion</span>
+        <span class="deck-title">文档入库流水线</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">从一份 PDF / <em>到一行可被检索的向量</em>。</h1>
+        <h2 class="slide-sub">上传是同步的（你立刻看到状态），但解析、切块、向量化是异步的：通过 RocketMQ 投递任务，节点链式处理，状态机贯穿全程。</h2>
+        <div class="seq-wrap">
+          <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <marker id="iarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#1a2138"/>
+              </marker>
+              <marker id="iarrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#c1442a"/>
+              </marker>
+            </defs>
+
+            <!-- Actor lanes -->
+            <g font-family="Fraunces" font-style="italic" font-size="13" fill="#1a2138">
+              <text x="80"   y="36" text-anchor="middle">用户</text>
+              <text x="240"  y="36" text-anchor="middle">API</text>
+              <text x="400"  y="36" text-anchor="middle">RustFS · S3</text>
+              <text x="560"  y="36" text-anchor="middle">RocketMQ</text>
+              <text x="720"  y="36" text-anchor="middle">Pipeline</text>
+              <text x="880"  y="36" text-anchor="middle">Embedding</text>
+              <text x="1040" y="36" text-anchor="middle">OpenSearch</text>
+            </g>
+            <g stroke="#94907a" stroke-dasharray="3 3" stroke-width="1">
+              <line x1="80"   y1="48" x2="80"   y2="450"/>
+              <line x1="240"  y1="48" x2="240"  y2="450"/>
+              <line x1="400"  y1="48" x2="400"  y2="450"/>
+              <line x1="560"  y1="48" x2="560"  y2="450"/>
+              <line x1="720"  y1="48" x2="720"  y2="450"/>
+              <line x1="880"  y1="48" x2="880"  y2="450"/>
+              <line x1="1040" y1="48" x2="1040" y2="450"/>
+            </g>
+
+            <!-- Messages -->
+            <!-- 1. 用户上传 -->
+            <line x1="80" y1="80" x2="232" y2="80" stroke="#1a2138" stroke-width="1.2" marker-end="url(#iarr)"/>
+            <text x="156" y="74" font-family="Fraunces" font-style="italic" font-size="12" fill="#1a2138" text-anchor="middle">① 上传 PDF / Word / MD</text>
+
+            <!-- 2. API 存原文 -->
+            <line x1="240" y1="110" x2="392" y2="110" stroke="#1a2138" stroke-width="1.2" marker-end="url(#iarr)"/>
+            <text x="316" y="104" font-family="Fraunces" font-style="italic" font-size="12" fill="#1a2138" text-anchor="middle">② 存原文（bucket = collectionName）</text>
+
+            <!-- 3. API 落表 PENDING -->
+            <rect x="232" y="125" width="16" height="22" fill="#f1e9d9" stroke="#1a2138" stroke-width="1"/>
+            <text x="256" y="142" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55">t_knowledge_document · status=PENDING</text>
+
+            <!-- 4. 用户触发分块 -->
+            <line x1="80" y1="170" x2="232" y2="170" stroke="#1a2138" stroke-width="1.2" marker-end="url(#iarr)"/>
+            <text x="156" y="164" font-family="Fraunces" font-style="italic" font-size="12" fill="#1a2138" text-anchor="middle">③ 启动分块</text>
+
+            <!-- 5. API 投消息 -->
+            <line x1="240" y1="200" x2="552" y2="200" stroke="#c1442a" stroke-width="1.5" marker-end="url(#iarrR)"/>
+            <text x="396" y="194" font-family="Fraunces" font-style="italic" font-size="12" fill="#c1442a" text-anchor="middle">④ 事务消息 · knowledge-document-chunk_topic</text>
+
+            <!-- 6. MQ → Pipeline -->
+            <line x1="560" y1="232" x2="712" y2="232" stroke="#1a2138" stroke-width="1.2" marker-end="url(#iarr)"/>
+            <text x="636" y="226" font-family="Fraunces" font-style="italic" font-size="12" fill="#1a2138" text-anchor="middle">⑤ 消费 → status=RUNNING</text>
+
+            <!-- 7. Pipeline 拉原文 -->
+            <line x1="720" y1="262" x2="408" y2="262" stroke="#1a2138" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#iarr)"/>
+            <text x="564" y="256" font-family="Fraunces" font-style="italic" font-size="12" fill="#1a2138" text-anchor="middle">⑥ Fetcher 取原文</text>
+
+            <!-- 8. Pipeline 内部 self-loop -->
+            <rect x="700" y="280" width="40" height="24" fill="#f1e9d9" stroke="#1a2138" stroke-width="1"/>
+            <text x="720" y="296" font-family="JetBrains Mono" font-size="10" fill="#1a2138" text-anchor="middle">parse</text>
+            <rect x="700" y="306" width="40" height="24" fill="#f1e9d9" stroke="#1a2138" stroke-width="1"/>
+            <text x="720" y="322" font-family="JetBrains Mono" font-size="10" fill="#1a2138" text-anchor="middle">chunk</text>
+            <text x="755" y="297" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55">Tika → 文本 → 切块（默认 1000 字 + 重叠）</text>
+
+            <!-- 9. Pipeline 调 Embedding -->
+            <line x1="740" y1="350" x2="872" y2="350" stroke="#1a2138" stroke-width="1.2" marker-end="url(#iarr)"/>
+            <text x="806" y="344" font-family="Fraunces" font-style="italic" font-size="12" fill="#1a2138" text-anchor="middle">⑦ 批量向量化</text>
+            <line x1="872" y1="368" x2="740" y2="368" stroke="#1a2138" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#iarr)"/>
+            <text x="806" y="380" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55" text-anchor="middle">float[] · 多模型路由 + 降级</text>
+
+            <!-- 10. Indexer 写 OpenSearch -->
+            <line x1="740" y1="406" x2="1032" y2="406" stroke="#c1442a" stroke-width="1.5" marker-end="url(#iarrR)"/>
+            <text x="886" y="400" font-family="Fraunces" font-style="italic" font-size="12" fill="#c1442a" text-anchor="middle">⑧ Indexer 批量写入 (index = collectionName)</text>
+
+            <!-- 11. 状态收敛 -->
+            <rect x="232" y="425" width="16" height="22" fill="#f1e9d9" stroke="#5b6a39" stroke-width="1.5"/>
+            <text x="256" y="442" font-family="JetBrains Mono" font-size="10.5" fill="#5b6a39">⑨ status=SUCCESS · 写 chunk_log</text>
+          </svg>
+        </div>
+        <div class="grid cols-4">
+          <div class="ed-card"><span class="corner"></span><div class="num">i.</div><h3>解析 Parse</h3><p>Apache Tika 3.2 兼容 PDF / Word / Excel / PPT / HTML / MD；docling 增强方案规划中。</p></div>
+          <div class="ed-card"><span class="corner"></span><div class="num">ii.</div><h3>切块 Chunk</h3><p>默认按字符固定长度（1000 字 + 重叠对齐边界），结构感知策略支持 Markdown 标题层级。</p></div>
+          <div class="ed-card"><span class="corner"></span><div class="num">iii.</div><h3>向量化</h3><p>infra-ai 的 RoutingEmbedding：多家候选（百炼 / 硅基 / Ollama），按优先级路由 + 故障降级。</p></div>
+          <div class="ed-card"><span class="corner"></span><div class="num">iv.</div><h3>状态机</h3><p>PENDING → RUNNING → SUCCESS / FAILED；每阶段耗时落 chunk_log，便于故障定位。</p></div>
+        </div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE VI · QA SIX-STEP ════════╗ -->
+    <section class="slide" data-id="qa-flow">
+      <div class="topbar">
+        <span class="chapter">VI &mdash; QA Pipeline</span>
+        <span class="deck-title">问答六步走</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">六个动作， / <em>一气呵成</em>。</h1>
+        <h2 class="slide-sub">用户的一句话进来后，编排器按固定节奏依次完成六件事；每一步都被同一个 traceId 串起来，所有耗时与产物都可被审计。</h2>
+        <div class="flow6">
+          <div class="step">
+            <span class="roi">i</span>
+            <h5>记忆补全</h5>
+            <p>取最近若干轮对话 + 可选摘要，把"指代"还原成完整问题。</p>
+            <span class="cls">ConversationMemoryService</span>
+          </div>
+          <div class="step">
+            <span class="roi">ii</span>
+            <h5>查询改写</h5>
+            <p>规则归一化术语 → LLM 改写并拆分成子问题（多查询展开）。</p>
+            <span class="cls">MultiQuestionRewriteService</span>
+          </div>
+          <div class="step">
+            <span class="roi">iii</span>
+            <h5>意图分类</h5>
+            <p>对照"域 → 类目 → 主题"三层意图树打标，附置信度。</p>
+            <span class="cls">IntentResolver / DefaultIntentClassifier</span>
+          </div>
+          <div class="step">
+            <span class="roi">iv</span>
+            <h5>多路召回</h5>
+            <p>意图导向 + 全局向量 + MCP 工具，三路并行。</p>
+            <span class="cls">RetrievalEngine + MultiChannelRetrievalEngine</span>
+          </div>
+          <div class="step">
+            <span class="roi">v</span>
+            <h5>后处理</h5>
+            <p>权限过滤（fail-closed）→ 去重 → 重排选 top-K。</p>
+            <span class="cls">AuthzPostProcessor / Dedup / Rerank</span>
+          </div>
+          <div class="step">
+            <span class="roi">vi</span>
+            <h5>Prompt + LLM</h5>
+            <p>注入 chunks + 引用规则 → 流式生成 → 答案 + 引用卡片。</p>
+            <span class="cls">RAGPromptService → LLMService.streamChat()</span>
+          </div>
+        </div>
+        <table class="editorial">
+          <thead><tr><th>事件</th><th>触发条件</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr><td>歧义引导（短路 1）</td><td>所有候选意图置信度都低</td><td>不召回，直接返回澄清提示让用户选</td></tr>
+            <tr><td>系统意图（短路 2）</td><td>问候 / 闲聊 / 帮助类系统意图命中</td><td>跳过召回，直答 LLM</td></tr>
+            <tr><td>权限不足（fail-closed）</td><td>用户对该 KB 或 chunk 的安全级无权</td><td>结果在重排前剔除；若空则兜底拒答</td></tr>
+            <tr><td>评估采样</td><td>命中采样率</td><td>问题 + 改写 + chunks + 答案 落 <code>t_rag_evaluation_record</code></td></tr>
+          </tbody>
+        </table>
+        <div class="hint"><b>核心约束 ·</b> 编排器是<i>唯一</i>下决策的地方；六个能力组件只回答"我能做什么"，不决定"下一步怎么走"。</div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE VII · KEY MODULES TABS ════════╗ -->
+    <section class="slide" data-id="modules">
+      <div class="topbar">
+        <span class="chapter">VII &mdash; Key Modules</span>
+        <span class="deck-title">关键模块详解</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">把六步 / <em>各拆一层</em>。</h1>
+        <h2 class="slide-sub">挑出最影响"答得准不准"的四个模块，看它们各自在做什么、有什么旋钮可调。</h2>
+        <div class="tabs-row">
+          <button class="tab active" data-tab="t1">查询改写</button>
+          <button class="tab" data-tab="t2">意图分类</button>
+          <button class="tab" data-tab="t3">多路召回</button>
+          <button class="tab" data-tab="t4">答案与引用</button>
+        </div>
+        <div class="tab-body active" data-body="t1">
+          <div class="row2">
+            <div>
+              <h4>为什么要改写？</h4>
+              <p>用户问的话往往不完整：用代词（"它"），用别名（"百炼" vs "DashScope"），或者一个问题套多层意图（"先帮我查 A，再对比一下 B"）。直接拿原话去检索，命中率会非常糟。</p>
+              <h4>怎么改？</h4>
+              <ul>
+                <li><b>规则归一化</b> ·  <code>QueryTermMappingService</code>：把同义词、缩写映射成标准表述。</li>
+                <li><b>LLM 改写 + 拆分</b> ·  <code>MultiQuestionRewriteService.rewriteWithSplit()</code>：结合最近对话历史，把"它怎么用？"改成"<i>百炼平台的 SDK 怎么调用？</i>"，并把多意图拆成子问题。</li>
+                <li><b>规则兜底</b> ·  改写失败时退回简单分句，保证下游能拿到至少一个查询。</li>
+              </ul>
+            </div>
+            <div>
+              <h4>能调什么</h4>
+              <ul>
+                <li><code>rag.query-rewrite.enabled</code> · 全局开关</li>
+                <li><code>QUERY_REWRITE_AND_SPLIT_PROMPT_PATH</code> · 改写提示词</li>
+                <li>历史轮数（影响指代消解的上下文广度）</li>
+              </ul>
+              <h4>典型收益</h4>
+              <p>同样的问题，开启改写后召回 Top-K 命中率显著提升；多查询展开能让"复合问题"也拿到完整证据。</p>
+            </div>
+          </div>
+        </div>
+        <div class="tab-body" data-body="t2">
+          <div class="row2">
+            <div>
+              <h4>三层意图树</h4>
+              <p>意图按"<b>域 Domain → 类目 Category → 主题 Topic</b>"组织成一棵树（持久化在 <code>t_intent_node</code>，Redis 缓存）。</p>
+              <ul>
+                <li><b>Domain</b> · 一级域 e.g. 业务咨询 / 数据查询 / 系统功能</li>
+                <li><b>Category</b> · 二级类目 e.g. 业务咨询/产品规格</li>
+                <li><b>Topic</b> · 叶子主题，落到具体 KB / 工具</li>
+              </ul>
+              <h4>怎么打标</h4>
+              <p>分类器（<code>DefaultIntentClassifier</code>）一次性把整棵意图树发给 LLM，让它返回多个候选意图 + 置信度。然后按 <code>INTENT_MIN_SCORE</code> 阈值过滤、按数量上限截断。</p>
+            </div>
+            <div>
+              <h4>低置信度怎么办</h4>
+              <ul>
+                <li><b>歧义引导</b> · 候选都低 → <code>IntentGuidanceService.detectAmbiguity()</code> 触发澄清，前端弹"你想问的是哪一类？"</li>
+                <li><b>系统意图短路</b> · 命中"问候 / 帮助 / 闲聊" → 跳过 RAG 直接答</li>
+                <li><b>意图合并</b> · 同时命中 KB 意图与 MCP 意图 → 各走各路并行检索</li>
+              </ul>
+              <h4>能调什么</h4>
+              <ul>
+                <li>意图树：超管在<i>意图树编辑</i>页面增删节点</li>
+                <li>置信度阈值 / 候选数量上限</li>
+                <li>采样问题：把真实问题挂回意图节点，下次更准</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="tab-body" data-body="t3">
+          <div class="row2">
+            <div>
+              <h4>三路并行</h4>
+              <ul>
+                <li><b>意图导向通道</b> · 在命中意图绑定的 KB / 文档范围内做向量检索，召回更聚焦</li>
+                <li><b>全局向量通道</b> · 在 KB 全量内做 ANN，避免意图打偏漏召</li>
+                <li><b>MCP 工具通道</b> · 命中 MCP 类意图（如"查抵押品字段"）时，调用注册的工具拿结构化结果</li>
+              </ul>
+              <p>三路用 <code>CompletableFuture</code> 并发执行（30s 超时），互不阻塞。</p>
+            </div>
+            <div>
+              <h4>三路汇合</h4>
+              <ul>
+                <li><b>权限过滤</b> · <code>AuthzPostProcessor</code>（order=0）剔除用户无权读到的 chunk</li>
+                <li><b>去重</b> · 基于 chunk hash，避免同一段被多路重复召回</li>
+                <li><b>重排</b> · 召回池 30 → 重排选 Top-10（rerank-top-k 可配）</li>
+              </ul>
+              <h4>能调什么</h4>
+              <ul>
+                <li><code>recall-top-k</code> · 召回池大小</li>
+                <li><code>rerank-top-k</code> · 进 Prompt 的 chunk 数</li>
+                <li>各通道开关（意图通道 / 全局通道 / MCP）</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="tab-body" data-body="t4">
+          <div class="row2">
+            <div>
+              <h4>引用怎么生成</h4>
+              <p>Prompt 里把 Top-K chunk 编上 <code>[1] [2] [3] ...</code>，并写明"必须用 <code>[^n]</code> 形式标出引用"。LLM 流式吐 token 时就把引用编号嵌入答案文本。</p>
+              <h4>前端怎么显示</h4>
+              <ul>
+                <li>答案中 <code>[^1]</code> 渲染成可点击的小角标</li>
+                <li>下方引用卡片列表对应每个编号 → 文档名 / 段落片段 / 原文跳转</li>
+                <li>持久化在 <code>t_message.sources_json</code>（v1.9 加入）</li>
+              </ul>
+            </div>
+            <div>
+              <h4>评估闭环</h4>
+              <p>每轮问答都会按采样率把"问题 / 改写 / 召回 chunks / 最终答案"落进 <code>t_rag_evaluation_record</code>。可以：</p>
+              <ul>
+                <li>导出为 RAGAS 兼容 JSON · <code>GET /rag/evaluations/export</code></li>
+                <li>用百炼当评估器跑离线指标（faithfulness / answer relevancy / context precision）</li>
+                <li>前端"评估管理"页面看运行结果、对比历史</li>
+              </ul>
+              <h4>追踪</h4>
+              <p><code>RagTraceContext</code> 用 TTL 跨线程透传 traceId，每个节点 <code>@RagTraceNode</code> 自动记录耗时与 token 用量到 <code>t_rag_trace_node</code>。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE VIII · MULTI-CHANNEL RETRIEVAL ════════╗ -->
+    <section class="slide" data-id="multi-channel">
+      <div class="topbar">
+        <span class="chapter">VIII &mdash; Multi-channel Retrieval</span>
+        <span class="deck-title">三路并行 · 殊途同归</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">三股水， / <em>汇成一杯茶</em>。</h1>
+        <h2 class="slide-sub">为什么不只走一条最聪明的路？因为没有"最聪明"。意图通道精准但易偏，全局通道兜底但稀释，MCP 通道结构化但只对部分意图有效 —— 三路互补。</h2>
+        <div class="seq-wrap">
+          <svg viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <marker id="marr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#1a2138"/>
+              </marker>
+              <marker id="marrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#c1442a"/>
+              </marker>
+              <pattern id="hatch2" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#5b6a39" stroke-opacity="0.16" stroke-width="1"/>
+              </pattern>
+            </defs>
+
+            <!-- 输入：改写 + 意图 -->
+            <rect x="40" y="180" width="180" height="100" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.5"/>
+            <text x="130" y="210" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="15" fill="#1a2138">改写后子问题</text>
+            <text x="130" y="232" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="13" fill="#1a2138">+ 意图标签</text>
+            <text x="130" y="258" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55">RewriteResult + Intents</text>
+
+            <!-- 分叉箭头 -->
+            <line x1="220" y1="200" x2="380" y2="100" stroke="#1a2138" stroke-width="1.2" marker-end="url(#marr)"/>
+            <line x1="220" y1="230" x2="380" y2="230" stroke="#1a2138" stroke-width="1.2" marker-end="url(#marr)"/>
+            <line x1="220" y1="260" x2="380" y2="360" stroke="#1a2138" stroke-width="1.2" marker-end="url(#marr)"/>
+
+            <!-- 通道 1：意图导向 -->
+            <rect x="380" y="60" width="280" height="90" fill="#ebe2cf" stroke="#c1442a" stroke-width="1.5"/>
+            <text x="395" y="82" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">① 意图导向通道</text>
+            <text x="395" y="102" font-family="Noto Sans SC" font-size="12" fill="#1a2138">在命中意图绑定的 KB / 文档范围内</text>
+            <text x="395" y="120" font-family="Noto Sans SC" font-size="12" fill="#1a2138">做向量检索，召回更聚焦</text>
+            <text x="395" y="140" font-family="JetBrains Mono" font-size="10.5" fill="#5b6a39">scope ⊆ intent.kbScope</text>
+
+            <!-- 通道 2：全局向量 -->
+            <rect x="380" y="190" width="280" height="80" fill="#ebe2cf" stroke="#5b6a39" stroke-width="1.5"/>
+            <text x="395" y="212" font-family="Fraunces" font-style="italic" font-size="14" fill="#5b6a39">② 全局向量通道</text>
+            <text x="395" y="232" font-family="Noto Sans SC" font-size="12" fill="#1a2138">在当前 KB 全量内做 ANN 检索</text>
+            <text x="395" y="250" font-family="Noto Sans SC" font-size="12" fill="#1a2138">作为"防漏召"的兜底</text>
+
+            <!-- 通道 3：MCP 工具 -->
+            <rect x="380" y="310" width="280" height="90" fill="url(#hatch2)" stroke="#b78628" stroke-width="1.5"/>
+            <rect x="380" y="310" width="280" height="90" fill="none" stroke="#b78628" stroke-width="1.5"/>
+            <text x="395" y="332" font-family="Fraunces" font-style="italic" font-size="14" fill="#b78628">③ MCP 工具通道</text>
+            <text x="395" y="352" font-family="Noto Sans SC" font-size="12" fill="#1a2138">命中 MCP 意图（如查抵押品字段）</text>
+            <text x="395" y="370" font-family="Noto Sans SC" font-size="12" fill="#1a2138">→ 参数抽取 → 调工具拿结构化结果</text>
+            <text x="395" y="390" font-family="JetBrains Mono" font-size="10.5" fill="#b78628">CollateralFieldLookup / RemoteMCP</text>
+
+            <!-- 三路 → 汇合 -->
+            <line x1="660" y1="100"  x2="800" y2="200" stroke="#1a2138" stroke-width="1.2" marker-end="url(#marr)"/>
+            <line x1="660" y1="230"  x2="800" y2="230" stroke="#1a2138" stroke-width="1.2" marker-end="url(#marr)"/>
+            <line x1="660" y1="350"  x2="800" y2="260" stroke="#1a2138" stroke-width="1.2" marker-end="url(#marr)"/>
+
+            <!-- 后处理链 -->
+            <rect x="800" y="180" width="160" height="100" fill="#f1e9d9" stroke="#1a2138" stroke-width="1.2"/>
+            <text x="880" y="206" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="13" fill="#c1442a">权限过滤</text>
+            <text x="880" y="226" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="13" fill="#1a2138">去重</text>
+            <text x="880" y="246" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="13" fill="#1a2138">重排</text>
+            <text x="880" y="270" text-anchor="middle" font-family="JetBrains Mono" font-size="10" fill="#6e6a55">PostProcessor chain</text>
+
+            <!-- 输出 -->
+            <line x1="960" y1="230" x2="1052" y2="230" stroke="#c1442a" stroke-width="1.5" marker-end="url(#marrR)"/>
+            <rect x="1060" y="190" width="120" height="80" fill="#f1e9d9" stroke="#c1442a" stroke-width="1.5"/>
+            <text x="1120" y="218" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">Top-K</text>
+            <text x="1120" y="238" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="14" fill="#c1442a">证据集</text>
+            <text x="1120" y="260" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" fill="#6e6a55">→ Prompt</text>
+
+            <!-- 注解 -->
+            <text x="220" y="430" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55">所有三路使用 CompletableFuture 并行执行，30s 超时</text>
+            <text x="800" y="430" font-family="Fraunces" font-style="italic" font-size="11" fill="#c1442a">权限过滤始终是 order=0 第一步 · fail-closed</text>
+          </svg>
+        </div>
+        <div class="hint"><b>设计哲学 ·</b> 多路召回不是"打散注意力"，而是用<i>不同视角</i>互相校验。意图通道说"这事归我管"，全局通道说"我也看到一段相关的"，MCP 通道说"我有一份结构化数据"—— 拼起来才是完整答案。</div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE IX · SEQUENCE DIAGRAM ════════╗ -->
+    <section class="slide" data-id="sequence">
+      <div class="topbar">
+        <span class="chapter">IX &mdash; Sequence</span>
+        <span class="deck-title">一次问答的全景时序</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">把六步 / <em>摊在时间轴上</em>。</h1>
+        <h2 class="slide-sub">下图是用户问"上个月华南区销售的 SKU 排行"时，从浏览器到大模型再返回的完整链路。红色箭头表示<i>跨层关键决策</i>。</h2>
+        <div class="seq-wrap">
+          <svg viewBox="0 0 1200 540" preserveAspectRatio="xMidYMid meet">
+            <defs>
+              <marker id="sarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#1a2138"/>
+              </marker>
+              <marker id="sarrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="#c1442a"/>
+              </marker>
+            </defs>
+
+            <!-- Actor labels -->
+            <g font-family="Fraunces" font-style="italic" font-size="13" fill="#1a2138">
+              <text x="80"   y="32" text-anchor="middle">用户</text>
+              <text x="240"  y="32" text-anchor="middle">前端 Chat</text>
+              <text x="400"  y="32" text-anchor="middle">编排器</text>
+              <text x="560"  y="32" text-anchor="middle">改写</text>
+              <text x="720"  y="32" text-anchor="middle">意图</text>
+              <text x="880"  y="32" text-anchor="middle">检索</text>
+              <text x="1040" y="32" text-anchor="middle">LLM</text>
+            </g>
+            <g font-family="JetBrains Mono" font-size="9.5" fill="#6e6a55">
+              <text x="240"  y="46" text-anchor="middle">SSE</text>
+              <text x="400"  y="46" text-anchor="middle">RAGChatService</text>
+              <text x="560"  y="46" text-anchor="middle">QueryRewrite</text>
+              <text x="720"  y="46" text-anchor="middle">IntentResolver</text>
+              <text x="880"  y="46" text-anchor="middle">RetrievalEngine</text>
+              <text x="1040" y="46" text-anchor="middle">百炼/SF/Ollama</text>
+            </g>
+            <g stroke="#94907a" stroke-dasharray="3 3" stroke-width="1">
+              <line x1="80"   y1="58" x2="80"   y2="510"/>
+              <line x1="240"  y1="58" x2="240"  y2="510"/>
+              <line x1="400"  y1="58" x2="400"  y2="510"/>
+              <line x1="560"  y1="58" x2="560"  y2="510"/>
+              <line x1="720"  y1="58" x2="720"  y2="510"/>
+              <line x1="880"  y1="58" x2="880"  y2="510"/>
+              <line x1="1040" y1="58" x2="1040" y2="510"/>
+            </g>
+
+            <!-- 1. 用户输入 -->
+            <line x1="80" y1="78" x2="232" y2="78" stroke="#1a2138" stroke-width="1.2" marker-end="url(#sarr)"/>
+            <text x="156" y="72" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#1a2138" text-anchor="middle">① 输入问题（带 kbId）</text>
+
+            <!-- 2. 前端 → 编排器 -->
+            <line x1="240" y1="100" x2="392" y2="100" stroke="#1a2138" stroke-width="1.2" marker-end="url(#sarr)"/>
+            <text x="316" y="94" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#1a2138" text-anchor="middle">② GET /rag/v3/chat (SSE)</text>
+
+            <!-- activation -->
+            <rect x="392" y="100" width="16" height="380" fill="#f1e9d9" stroke="#1a2138" stroke-width="1"/>
+
+            <!-- 3. 记忆补全（自循环） -->
+            <path d="M408 130 Q 460 130 460 145 Q 460 160 408 160" fill="none" stroke="#1a2138" stroke-width="1.2" marker-end="url(#sarr)"/>
+            <text x="468" y="148" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#1a2138">③ 记忆补全 · 取最近 N 轮</text>
+
+            <!-- 4. 编排器 → 改写 -->
+            <line x1="408" y1="180" x2="552" y2="180" stroke="#1a2138" stroke-width="1.2" marker-end="url(#sarr)"/>
+            <text x="480" y="174" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#1a2138" text-anchor="middle">④ 改写 + 拆分</text>
+            <line x1="552" y1="200" x2="408" y2="200" stroke="#1a2138" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#sarr)"/>
+            <text x="480" y="213" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55" text-anchor="middle">RewriteResult</text>
+
+            <!-- 5. 编排器 → 意图 -->
+            <line x1="408" y1="232" x2="712" y2="232" stroke="#1a2138" stroke-width="1.2" marker-end="url(#sarr)"/>
+            <text x="560" y="226" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#1a2138" text-anchor="middle">⑤ 意图分类（域 → 类目 → 主题）</text>
+            <line x1="712" y1="252" x2="408" y2="252" stroke="#1a2138" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#sarr)"/>
+            <text x="560" y="265" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55" text-anchor="middle">List&lt;Intent&gt; · 含置信度</text>
+
+            <!-- 6. 编排器 → 检索（红色 = 关键决策） -->
+            <line x1="408" y1="290" x2="872" y2="290" stroke="#c1442a" stroke-width="1.5" marker-end="url(#sarrR)"/>
+            <text x="640" y="284" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#c1442a" text-anchor="middle">⑥ 多路召回（意图 + 全局 + MCP 并行）</text>
+
+            <!-- 7. 检索内部 -->
+            <rect x="872" y="300" width="16" height="60" fill="#f1e9d9" stroke="#c1442a" stroke-width="1"/>
+            <text x="900" y="318" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55">权限过滤 · 去重 · 重排</text>
+            <text x="900" y="335" font-family="JetBrains Mono" font-size="10" fill="#c1442a">AuthzPostProcessor (fail-closed)</text>
+            <text x="900" y="352" font-family="JetBrains Mono" font-size="10" fill="#5b6a39">→ Top-K chunks</text>
+
+            <!-- 8. 检索 → 编排器 -->
+            <line x1="872" y1="378" x2="408" y2="378" stroke="#1a2138" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#sarr)"/>
+            <text x="640" y="372" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55" text-anchor="middle">证据集 + source cards</text>
+
+            <!-- 9. 编排器 → LLM（红色） -->
+            <line x1="408" y1="408" x2="1032" y2="408" stroke="#c1442a" stroke-width="1.5" marker-end="url(#sarrR)"/>
+            <text x="720" y="402" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#c1442a" text-anchor="middle">⑦ Prompt（带 chunks + 引用规则） · 流式</text>
+
+            <!-- 10. LLM → 编排器 (token stream) -->
+            <line x1="1032" y1="430" x2="408" y2="430" stroke="#1a2138" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#sarr)"/>
+            <text x="720" y="425" font-family="Fraunces" font-style="italic" font-size="11" fill="#6e6a55" text-anchor="middle">SSE token chunks</text>
+
+            <!-- 11. 编排器 → 前端 → 用户 -->
+            <line x1="392" y1="460" x2="248" y2="460" stroke="#1a2138" stroke-width="1.2" marker-end="url(#sarr)"/>
+            <text x="320" y="454" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#1a2138" text-anchor="middle">⑧ 边收边渲</text>
+
+            <line x1="232" y1="485" x2="88" y2="485" stroke="#1a2138" stroke-width="1.2" marker-end="url(#sarr)"/>
+            <text x="160" y="479" font-family="Fraunces" font-style="italic" font-size="11.5" fill="#1a2138" text-anchor="middle">⑨ 答案 + 引用卡片</text>
+
+            <!-- traceId 旁注 -->
+            <text x="1180" y="290" font-family="Fraunces" font-style="italic" font-size="11" fill="#c1442a" text-anchor="end">全程 traceId 串联</text>
+            <text x="1180" y="304" font-family="JetBrains Mono" font-size="10" fill="#6e6a55" text-anchor="end">RagTraceContext (TTL)</text>
+          </svg>
+        </div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE X · SIMULATOR + ROADMAP ════════╗ -->
+    <section class="slide" data-id="sandbox">
+      <div class="topbar">
+        <span class="chapter">X &mdash; Sandbox & Roadmap</span>
+        <span class="deck-title">一题，看走哪条路</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">沙盒 · / <em>试一试便明白</em>。</h1>
+        <h2 class="slide-sub">左侧选一个场景或自己搭组合，右侧立刻显示这个问题在六步里会被怎样处理 —— 是直答、走完整 RAG、走 MCP 工具，还是被礼貌拒绝。</h2>
+        <div class="sim-grid">
+          <div class="sim-controls">
+            <h4>① 选一个场景</h4>
+            <div class="sim-cases">
+              <button class="case-chip active" data-case="a">
+                <strong>① 部门内问产品</strong>
+                业务员问本部门 KB 里的产品规格
+              </button>
+              <button class="case-chip" data-case="b">
+                <strong>② 跨部门越权问</strong>
+                普通用户问没被授权的 KB
+              </button>
+              <button class="case-chip" data-case="c">
+                <strong>③ MCP 字段查询</strong>
+                问"抵押品字段"这类结构化问题
+              </button>
+              <button class="case-chip" data-case="d">
+                <strong>④ 闲聊 · 系统意图</strong>
+                "你好""帮助"等问候类
+              </button>
+            </div>
+            <h4>② 或自己搭组合</h4>
+            <div class="form-row"><label>用户角色</label>
+              <select id="f-role">
+                <option value="user">普通用户</option>
+                <option value="dept">部门管理员</option>
+                <option value="super">超级管理员</option>
+              </select>
+            </div>
+            <div class="form-row"><label>知识空间</label>
+              <select id="f-kb">
+                <option value="own">已授权 KB</option>
+                <option value="cross">跨部门 KB</option>
+                <option value="none">未指定</option>
+              </select>
+            </div>
+            <div class="form-row"><label>问题类型</label>
+              <select id="f-type">
+                <option value="biz">业务咨询</option>
+                <option value="mcp">数据 / 字段查询 (MCP)</option>
+                <option value="sys">问候 / 闲聊 (系统意图)</option>
+                <option value="vague">表述模糊</option>
+              </select>
+            </div>
+            <div class="form-row"><label>历史对话</label>
+              <select id="f-hist">
+                <option value="yes">有上下文</option>
+                <option value="no">首轮提问</option>
+              </select>
+            </div>
+            <div class="form-row"><label>命中召回</label>
+              <select id="f-hit">
+                <option value="yes">有相关 chunk</option>
+                <option value="no">空召回</option>
+              </select>
+            </div>
+            <div class="form-row"><label>意图置信</label>
+              <select id="f-conf">
+                <option value="high">高（&gt; 阈值）</option>
+                <option value="low">低（候选都不显著）</option>
+              </select>
+            </div>
+          </div>
+          <div class="sim-stage">
+            <div class="sim-flow">
+              <div class="sim-step" id="s-1"><span class="step-i">i · 记忆</span><div class="stitle">ConversationMemory</div><div class="sresult">—</div></div>
+              <div class="sim-step" id="s-2"><span class="step-i">ii · 改写</span><div class="stitle">QueryRewrite</div><div class="sresult">—</div></div>
+              <div class="sim-step" id="s-3"><span class="step-i">iii · 意图</span><div class="stitle">IntentResolver</div><div class="sresult">—</div></div>
+              <div class="sim-step" id="s-4"><span class="step-i">iv · 召回</span><div class="stitle">RetrievalEngine</div><div class="sresult">—</div></div>
+              <div class="sim-step" id="s-5"><span class="step-i">v · 重排</span><div class="stitle">PostProcessor</div><div class="sresult">—</div></div>
+              <div class="sim-step" id="s-6"><span class="step-i">vi · LLM</span><div class="stitle">streamChat</div><div class="sresult">—</div></div>
+            </div>
+            <div class="sim-summary" id="sim-out">
+              <span class="verdict">⌗</span><span>选择一个场景或调整参数，将立即看到这次问答会走哪条路径。</span>
+            </div>
+            <div class="hint"><b>玩法 ·</b> 从 <kbd>①</kbd> 开始 → 把"知识空间"切到"跨部门" → 看 <kbd>iv</kbd> 召回阶段如何在<i>权限过滤</i>处 fail-closed。</div>
+          </div>
+        </div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+    <!-- ╔════════ SLIDE XI · ROADMAP ════════╗ -->
+    <section class="slide" data-id="roadmap">
+      <div class="topbar">
+        <span class="chapter">XI &mdash; Roadmap & Invariants</span>
+        <span class="deck-title">已落地 · 进行中 · 计划中</span>
+      </div>
+      <div class="slide-inner">
+        <h1 class="slide-h">脚下的路 / <em>与正在浇的水</em>。</h1>
+        <h2 class="slide-sub">底色是已经稳定的能力；红色边框 + 投影是当前正在迭代的；半透明的是规划中。底部四条不变量，是不能让位的。</h2>
+        <div class="road-row">
+          <div class="stage-card" data-st="done"><div class="id">i</div><div class="nm">查询改写 + 拆分</div><div class="stat">DONE</div></div>
+          <div class="stage-card" data-st="done"><div class="id">ii</div><div class="nm">三层意图树</div><div class="stat">DONE</div></div>
+          <div class="stage-card" data-st="done"><div class="id">iii</div><div class="nm">多路并行召回</div><div class="stat">DONE</div></div>
+          <div class="stage-card" data-st="done"><div class="id">iv</div><div class="nm">引用 + 来源卡片</div><div class="stat">DONE · v1.9</div></div>
+          <div class="stage-card" data-st="done"><div class="id">v</div><div class="nm">权限隔离 + 部门</div><div class="stat">DONE · v1.6+</div></div>
+          <div class="stage-card" data-st="active"><div class="id">vi</div><div class="nm">评估闭环 RAGAS</div><div class="stat">ACTIVE · v1.10</div></div>
+          <div class="stage-card" data-st="active"><div class="id">vii</div><div class="nm">Pre-retrieval Planner</div><div class="stat">ACTIVE</div></div>
+          <div class="stage-card" data-st="todo"><div class="id">viii</div><div class="nm">Docling 解析增强</div><div class="stat">PLANNED</div></div>
+        </div>
+        <div class="invariants">
+          <div class="inv-card"><div class="it">∎ 引用必须可点回原 chunk</div><div class="ib">无引用的回答视为不合格；前端不渲染裸答。</div></div>
+          <div class="inv-card"><div class="it">∎ 权限过滤必须 fail-closed</div><div class="ib">未授权或异常 → 返回空召回，不让"漏一个 chunk"成为风险。</div></div>
+          <div class="inv-card"><div class="it">∎ 编排器是唯一决策点</div><div class="ib">能力组件只回答"我能做什么"，永不在外层做选择。</div></div>
+          <div class="inv-card"><div class="it">∎ 每一答都可被追溯</div><div class="ib">traceId 串全链；评估采集按比例落表，离线可重放。</div></div>
+        </div>
+        <div class="hint"><b>下一步 ·</b> 我们正在把"查得准"的成本进一步前置 —— 让<i>预检索规划器</i>在改写阶段就识别出"无意义查询"和"复合查询"，这件事一旦稳定，召回质量会再上一个台阶。</div>
+      </div>
+      <div class="botbar"></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+  // ============ Slide engine ============
+  const track = document.getElementById('track');
+  const slides = [...track.querySelectorAll('.slide')];
+  const total = slides.length;
+  const roman = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+  let cur = 0;
+
+  slides.forEach((sl, i) => {
+    const bar = sl.querySelector('.botbar');
+    if (!bar.children.length) {
+      bar.innerHTML = `
+        <div class="progress-pills"></div>
+        <div class="navctl">
+          <span class="pageno"><b>${roman[i]}</b> &nbsp;/&nbsp; <span>${roman[total-1]}</span></span>
+          <button class="btn-prev" aria-label="prev">‹</button>
+          <button class="btn-next" aria-label="next">›</button>
+        </div>`;
+    }
+    const pills = bar.querySelector('.progress-pills');
+    for (let k = 0; k < total; k++) {
+      const b = document.createElement('button');
+      b.className = 'pp' + (k === i ? ' active' : '');
+      b.dataset.go = k; b.title = roman[k];
+      pills.appendChild(b);
+    }
+  });
+
+  function goto(idx) {
+    if (idx < 0) idx = 0;
+    if (idx > total - 1) idx = total - 1;
+    cur = idx;
+    track.style.transform = `translateX(${-idx * 100}vw)`;
+    slides.forEach((s, i) => {
+      s.classList.toggle('in', i === idx);
+      s.querySelectorAll('.pp').forEach(p => p.classList.toggle('active', parseInt(p.dataset.go,10) === idx));
+      const pn = s.querySelector('.pageno b'); if (pn) pn.textContent = roman[idx];
+    });
+    history.replaceState(null, '', '#' + slides[idx].dataset.id);
+  }
+
+  document.body.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t.matches('.btn-prev')) goto(cur - 1);
+    else if (t.matches('.btn-next')) goto(cur + 1);
+    else if (t.matches('.pp')) goto(parseInt(t.dataset.go,10));
+    else if (t.closest('.toc li')) goto(parseInt(t.closest('.toc li').dataset.go,10));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'SELECT') return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); goto(cur + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goto(cur - 1); }
+    else if (e.key === 'Home') goto(0);
+    else if (e.key === 'End')  goto(total - 1);
+    else if (e.key >= '1' && e.key <= '9') goto(parseInt(e.key, 10) - 1);
+    else if (e.key === '0') goto(9);
+  });
+
+  let touchX = null;
+  document.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; });
+  document.addEventListener('touchend',   (e) => {
+    if (touchX == null) return;
+    const dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) goto(cur + (dx < 0 ? 1 : -1));
+    touchX = null;
+  });
+
+  if (location.hash) {
+    const id = location.hash.slice(1);
+    const i = slides.findIndex(s => s.dataset.id === id);
+    if (i >= 0) cur = i;
+  }
+  goto(cur);
+
+  // ============ Tabs (slide VII) ============
+  document.querySelectorAll('.tabs-row').forEach(row => {
+    row.addEventListener('click', e => {
+      const btn = e.target.closest('.tab'); if (!btn) return;
+      const slide = row.closest('.slide');
+      slide.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === btn));
+      const key = btn.dataset.tab;
+      slide.querySelectorAll('.tab-body').forEach(b => b.classList.toggle('active', b.dataset.body === key));
+    });
+  });
+
+  // ============ Simulator (slide X) ============
+  const cases = {
+    a: { role:'user',  kb:'own',   type:'biz',  hist:'yes', hit:'yes', conf:'high' },
+    b: { role:'user',  kb:'cross', type:'biz',  hist:'no',  hit:'yes', conf:'high' },
+    c: { role:'user',  kb:'own',   type:'mcp',  hist:'no',  hit:'yes', conf:'high' },
+    d: { role:'user',  kb:'own',   type:'sys',  hist:'no',  hit:'no',  conf:'high' },
+  };
+  const fields = ['role','kb','type','hist','hit','conf'];
+
+  function setStep(id, state, title, result) {
+    const el = document.getElementById(id);
+    el.classList.remove('pass','fail','skip');
+    if (state) el.classList.add(state);
+    el.querySelector('.stitle').textContent = title;
+    el.querySelector('.sresult').textContent = result;
+  }
+  function setSummary(state, verdict, html) {
+    const out = document.getElementById('sim-out');
+    out.classList.remove('allow','deny','skip');
+    out.classList.add(state);
+    out.innerHTML = `<span class="verdict">${verdict}</span><span>${html}</span>`;
+  }
+
+  function compute() {
+    const v = {};
+    fields.forEach(f => v[f] = document.getElementById('f-'+f).value);
+
+    // i. 记忆补全
+    if (v.hist === 'yes') setStep('s-1', 'pass', 'ConversationMemory', '取最近 N 轮 + 摘要补全指代');
+    else                  setStep('s-1', 'skip', 'ConversationMemory', '首轮提问 · 跳过');
+
+    // ii. 改写
+    setStep('s-2', 'pass', 'QueryRewrite', '术语归一 + LLM 改写 + 拆子问题');
+
+    // iii. 意图
+    if (v.type === 'sys') setStep('s-3', 'pass', 'IntentResolver', '判定为系统意图（问候/帮助）');
+    else if (v.conf === 'low') setStep('s-3', 'fail', 'IntentResolver', '所有候选置信度都低 → 触发歧义引导');
+    else if (v.type === 'mcp') setStep('s-3', 'pass', 'IntentResolver', '命中 MCP 类意图');
+    else setStep('s-3', 'pass', 'IntentResolver', '命中 KB 业务意图');
+
+    // 短路：歧义引导
+    if (v.type !== 'sys' && v.conf === 'low') {
+      setStep('s-4', 'skip', 'RetrievalEngine', '不召回 · 等待用户澄清');
+      setStep('s-5', 'skip', 'PostProcessor', '—');
+      setStep('s-6', 'skip', 'streamChat', '—');
+      setSummary('skip', '?', '<b>歧义引导触发 ·</b> 候选意图都不显著 → 前端弹"你想问的是哪一类？"，等用户选完再继续。');
+      return;
+    }
+
+    // 短路：系统意图
+    if (v.type === 'sys') {
+      setStep('s-4', 'skip', 'RetrievalEngine', '系统意图 · 短路');
+      setStep('s-5', 'skip', 'PostProcessor', '—');
+      setStep('s-6', 'pass', 'streamChat', '直接调 LLM 回答');
+      setSummary('allow', '✓', '<b>系统意图短路 ·</b> 跳过整条 RAG 链路，直接由 LLM 答"你好/我能帮你做什么"。');
+      return;
+    }
+
+    // iv. 召回
+    if (v.kb === 'cross') {
+      setStep('s-4', 'fail', 'RetrievalEngine', '权限过滤 → 全部剔除（fail-closed）');
+      setStep('s-5', 'skip', 'PostProcessor', '空集 · 无可重排');
+      setStep('s-6', 'skip', 'streamChat', '兜底拒答');
+      setSummary('deny', '✗', '<b>越权拦截 ·</b> 用户对该 KB 无权访问，<code>AuthzPostProcessor</code> 在重排前剔除全部召回；编排器以拒答收尾。');
+      return;
+    }
+    if (v.kb === 'none') {
+      setStep('s-4', 'fail', 'RetrievalEngine', 'kbId 缺失 · fail-closed');
+      setStep('s-5', 'skip', 'PostProcessor', '—');
+      setStep('s-6', 'skip', 'streamChat', '—');
+      setSummary('deny', '✗', '<b>无空间归属 ·</b> 没有 <code>kbId</code> 不允许进入 RAG，前端会引导用户先选择一个知识空间。');
+      return;
+    }
+    if (v.hit === 'no') {
+      setStep('s-4', 'fail', 'RetrievalEngine', '空召回（KB 内无相关 chunk）');
+      setStep('s-5', 'skip', 'PostProcessor', '—');
+      setStep('s-6', 'pass', 'streamChat', '兜底回复 · "未找到相关资料"');
+      setSummary('skip', '◐', '<b>空召回兜底 ·</b> 检索没拿到证据，LLM 不再"硬答"，而是给出"暂无相关资料，可换个问法"。');
+      return;
+    }
+
+    // 正常路径
+    if (v.type === 'mcp') {
+      setStep('s-4', 'pass', 'RetrievalEngine', 'KB 通道 + MCP 工具并行命中');
+    } else {
+      setStep('s-4', 'pass', 'RetrievalEngine', '意图通道 + 全局通道并行命中');
+    }
+    setStep('s-5', 'pass', 'PostProcessor', '权限过滤 → 去重 → 重排 Top-10');
+    setStep('s-6', 'pass', 'streamChat', '流式吐 token + 引用 [^n]');
+    setSummary('allow', '✓', '<b>完整 RAG 链路 ·</b> 六步全过 → 答案附引用卡片，每条引用回链到原 chunk；本轮被采样进评估表。');
+  }
+
+  document.querySelectorAll('.case-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.case-chip').forEach(c => c.classList.toggle('active', c === chip));
+      const cfg = cases[chip.dataset.case];
+      fields.forEach(f => document.getElementById('f-'+f).value = cfg[f]);
+      compute();
+    });
+  });
+  fields.forEach(f => document.getElementById('f-'+f).addEventListener('change', () => {
+    document.querySelectorAll('.case-chip').forEach(c => c.classList.remove('active'));
+    compute();
+  }));
+  compute();
+</script>
+
+</body>
+</html>
