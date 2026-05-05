@@ -35,6 +35,7 @@ import com.knowledgebase.ai.ragent.core.chunk.ChunkingStrategy;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingStrategyFactory;
 import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
 import com.knowledgebase.ai.ragent.core.parser.DocumentParserSelector;
+import com.knowledgebase.ai.ragent.core.parser.ParseMode;
 import com.knowledgebase.ai.ragent.core.parser.ParserType;
 import com.knowledgebase.ai.ragent.framework.context.UserContext;
 import com.knowledgebase.ai.ragent.framework.exception.ClientException;
@@ -164,6 +165,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 .chunkConfig(modeConfig.chunkConfig())
                 .pipelineId(modeConfig.pipelineId())
                 .securityLevel(requestParam.getSecurityLevel() != null ? requestParam.getSecurityLevel() : 0)
+                .parseMode(ParseMode.fromValue(requestParam.getParseMode()).getValue())
                 .createdBy(UserContext.getUsername())
                 .updatedBy(UserContext.getUsername())
                 .build();
