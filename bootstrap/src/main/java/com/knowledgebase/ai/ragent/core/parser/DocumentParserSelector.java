@@ -43,15 +43,25 @@ public class DocumentParserSelector {
 
     private final List<DocumentParser> strategies;
     private final Map<String, DocumentParser> strategyMap;
+    /** ENHANCED 路径返回的实例（singleton，构造期一次性建好）。见 {@link #buildEnhancedParser()}。*/
+    private final DocumentParser enhancedParser;
 
     public DocumentParserSelector(List<DocumentParser> parsers) {
+        // 显式禁止把 FallbackParserDecorator 当 DocumentParser bean 注入：decorator 的
+        // getParserType() 返回 primaryName（如 "Docling"），如果 Spring 把 decorator 也收进
+        // parsers 列表，会与真正的 Docling parser 冲突 / 顺序不确定地相互遮蔽。
+        for (DocumentParser p : parsers) {
+            if (p instanceof FallbackParserDecorator) {
+                throw new IllegalArgumentException(
+                        "FallbackParserDecorator must not be registered as a DocumentParser bean — it is constructed "
+                                + "internally by selectByParseMode(ENHANCED). Found: " + p.getClass().getName());
+            }
+        }
         this.strategies = parsers;
         this.strategyMap = parsers.stream()
                 .collect(Collectors.toMap(
-                        DocumentParser::getParserType,
-                        Function.identity(),
-                        (existing, replacement) -> existing
-                ));
+                        DocumentParser::getParserType, Function.identity(), (existing, replacement) -> existing));
+        this.enhancedParser = buildEnhancedParser();
     }
 
     /**
@@ -68,23 +78,42 @@ public class DocumentParserSelector {
      * 按解析模式选择解析器。
      * <ul>
      *   <li>{@link ParseMode#BASIC} → Tika</li>
-     *   <li>{@link ParseMode#ENHANCED} → Docling；若 Docling 尚未注册（PR 1 末态）则回退 Tika，
-     *       PR 2 起 Docling bean 可用后由 fallback decorator 控制兜底语义。</li>
+     *   <li>{@link ParseMode#ENHANCED} → 始终返回 {@link FallbackParserDecorator} 包装的解析器，
+     *       primary = Docling（若已注册）/ 否则 Tika，fallback 始终是 Tika。这保证：
+     *       <ul>
+     *         <li>Docling 不可用时 ingestion 不会整链路失败；</li>
+     *         <li>{@code parse_engine_requested = "Docling"} 与 {@code parse_engine_actual}
+     *             metadata 永远存在，前端可读以决定是否提示「增强解析尚未启用，已使用基础解析」。</li>
+     *       </ul>
+     *   </li>
      * </ul>
+     * PR 5 起注册真正的 {@code DoclingDocumentParser} 后，primary 自动切换为 Docling，
+     * 失败时 decorator 兜底回 Tika 并 stamp {@code parse_fallback_reason=primary_failed}。
      */
     public DocumentParser selectByParseMode(ParseMode mode) {
         return switch (mode) {
             case BASIC -> select(ParserType.TIKA.getType());
-            case ENHANCED -> selectEnhanced();
+            case ENHANCED -> enhancedParser;
         };
     }
 
-    private DocumentParser selectEnhanced() {
+    /**
+     * 构造期一次性建好 ENHANCED 路径对应的 decorator。Selector 是单例 Spring bean，
+     * decorator 自身无可变状态（{@code stamp()} 内 HashMap 是方法局部变量），多线程并发调用安全。
+     * 这样可避免每次 ingestion 调用 {@link #selectByParseMode(ParseMode)} 都重新分配
+     * decorator + 在 degraded 模式下重复打 INFO 日志。
+     */
+    private DocumentParser buildEnhancedParser() {
+        DocumentParser tika = select(ParserType.TIKA.getType());
         DocumentParser docling = strategyMap.get(ParserType.DOCLING.getType());
         if (docling == null) {
-            return select(ParserType.TIKA.getType());
+            return FallbackParserDecorator.degraded(
+                    tika,
+                    ParserType.DOCLING.getType(),
+                    ParserType.TIKA.getType(),
+                    FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
         }
-        return docling;
+        return new FallbackParserDecorator(docling, tika, ParserType.DOCLING.getType(), ParserType.TIKA.getType());
     }
 
     /**
