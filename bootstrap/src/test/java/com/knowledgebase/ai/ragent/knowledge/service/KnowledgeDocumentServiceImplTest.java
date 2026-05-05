@@ -110,7 +110,9 @@ class KnowledgeDocumentServiceImplTest {
                 transactionOperations,
                 messageQueueProducer,
                 scheduleProperties,
-                remoteFileFetcher
+                remoteFileFetcher,
+                new com.knowledgebase.ai.ragent.knowledge.service.support.ParseModePolicy(),
+                new com.knowledgebase.ai.ragent.knowledge.service.support.ParseModeRouter()
         );
         ReflectionTestUtils.setField(service, "securityLevelRefreshTopic", "knowledge-document-security-level_topic");
     }

@@ -51,9 +51,13 @@ const SOURCE_OPTIONS = [
   { value: "url", label: "Remote URL" }
 ];
 
+// PR 4: parseMode 是用户可见的解析切换。后端按 parseMode 派生 processMode：
+//   chunk → basic（Tika 直分块快路径）
+//   pipeline → enhanced（Docling 流水线 + 结构化分块 + layout metadata）
+// 历史 processMode 选项保留作为内部 form 字段，但 label/copy 改成基础/增强。
 const PROCESS_MODE_OPTIONS = [
-  { value: "chunk", label: "直接分块" },
-  { value: "pipeline", label: "数据通道" }
+  { value: "chunk", label: "基础解析（Tika 直接分块，快）" },
+  { value: "pipeline", label: "增强解析（Docling 流水线，识别表格/版面）" }
 ];
 
 const SECURITY_OPTIONS = [
@@ -1072,15 +1076,8 @@ const uploadSchema = z
         requireNumber(values.minChars, "minChars", "块下限");
         requireNumber(values.overlapChars, "overlapChars", "重叠大小");
       }
-    } else if (values.processMode === "pipeline") {
-      if (isBlank(values.pipelineId)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ["pipelineId"],
-          message: "请选择数据通道"
-        });
-      }
     }
+    // PR 4: pipeline 模式下 pipelineId 不再前端强制必填——留空时后端会用 'enhanced-default' 兜底。
   });
 
 type UploadFormValues = z.infer<typeof uploadSchema>;
@@ -1262,6 +1259,11 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
 
     setSaving(true);
     try {
+      // PR 4: derive parseMode from the (UX-relabeled) processMode select.
+      // chunk → basic, pipeline → enhanced. Backend honors parseMode and re-derives processMode.
+      const parseMode: "basic" | "enhanced" =
+        values.processMode === "pipeline" ? "enhanced" : "basic";
+
       const payload: KnowledgeDocumentUploadPayload = {
         sourceType: values.sourceType,
         file: values.sourceType === "file" ? file : null,
@@ -1271,10 +1273,15 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
           values.sourceType === "url" && values.scheduleEnabled
             ? values.scheduleCron.trim()
             : null,
+        parseMode,
         processMode: values.processMode,
         chunkStrategy: values.processMode === "chunk" ? values.chunkStrategy : undefined,
         chunkConfig: chunkConfig ?? null,
-        pipelineId: values.processMode === "pipeline" ? values.pipelineId : null,
+        // pipelineId optional in enhanced; backend uses 'enhanced-default' when blank.
+        pipelineId:
+          values.processMode === "pipeline" && values.pipelineId
+            ? values.pipelineId
+            : null,
         securityLevel: Number(values.securityLevel ?? "0")
       };
       await onSubmit(payload);
@@ -1463,11 +1470,11 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
                 name="processMode"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>处理模式</FormLabel>
+                    <FormLabel>解析方式</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="选择处理模式" />
+                          <SelectValue placeholder="选择解析方式" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -1489,11 +1496,11 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
                   name="pipelineId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-muted-foreground font-normal">选择通道</FormLabel>
+                      <FormLabel className="text-xs text-muted-foreground font-normal">选择通道（可选）</FormLabel>
                       <Select value={field.value} onValueChange={field.onChange} disabled={loadingPipelines}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder={loadingPipelines ? "加载中..." : "请选择"} />
+                            <SelectValue placeholder={loadingPipelines ? "加载中..." : "默认增强通道（enhanced-default）"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -1510,7 +1517,7 @@ function UploadDialog({ open, onOpenChange, onSubmit }: UploadDialogProps) {
                           )}
                         </SelectContent>
                       </Select>
-                      <FormDescription>通过ETL处理提升文件数据质量，增强向量搜索效果</FormDescription>
+                      <FormDescription>留空使用默认增强通道（Docling 流水线）。如有自定义 pipeline 可在此选择。</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -106,6 +106,11 @@ export interface KnowledgeDocumentUploadPayload {
   sourceLocation?: string | null;
   scheduleEnabled?: boolean;
   scheduleCron?: string | null;
+  /**
+   * UX-level parser switch (PR 4): "basic" (Tika fast path) | "enhanced" (Docling pipeline).
+   * Backend resolves processMode from this; frontend processMode is ignored on the server.
+   */
+  parseMode?: "basic" | "enhanced";
   processMode?: "chunk" | "pipeline";
   chunkStrategy?: string;
   chunkConfig?: string | null;
@@ -225,6 +230,9 @@ export const uploadDocument = async (
   }
   if (payload.scheduleCron) {
     formData.append("scheduleCron", payload.scheduleCron);
+  }
+  if (payload.parseMode) {
+    formData.append("parseMode", payload.parseMode);
   }
   if (payload.processMode) {
     formData.append("processMode", payload.processMode);
