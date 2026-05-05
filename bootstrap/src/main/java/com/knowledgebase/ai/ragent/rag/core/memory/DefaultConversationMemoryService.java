@@ -21,6 +21,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.knowledgebase.ai.ragent.framework.convention.ChatMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class DefaultConversationMemoryService implements ConversationMemoryServi
 
     public DefaultConversationMemoryService(ConversationMemoryStore memoryStore,
                                             ConversationMemorySummaryService summaryService,
+                                            @Qualifier("memoryLoadExecutor")
                                             Executor memoryLoadExecutor) {
         this.memoryStore = memoryStore;
         this.summaryService = summaryService;
