@@ -239,3 +239,10 @@ opensearch:
   hybrid:
     vector-weight: 0.5
     text-weight: 0.5
+docling:
+  service:
+    enabled: true
+    host: http://localhost:5001
+    # 扫描版 PDF + EasyOCR + 表格识别可能 5-10 分钟（实测 4 核 CPU 满载）。
+    # 设大一点宁可前端等也别 fallback 回 Tika 拿空文本。
+    timeout-ms: 600000

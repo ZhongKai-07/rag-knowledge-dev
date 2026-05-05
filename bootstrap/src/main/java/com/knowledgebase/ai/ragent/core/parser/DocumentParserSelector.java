@@ -17,6 +17,7 @@
 
 package com.knowledgebase.ai.ragent.core.parser;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
  * </ul>
  * </p>
  */
+@Slf4j
 @Component
 public class DocumentParserSelector {
 
@@ -107,12 +109,18 @@ public class DocumentParserSelector {
         DocumentParser tika = select(ParserType.TIKA.getType());
         DocumentParser docling = strategyMap.get(ParserType.DOCLING.getType());
         if (docling == null) {
+            log.warn(
+                    "ENHANCED parser DEGRADED: Docling bean not registered, falling back to Tika. "
+                            + "Available parser types: {}. "
+                            + "Check docling.service.enabled and module compile state.",
+                    strategyMap.keySet());
             return FallbackParserDecorator.degraded(
                     tika,
                     ParserType.DOCLING.getType(),
                     ParserType.TIKA.getType(),
                     FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
         }
+        log.info("ENHANCED parser READY: primary=Docling, fallback=Tika");
         return new FallbackParserDecorator(docling, tika, ParserType.DOCLING.getType(), ParserType.TIKA.getType());
     }
 

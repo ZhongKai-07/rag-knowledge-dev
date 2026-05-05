@@ -1,0 +1,7747 @@
+{
+  "document": {
+    "filename": "1. Guideline on AML KYC_2025.pdf",
+    "md_content": null,
+    "json_content": {
+      "schema_name": "DoclingDocument",
+      "version": "1.1.0",
+      "name": "1. Guideline on AML KYC_2025",
+      "origin": {
+        "mimetype": "application/pdf",
+        "binary_hash": 4229802389742321404,
+        "filename": "1. Guideline on AML KYC_2025.pdf",
+        "uri": null
+      },
+      "furniture": {
+        "self_ref": "#/furniture",
+        "parent": null,
+        "children": [],
+        "content_layer": "furniture",
+        "name": "_root_",
+        "label": "unspecified"
+      },
+      "body": {
+        "self_ref": "#/body",
+        "parent": null,
+        "children": [
+          {
+            "$ref": "#/pictures/0"
+          },
+          {
+            "$ref": "#/pictures/1"
+          },
+          {
+            "$ref": "#/texts/1"
+          },
+          {
+            "$ref": "#/texts/2"
+          },
+          {
+            "$ref": "#/texts/3"
+          },
+          {
+            "$ref": "#/tables/0"
+          },
+          {
+            "$ref": "#/texts/4"
+          },
+          {
+            "$ref": "#/texts/5"
+          },
+          {
+            "$ref": "#/pictures/2"
+          },
+          {
+            "$ref": "#/texts/6"
+          },
+          {
+            "$ref": "#/texts/7"
+          },
+          {
+            "$ref": "#/texts/8"
+          },
+          {
+            "$ref": "#/texts/9"
+          },
+          {
+            "$ref": "#/tables/1"
+          },
+          {
+            "$ref": "#/texts/10"
+          },
+          {
+            "$ref": "#/texts/11"
+          },
+          {
+            "$ref": "#/pictures/3"
+          },
+          {
+            "$ref": "#/tables/2"
+          },
+          {
+            "$ref": "#/texts/12"
+          },
+          {
+            "$ref": "#/texts/13"
+          },
+          {
+            "$ref": "#/pictures/4"
+          },
+          {
+            "$ref": "#/tables/3"
+          },
+          {
+            "$ref": "#/texts/14"
+          },
+          {
+            "$ref": "#/texts/15"
+          },
+          {
+            "$ref": "#/pictures/5"
+          },
+          {
+            "$ref": "#/tables/4"
+          },
+          {
+            "$ref": "#/texts/16"
+          },
+          {
+            "$ref": "#/texts/17"
+          },
+          {
+            "$ref": "#/pictures/6"
+          },
+          {
+            "$ref": "#/texts/18"
+          },
+          {
+            "$ref": "#/tables/5"
+          },
+          {
+            "$ref": "#/texts/19"
+          },
+          {
+            "$ref": "#/texts/20"
+          },
+          {
+            "$ref": "#/pictures/7"
+          },
+          {
+            "$ref": "#/texts/21"
+          },
+          {
+            "$ref": "#/texts/22"
+          },
+          {
+            "$ref": "#/texts/23"
+          },
+          {
+            "$ref": "#/texts/24"
+          },
+          {
+            "$ref": "#/groups/0"
+          },
+          {
+            "$ref": "#/texts/31"
+          },
+          {
+            "$ref": "#/texts/32"
+          },
+          {
+            "$ref": "#/texts/33"
+          },
+          {
+            "$ref": "#/texts/34"
+          },
+          {
+            "$ref": "#/pictures/8"
+          },
+          {
+            "$ref": "#/texts/35"
+          },
+          {
+            "$ref": "#/texts/36"
+          },
+          {
+            "$ref": "#/texts/37"
+          },
+          {
+            "$ref": "#/groups/1"
+          },
+          {
+            "$ref": "#/texts/45"
+          },
+          {
+            "$ref": "#/groups/2"
+          },
+          {
+            "$ref": "#/texts/52"
+          },
+          {
+            "$ref": "#/texts/53"
+          },
+          {
+            "$ref": "#/texts/54"
+          },
+          {
+            "$ref": "#/pictures/9"
+          },
+          {
+            "$ref": "#/groups/3"
+          },
+          {
+            "$ref": "#/texts/59"
+          },
+          {
+            "$ref": "#/groups/4"
+          },
+          {
+            "$ref": "#/texts/72"
+          },
+          {
+            "$ref": "#/groups/5"
+          },
+          {
+            "$ref": "#/texts/77"
+          },
+          {
+            "$ref": "#/texts/78"
+          },
+          {
+            "$ref": "#/pictures/10"
+          },
+          {
+            "$ref": "#/groups/6"
+          },
+          {
+            "$ref": "#/texts/86"
+          },
+          {
+            "$ref": "#/groups/7"
+          },
+          {
+            "$ref": "#/texts/93"
+          },
+          {
+            "$ref": "#/texts/94"
+          },
+          {
+            "$ref": "#/texts/95"
+          },
+          {
+            "$ref": "#/texts/96"
+          },
+          {
+            "$ref": "#/texts/97"
+          },
+          {
+            "$ref": "#/texts/98"
+          },
+          {
+            "$ref": "#/texts/99"
+          },
+          {
+            "$ref": "#/groups/8"
+          },
+          {
+            "$ref": "#/texts/110"
+          },
+          {
+            "$ref": "#/texts/111"
+          },
+          {
+            "$ref": "#/groups/9"
+          },
+          {
+            "$ref": "#/pictures/11"
+          },
+          {
+            "$ref": "#/texts/114"
+          },
+          {
+            "$ref": "#/texts/115"
+          },
+          {
+            "$ref": "#/texts/116"
+          },
+          {
+            "$ref": "#/texts/117"
+          },
+          {
+            "$ref": "#/groups/10"
+          },
+          {
+            "$ref": "#/pictures/12"
+          },
+          {
+            "$ref": "#/texts/124"
+          },
+          {
+            "$ref": "#/texts/125"
+          },
+          {
+            "$ref": "#/pictures/13"
+          },
+          {
+            "$ref": "#/texts/126"
+          },
+          {
+            "$ref": "#/texts/127"
+          },
+          {
+            "$ref": "#/groups/11"
+          },
+          {
+            "$ref": "#/texts/133"
+          },
+          {
+            "$ref": "#/groups/12"
+          },
+          {
+            "$ref": "#/texts/138"
+          },
+          {
+            "$ref": "#/texts/139"
+          },
+          {
+            "$ref": "#/texts/140"
+          },
+          {
+            "$ref": "#/texts/141"
+          },
+          {
+            "$ref": "#/pictures/14"
+          },
+          {
+            "$ref": "#/texts/142"
+          },
+          {
+            "$ref": "#/groups/13"
+          },
+          {
+            "$ref": "#/texts/146"
+          },
+          {
+            "$ref": "#/texts/147"
+          },
+          {
+            "$ref": "#/texts/148"
+          },
+          {
+            "$ref": "#/texts/149"
+          },
+          {
+            "$ref": "#/texts/150"
+          },
+          {
+            "$ref": "#/groups/14"
+          },
+          {
+            "$ref": "#/texts/155"
+          },
+          {
+            "$ref": "#/texts/156"
+          },
+          {
+            "$ref": "#/groups/15"
+          },
+          {
+            "$ref": "#/texts/159"
+          },
+          {
+            "$ref": "#/texts/160"
+          },
+          {
+            "$ref": "#/groups/16"
+          },
+          {
+            "$ref": "#/texts/168"
+          },
+          {
+            "$ref": "#/texts/169"
+          },
+          {
+            "$ref": "#/texts/170"
+          },
+          {
+            "$ref": "#/texts/171"
+          },
+          {
+            "$ref": "#/pictures/15"
+          },
+          {
+            "$ref": "#/texts/172"
+          },
+          {
+            "$ref": "#/texts/173"
+          },
+          {
+            "$ref": "#/pictures/16"
+          },
+          {
+            "$ref": "#/texts/174"
+          },
+          {
+            "$ref": "#/texts/175"
+          },
+          {
+            "$ref": "#/texts/176"
+          },
+          {
+            "$ref": "#/groups/17"
+          },
+          {
+            "$ref": "#/texts/185"
+          },
+          {
+            "$ref": "#/texts/186"
+          },
+          {
+            "$ref": "#/texts/187"
+          },
+          {
+            "$ref": "#/texts/188"
+          },
+          {
+            "$ref": "#/texts/189"
+          },
+          {
+            "$ref": "#/texts/190"
+          },
+          {
+            "$ref": "#/groups/18"
+          },
+          {
+            "$ref": "#/texts/198"
+          },
+          {
+            "$ref": "#/texts/199"
+          },
+          {
+            "$ref": "#/texts/200"
+          },
+          {
+            "$ref": "#/groups/19"
+          },
+          {
+            "$ref": "#/pictures/17"
+          },
+          {
+            "$ref": "#/texts/204"
+          },
+          {
+            "$ref": "#/texts/205"
+          },
+          {
+            "$ref": "#/pictures/18"
+          },
+          {
+            "$ref": "#/groups/20"
+          },
+          {
+            "$ref": "#/texts/207"
+          },
+          {
+            "$ref": "#/texts/208"
+          },
+          {
+            "$ref": "#/texts/209"
+          },
+          {
+            "$ref": "#/texts/210"
+          },
+          {
+            "$ref": "#/texts/211"
+          },
+          {
+            "$ref": "#/groups/21"
+          },
+          {
+            "$ref": "#/texts/217"
+          },
+          {
+            "$ref": "#/texts/218"
+          },
+          {
+            "$ref": "#/pictures/19"
+          },
+          {
+            "$ref": "#/texts/219"
+          },
+          {
+            "$ref": "#/groups/22"
+          },
+          {
+            "$ref": "#/texts/223"
+          },
+          {
+            "$ref": "#/texts/224"
+          },
+          {
+            "$ref": "#/groups/23"
+          },
+          {
+            "$ref": "#/texts/229"
+          },
+          {
+            "$ref": "#/texts/230"
+          },
+          {
+            "$ref": "#/texts/231"
+          },
+          {
+            "$ref": "#/texts/232"
+          },
+          {
+            "$ref": "#/texts/233"
+          },
+          {
+            "$ref": "#/texts/234"
+          },
+          {
+            "$ref": "#/texts/235"
+          },
+          {
+            "$ref": "#/texts/236"
+          },
+          {
+            "$ref": "#/pictures/20"
+          },
+          {
+            "$ref": "#/texts/237"
+          },
+          {
+            "$ref": "#/texts/238"
+          },
+          {
+            "$ref": "#/texts/239"
+          },
+          {
+            "$ref": "#/texts/240"
+          },
+          {
+            "$ref": "#/texts/241"
+          },
+          {
+            "$ref": "#/texts/242"
+          },
+          {
+            "$ref": "#/texts/243"
+          },
+          {
+            "$ref": "#/texts/244"
+          },
+          {
+            "$ref": "#/texts/245"
+          },
+          {
+            "$ref": "#/texts/246"
+          },
+          {
+            "$ref": "#/texts/247"
+          },
+          {
+            "$ref": "#/pictures/21"
+          },
+          {
+            "$ref": "#/texts/248"
+          },
+          {
+            "$ref": "#/texts/249"
+          },
+          {
+            "$ref": "#/texts/250"
+          },
+          {
+            "$ref": "#/texts/251"
+          },
+          {
+            "$ref": "#/texts/252"
+          },
+          {
+            "$ref": "#/texts/253"
+          },
+          {
+            "$ref": "#/texts/254"
+          },
+          {
+            "$ref": "#/texts/255"
+          },
+          {
+            "$ref": "#/texts/256"
+          },
+          {
+            "$ref": "#/texts/257"
+          },
+          {
+            "$ref": "#/pictures/22"
+          },
+          {
+            "$ref": "#/texts/258"
+          },
+          {
+            "$ref": "#/texts/259"
+          },
+          {
+            "$ref": "#/texts/260"
+          },
+          {
+            "$ref": "#/texts/261"
+          },
+          {
+            "$ref": "#/groups/24"
+          },
+          {
+            "$ref": "#/texts/265"
+          },
+          {
+            "$ref": "#/texts/266"
+          },
+          {
+            "$ref": "#/texts/267"
+          },
+          {
+            "$ref": "#/texts/268"
+          },
+          {
+            "$ref": "#/texts/269"
+          },
+          {
+            "$ref": "#/texts/270"
+          },
+          {
+            "$ref": "#/pictures/23"
+          },
+          {
+            "$ref": "#/texts/271"
+          },
+          {
+            "$ref": "#/texts/272"
+          },
+          {
+            "$ref": "#/texts/273"
+          },
+          {
+            "$ref": "#/groups/25"
+          },
+          {
+            "$ref": "#/texts/279"
+          },
+          {
+            "$ref": "#/texts/280"
+          },
+          {
+            "$ref": "#/texts/281"
+          },
+          {
+            "$ref": "#/pictures/24"
+          },
+          {
+            "$ref": "#/texts/282"
+          },
+          {
+            "$ref": "#/texts/283"
+          },
+          {
+            "$ref": "#/texts/284"
+          },
+          {
+            "$ref": "#/texts/285"
+          },
+          {
+            "$ref": "#/pictures/25"
+          },
+          {
+            "$ref": "#/texts/286"
+          },
+          {
+            "$ref": "#/texts/287"
+          },
+          {
+            "$ref": "#/groups/26"
+          },
+          {
+            "$ref": "#/texts/292"
+          },
+          {
+            "$ref": "#/texts/293"
+          },
+          {
+            "$ref": "#/texts/294"
+          },
+          {
+            "$ref": "#/texts/295"
+          },
+          {
+            "$ref": "#/pictures/26"
+          },
+          {
+            "$ref": "#/texts/296"
+          },
+          {
+            "$ref": "#/texts/297"
+          },
+          {
+            "$ref": "#/texts/298"
+          },
+          {
+            "$ref": "#/texts/299"
+          },
+          {
+            "$ref": "#/groups/27"
+          },
+          {
+            "$ref": "#/texts/308"
+          },
+          {
+            "$ref": "#/texts/309"
+          },
+          {
+            "$ref": "#/groups/28"
+          },
+          {
+            "$ref": "#/texts/316"
+          },
+          {
+            "$ref": "#/texts/317"
+          },
+          {
+            "$ref": "#/pictures/27"
+          },
+          {
+            "$ref": "#/texts/318"
+          },
+          {
+            "$ref": "#/texts/319"
+          },
+          {
+            "$ref": "#/groups/29"
+          },
+          {
+            "$ref": "#/texts/324"
+          },
+          {
+            "$ref": "#/texts/325"
+          },
+          {
+            "$ref": "#/texts/326"
+          },
+          {
+            "$ref": "#/groups/30"
+          },
+          {
+            "$ref": "#/texts/331"
+          },
+          {
+            "$ref": "#/groups/31"
+          },
+          {
+            "$ref": "#/texts/336"
+          },
+          {
+            "$ref": "#/texts/337"
+          },
+          {
+            "$ref": "#/texts/338"
+          },
+          {
+            "$ref": "#/texts/339"
+          },
+          {
+            "$ref": "#/pictures/28"
+          },
+          {
+            "$ref": "#/texts/340"
+          },
+          {
+            "$ref": "#/texts/341"
+          },
+          {
+            "$ref": "#/texts/342"
+          },
+          {
+            "$ref": "#/texts/343"
+          },
+          {
+            "$ref": "#/texts/344"
+          },
+          {
+            "$ref": "#/texts/345"
+          },
+          {
+            "$ref": "#/texts/346"
+          },
+          {
+            "$ref": "#/groups/32"
+          },
+          {
+            "$ref": "#/texts/351"
+          },
+          {
+            "$ref": "#/texts/352"
+          },
+          {
+            "$ref": "#/texts/353"
+          },
+          {
+            "$ref": "#/pictures/29"
+          },
+          {
+            "$ref": "#/texts/354"
+          },
+          {
+            "$ref": "#/texts/355"
+          },
+          {
+            "$ref": "#/texts/356"
+          },
+          {
+            "$ref": "#/texts/357"
+          },
+          {
+            "$ref": "#/texts/358"
+          },
+          {
+            "$ref": "#/texts/359"
+          },
+          {
+            "$ref": "#/groups/33"
+          },
+          {
+            "$ref": "#/texts/366"
+          },
+          {
+            "$ref": "#/texts/367"
+          },
+          {
+            "$ref": "#/texts/368"
+          },
+          {
+            "$ref": "#/texts/369"
+          },
+          {
+            "$ref": "#/pictures/30"
+          },
+          {
+            "$ref": "#/texts/370"
+          },
+          {
+            "$ref": "#/texts/371"
+          },
+          {
+            "$ref": "#/texts/372"
+          },
+          {
+            "$ref": "#/texts/373"
+          },
+          {
+            "$ref": "#/texts/374"
+          },
+          {
+            "$ref": "#/texts/375"
+          },
+          {
+            "$ref": "#/texts/376"
+          },
+          {
+            "$ref": "#/texts/377"
+          },
+          {
+            "$ref": "#/texts/378"
+          },
+          {
+            "$ref": "#/texts/379"
+          },
+          {
+            "$ref": "#/pictures/31"
+          },
+          {
+            "$ref": "#/texts/380"
+          },
+          {
+            "$ref": "#/texts/381"
+          },
+          {
+            "$ref": "#/texts/382"
+          },
+          {
+            "$ref": "#/texts/383"
+          },
+          {
+            "$ref": "#/texts/384"
+          },
+          {
+            "$ref": "#/texts/385"
+          },
+          {
+            "$ref": "#/texts/386"
+          },
+          {
+            "$ref": "#/texts/387"
+          },
+          {
+            "$ref": "#/texts/388"
+          },
+          {
+            "$ref": "#/texts/389"
+          },
+          {
+            "$ref": "#/texts/390"
+          },
+          {
+            "$ref": "#/groups/34"
+          },
+          {
+            "$ref": "#/texts/392"
+          },
+          {
+            "$ref": "#/texts/393"
+          },
+          {
+            "$ref": "#/pictures/32"
+          },
+          {
+            "$ref": "#/groups/35"
+          },
+          {
+            "$ref": "#/texts/406"
+          },
+          {
+            "$ref": "#/texts/407"
+          },
+          {
+            "$ref": "#/texts/408"
+          },
+          {
+            "$ref": "#/texts/409"
+          },
+          {
+            "$ref": "#/texts/410"
+          },
+          {
+            "$ref": "#/texts/411"
+          },
+          {
+            "$ref": "#/texts/412"
+          },
+          {
+            "$ref": "#/texts/413"
+          },
+          {
+            "$ref": "#/pictures/33"
+          },
+          {
+            "$ref": "#/texts/414"
+          },
+          {
+            "$ref": "#/texts/415"
+          },
+          {
+            "$ref": "#/texts/416"
+          },
+          {
+            "$ref": "#/texts/417"
+          },
+          {
+            "$ref": "#/texts/418"
+          },
+          {
+            "$ref": "#/texts/419"
+          },
+          {
+            "$ref": "#/texts/420"
+          },
+          {
+            "$ref": "#/tables/6"
+          },
+          {
+            "$ref": "#/texts/421"
+          },
+          {
+            "$ref": "#/texts/422"
+          },
+          {
+            "$ref": "#/pictures/34"
+          },
+          {
+            "$ref": "#/texts/423"
+          },
+          {
+            "$ref": "#/texts/424"
+          },
+          {
+            "$ref": "#/texts/425"
+          },
+          {
+            "$ref": "#/tables/7"
+          },
+          {
+            "$ref": "#/texts/426"
+          },
+          {
+            "$ref": "#/texts/427"
+          },
+          {
+            "$ref": "#/texts/428"
+          },
+          {
+            "$ref": "#/texts/429"
+          },
+          {
+            "$ref": "#/pictures/35"
+          },
+          {
+            "$ref": "#/texts/430"
+          },
+          {
+            "$ref": "#/texts/431"
+          },
+          {
+            "$ref": "#/texts/432"
+          },
+          {
+            "$ref": "#/texts/433"
+          },
+          {
+            "$ref": "#/texts/434"
+          },
+          {
+            "$ref": "#/texts/435"
+          },
+          {
+            "$ref": "#/texts/436"
+          },
+          {
+            "$ref": "#/texts/437"
+          },
+          {
+            "$ref": "#/pictures/36"
+          },
+          {
+            "$ref": "#/texts/438"
+          },
+          {
+            "$ref": "#/texts/439"
+          },
+          {
+            "$ref": "#/groups/36"
+          },
+          {
+            "$ref": "#/texts/449"
+          },
+          {
+            "$ref": "#/texts/450"
+          },
+          {
+            "$ref": "#/groups/37"
+          },
+          {
+            "$ref": "#/texts/454"
+          },
+          {
+            "$ref": "#/texts/455"
+          },
+          {
+            "$ref": "#/pictures/37"
+          },
+          {
+            "$ref": "#/texts/456"
+          },
+          {
+            "$ref": "#/texts/457"
+          },
+          {
+            "$ref": "#/texts/458"
+          },
+          {
+            "$ref": "#/texts/459"
+          },
+          {
+            "$ref": "#/tables/8"
+          },
+          {
+            "$ref": "#/texts/461"
+          },
+          {
+            "$ref": "#/texts/462"
+          },
+          {
+            "$ref": "#/texts/463"
+          },
+          {
+            "$ref": "#/pictures/38"
+          },
+          {
+            "$ref": "#/tables/9"
+          },
+          {
+            "$ref": "#/texts/464"
+          },
+          {
+            "$ref": "#/groups/38"
+          },
+          {
+            "$ref": "#/texts/466"
+          },
+          {
+            "$ref": "#/tables/10"
+          },
+          {
+            "$ref": "#/texts/467"
+          },
+          {
+            "$ref": "#/texts/468"
+          },
+          {
+            "$ref": "#/pictures/39"
+          },
+          {
+            "$ref": "#/pictures/40"
+          },
+          {
+            "$ref": "#/tables/11"
+          },
+          {
+            "$ref": "#/pictures/41"
+          },
+          {
+            "$ref": "#/texts/470"
+          },
+          {
+            "$ref": "#/texts/471"
+          },
+          {
+            "$ref": "#/pictures/42"
+          },
+          {
+            "$ref": "#/tables/12"
+          },
+          {
+            "$ref": "#/texts/472"
+          },
+          {
+            "$ref": "#/texts/473"
+          },
+          {
+            "$ref": "#/pictures/43"
+          },
+          {
+            "$ref": "#/texts/474"
+          },
+          {
+            "$ref": "#/tables/13"
+          },
+          {
+            "$ref": "#/texts/475"
+          },
+          {
+            "$ref": "#/texts/476"
+          },
+          {
+            "$ref": "#/pictures/44"
+          },
+          {
+            "$ref": "#/tables/14"
+          },
+          {
+            "$ref": "#/texts/478"
+          },
+          {
+            "$ref": "#/texts/479"
+          },
+          {
+            "$ref": "#/pictures/45"
+          },
+          {
+            "$ref": "#/texts/480"
+          },
+          {
+            "$ref": "#/pictures/46"
+          },
+          {
+            "$ref": "#/tables/15"
+          },
+          {
+            "$ref": "#/texts/482"
+          },
+          {
+            "$ref": "#/texts/483"
+          },
+          {
+            "$ref": "#/pictures/47"
+          },
+          {
+            "$ref": "#/tables/16"
+          },
+          {
+            "$ref": "#/texts/484"
+          },
+          {
+            "$ref": "#/tables/17"
+          },
+          {
+            "$ref": "#/texts/486"
+          },
+          {
+            "$ref": "#/texts/487"
+          },
+          {
+            "$ref": "#/pictures/48"
+          },
+          {
+            "$ref": "#/tables/18"
+          },
+          {
+            "$ref": "#/texts/488"
+          },
+          {
+            "$ref": "#/texts/489"
+          },
+          {
+            "$ref": "#/pictures/49"
+          },
+          {
+            "$ref": "#/texts/490"
+          },
+          {
+            "$ref": "#/tables/19"
+          },
+          {
+            "$ref": "#/texts/494"
+          },
+          {
+            "$ref": "#/texts/495"
+          },
+          {
+            "$ref": "#/pictures/50"
+          },
+          {
+            "$ref": "#/tables/20"
+          },
+          {
+            "$ref": "#/texts/496"
+          },
+          {
+            "$ref": "#/texts/497"
+          },
+          {
+            "$ref": "#/pictures/51"
+          },
+          {
+            "$ref": "#/texts/498"
+          },
+          {
+            "$ref": "#/texts/499"
+          },
+          {
+            "$ref": "#/tables/21"
+          },
+          {
+            "$ref": "#/texts/500"
+          },
+          {
+            "$ref": "#/texts/501"
+          },
+          {
+            "$ref": "#/pictures/52"
+          },
+          {
+            "$ref": "#/tables/22"
+          },
+          {
+            "$ref": "#/texts/502"
+          },
+          {
+            "$ref": "#/tables/23"
+          },
+          {
+            "$ref": "#/texts/504"
+          },
+          {
+            "$ref": "#/texts/505"
+          },
+          {
+            "$ref": "#/pictures/53"
+          },
+          {
+            "$ref": "#/texts/506"
+          },
+          {
+            "$ref": "#/tables/24"
+          },
+          {
+            "$ref": "#/texts/507"
+          },
+          {
+            "$ref": "#/texts/508"
+          },
+          {
+            "$ref": "#/texts/509"
+          },
+          {
+            "$ref": "#/texts/510"
+          },
+          {
+            "$ref": "#/texts/511"
+          },
+          {
+            "$ref": "#/texts/512"
+          },
+          {
+            "$ref": "#/pictures/54"
+          },
+          {
+            "$ref": "#/texts/513"
+          },
+          {
+            "$ref": "#/texts/514"
+          },
+          {
+            "$ref": "#/texts/515"
+          },
+          {
+            "$ref": "#/texts/516"
+          },
+          {
+            "$ref": "#/texts/517"
+          },
+          {
+            "$ref": "#/texts/518"
+          },
+          {
+            "$ref": "#/texts/519"
+          },
+          {
+            "$ref": "#/texts/520"
+          },
+          {
+            "$ref": "#/groups/39"
+          },
+          {
+            "$ref": "#/texts/526"
+          },
+          {
+            "$ref": "#/texts/527"
+          },
+          {
+            "$ref": "#/pictures/55"
+          },
+          {
+            "$ref": "#/groups/40"
+          },
+          {
+            "$ref": "#/texts/536"
+          },
+          {
+            "$ref": "#/texts/537"
+          },
+          {
+            "$ref": "#/texts/538"
+          },
+          {
+            "$ref": "#/texts/539"
+          },
+          {
+            "$ref": "#/texts/540"
+          },
+          {
+            "$ref": "#/texts/541"
+          },
+          {
+            "$ref": "#/texts/542"
+          },
+          {
+            "$ref": "#/pictures/56"
+          },
+          {
+            "$ref": "#/texts/543"
+          },
+          {
+            "$ref": "#/texts/544"
+          },
+          {
+            "$ref": "#/texts/545"
+          },
+          {
+            "$ref": "#/texts/546"
+          },
+          {
+            "$ref": "#/texts/547"
+          },
+          {
+            "$ref": "#/texts/548"
+          },
+          {
+            "$ref": "#/texts/549"
+          },
+          {
+            "$ref": "#/texts/550"
+          },
+          {
+            "$ref": "#/groups/41"
+          },
+          {
+            "$ref": "#/texts/555"
+          },
+          {
+            "$ref": "#/texts/556"
+          },
+          {
+            "$ref": "#/pictures/57"
+          },
+          {
+            "$ref": "#/groups/42"
+          },
+          {
+            "$ref": "#/texts/562"
+          },
+          {
+            "$ref": "#/texts/563"
+          },
+          {
+            "$ref": "#/texts/564"
+          },
+          {
+            "$ref": "#/texts/565"
+          },
+          {
+            "$ref": "#/texts/566"
+          },
+          {
+            "$ref": "#/groups/43"
+          },
+          {
+            "$ref": "#/texts/577"
+          },
+          {
+            "$ref": "#/texts/578"
+          },
+          {
+            "$ref": "#/texts/579"
+          },
+          {
+            "$ref": "#/texts/580"
+          },
+          {
+            "$ref": "#/texts/581"
+          },
+          {
+            "$ref": "#/groups/44"
+          },
+          {
+            "$ref": "#/texts/586"
+          },
+          {
+            "$ref": "#/groups/45"
+          },
+          {
+            "$ref": "#/texts/590"
+          },
+          {
+            "$ref": "#/texts/591"
+          },
+          {
+            "$ref": "#/groups/46"
+          },
+          {
+            "$ref": "#/texts/599"
+          },
+          {
+            "$ref": "#/groups/47"
+          },
+          {
+            "$ref": "#/pictures/58"
+          },
+          {
+            "$ref": "#/texts/603"
+          },
+          {
+            "$ref": "#/texts/604"
+          },
+          {
+            "$ref": "#/pictures/59"
+          },
+          {
+            "$ref": "#/groups/48"
+          },
+          {
+            "$ref": "#/texts/607"
+          },
+          {
+            "$ref": "#/texts/608"
+          },
+          {
+            "$ref": "#/groups/49"
+          },
+          {
+            "$ref": "#/texts/616"
+          },
+          {
+            "$ref": "#/groups/50"
+          },
+          {
+            "$ref": "#/texts/622"
+          },
+          {
+            "$ref": "#/texts/623"
+          },
+          {
+            "$ref": "#/groups/51"
+          },
+          {
+            "$ref": "#/texts/629"
+          },
+          {
+            "$ref": "#/texts/630"
+          },
+          {
+            "$ref": "#/pictures/60"
+          },
+          {
+            "$ref": "#/groups/52"
+          },
+          {
+            "$ref": "#/texts/632"
+          },
+          {
+            "$ref": "#/groups/53"
+          },
+          {
+            "$ref": "#/texts/637"
+          },
+          {
+            "$ref": "#/texts/638"
+          },
+          {
+            "$ref": "#/groups/54"
+          },
+          {
+            "$ref": "#/texts/645"
+          },
+          {
+            "$ref": "#/groups/55"
+          },
+          {
+            "$ref": "#/texts/650"
+          },
+          {
+            "$ref": "#/texts/651"
+          },
+          {
+            "$ref": "#/groups/56"
+          },
+          {
+            "$ref": "#/texts/654"
+          },
+          {
+            "$ref": "#/texts/655"
+          },
+          {
+            "$ref": "#/pictures/61"
+          },
+          {
+            "$ref": "#/groups/57"
+          },
+          {
+            "$ref": "#/texts/658"
+          },
+          {
+            "$ref": "#/groups/58"
+          },
+          {
+            "$ref": "#/texts/664"
+          },
+          {
+            "$ref": "#/texts/665"
+          },
+          {
+            "$ref": "#/groups/59"
+          },
+          {
+            "$ref": "#/texts/671"
+          },
+          {
+            "$ref": "#/groups/60"
+          },
+          {
+            "$ref": "#/texts/676"
+          },
+          {
+            "$ref": "#/texts/677"
+          },
+          {
+            "$ref": "#/texts/678"
+          },
+          {
+            "$ref": "#/texts/679"
+          },
+          {
+            "$ref": "#/groups/61"
+          },
+          {
+            "$ref": "#/texts/685"
+          },
+          {
+            "$ref": "#/groups/62"
+          },
+          {
+            "$ref": "#/texts/690"
+          },
+          {
+            "$ref": "#/texts/691"
+          },
+          {
+            "$ref": "#/groups/63"
+          },
+          {
+            "$ref": "#/texts/696"
+          },
+          {
+            "$ref": "#/groups/64"
+          },
+          {
+            "$ref": "#/pictures/62"
+          },
+          {
+            "$ref": "#/texts/701"
+          },
+          {
+            "$ref": "#/texts/702"
+          },
+          {
+            "$ref": "#/pictures/63"
+          },
+          {
+            "$ref": "#/groups/65"
+          },
+          {
+            "$ref": "#/texts/704"
+          },
+          {
+            "$ref": "#/texts/705"
+          },
+          {
+            "$ref": "#/groups/66"
+          },
+          {
+            "$ref": "#/texts/709"
+          },
+          {
+            "$ref": "#/groups/67"
+          },
+          {
+            "$ref": "#/texts/711"
+          },
+          {
+            "$ref": "#/texts/712"
+          },
+          {
+            "$ref": "#/pictures/64"
+          },
+          {
+            "$ref": "#/texts/713"
+          },
+          {
+            "$ref": "#/texts/714"
+          },
+          {
+            "$ref": "#/texts/715"
+          },
+          {
+            "$ref": "#/pictures/65"
+          },
+          {
+            "$ref": "#/texts/718"
+          },
+          {
+            "$ref": "#/texts/719"
+          },
+          {
+            "$ref": "#/texts/720"
+          },
+          {
+            "$ref": "#/pictures/66"
+          },
+          {
+            "$ref": "#/texts/721"
+          },
+          {
+            "$ref": "#/texts/722"
+          },
+          {
+            "$ref": "#/texts/723"
+          },
+          {
+            "$ref": "#/pictures/67"
+          },
+          {
+            "$ref": "#/texts/725"
+          },
+          {
+            "$ref": "#/texts/726"
+          },
+          {
+            "$ref": "#/pictures/68"
+          },
+          {
+            "$ref": "#/texts/727"
+          },
+          {
+            "$ref": "#/texts/728"
+          },
+          {
+            "$ref": "#/texts/729"
+          },
+          {
+            "$ref": "#/texts/730"
+          },
+          {
+            "$ref": "#/texts/731"
+          },
+          {
+            "$ref": "#/groups/68"
+          },
+          {
+            "$ref": "#/texts/735"
+          },
+          {
+            "$ref": "#/texts/736"
+          },
+          {
+            "$ref": "#/texts/737"
+          },
+          {
+            "$ref": "#/texts/738"
+          },
+          {
+            "$ref": "#/texts/739"
+          },
+          {
+            "$ref": "#/groups/69"
+          },
+          {
+            "$ref": "#/texts/744"
+          },
+          {
+            "$ref": "#/texts/745"
+          },
+          {
+            "$ref": "#/pictures/69"
+          },
+          {
+            "$ref": "#/texts/746"
+          },
+          {
+            "$ref": "#/groups/70"
+          },
+          {
+            "$ref": "#/texts/750"
+          },
+          {
+            "$ref": "#/texts/751"
+          },
+          {
+            "$ref": "#/groups/71"
+          },
+          {
+            "$ref": "#/texts/754"
+          },
+          {
+            "$ref": "#/texts/755"
+          },
+          {
+            "$ref": "#/texts/756"
+          },
+          {
+            "$ref": "#/texts/757"
+          },
+          {
+            "$ref": "#/texts/758"
+          },
+          {
+            "$ref": "#/pictures/70"
+          },
+          {
+            "$ref": "#/texts/759"
+          },
+          {
+            "$ref": "#/texts/760"
+          },
+          {
+            "$ref": "#/texts/761"
+          },
+          {
+            "$ref": "#/groups/72"
+          },
+          {
+            "$ref": "#/texts/769"
+          },
+          {
+            "$ref": "#/texts/770"
+          },
+          {
+            "$ref": "#/groups/73"
+          },
+          {
+            "$ref": "#/texts/774"
+          },
+          {
+            "$ref": "#/texts/775"
+          },
+          {
+            "$ref": "#/pictures/71"
+          },
+          {
+            "$ref": "#/groups/74"
+          },
+          {
+            "$ref": "#/texts/778"
+          },
+          {
+            "$ref": "#/texts/779"
+          },
+          {
+            "$ref": "#/texts/780"
+          },
+          {
+            "$ref": "#/texts/781"
+          },
+          {
+            "$ref": "#/texts/782"
+          },
+          {
+            "$ref": "#/texts/783"
+          },
+          {
+            "$ref": "#/texts/784"
+          },
+          {
+            "$ref": "#/texts/785"
+          },
+          {
+            "$ref": "#/texts/786"
+          },
+          {
+            "$ref": "#/pictures/72"
+          },
+          {
+            "$ref": "#/texts/787"
+          },
+          {
+            "$ref": "#/texts/788"
+          },
+          {
+            "$ref": "#/groups/75"
+          },
+          {
+            "$ref": "#/texts/794"
+          },
+          {
+            "$ref": "#/groups/76"
+          },
+          {
+            "$ref": "#/texts/803"
+          },
+          {
+            "$ref": "#/texts/804"
+          },
+          {
+            "$ref": "#/pictures/73"
+          },
+          {
+            "$ref": "#/groups/77"
+          },
+          {
+            "$ref": "#/texts/808"
+          },
+          {
+            "$ref": "#/texts/809"
+          },
+          {
+            "$ref": "#/groups/78"
+          },
+          {
+            "$ref": "#/texts/815"
+          },
+          {
+            "$ref": "#/groups/79"
+          },
+          {
+            "$ref": "#/texts/819"
+          },
+          {
+            "$ref": "#/texts/820"
+          },
+          {
+            "$ref": "#/texts/821"
+          },
+          {
+            "$ref": "#/pictures/74"
+          },
+          {
+            "$ref": "#/texts/822"
+          },
+          {
+            "$ref": "#/texts/823"
+          },
+          {
+            "$ref": "#/texts/824"
+          },
+          {
+            "$ref": "#/texts/825"
+          },
+          {
+            "$ref": "#/texts/826"
+          },
+          {
+            "$ref": "#/groups/80"
+          },
+          {
+            "$ref": "#/texts/829"
+          },
+          {
+            "$ref": "#/texts/830"
+          },
+          {
+            "$ref": "#/texts/831"
+          },
+          {
+            "$ref": "#/texts/832"
+          },
+          {
+            "$ref": "#/texts/833"
+          },
+          {
+            "$ref": "#/texts/834"
+          },
+          {
+            "$ref": "#/pictures/75"
+          },
+          {
+            "$ref": "#/texts/835"
+          },
+          {
+            "$ref": "#/groups/81"
+          },
+          {
+            "$ref": "#/texts/838"
+          },
+          {
+            "$ref": "#/groups/82"
+          },
+          {
+            "$ref": "#/texts/843"
+          },
+          {
+            "$ref": "#/texts/844"
+          },
+          {
+            "$ref": "#/texts/845"
+          },
+          {
+            "$ref": "#/texts/846"
+          },
+          {
+            "$ref": "#/groups/83"
+          },
+          {
+            "$ref": "#/texts/848"
+          },
+          {
+            "$ref": "#/texts/849"
+          },
+          {
+            "$ref": "#/pictures/76"
+          },
+          {
+            "$ref": "#/groups/84"
+          },
+          {
+            "$ref": "#/texts/854"
+          },
+          {
+            "$ref": "#/groups/85"
+          },
+          {
+            "$ref": "#/texts/860"
+          },
+          {
+            "$ref": "#/groups/86"
+          },
+          {
+            "$ref": "#/texts/863"
+          },
+          {
+            "$ref": "#/texts/864"
+          },
+          {
+            "$ref": "#/texts/865"
+          },
+          {
+            "$ref": "#/texts/866"
+          },
+          {
+            "$ref": "#/groups/87"
+          },
+          {
+            "$ref": "#/texts/869"
+          },
+          {
+            "$ref": "#/texts/870"
+          },
+          {
+            "$ref": "#/pictures/77"
+          },
+          {
+            "$ref": "#/groups/88"
+          },
+          {
+            "$ref": "#/texts/883"
+          },
+          {
+            "$ref": "#/groups/89"
+          },
+          {
+            "$ref": "#/texts/885"
+          },
+          {
+            "$ref": "#/texts/886"
+          },
+          {
+            "$ref": "#/pictures/78"
+          },
+          {
+            "$ref": "#/groups/90"
+          },
+          {
+            "$ref": "#/texts/890"
+          },
+          {
+            "$ref": "#/groups/91"
+          },
+          {
+            "$ref": "#/texts/898"
+          },
+          {
+            "$ref": "#/groups/92"
+          },
+          {
+            "$ref": "#/texts/903"
+          },
+          {
+            "$ref": "#/texts/904"
+          },
+          {
+            "$ref": "#/pictures/79"
+          },
+          {
+            "$ref": "#/texts/905"
+          },
+          {
+            "$ref": "#/groups/93"
+          },
+          {
+            "$ref": "#/texts/918"
+          },
+          {
+            "$ref": "#/texts/919"
+          },
+          {
+            "$ref": "#/pictures/80"
+          },
+          {
+            "$ref": "#/groups/94"
+          },
+          {
+            "$ref": "#/texts/926"
+          },
+          {
+            "$ref": "#/texts/927"
+          }
+        ],
+        "content_layer": "body",
+        "name": "_root_",
+        "label": "unspecified"
+      },
+      "groups": [
+        {
+          "self_ref": "#/groups/0",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/25"
+            },
+            {
+              "$ref": "#/texts/26"
+            },
+            {
+              "$ref": "#/texts/27"
+            },
+            {
+              "$ref": "#/texts/28"
+            },
+            {
+              "$ref": "#/texts/29"
+            },
+            {
+              "$ref": "#/texts/30"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/1",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/38"
+            },
+            {
+              "$ref": "#/texts/39"
+            },
+            {
+              "$ref": "#/texts/40"
+            },
+            {
+              "$ref": "#/texts/41"
+            },
+            {
+              "$ref": "#/texts/42"
+            },
+            {
+              "$ref": "#/texts/43"
+            },
+            {
+              "$ref": "#/texts/44"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/2",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/46"
+            },
+            {
+              "$ref": "#/texts/47"
+            },
+            {
+              "$ref": "#/texts/48"
+            },
+            {
+              "$ref": "#/texts/49"
+            },
+            {
+              "$ref": "#/texts/50"
+            },
+            {
+              "$ref": "#/texts/51"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/3",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/55"
+            },
+            {
+              "$ref": "#/texts/56"
+            },
+            {
+              "$ref": "#/texts/57"
+            },
+            {
+              "$ref": "#/texts/58"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/4",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/60"
+            },
+            {
+              "$ref": "#/texts/61"
+            },
+            {
+              "$ref": "#/texts/62"
+            },
+            {
+              "$ref": "#/texts/63"
+            },
+            {
+              "$ref": "#/texts/64"
+            },
+            {
+              "$ref": "#/texts/65"
+            },
+            {
+              "$ref": "#/texts/66"
+            },
+            {
+              "$ref": "#/texts/67"
+            },
+            {
+              "$ref": "#/texts/68"
+            },
+            {
+              "$ref": "#/texts/69"
+            },
+            {
+              "$ref": "#/texts/70"
+            },
+            {
+              "$ref": "#/texts/71"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/5",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/73"
+            },
+            {
+              "$ref": "#/texts/74"
+            },
+            {
+              "$ref": "#/texts/75"
+            },
+            {
+              "$ref": "#/texts/76"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/6",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/79"
+            },
+            {
+              "$ref": "#/texts/80"
+            },
+            {
+              "$ref": "#/texts/81"
+            },
+            {
+              "$ref": "#/texts/82"
+            },
+            {
+              "$ref": "#/texts/83"
+            },
+            {
+              "$ref": "#/texts/84"
+            },
+            {
+              "$ref": "#/texts/85"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/7",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/87"
+            },
+            {
+              "$ref": "#/texts/88"
+            },
+            {
+              "$ref": "#/texts/89"
+            },
+            {
+              "$ref": "#/texts/90"
+            },
+            {
+              "$ref": "#/texts/91"
+            },
+            {
+              "$ref": "#/texts/92"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/8",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/100"
+            },
+            {
+              "$ref": "#/texts/101"
+            },
+            {
+              "$ref": "#/texts/102"
+            },
+            {
+              "$ref": "#/texts/103"
+            },
+            {
+              "$ref": "#/texts/104"
+            },
+            {
+              "$ref": "#/texts/105"
+            },
+            {
+              "$ref": "#/texts/106"
+            },
+            {
+              "$ref": "#/texts/107"
+            },
+            {
+              "$ref": "#/texts/108"
+            },
+            {
+              "$ref": "#/texts/109"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/9",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/112"
+            },
+            {
+              "$ref": "#/texts/113"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/10",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/118"
+            },
+            {
+              "$ref": "#/texts/119"
+            },
+            {
+              "$ref": "#/texts/120"
+            },
+            {
+              "$ref": "#/texts/121"
+            },
+            {
+              "$ref": "#/texts/122"
+            },
+            {
+              "$ref": "#/texts/123"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/11",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/128"
+            },
+            {
+              "$ref": "#/texts/129"
+            },
+            {
+              "$ref": "#/texts/130"
+            },
+            {
+              "$ref": "#/texts/131"
+            },
+            {
+              "$ref": "#/texts/132"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/12",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/134"
+            },
+            {
+              "$ref": "#/texts/135"
+            },
+            {
+              "$ref": "#/texts/136"
+            },
+            {
+              "$ref": "#/texts/137"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/13",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/143"
+            },
+            {
+              "$ref": "#/texts/144"
+            },
+            {
+              "$ref": "#/texts/145"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/14",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/151"
+            },
+            {
+              "$ref": "#/texts/152"
+            },
+            {
+              "$ref": "#/texts/153"
+            },
+            {
+              "$ref": "#/texts/154"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/15",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/157"
+            },
+            {
+              "$ref": "#/texts/158"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/16",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/161"
+            },
+            {
+              "$ref": "#/texts/162"
+            },
+            {
+              "$ref": "#/texts/163"
+            },
+            {
+              "$ref": "#/texts/164"
+            },
+            {
+              "$ref": "#/texts/165"
+            },
+            {
+              "$ref": "#/texts/166"
+            },
+            {
+              "$ref": "#/texts/167"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/17",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/177"
+            },
+            {
+              "$ref": "#/texts/178"
+            },
+            {
+              "$ref": "#/texts/179"
+            },
+            {
+              "$ref": "#/texts/180"
+            },
+            {
+              "$ref": "#/texts/181"
+            },
+            {
+              "$ref": "#/texts/182"
+            },
+            {
+              "$ref": "#/texts/183"
+            },
+            {
+              "$ref": "#/texts/184"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/18",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/191"
+            },
+            {
+              "$ref": "#/texts/192"
+            },
+            {
+              "$ref": "#/texts/193"
+            },
+            {
+              "$ref": "#/texts/194"
+            },
+            {
+              "$ref": "#/texts/195"
+            },
+            {
+              "$ref": "#/texts/196"
+            },
+            {
+              "$ref": "#/texts/197"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/19",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/201"
+            },
+            {
+              "$ref": "#/texts/202"
+            },
+            {
+              "$ref": "#/texts/203"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/20",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/206"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/21",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/212"
+            },
+            {
+              "$ref": "#/texts/213"
+            },
+            {
+              "$ref": "#/texts/214"
+            },
+            {
+              "$ref": "#/texts/215"
+            },
+            {
+              "$ref": "#/texts/216"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/22",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/220"
+            },
+            {
+              "$ref": "#/texts/221"
+            },
+            {
+              "$ref": "#/texts/222"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/23",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/225"
+            },
+            {
+              "$ref": "#/texts/226"
+            },
+            {
+              "$ref": "#/texts/227"
+            },
+            {
+              "$ref": "#/texts/228"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/24",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/262"
+            },
+            {
+              "$ref": "#/texts/263"
+            },
+            {
+              "$ref": "#/texts/264"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/25",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/274"
+            },
+            {
+              "$ref": "#/texts/275"
+            },
+            {
+              "$ref": "#/texts/276"
+            },
+            {
+              "$ref": "#/texts/277"
+            },
+            {
+              "$ref": "#/texts/278"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/26",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/288"
+            },
+            {
+              "$ref": "#/texts/289"
+            },
+            {
+              "$ref": "#/texts/290"
+            },
+            {
+              "$ref": "#/texts/291"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/27",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/300"
+            },
+            {
+              "$ref": "#/texts/301"
+            },
+            {
+              "$ref": "#/texts/302"
+            },
+            {
+              "$ref": "#/texts/303"
+            },
+            {
+              "$ref": "#/texts/304"
+            },
+            {
+              "$ref": "#/texts/305"
+            },
+            {
+              "$ref": "#/texts/306"
+            },
+            {
+              "$ref": "#/texts/307"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/28",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/310"
+            },
+            {
+              "$ref": "#/texts/311"
+            },
+            {
+              "$ref": "#/texts/312"
+            },
+            {
+              "$ref": "#/texts/313"
+            },
+            {
+              "$ref": "#/texts/314"
+            },
+            {
+              "$ref": "#/texts/315"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/29",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/320"
+            },
+            {
+              "$ref": "#/texts/321"
+            },
+            {
+              "$ref": "#/texts/322"
+            },
+            {
+              "$ref": "#/texts/323"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/30",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/327"
+            },
+            {
+              "$ref": "#/texts/328"
+            },
+            {
+              "$ref": "#/texts/329"
+            },
+            {
+              "$ref": "#/texts/330"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/31",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/332"
+            },
+            {
+              "$ref": "#/texts/333"
+            },
+            {
+              "$ref": "#/texts/334"
+            },
+            {
+              "$ref": "#/texts/335"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/32",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/347"
+            },
+            {
+              "$ref": "#/texts/348"
+            },
+            {
+              "$ref": "#/texts/349"
+            },
+            {
+              "$ref": "#/texts/350"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/33",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/360"
+            },
+            {
+              "$ref": "#/texts/361"
+            },
+            {
+              "$ref": "#/texts/362"
+            },
+            {
+              "$ref": "#/texts/363"
+            },
+            {
+              "$ref": "#/texts/364"
+            },
+            {
+              "$ref": "#/texts/365"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/34",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/391"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/35",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/394"
+            },
+            {
+              "$ref": "#/texts/395"
+            },
+            {
+              "$ref": "#/texts/396"
+            },
+            {
+              "$ref": "#/texts/397"
+            },
+            {
+              "$ref": "#/texts/398"
+            },
+            {
+              "$ref": "#/texts/399"
+            },
+            {
+              "$ref": "#/texts/400"
+            },
+            {
+              "$ref": "#/texts/401"
+            },
+            {
+              "$ref": "#/texts/402"
+            },
+            {
+              "$ref": "#/texts/403"
+            },
+            {
+              "$ref": "#/texts/404"
+            },
+            {
+              "$ref": "#/texts/405"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/36",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/440"
+            },
+            {
+              "$ref": "#/texts/441"
+            },
+            {
+              "$ref": "#/texts/442"
+            },
+            {
+              "$ref": "#/texts/443"
+            },
+            {
+              "$ref": "#/texts/444"
+            },
+            {
+              "$ref": "#/texts/445"
+            },
+            {
+              "$ref": "#/texts/446"
+            },
+            {
+              "$ref": "#/texts/447"
+            },
+            {
+              "$ref": "#/texts/448"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/37",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/451"
+            },
+            {
+              "$ref": "#/texts/452"
+            },
+            {
+              "$ref": "#/texts/453"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/38",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/465"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/39",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/521"
+            },
+            {
+              "$ref": "#/texts/522"
+            },
+            {
+              "$ref": "#/texts/523"
+            },
+            {
+              "$ref": "#/texts/524"
+            },
+            {
+              "$ref": "#/texts/525"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/40",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/528"
+            },
+            {
+              "$ref": "#/texts/529"
+            },
+            {
+              "$ref": "#/texts/530"
+            },
+            {
+              "$ref": "#/texts/531"
+            },
+            {
+              "$ref": "#/texts/532"
+            },
+            {
+              "$ref": "#/texts/533"
+            },
+            {
+              "$ref": "#/texts/534"
+            },
+            {
+              "$ref": "#/texts/535"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/41",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/551"
+            },
+            {
+              "$ref": "#/texts/552"
+            },
+            {
+              "$ref": "#/texts/553"
+            },
+            {
+              "$ref": "#/texts/554"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/42",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/557"
+            },
+            {
+              "$ref": "#/texts/558"
+            },
+            {
+              "$ref": "#/texts/559"
+            },
+            {
+              "$ref": "#/texts/560"
+            },
+            {
+              "$ref": "#/texts/561"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/43",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/567"
+            },
+            {
+              "$ref": "#/texts/568"
+            },
+            {
+              "$ref": "#/texts/569"
+            },
+            {
+              "$ref": "#/texts/570"
+            },
+            {
+              "$ref": "#/texts/571"
+            },
+            {
+              "$ref": "#/texts/572"
+            },
+            {
+              "$ref": "#/texts/573"
+            },
+            {
+              "$ref": "#/texts/574"
+            },
+            {
+              "$ref": "#/texts/575"
+            },
+            {
+              "$ref": "#/texts/576"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/44",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/582"
+            },
+            {
+              "$ref": "#/texts/583"
+            },
+            {
+              "$ref": "#/texts/584"
+            },
+            {
+              "$ref": "#/texts/585"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/45",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/587"
+            },
+            {
+              "$ref": "#/texts/588"
+            },
+            {
+              "$ref": "#/texts/589"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/46",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/592"
+            },
+            {
+              "$ref": "#/texts/593"
+            },
+            {
+              "$ref": "#/texts/594"
+            },
+            {
+              "$ref": "#/texts/595"
+            },
+            {
+              "$ref": "#/texts/596"
+            },
+            {
+              "$ref": "#/texts/597"
+            },
+            {
+              "$ref": "#/texts/598"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/47",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/600"
+            },
+            {
+              "$ref": "#/texts/601"
+            },
+            {
+              "$ref": "#/texts/602"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/48",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/605"
+            },
+            {
+              "$ref": "#/texts/606"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/49",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/609"
+            },
+            {
+              "$ref": "#/texts/610"
+            },
+            {
+              "$ref": "#/texts/611"
+            },
+            {
+              "$ref": "#/texts/612"
+            },
+            {
+              "$ref": "#/texts/613"
+            },
+            {
+              "$ref": "#/texts/614"
+            },
+            {
+              "$ref": "#/texts/615"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/50",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/617"
+            },
+            {
+              "$ref": "#/texts/618"
+            },
+            {
+              "$ref": "#/texts/619"
+            },
+            {
+              "$ref": "#/texts/620"
+            },
+            {
+              "$ref": "#/texts/621"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/51",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/624"
+            },
+            {
+              "$ref": "#/texts/625"
+            },
+            {
+              "$ref": "#/texts/626"
+            },
+            {
+              "$ref": "#/texts/627"
+            },
+            {
+              "$ref": "#/texts/628"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/52",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/631"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/53",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/633"
+            },
+            {
+              "$ref": "#/texts/634"
+            },
+            {
+              "$ref": "#/texts/635"
+            },
+            {
+              "$ref": "#/texts/636"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/54",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/639"
+            },
+            {
+              "$ref": "#/texts/640"
+            },
+            {
+              "$ref": "#/texts/641"
+            },
+            {
+              "$ref": "#/texts/642"
+            },
+            {
+              "$ref": "#/texts/643"
+            },
+            {
+              "$ref": "#/texts/644"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/55",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/646"
+            },
+            {
+              "$ref": "#/texts/647"
+            },
+            {
+              "$ref": "#/texts/648"
+            },
+            {
+              "$ref": "#/texts/649"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/56",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/652"
+            },
+            {
+              "$ref": "#/texts/653"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/57",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/656"
+            },
+            {
+              "$ref": "#/texts/657"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/58",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/659"
+            },
+            {
+              "$ref": "#/texts/660"
+            },
+            {
+              "$ref": "#/texts/661"
+            },
+            {
+              "$ref": "#/texts/662"
+            },
+            {
+              "$ref": "#/texts/663"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/59",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/666"
+            },
+            {
+              "$ref": "#/texts/667"
+            },
+            {
+              "$ref": "#/texts/668"
+            },
+            {
+              "$ref": "#/texts/669"
+            },
+            {
+              "$ref": "#/texts/670"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/60",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/672"
+            },
+            {
+              "$ref": "#/texts/673"
+            },
+            {
+              "$ref": "#/texts/674"
+            },
+            {
+              "$ref": "#/texts/675"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/61",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/680"
+            },
+            {
+              "$ref": "#/texts/681"
+            },
+            {
+              "$ref": "#/texts/682"
+            },
+            {
+              "$ref": "#/texts/683"
+            },
+            {
+              "$ref": "#/texts/684"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/62",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/686"
+            },
+            {
+              "$ref": "#/texts/687"
+            },
+            {
+              "$ref": "#/texts/688"
+            },
+            {
+              "$ref": "#/texts/689"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/63",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/692"
+            },
+            {
+              "$ref": "#/texts/693"
+            },
+            {
+              "$ref": "#/texts/694"
+            },
+            {
+              "$ref": "#/texts/695"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/64",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/697"
+            },
+            {
+              "$ref": "#/texts/698"
+            },
+            {
+              "$ref": "#/texts/699"
+            },
+            {
+              "$ref": "#/texts/700"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/65",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/703"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/66",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/706"
+            },
+            {
+              "$ref": "#/texts/707"
+            },
+            {
+              "$ref": "#/texts/708"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/67",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/710"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/68",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/732"
+            },
+            {
+              "$ref": "#/texts/733"
+            },
+            {
+              "$ref": "#/texts/734"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/69",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/740"
+            },
+            {
+              "$ref": "#/texts/741"
+            },
+            {
+              "$ref": "#/texts/742"
+            },
+            {
+              "$ref": "#/texts/743"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/70",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/747"
+            },
+            {
+              "$ref": "#/texts/748"
+            },
+            {
+              "$ref": "#/texts/749"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/71",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/752"
+            },
+            {
+              "$ref": "#/texts/753"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/72",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/762"
+            },
+            {
+              "$ref": "#/texts/763"
+            },
+            {
+              "$ref": "#/texts/764"
+            },
+            {
+              "$ref": "#/texts/765"
+            },
+            {
+              "$ref": "#/texts/766"
+            },
+            {
+              "$ref": "#/texts/767"
+            },
+            {
+              "$ref": "#/texts/768"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/73",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/771"
+            },
+            {
+              "$ref": "#/texts/772"
+            },
+            {
+              "$ref": "#/texts/773"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/74",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/776"
+            },
+            {
+              "$ref": "#/texts/777"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/75",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/789"
+            },
+            {
+              "$ref": "#/texts/790"
+            },
+            {
+              "$ref": "#/texts/791"
+            },
+            {
+              "$ref": "#/texts/792"
+            },
+            {
+              "$ref": "#/texts/793"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/76",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/795"
+            },
+            {
+              "$ref": "#/texts/796"
+            },
+            {
+              "$ref": "#/texts/797"
+            },
+            {
+              "$ref": "#/texts/798"
+            },
+            {
+              "$ref": "#/texts/799"
+            },
+            {
+              "$ref": "#/texts/800"
+            },
+            {
+              "$ref": "#/texts/801"
+            },
+            {
+              "$ref": "#/texts/802"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/77",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/805"
+            },
+            {
+              "$ref": "#/texts/806"
+            },
+            {
+              "$ref": "#/texts/807"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/78",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/810"
+            },
+            {
+              "$ref": "#/texts/811"
+            },
+            {
+              "$ref": "#/texts/812"
+            },
+            {
+              "$ref": "#/texts/813"
+            },
+            {
+              "$ref": "#/texts/814"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/79",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/816"
+            },
+            {
+              "$ref": "#/texts/817"
+            },
+            {
+              "$ref": "#/texts/818"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/80",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/827"
+            },
+            {
+              "$ref": "#/texts/828"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/81",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/836"
+            },
+            {
+              "$ref": "#/texts/837"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/82",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/839"
+            },
+            {
+              "$ref": "#/texts/840"
+            },
+            {
+              "$ref": "#/texts/841"
+            },
+            {
+              "$ref": "#/texts/842"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/83",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/847"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/84",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/850"
+            },
+            {
+              "$ref": "#/texts/851"
+            },
+            {
+              "$ref": "#/texts/852"
+            },
+            {
+              "$ref": "#/texts/853"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/85",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/855"
+            },
+            {
+              "$ref": "#/texts/856"
+            },
+            {
+              "$ref": "#/texts/857"
+            },
+            {
+              "$ref": "#/texts/858"
+            },
+            {
+              "$ref": "#/texts/859"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/86",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/861"
+            },
+            {
+              "$ref": "#/texts/862"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/87",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/867"
+            },
+            {
+              "$ref": "#/texts/868"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/88",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/871"
+            },
+            {
+              "$ref": "#/texts/872"
+            },
+            {
+              "$ref": "#/texts/873"
+            },
+            {
+              "$ref": "#/texts/874"
+            },
+            {
+              "$ref": "#/texts/875"
+            },
+            {
+              "$ref": "#/texts/876"
+            },
+            {
+              "$ref": "#/texts/877"
+            },
+            {
+              "$ref": "#/texts/878"
+            },
+            {
+              "$ref": "#/texts/879"
+            },
+            {
+              "$ref": "#/texts/880"
+            },
+            {
+              "$ref": "#/texts/881"
+            },
+            {
+              "$ref": "#/texts/882"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/89",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/884"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/90",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/887"
+            },
+            {
+              "$ref": "#/texts/888"
+            },
+            {
+              "$ref": "#/texts/889"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/91",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/891"
+            },
+            {
+              "$ref": "#/texts/892"
+            },
+            {
+              "$ref": "#/texts/893"
+            },
+            {
+              "$ref": "#/texts/894"
+            },
+            {
+              "$ref": "#/texts/895"
+            },
+            {
+              "$ref": "#/texts/896"
+            },
+            {
+              "$ref": "#/texts/897"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/92",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/899"
+            },
+            {
+              "$ref": "#/texts/900"
+            },
+            {
+              "$ref": "#/texts/901"
+            },
+            {
+              "$ref": "#/texts/902"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/93",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/906"
+            },
+            {
+              "$ref": "#/texts/907"
+            },
+            {
+              "$ref": "#/texts/908"
+            },
+            {
+              "$ref": "#/texts/909"
+            },
+            {
+              "$ref": "#/texts/910"
+            },
+            {
+              "$ref": "#/texts/911"
+            },
+            {
+              "$ref": "#/texts/912"
+            },
+            {
+              "$ref": "#/texts/913"
+            },
+            {
+              "$ref": "#/texts/914"
+            },
+            {
+              "$ref": "#/texts/915"
+            },
+            {
+              "$ref": "#/texts/916"
+            },
+            {
+              "$ref": "#/texts/917"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        },
+        {
+          "self_ref": "#/groups/94",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/920"
+            },
+            {
+              "$ref": "#/texts/921"
+            },
+            {
+              "$ref": "#/texts/922"
+            },
+            {
+              "$ref": "#/texts/923"
+            },
+            {
+              "$ref": "#/texts/924"
+            },
+            {
+              "$ref": "#/texts/925"
+            }
+          ],
+          "content_layer": "body",
+          "name": "list",
+          "label": "list"
+        }
+      ],
+      "texts": [
+        {
+          "self_ref": "#/texts/0",
+          "parent": {
+            "$ref": "#/pictures/0"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "text",
+          "prov": [
+            {
+              "page_no": 1,
+              "bbox": {
+                "l": 382.6666666666667,
+                "t": 761.3333333333334,
+                "r": 523.3333333333334,
+                "b": 754.6666666666666,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                45
+              ]
+            }
+          ],
+          "orig": "HUATAI FINANCIAL HOLDINGS (HONG KONG) LIMITED",
+          "text": "HUATAI FINANCIAL HOLDINGS (HONG KONG) LIMITED"
+        },
+        {
+          "self_ref": "#/texts/1",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "section_header",
+          "prov": [
+            {
+              "page_no": 1,
+              "bbox": {
+                "l": 188.04,
+                "t": 437.096,
+                "r": 428.567,
+                "b": 417.34,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                22
+              ]
+            }
+          ],
+          "orig": "Guideline on AML / KYC",
+          "text": "Guideline on AML / KYC",
+          "level": 1
+        },
+        {
+          "self_ref": "#/texts/2",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "section_header",
+          "prov": [
+            {
+              "page_no": 1,
+              "bbox": {
+                "l": 234.0,
+                "t": 297.152,
+                "r": 380.246,
+                "b": 260.70000000000005,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                51
+              ]
+            }
+          ],
+          "orig": "Private and confidential For internal purposes only",
+          "text": "Private and confidential For internal purposes only",
+          "level": 1
+        }
+      ],
+      "pictures": [
+        {
+          "self_ref": "#/pictures/0",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/0"
+            }
+          ],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 1,
+              "bbox": {
+                "l": 363.2320556640625,
+                "t": 774.621337890625,
+                "r": 524.0708618164062,
+                "b": 754.8976593017578,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/1",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 1,
+              "bbox": {
+                "l": 127.91126251220703,
+                "t": 635.0880126953125,
+                "r": 490.6023864746094,
+                "b": 593.9309387207031,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/2",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 2,
+              "bbox": {
+                "l": 363.2838134765625,
+                "t": 774.5176105499268,
+                "r": 523.9517211914062,
+                "b": 754.9374847412109,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/3",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 3,
+              "bbox": {
+                "l": 363.2452697753906,
+                "t": 774.5515995025635,
+                "r": 524.0154418945312,
+                "b": 754.9909477233887,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/4",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 4,
+              "bbox": {
+                "l": 363.2646179199219,
+                "t": 774.6300849914551,
+                "r": 524.0347290039062,
+                "b": 755.1140937805176,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/5",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 5,
+              "bbox": {
+                "l": 363.2272033691406,
+                "t": 774.6923351287842,
+                "r": 523.9513549804688,
+                "b": 755.1063537597656,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/6",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 6,
+              "bbox": {
+                "l": 363.2403259277344,
+                "t": 774.7164516448975,
+                "r": 523.8880615234375,
+                "b": 755.1022529602051,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/7",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 7,
+              "bbox": {
+                "l": 363.2205505371094,
+                "t": 774.5267581939697,
+                "r": 523.85986328125,
+                "b": 755.0078926086426,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/8",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 8,
+              "bbox": {
+                "l": 363.228515625,
+                "t": 774.5015697479248,
+                "r": 523.8132934570312,
+                "b": 754.9875068664551,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/9",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 9,
+              "bbox": {
+                "l": 363.24932861328125,
+                "t": 774.4635715484619,
+                "r": 523.8612060546875,
+                "b": 755.0224380493164,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/10",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 10,
+              "bbox": {
+                "l": 363.2481994628906,
+                "t": 774.5311756134033,
+                "r": 523.8681030273438,
+                "b": 754.9751014709473,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/11",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 11,
+              "bbox": {
+                "l": 363.1673278808594,
+                "t": 774.4672775268555,
+                "r": 523.851806640625,
+                "b": 754.9510040283203,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/12",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 12,
+              "bbox": {
+                "l": 363.26385498046875,
+                "t": 774.4558010101318,
+                "r": 523.8916015625,
+                "b": 755.0536880493164,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/13",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 13,
+              "bbox": {
+                "l": 363.2275695800781,
+                "t": 774.5478191375732,
+                "r": 523.859619140625,
+                "b": 754.914794921875,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/14",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 14,
+              "bbox": {
+                "l": 363.205078125,
+                "t": 774.5792903900146,
+                "r": 523.8782348632812,
+                "b": 754.9799919128418,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/15",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 15,
+              "bbox": {
+                "l": 363.26800537109375,
+                "t": 774.496244430542,
+                "r": 523.8563842773438,
+                "b": 755.0167427062988,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/16",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 16,
+              "bbox": {
+                "l": 363.208984375,
+                "t": 774.5111770629883,
+                "r": 523.8724365234375,
+                "b": 754.9694137573242,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/17",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 17,
+              "bbox": {
+                "l": 363.197509765625,
+                "t": 774.4699325561523,
+                "r": 523.8536987304688,
+                "b": 754.9978561401367,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/18",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 18,
+              "bbox": {
+                "l": 363.2237243652344,
+                "t": 774.4834289550781,
+                "r": 523.8294067382812,
+                "b": 754.9719467163086,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/19",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 19,
+              "bbox": {
+                "l": 363.2132263183594,
+                "t": 774.4615993499756,
+                "r": 523.825439453125,
+                "b": 754.9217758178711,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/20",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 20,
+              "bbox": {
+                "l": 363.20635986328125,
+                "t": 774.5848064422607,
+                "r": 523.8375854492188,
+                "b": 754.9723625183105,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/21",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 21,
+              "bbox": {
+                "l": 363.2286071777344,
+                "t": 774.592155456543,
+                "r": 523.7723999023438,
+                "b": 755.043628692627,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/22",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 22,
+              "bbox": {
+                "l": 363.2081604003906,
+                "t": 774.5724182128906,
+                "r": 523.8573608398438,
+                "b": 754.9889793395996,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/23",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 23,
+              "bbox": {
+                "l": 363.2812805175781,
+                "t": 774.5459861755371,
+                "r": 523.865234375,
+                "b": 755.0407104492188,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/24",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 24,
+              "bbox": {
+                "l": 363.2367858886719,
+                "t": 774.6249675750732,
+                "r": 523.8381958007812,
+                "b": 755.0058364868164,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/25",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 25,
+              "bbox": {
+                "l": 363.2314147949219,
+                "t": 774.4841709136963,
+                "r": 523.8558959960938,
+                "b": 754.9777297973633,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/26",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 26,
+              "bbox": {
+                "l": 363.2033386230469,
+                "t": 774.47483253479,
+                "r": 523.8247680664062,
+                "b": 755.0133018493652,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/27",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 27,
+              "bbox": {
+                "l": 363.2070617675781,
+                "t": 774.4768943786621,
+                "r": 523.8411254882812,
+                "b": 754.9832801818848,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/28",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 28,
+              "bbox": {
+                "l": 363.2735595703125,
+                "t": 774.5082530975342,
+                "r": 523.9019165039062,
+                "b": 755.0032196044922,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/29",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 29,
+              "bbox": {
+                "l": 363.20111083984375,
+                "t": 774.5076789855957,
+                "r": 523.8739013671875,
+                "b": 754.9579467773438,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/30",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 30,
+              "bbox": {
+                "l": 363.2216491699219,
+                "t": 774.6140098571777,
+                "r": 523.7863159179688,
+                "b": 754.9974517822266,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/31",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 31,
+              "bbox": {
+                "l": 363.1739807128906,
+                "t": 774.680606842041,
+                "r": 523.7716674804688,
+                "b": 755.0002212524414,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/32",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 32,
+              "bbox": {
+                "l": 363.2523498535156,
+                "t": 774.5412883758545,
+                "r": 523.8341674804688,
+                "b": 755.0517616271973,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/33",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 33,
+              "bbox": {
+                "l": 363.2095031738281,
+                "t": 774.6218147277832,
+                "r": 523.811767578125,
+                "b": 754.9923973083496,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/34",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 34,
+              "bbox": {
+                "l": 363.2229919433594,
+                "t": 774.5104827880859,
+                "r": 523.85009765625,
+                "b": 754.8704376220703,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/35",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 35,
+              "bbox": {
+                "l": 363.2335510253906,
+                "t": 774.5328178405762,
+                "r": 523.88916015625,
+                "b": 754.9420204162598,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/36",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 36,
+              "bbox": {
+                "l": 363.2119140625,
+                "t": 774.4496059417725,
+                "r": 523.8223266601562,
+                "b": 754.9764633178711,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/37",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 37,
+              "bbox": {
+                "l": 363.2509460449219,
+                "t": 774.6443901062012,
+                "r": 523.8506469726562,
+                "b": 754.9533157348633,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/38",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 38,
+              "bbox": {
+                "l": 363.264404296875,
+                "t": 774.7571353912354,
+                "r": 523.9652099609375,
+                "b": 754.9258575439453,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/39",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 39,
+              "bbox": {
+                "l": 363.1830749511719,
+                "t": 774.6625709533691,
+                "r": 524.0056762695312,
+                "b": 754.9795112609863,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/40",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 39,
+              "bbox": {
+                "l": 496.9153747558594,
+                "t": 191.41131591796875,
+                "r": 504.9261779785156,
+                "b": 182.87939453125,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/41",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/469"
+            }
+          ],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 39,
+              "bbox": {
+                "l": 518.361572265625,
+                "t": 191.22015380859375,
+                "r": 525.7562255859375,
+                "b": 183.3922119140625,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [
+            {
+              "$ref": "#/texts/469"
+            }
+          ],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/42",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 40,
+              "bbox": {
+                "l": 363.1944580078125,
+                "t": 774.8106594085693,
+                "r": 523.9613037109375,
+                "b": 754.9504661560059,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/43",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 41,
+              "bbox": {
+                "l": 363.2839050292969,
+                "t": 774.6386032104492,
+                "r": 523.87939453125,
+                "b": 755.0307769775391,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/44",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 42,
+              "bbox": {
+                "l": 363.26226806640625,
+                "t": 774.7959022521973,
+                "r": 523.9367065429688,
+                "b": 754.940990447998,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/45",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 43,
+              "bbox": {
+                "l": 363.2647705078125,
+                "t": 774.6395874023438,
+                "r": 523.9552001953125,
+                "b": 755.0072631835938,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/46",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 43,
+              "bbox": {
+                "l": 518.3848266601562,
+                "t": 235.1732177734375,
+                "r": 525.8861083984375,
+                "b": 226.30560302734375,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/47",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 44,
+              "bbox": {
+                "l": 363.2560729980469,
+                "t": 774.6366500854492,
+                "r": 524.0713500976562,
+                "b": 754.9869041442871,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/48",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 45,
+              "bbox": {
+                "l": 363.2742004394531,
+                "t": 774.7873592376709,
+                "r": 523.9848022460938,
+                "b": 754.9765739440918,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/49",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 46,
+              "bbox": {
+                "l": 363.31549072265625,
+                "t": 774.5643539428711,
+                "r": 523.862548828125,
+                "b": 755.057544708252,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/50",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 47,
+              "bbox": {
+                "l": 363.2728576660156,
+                "t": 774.6571140289307,
+                "r": 523.925537109375,
+                "b": 754.9358139038086,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/51",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 48,
+              "bbox": {
+                "l": 363.2715759277344,
+                "t": 774.6434059143066,
+                "r": 523.9367065429688,
+                "b": 754.9412002563477,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/52",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 49,
+              "bbox": {
+                "l": 363.3096618652344,
+                "t": 774.6457500457764,
+                "r": 523.9179077148438,
+                "b": 755.0022277832031,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/53",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 50,
+              "bbox": {
+                "l": 363.301025390625,
+                "t": 774.6740665435791,
+                "r": 523.8616333007812,
+                "b": 754.9683685302734,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/54",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 51,
+              "bbox": {
+                "l": 363.2655029296875,
+                "t": 774.5784130096436,
+                "r": 523.7240600585938,
+                "b": 755.0074729919434,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/55",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 52,
+              "bbox": {
+                "l": 363.23004150390625,
+                "t": 774.5166549682617,
+                "r": 523.797119140625,
+                "b": 754.88232421875,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/56",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 53,
+              "bbox": {
+                "l": 363.3236999511719,
+                "t": 774.5965309143066,
+                "r": 523.8789672851562,
+                "b": 755.031909942627,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/57",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 54,
+              "bbox": {
+                "l": 363.19537353515625,
+                "t": 774.5224552154541,
+                "r": 523.87890625,
+                "b": 754.9356269836426,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/58",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 55,
+              "bbox": {
+                "l": 363.2272033691406,
+                "t": 774.4495010375977,
+                "r": 523.8471069335938,
+                "b": 754.9221649169922,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/59",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 56,
+              "bbox": {
+                "l": 363.2146911621094,
+                "t": 774.4815921783447,
+                "r": 523.8588256835938,
+                "b": 754.9634284973145,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/60",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 57,
+              "bbox": {
+                "l": 363.22259521484375,
+                "t": 774.4646949768066,
+                "r": 523.81201171875,
+                "b": 754.989143371582,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/61",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 58,
+              "bbox": {
+                "l": 363.2167663574219,
+                "t": 774.4631958007812,
+                "r": 523.8536376953125,
+                "b": 754.9941101074219,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/62",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 59,
+              "bbox": {
+                "l": 363.1734313964844,
+                "t": 774.4696521759033,
+                "r": 523.8646240234375,
+                "b": 754.9549713134766,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/63",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 60,
+              "bbox": {
+                "l": 363.3028564453125,
+                "t": 774.4535293579102,
+                "r": 523.8627319335938,
+                "b": 754.8974990844727,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/64",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 61,
+              "bbox": {
+                "l": 363.276611328125,
+                "t": 774.5362281799316,
+                "r": 523.8516235351562,
+                "b": 754.9016952514648,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/65",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/716"
+            },
+            {
+              "$ref": "#/texts/717"
+            }
+          ],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 61,
+              "bbox": {
+                "l": 76.21007537841797,
+                "t": 629.3546600341797,
+                "r": 150.53810119628906,
+                "b": 581.6749725341797,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/66",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 61,
+              "bbox": {
+                "l": 76.58859252929688,
+                "t": 458.2792053222656,
+                "r": 148.32037353515625,
+                "b": 413.4097900390625,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/67",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [
+            {
+              "$ref": "#/texts/724"
+            }
+          ],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 61,
+              "bbox": {
+                "l": 75.81250762939453,
+                "t": 272.30303955078125,
+                "r": 148.2819366455078,
+                "b": 226.14569091796875,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/68",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 62,
+              "bbox": {
+                "l": 363.2211608886719,
+                "t": 774.5246562957764,
+                "r": 523.8177490234375,
+                "b": 754.9687347412109,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/69",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 63,
+              "bbox": {
+                "l": 363.21954345703125,
+                "t": 774.5449333190918,
+                "r": 523.79443359375,
+                "b": 754.9774856567383,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/70",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 64,
+              "bbox": {
+                "l": 363.1831970214844,
+                "t": 774.5608959197998,
+                "r": 523.8934326171875,
+                "b": 754.9318389892578,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/71",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 65,
+              "bbox": {
+                "l": 363.17669677734375,
+                "t": 774.6468257904053,
+                "r": 523.9042358398438,
+                "b": 754.9923515319824,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/72",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 66,
+              "bbox": {
+                "l": 363.2350769042969,
+                "t": 774.5149211883545,
+                "r": 523.836669921875,
+                "b": 754.9814567565918,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/73",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 67,
+              "bbox": {
+                "l": 363.2364501953125,
+                "t": 774.5439777374268,
+                "r": 523.8602294921875,
+                "b": 755.0103187561035,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/74",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 68,
+              "bbox": {
+                "l": 363.22113037109375,
+                "t": 774.5416164398193,
+                "r": 523.8347778320312,
+                "b": 754.9401397705078,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/75",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 69,
+              "bbox": {
+                "l": 363.2032165527344,
+                "t": 774.5285530090332,
+                "r": 523.8469848632812,
+                "b": 754.9502067565918,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/76",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 70,
+              "bbox": {
+                "l": 363.2119140625,
+                "t": 774.5078506469727,
+                "r": 523.8251953125,
+                "b": 754.9613647460938,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/77",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 71,
+              "bbox": {
+                "l": 363.2458190917969,
+                "t": 774.624174118042,
+                "r": 523.80078125,
+                "b": 755.0393676757812,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/78",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 72,
+              "bbox": {
+                "l": 363.2948303222656,
+                "t": 774.591028213501,
+                "r": 523.7763671875,
+                "b": 755.0665283203125,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/79",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 73,
+              "bbox": {
+                "l": 363.1853942871094,
+                "t": 774.6332111358643,
+                "r": 523.904052734375,
+                "b": 755.0435028076172,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        },
+        {
+          "self_ref": "#/pictures/80",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "picture",
+          "prov": [
+            {
+              "page_no": 74,
+              "bbox": {
+                "l": 363.240966796875,
+                "t": 774.6596660614014,
+                "r": 523.8519287109375,
+                "b": 755.0054626464844,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "annotations": []
+        }
+      ],
+      "tables": [
+        {
+          "self_ref": "#/tables/0",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "table",
+          "prov": [
+            {
+              "page_no": 1,
+              "bbox": {
+                "l": 177.7834930419922,
+                "t": 226.0185546875,
+                "r": 428.0150451660156,
+                "b": 155.43292236328125,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "data": {
+            "table_cells": [
+              {
+                "bbox": {
+                  "l": 221.40000000000003,
+                  "t": 572.704,
+                  "r": 255.659,
+                  "b": 581.08,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 0,
+                "end_col_offset_idx": 1,
+                "text": "Version",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 332.88,
+                  "t": 572.704,
+                  "r": 393.977,
+                  "b": 581.08,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 1,
+                "end_col_offset_idx": 2,
+                "text": "Effective Date",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 234.84000000000003,
+                  "t": 590.104,
+                  "r": 242.36,
+                  "b": 598.48,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 0,
+                "end_col_offset_idx": 1,
+                "text": "1",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 341.113,
+                  "t": 590.104,
+                  "r": 385.552,
+                  "b": 598.48,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 1,
+                "end_col_offset_idx": 2,
+                "text": "Sept 2022",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 234.84000000000003,
+                  "t": 607.384,
+                  "r": 242.36,
+                  "b": 615.76,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 2,
+                "end_row_offset_idx": 3,
+                "start_col_offset_idx": 0,
+                "end_col_offset_idx": 1,
+                "text": "2",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 342.77,
+                  "t": 607.384,
+                  "r": 384.173,
+                  "b": 615.76,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 2,
+                "end_row_offset_idx": 3,
+                "start_col_offset_idx": 1,
+                "end_col_offset_idx": 2,
+                "text": "Dec 2023",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 234.84000000000003,
+                  "t": 624.784,
+                  "r": 242.36,
+                  "b": 633.16,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 3,
+                "end_row_offset_idx": 4,
+                "start_col_offset_idx": 0,
+                "end_col_offset_idx": 1,
+                "text": "3",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 342.77,
+                  "t": 624.784,
+                  "r": 384.173,
+                  "b": 633.16,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 3,
+                "end_row_offset_idx": 4,
+                "start_col_offset_idx": 1,
+                "end_col_offset_idx": 2,
+                "text": "Dec 2025",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              }
+            ],
+            "num_rows": 4,
+            "num_cols": 2,
+            "grid": [
+              [
+                {
+                  "bbox": {
+                    "l": 221.40000000000003,
+                    "t": 572.704,
+                    "r": 255.659,
+                    "b": 581.08,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 0,
+                  "end_col_offset_idx": 1,
+                  "text": "Version",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 332.88,
+                    "t": 572.704,
+                    "r": 393.977,
+                    "b": 581.08,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 1,
+                  "end_col_offset_idx": 2,
+                  "text": "Effective Date",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false
+                }
+              ],
+              [
+                {
+                  "bbox": {
+                    "l": 234.84000000000003,
+                    "t": 590.104,
+                    "r": 242.36,
+                    "b": 598.48,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 0,
+                  "end_col_offset_idx": 1,
+                  "text": "1",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 341.113,
+                    "t": 590.104,
+                    "r": 385.552,
+                    "b": 598.48,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 1,
+                  "end_col_offset_idx": 2,
+                  "text": "Sept 2022",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                }
+              ],
+              [
+                {
+                  "bbox": {
+                    "l": 234.84000000000003,
+                    "t": 607.384,
+                    "r": 242.36,
+                    "b": 615.76,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 2,
+                  "end_row_offset_idx": 3,
+                  "start_col_offset_idx": 0,
+                  "end_col_offset_idx": 1,
+                  "text": "2",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 342.77,
+                    "t": 607.384,
+                    "r": 384.173,
+                    "b": 615.76,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 2,
+                  "end_row_offset_idx": 3,
+                  "start_col_offset_idx": 1,
+                  "end_col_offset_idx": 2,
+                  "text": "Dec 2023",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                }
+              ],
+              [
+                {
+                  "bbox": {
+                    "l": 234.84000000000003,
+                    "t": 624.784,
+                    "r": 242.36,
+                    "b": 633.16,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 3,
+                  "end_row_offset_idx": 4,
+                  "start_col_offset_idx": 0,
+                  "end_col_offset_idx": 1,
+                  "text": "3",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 342.77,
+                    "t": 624.784,
+                    "r": 384.173,
+                    "b": 633.16,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 3,
+                  "end_row_offset_idx": 4,
+                  "start_col_offset_idx": 1,
+                  "end_col_offset_idx": 2,
+                  "text": "Dec 2025",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                }
+              ]
+            ]
+          }
+        },
+        {
+          "self_ref": "#/tables/1",
+          "parent": {
+            "$ref": "#/body"
+          },
+          "children": [],
+          "content_layer": "body",
+          "label": "table",
+          "prov": [
+            {
+              "page_no": 2,
+              "bbox": {
+                "l": 76.37188720703125,
+                "t": 445.0995788574219,
+                "r": 534.2269897460938,
+                "b": 95.3348388671875,
+                "coord_origin": "BOTTOMLEFT"
+              },
+              "charspan": [
+                0,
+                0
+              ]
+            }
+          ],
+          "captions": [],
+          "references": [],
+          "footnotes": [],
+          "image": null,
+          "data": {
+            "table_cells": [
+              {
+                "bbox": {
+                  "l": 81.96,
+                  "t": 354.784,
+                  "r": 122.19,
+                  "b": 363.16,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 0,
+                "end_col_offset_idx": 1,
+                "text": "Version",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 140.979,
+                  "t": 354.784,
+                  "r": 208.487,
+                  "b": 363.16,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 1,
+                "end_col_offset_idx": 2,
+                "text": "Effective Date",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 255.03499999999997,
+                  "t": 354.784,
+                  "r": 338.807,
+                  "b": 363.16,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 0,
+                "end_row_offset_idx": 1,
+                "start_col_offset_idx": 2,
+                "end_col_offset_idx": 3,
+                "text": "Remark of changes",
+                "column_header": true,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 81.96,
+                  "t": 383.94399999999996,
+                  "r": 97.423,
+                  "b": 392.32,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 0,
+                "end_col_offset_idx": 1,
+                "text": "1.0",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 157.955,
+                  "t": 383.94399999999996,
+                  "r": 237.56400000000002,
+                  "b": 392.32,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 1,
+                "end_col_offset_idx": 2,
+                "text": "September, 2022",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 255.12,
+                  "t": 383.064,
+                  "r": 504.723,
+                  "b": 428.92,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 1,
+                "end_row_offset_idx": 2,
+                "start_col_offset_idx": 2,
+                "end_col_offset_idx": 3,
+                "text": "-  Launch (a split-off from previous AML Policy (Version 4))  -  Update according to the latest business and regulatory  developments",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 81.96,
+                  "t": 446.824,
+                  "r": 97.423,
+                  "b": 455.19999999999993,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 2,
+                "end_row_offset_idx": 3,
+                "start_col_offset_idx": 0,
+                "end_col_offset_idx": 1,
+                "text": "2.0",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 157.955,
+                  "t": 446.824,
+                  "r": 226.909,
+                  "b": 455.19999999999993,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 2,
+                "end_row_offset_idx": 3,
+                "start_col_offset_idx": 1,
+                "end_col_offset_idx": 2,
+                "text": "December 2023",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              },
+              {
+                "bbox": {
+                  "l": 255.12,
+                  "t": 445.94399999999996,
+                  "r": 524.879,
+                  "b": 546.4000000000001,
+                  "coord_origin": "TOPLEFT"
+                },
+                "row_span": 1,
+                "col_span": 1,
+                "start_row_offset_idx": 2,
+                "end_row_offset_idx": 3,
+                "start_col_offset_idx": 2,
+                "end_col_offset_idx": 3,
+                "text": "-  Insert Section 3.4 - Business Relationship  -  Amend Section 4.2.1 - Definition of BO  -  Section 4.2.2 - add the determination of the BO of trust  -  Section 4.2.6 - amend the wording for 'Verification of a BO'  -  Insert section 4.8 - Investment Vehicle  -  Insert section 4.9 - Cross-border Correspondent Relationship",
+                "column_header": false,
+                "row_header": false,
+                "row_section": false
+              }
+            ],
+            "num_rows": 3,
+            "num_cols": 3,
+            "grid": [
+              [
+                {
+                  "bbox": {
+                    "l": 81.96,
+                    "t": 354.784,
+                    "r": 122.19,
+                    "b": 363.16,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 0,
+                  "end_col_offset_idx": 1,
+                  "text": "Version",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 140.979,
+                    "t": 354.784,
+                    "r": 208.487,
+                    "b": 363.16,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 1,
+                  "end_col_offset_idx": 2,
+                  "text": "Effective Date",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 255.03499999999997,
+                    "t": 354.784,
+                    "r": 338.807,
+                    "b": 363.16,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 0,
+                  "end_row_offset_idx": 1,
+                  "start_col_offset_idx": 2,
+                  "end_col_offset_idx": 3,
+                  "text": "Remark of changes",
+                  "column_header": true,
+                  "row_header": false,
+                  "row_section": false
+                }
+              ],
+              [
+                {
+                  "bbox": {
+                    "l": 81.96,
+                    "t": 383.94399999999996,
+                    "r": 97.423,
+                    "b": 392.32,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 0,
+                  "end_col_offset_idx": 1,
+                  "text": "1.0",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 157.955,
+                    "t": 383.94399999999996,
+                    "r": 237.56400000000002,
+                    "b": 392.32,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 1,
+                  "end_col_offset_idx": 2,
+                  "text": "September, 2022",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 255.12,
+                    "t": 383.064,
+                    "r": 504.723,
+                    "b": 428.92,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 1,
+                  "end_row_offset_idx": 2,
+                  "start_col_offset_idx": 2,
+                  "end_col_offset_idx": 3,
+                  "text": "-  Launch (a split-off from previous AML Policy (Version 4))  -  Update according to the latest business and regulatory  developments",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                }
+              ],
+              [
+                {
+                  "bbox": {
+                    "l": 81.96,
+                    "t": 446.824,
+                    "r": 97.423,
+                    "b": 455.19999999999993,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 2,
+                  "end_row_offset_idx": 3,
+                  "start_col_offset_idx": 0,
+                  "end_col_offset_idx": 1,
+                  "text": "2.0",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 157.955,
+                    "t": 446.824,
+                    "r": 226.909,
+                    "b": 455.19999999999993,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 2,
+                  "end_row_offset_idx": 3,
+                  "start_col_offset_idx": 1,
+                  "end_col_offset_idx": 2,
+                  "text": "December 2023",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                },
+                {
+                  "bbox": {
+                    "l": 255.12,
+                    "t": 445.94399999999996,
+                    "r": 524.879,
+                    "b": 546.4000000000001,
+                    "coord_origin": "TOPLEFT"
+                  },
+                  "row_span": 1,
+                  "col_span": 1,
+                  "start_row_offset_idx": 2,
+                  "end_row_offset_idx": 3,
+                  "start_col_offset_idx": 2,
+                  "end_col_offset_idx": 3,
+                  "text": "-  Insert Section 3.4 - Business Relationship  -  Amend Section 4.2.1 - Definition of BO  -  Section 4.2.2 - add the determination of the BO of trust  -  Section 4.2.6 - amend the wording for 'Verification of a BO'  -  Insert section 4.8 - Investment Vehicle  -  Insert section 4.9 - Cross-border Correspondent Relationship",
+                  "column_header": false,
+                  "row_header": false,
+                  "row_section": false
+                }
+              ]
+            ]
+          }
+        }
+      ],
+      "key_value_items": [],
+      "pages": {
+        "1": {
+          "size": {
+            "width": 612.0,
+            "height": 792.0
+          },
+          "image": {
+            "mimetype": "image/png",
+            "dpi": 144,
+            "size": {
+              "width": 1224.0,
+              "height": 1584.0
+            },
+            "uri": "<TRUNCATED>"
+          },
+          "page_no": 1
+        },
+        "2": {
+          "size": {
+            "width": 612.0,
+            "height": 792.0
+          },
+          "image": {
+            "mimetype": "image/png",
+            "dpi": 144,
+            "size": {
+              "width": 1224.0,
+              "height": 1584.0
+            },
+            "uri": "<TRUNCATED>"
+          },
+          "page_no": 2
+        }
+      }
+    },
+    "html_content": null,
+    "text_content": "<!-- missing-text -->\n<!-- missing-text -->\nGuideline on AML / KYC\n\nPrivate and confidential For internal purposes only\n\nLegal and Compliance Department\n\n<!-- missing-text -->\n<!-- missing-text -->\nIM",
+    "doctags_content": null
+  },
+  "status": "success",
+  "errors": [],
+  "processing_time": 121.34397121099937,
+  "timings": {}
+}

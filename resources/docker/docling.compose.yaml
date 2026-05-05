@@ -1,0 +1,18 @@
+services:
+  docling:
+    # quay.io 没有 latest tag，2026-05-06 最新 release 是 v0.5.1。固定版本避免 main 飘移。
+    image: quay.io/ds4sd/docling-serve:v0.5.1
+    container_name: docling
+    ports:
+      - "5001:5001"
+    environment:
+      DOCLING_SERVE_ENABLE_UI: "false"
+      # 代理绕过（对齐项目 NO_PROXY 惯例）
+      NO_PROXY: localhost,127.0.0.1,docling
+      no_proxy: localhost,127.0.0.1,docling
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
