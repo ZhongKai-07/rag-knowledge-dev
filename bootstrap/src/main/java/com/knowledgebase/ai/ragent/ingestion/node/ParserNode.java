@@ -29,8 +29,8 @@ import com.knowledgebase.ai.ragent.ingestion.domain.settings.ParserSettings;
 import com.knowledgebase.ai.ragent.ingestion.util.MimeTypeDetector;
 import com.knowledgebase.ai.ragent.core.parser.DocumentParser;
 import com.knowledgebase.ai.ragent.core.parser.DocumentParserSelector;
+import com.knowledgebase.ai.ragent.core.parser.ParseMode;
 import com.knowledgebase.ai.ragent.core.parser.ParseResult;
-import com.knowledgebase.ai.ragent.core.parser.ParserType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -78,9 +78,10 @@ public class ParserNode implements IngestionNode {
         validateMimeType(settings, mimeType, fileName);
 
         ParserSettings.ParserRule rule = matchRule(settings, mimeType, fileName);
-        DocumentParser parser = parserSelector.select(ParserType.TIKA.getType());
+        ParseMode parseMode = readParseMode(config);
+        DocumentParser parser = parserSelector.selectByParseMode(parseMode);
         if (parser == null) {
-            return NodeResult.fail(new ClientException("未配置 Tika 解析器"));
+            return NodeResult.fail(new ClientException("未配置文档解析器: parseMode=" + parseMode));
         }
 
         Map<String, Object> options = rule == null ? Collections.emptyMap() : rule.getOptions();
@@ -140,6 +141,17 @@ public class ParserNode implements IngestionNode {
                             String.join(", ", allowedTypes))
             );
         }
+    }
+
+    private ParseMode readParseMode(NodeConfig config) {
+        if (config == null || config.getSettings() == null) {
+            return ParseMode.BASIC;
+        }
+        JsonNode pm = config.getSettings().get("parseMode");
+        if (pm == null || pm.isNull() || pm.isMissingNode()) {
+            return ParseMode.BASIC;
+        }
+        return ParseMode.fromValue(pm.asText());
     }
 
     private ParserSettings parseSettings(JsonNode node) {

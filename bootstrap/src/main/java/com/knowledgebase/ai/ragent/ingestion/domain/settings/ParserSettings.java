@@ -17,6 +17,7 @@
 
 package com.knowledgebase.ai.ragent.ingestion.domain.settings;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,12 +28,16 @@ import java.util.Map;
 
 /**
  * 解析器设置实体类
- * 定义文档解析节点的配置参数，包含多个解析规则
+ * 定义文档解析节点的配置参数，包含多个解析规则。
+ * <p>
+ * 兼容性约定：{@code settings} JsonNode 还承载 {@code parseMode} 等节点级路由字段（由 ParserNode 单独提取），
+ * 因此此处 {@code @JsonIgnoreProperties(ignoreUnknown=true)} 容忍未知字段，避免反序列化失败。
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ParserSettings {
 
     /**
