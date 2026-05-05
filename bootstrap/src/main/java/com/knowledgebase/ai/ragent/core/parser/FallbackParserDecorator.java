@@ -45,18 +45,52 @@ public class FallbackParserDecorator implements DocumentParser {
     public static final String META_ENGINE_ACTUAL = "parse_engine_actual";
     public static final String META_FALLBACK_REASON = "parse_fallback_reason";
     public static final String REASON_PRIMARY_FAILED = "primary_failed";
+    /** Reason stamped when the decorator is constructed in degraded mode (primary engine unavailable). */
+    public static final String REASON_PRIMARY_UNAVAILABLE = "primary_unavailable";
 
     private final DocumentParser primary;
     private final DocumentParser fallback;
     private final String primaryName;
     private final String fallbackName;
+    /**
+     * Non-null = decorator was created in pre-degraded mode (primary never tried; every call goes
+     * straight to fallback and stamps {@code actual=fallbackName} + {@code reason=this}).
+     * One INFO log fires at construction; per-parse WARN spam is avoided.
+     */
+    private final String degradedReason;
 
+    /** Healthy decorator: try {@code primary}, on exception stamp + degrade to {@code fallback}. */
     public FallbackParserDecorator(
             DocumentParser primary, DocumentParser fallback, String primaryName, String fallbackName) {
+        this(primary, fallback, primaryName, fallbackName, null);
+    }
+
+    private FallbackParserDecorator(
+            DocumentParser primary,
+            DocumentParser fallback,
+            String primaryName,
+            String fallbackName,
+            String degradedReason) {
         this.primary = primary;
         this.fallback = fallback;
         this.primaryName = primaryName;
         this.fallbackName = fallbackName;
+        this.degradedReason = degradedReason;
+    }
+
+    /**
+     * Construct a decorator that is already known to be degraded (e.g. Docling bean not registered
+     * at startup). Skips primary on every call and stamps {@code actual=fallbackName} + the given
+     * reason, so frontends can render the degradation notice. Logs once at construction.
+     */
+    public static FallbackParserDecorator degraded(
+            DocumentParser fallback, String primaryName, String fallbackName, String reason) {
+        log.info(
+                "FallbackParserDecorator initialized in degraded mode: requested={}, actual={}, reason={}",
+                primaryName,
+                fallbackName,
+                reason);
+        return new FallbackParserDecorator(fallback, fallback, primaryName, fallbackName, reason);
     }
 
     @Override
@@ -68,6 +102,11 @@ public class FallbackParserDecorator implements DocumentParser {
 
     @Override
     public ParseResult parse(byte[] content, String mimeType, Map<String, Object> options) {
+        if (degradedReason != null) {
+            // Pre-known degraded: don't try primary, go straight to fallback.
+            ParseResult r = fallback.parse(content, mimeType, options);
+            return stamp(r, primaryName, fallbackName, degradedReason);
+        }
         try {
             ParseResult r = primary.parse(content, mimeType, options);
             return stamp(r, primaryName, primaryName, null);
@@ -84,6 +123,10 @@ public class FallbackParserDecorator implements DocumentParser {
 
     @Override
     public String extractText(InputStream stream, String fileName) {
+        if (degradedReason != null) {
+            // Pre-known degraded: skip primary entirely.
+            return fallback.extractText(stream, fileName);
+        }
         try {
             return primary.extractText(stream, fileName);
         } catch (Exception e) {

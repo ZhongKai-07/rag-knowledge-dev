@@ -68,9 +68,17 @@ public class DocumentParserSelector {
      * 按解析模式选择解析器。
      * <ul>
      *   <li>{@link ParseMode#BASIC} → Tika</li>
-     *   <li>{@link ParseMode#ENHANCED} → Docling；若 Docling 尚未注册（PR 1 末态）则回退 Tika，
-     *       PR 2 起 Docling bean 可用后由 fallback decorator 控制兜底语义。</li>
+     *   <li>{@link ParseMode#ENHANCED} → 始终返回 {@link FallbackParserDecorator} 包装的解析器，
+     *       primary = Docling（若已注册）/ 否则 Tika，fallback 始终是 Tika。这保证：
+     *       <ul>
+     *         <li>Docling 不可用时 ingestion 不会整链路失败；</li>
+     *         <li>{@code parse_engine_requested = "Docling"} 与 {@code parse_engine_actual}
+     *             metadata 永远存在，前端可读以决定是否提示「增强解析尚未启用，已使用基础解析」。</li>
+     *       </ul>
+     *   </li>
      * </ul>
+     * PR 5 起注册真正的 {@code DoclingDocumentParser} 后，primary 自动切换为 Docling，
+     * 失败时 decorator 兜底回 Tika 并 stamp {@code parse_fallback_reason=primary_failed}。
      */
     public DocumentParser selectByParseMode(ParseMode mode) {
         return switch (mode) {
@@ -80,11 +88,19 @@ public class DocumentParserSelector {
     }
 
     private DocumentParser selectEnhanced() {
+        DocumentParser tika = select(ParserType.TIKA.getType());
         DocumentParser docling = strategyMap.get(ParserType.DOCLING.getType());
         if (docling == null) {
-            return select(ParserType.TIKA.getType());
+            // Docling 未注册（PR 5 之前的常态）—— 用 degraded factory：每次 parse 直接走 Tika，
+            // metadata stamp requested=Docling / actual=Tika / reason=primary_unavailable，
+            // 前端可据此提示「增强解析尚未启用，已使用基础解析」。
+            return FallbackParserDecorator.degraded(
+                    tika,
+                    ParserType.DOCLING.getType(),
+                    ParserType.TIKA.getType(),
+                    FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
         }
-        return docling;
+        return new FallbackParserDecorator(docling, tika, ParserType.DOCLING.getType(), ParserType.TIKA.getType());
     }
 
     /**

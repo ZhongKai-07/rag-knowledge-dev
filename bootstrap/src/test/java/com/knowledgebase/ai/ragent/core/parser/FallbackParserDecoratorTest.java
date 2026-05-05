@@ -117,4 +117,32 @@ class FallbackParserDecoratorTest {
 
         assertEquals("fallback-text", dec.extractText(is, "f.pdf"));
     }
+
+    @Test
+    void degradedFactory_skipsPrimary_stampsActualAsFallback_andStampsReason() {
+        FallbackParserDecorator dec =
+                FallbackParserDecorator.degraded(
+                        FALLBACK, "docling", "tika", FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
+
+        ParseResult r = dec.parse(new byte[0], "application/pdf", new HashMap<>());
+
+        assertEquals("fallback-text", r.text());
+        assertEquals("docling", r.metadata().get(FallbackParserDecorator.META_ENGINE_REQUESTED));
+        assertEquals("tika", r.metadata().get(FallbackParserDecorator.META_ENGINE_ACTUAL));
+        assertEquals(
+                FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE,
+                r.metadata().get(FallbackParserDecorator.META_FALLBACK_REASON));
+    }
+
+    @Test
+    void degradedFactory_extractText_skipsPrimary() {
+        // Even though primary parameter would throw, degraded() never invokes primary at all —
+        // it constructs with primary == fallback under the hood.
+        FallbackParserDecorator dec =
+                FallbackParserDecorator.degraded(
+                        FALLBACK, "docling", "tika", FallbackParserDecorator.REASON_PRIMARY_UNAVAILABLE);
+
+        InputStream is = new ByteArrayInputStream(new byte[0]);
+        assertEquals("fallback-text", dec.extractText(is, "f.pdf"));
+    }
 }
