@@ -1,0 +1,17 @@
+services:
+  docling:
+    image: quay.io/ds4sd/docling-serve:latest
+    container_name: docling
+    ports:
+      - "5001:5001"
+    environment:
+      DOCLING_SERVE_ENABLE_UI: "false"
+      # 代理绕过（对齐项目 NO_PROXY 惯例）
+      NO_PROXY: localhost,127.0.0.1,docling
+      no_proxy: localhost,127.0.0.1,docling
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
