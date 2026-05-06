@@ -290,7 +290,16 @@ public class OpenSearchVectorStoreAdmin implements VectorStoreAdmin {
                           "analyzer": "%s",
                           "fields": { "raw": { "type": "keyword" } }
                         },
-                        "summary": { "type": "text", "analyzer": "%s" }
+                        "summary": { "type": "text", "analyzer": "%s" },
+                        "page_number":       { "type": "integer" },
+                        "page_start":        { "type": "integer" },
+                        "page_end":          { "type": "integer" },
+                        "heading_path":      { "type": "keyword" },
+                        "block_type":        { "type": "keyword" },
+                        "source_block_ids":  { "type": "keyword" },
+                        "bbox_refs":         { "type": "text", "index": false },
+                        "text_layer_type":   { "type": "keyword" },
+                        "layout_confidence": { "type": "float" }
                       }
                     }
                   }
