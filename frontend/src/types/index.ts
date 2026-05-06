@@ -65,6 +65,15 @@ export interface SourceChunk {
   chunkIndex: number;
   preview: string;
   score: number;
+  // PR 6 chunk-level evidence。后端 @JsonInclude(NON_EMPTY) 让 null 字段在 wire 上不出现 →
+  // 前端字段为 undefined；但 cache 漂移 / 历史数据仍可能产生 null，所以类型用 ?: T | null
+  // 同时覆盖 undefined 和 null。守卫一律用 != null（不是 !== undefined）。
+  pageNumber?: number | null;
+  pageStart?: number | null;
+  pageEnd?: number | null;
+  headingPath?: string[] | null;
+  blockType?: string | null;
+  sourceBlockIds?: string[] | null;
 }
 
 export interface SourceCard {

@@ -1,6 +1,7 @@
 import * as React from "react";
 import type { SourceCard } from "@/types";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   cards: SourceCard[];
@@ -55,6 +56,23 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
                 <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                   {card.chunks.map(chunk => (
                     <li key={chunk.chunkId} className="border-l-2 border-border pl-2">
+                      <div className="flex flex-wrap items-center gap-1 mb-0.5">
+                        {chunk.pageNumber != null && (
+                          <span className="text-xs text-muted-foreground mr-2">
+                            第 {chunk.pageStart != null && chunk.pageEnd != null && chunk.pageStart !== chunk.pageEnd
+                              ? `${chunk.pageStart}-${chunk.pageEnd}`
+                              : chunk.pageNumber} 页
+                          </span>
+                        )}
+                        {chunk.headingPath?.length ? (
+                          <span className="text-xs text-muted-foreground">
+                            {chunk.headingPath.join(" › ")}
+                          </span>
+                        ) : null}
+                        {chunk.blockType === "TABLE" && (
+                          <Badge variant="outline" className="text-xs ml-2">表格</Badge>
+                        )}
+                      </div>
                       {chunk.preview}
                     </li>
                   ))}
