@@ -86,7 +86,8 @@ public class ParserNode implements IngestionNode {
 
         Map<String, Object> options = rule == null ? Collections.emptyMap() : rule.getOptions();
         ParseResult result = parser.parse(context.getRawBytes(), mimeType, options);
-        context.setRawText(result.text());
+        context.setParseResult(result); // PR 6: SoT for layout
+        context.setRawText(result.text()); // 派生兼容（保留）
 
         // 将 ParseResult 转换为 StructuredDocument
         StructuredDocument document = StructuredDocument.builder()

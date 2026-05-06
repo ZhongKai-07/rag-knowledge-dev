@@ -145,4 +145,17 @@ public class IngestionContext {
      * 此处的字段为后续 IndexerNode / 监控埋点保留 hand-off 通道。
      */
     private String parseMode;
+
+    /**
+     * 完整 ParseResult，含 pages / tables 等 layout 信息。
+     *
+     * <p>SoT 约定（PR 6 起）：
+     * <ul>
+     *   <li>ParserNode 是唯一写入 parseResult 的节点</li>
+     *   <li>rawText 是 parseResult.text() 的派生兼容字段，ParserNode 内保持二者同步</li>
+     *   <li>enhancedText 是独立派生文本（EnhancerNode 写），不回写 parseResult</li>
+     *   <li>layout / table 新代码只读 parseResult.pages() / parseResult.tables()</li>
+     * </ul>
+     */
+    private com.knowledgebase.ai.ragent.core.parser.ParseResult parseResult;
 }
