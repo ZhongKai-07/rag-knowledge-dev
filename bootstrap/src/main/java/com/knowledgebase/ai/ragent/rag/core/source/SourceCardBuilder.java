@@ -121,6 +121,13 @@ public class SourceCardBuilder {
                         .chunkIndex(rc.getChunkIndex() == null ? -1 : rc.getChunkIndex())
                         .preview(truncateByCodePoint(rc.getText(), previewMaxChars))
                         .score(rc.getScore() == null ? 0f : rc.getScore())
+                        // PR 6 chunk-level evidence
+                        .pageNumber(rc.getPageNumber())
+                        .pageStart(rc.getPageStart())
+                        .pageEnd(rc.getPageEnd())
+                        .headingPath(rc.getHeadingPath())
+                        .blockType(rc.getBlockType())
+                        .sourceBlockIds(rc.getSourceBlockIds())
                         .build())
                 .toList();
 
