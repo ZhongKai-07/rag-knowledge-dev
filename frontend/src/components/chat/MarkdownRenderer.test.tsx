@@ -37,4 +37,19 @@ describe("<MarkdownRenderer /> rollback contract", () => {
     expect(sup).not.toBeNull();
     expect(sup?.querySelector("button")).not.toBeNull();
   });
+
+  it("isStreaming=true skips SyntaxHighlighter for fenced code blocks (PR-2 A)", () => {
+    const fence = "```js\nconst a = 1;\nconst b = 2;\n```";
+    const { container, rerender } = render(
+      <MarkdownRenderer content={fence} isStreaming={true} />
+    );
+    // 流式降级容器有 data-streaming，且无 prismjs token span
+    expect(container.querySelector('[data-streaming="true"]')).not.toBeNull();
+    expect(container.querySelectorAll('span[class*="token"]').length).toBe(0);
+
+    // done 后切回高亮：token span 出现
+    rerender(<MarkdownRenderer content={fence} isStreaming={false} />);
+    expect(container.querySelector('[data-streaming="true"]')).toBeNull();
+    expect(container.querySelectorAll('span[class*="token"]').length).toBeGreaterThan(0);
+  });
 });

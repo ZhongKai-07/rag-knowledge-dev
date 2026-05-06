@@ -38,6 +38,8 @@ export interface Message {
   status?: MessageStatus;
   suggestedQuestions?: string[];
   sources?: SourceCard[];
+  /** 流式阶段提示（旁路），仅 streaming 期间有效，不进历史持久化。 */
+  streamStatus?: StreamStatusPayload;
 }
 
 export interface StreamMetaPayload {
@@ -82,4 +84,16 @@ export interface SourcesPayload {
   /** 流式阶段为 null；前端按 streamingMessageId 定位消息，不依赖此字段。 */
   messageId: string | null;
   cards: SourceCard[];
+}
+
+export type StreamStatusPhase =
+  | "rewriting"
+  | "retrieving"
+  | "sources_ready"
+  | "generating";
+
+export interface StreamStatusPayload {
+  phase: StreamStatusPhase;
+  text: string;
+  sourceCount?: number;
 }

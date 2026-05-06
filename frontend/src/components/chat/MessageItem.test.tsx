@@ -5,10 +5,15 @@ import { MessageItem } from "./MessageItem";
 import { CITATION_HIGHLIGHT_MS } from "@/utils/citationAst";
 import type { Message, SourceCard } from "@/types";
 
-// Mock useChatStore.sendMessage (MessageItem 依赖)
+// Mock useChatStore.sendMessage / regenerateLastAssistantMessage / isStreaming (MessageItem 依赖)
+const regenMock = vi.fn();
 vi.mock("@/stores/chatStore", () => ({
   useChatStore: (selector: any) =>
-    selector({ sendMessage: vi.fn() }),
+    selector({
+      sendMessage: vi.fn(),
+      regenerateLastAssistantMessage: regenMock,
+      isStreaming: false,
+    }),
 }));
 
 // Mock useThemeStore (MarkdownRenderer 依赖)
@@ -45,6 +50,7 @@ describe("<MessageItem /> citation interaction", () => {
 
   afterEach(() => {
     cleanup();
+    regenMock.mockClear();
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
@@ -52,7 +58,8 @@ describe("<MessageItem /> citation interaction", () => {
   it("click on CitationBadge triggers scrollIntoView + highlight ring", async () => {
     const user = userEvent.setup();
     render(<MessageItem message={makeMessage()} isLast={true} />);
-    const badge = screen.getByRole("button", { name: /引用\s*1/ });
+    // ^引用 锚定避免误抓 "跳到正文中的引用 N" 按钮（E 双向引用）
+    const badge = screen.getByRole("button", { name: /^引用\s+1/ });
     await user.click(badge);
     expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
   });
@@ -62,7 +69,7 @@ describe("<MessageItem /> citation interaction", () => {
     const { container } = render(<MessageItem message={makeMessage()} isLast={true} />);
     // 通过 container 查询按钮（避免 userEvent 与 fake timers 冲突）
     const badge = container.querySelector(
-      'button[aria-label*="引用"]'
+      'button[aria-label^="引用"]'
     ) as HTMLButtonElement;
     act(() => {
       badge.click();
@@ -78,12 +85,54 @@ describe("<MessageItem /> citation interaction", () => {
 
   it("renders Sources when message.sources has entries", () => {
     render(<MessageItem message={makeMessage()} isLast={true} />);
-    expect(screen.getByText("来源")).toBeDefined();
+    // 新设计：列表头 "参考来源（1）"
+    expect(screen.getByText(/参考来源/)).toBeDefined();
+    expect(screen.getByText("来源 1")).toBeDefined();
   });
 
   it("does not render Sources when message.sources is undefined", () => {
     render(<MessageItem message={makeMessage({ sources: undefined })} isLast={true} />);
-    expect(screen.queryByText("来源")).toBeNull();
+    expect(screen.queryByText(/参考来源/)).toBeNull();
+  });
+
+  it("renders assistant role badge with brand name", () => {
+    render(<MessageItem message={makeMessage()} isLast={true} />);
+    // 角色条品牌名（D）：让 user 与 assistant 视觉区分加强
+    expect(screen.getByText("HT KnowledgeBase")).toBeDefined();
+  });
+
+  it("renders regenerate button only when isLast and not streaming, calling store on click", async () => {
+    const user = userEvent.setup();
+    regenMock.mockResolvedValue(undefined);
+    const { unmount } = render(<MessageItem message={makeMessage()} isLast={true} />);
+    const btn = screen.getByRole("button", { name: "重新生成" });
+    await user.click(btn);
+    expect(regenMock).toHaveBeenCalledTimes(1);
+    unmount();
+
+    // isLast=false 时不渲染
+    render(<MessageItem message={makeMessage()} isLast={false} />);
+    expect(screen.queryByRole("button", { name: "重新生成" })).toBeNull();
+  });
+
+  it("clicking Sources jump button scrolls to matching [^n] in content (E bidirectional)", async () => {
+    const user = userEvent.setup();
+    render(<MessageItem message={makeMessage()} isLast={true} />);
+    const jumpBtn = screen.getByRole("button", { name: /跳到正文中的引用\s*1/ });
+    await user.click(jumpBtn);
+    // 跳转按钮触发 querySelector('[data-cite-n="1"]') 后 scrollIntoView
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("hides assistant role badge while message.isThinking", () => {
+    // 思考态由 ThinkingIndicator 自带视觉信号，不再叠加角色条
+    render(
+      <MessageItem
+        message={makeMessage({ isThinking: true, content: "" })}
+        isLast={true}
+      />
+    );
+    expect(screen.queryByText("HT KnowledgeBase")).toBeNull();
   });
 
   it("clears the pending highlight timer when component unmounts mid-timeout", () => {
@@ -93,7 +142,7 @@ describe("<MessageItem /> citation interaction", () => {
       <MessageItem message={makeMessage()} isLast={true} />
     );
     const badge = container.querySelector(
-      'button[aria-label*="引用"]'
+      'button[aria-label^="引用"]'
     ) as HTMLButtonElement;
 
     // 点击后 timer 被 set（timerRef.current 为 setTimeout 返回值）

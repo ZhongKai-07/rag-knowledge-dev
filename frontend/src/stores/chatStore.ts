@@ -9,6 +9,7 @@ import type {
   Session,
   SourcesPayload,
   StreamMetaPayload,
+  StreamStatusPayload,
   SuggestionsPayload
 } from "@/types";
 import {
@@ -51,6 +52,7 @@ interface ChatState {
   setDeepThinkingEnabled: (enabled: boolean) => void;
   setSelectedKnowledgeBase: (kbId: string | null) => void;
   sendMessage: (content: string) => Promise<void>;
+  regenerateLastAssistantMessage: () => Promise<void>;
   cancelGeneration: () => void;
   appendStreamContent: (delta: string) => void;
   appendThinkingContent: (delta: string) => void;
@@ -98,6 +100,52 @@ export function createStreamHandlers(
   assistantId: string,
   stopTaskFn: (taskId: string) => Promise<unknown>
 ): StreamHandlers {
+  // rAF 批处理：response/think 各自独立 buffer，scheduleFlush 在下一帧 flush。
+  // finish/cancel/done/error/reject 五个终止点都要 forceFlush，避免尾包丢失。
+  let responseBuffer = "";
+  let thinkingBuffer = "";
+  let rafHandle: number | null = null;
+  const hasRaf =
+    typeof window !== "undefined" && typeof window.requestAnimationFrame === "function";
+
+  const flush = () => {
+    rafHandle = null;
+    // stale 流：丢弃 buffer，避免旧流的内容写到新消息
+    if (get().streamingMessageId !== assistantId) {
+      responseBuffer = "";
+      thinkingBuffer = "";
+      return;
+    }
+    if (responseBuffer) {
+      const text = responseBuffer;
+      responseBuffer = "";
+      get().appendStreamContent(text);
+    }
+    if (thinkingBuffer) {
+      const text = thinkingBuffer;
+      thinkingBuffer = "";
+      get().appendThinkingContent(text);
+    }
+  };
+
+  const scheduleFlush = () => {
+    if (rafHandle != null) return;
+    if (!hasRaf) {
+      // 非浏览器环境（vitest 极少数场景）退化为同步
+      flush();
+      return;
+    }
+    rafHandle = window.requestAnimationFrame(flush);
+  };
+
+  const forceFlush = () => {
+    if (rafHandle != null && hasRaf) {
+      window.cancelAnimationFrame(rafHandle);
+      rafHandle = null;
+    }
+    flush();
+  };
+
   return {
     onMeta: (payload: StreamMetaPayload) => {
       if (get().streamingMessageId !== assistantId) return;
@@ -122,21 +170,40 @@ export function createStreamHandlers(
       }
     },
     onMessage: (payload: MessageDeltaPayload) => {
+      if (get().streamingMessageId !== assistantId) return;
       if (!payload || typeof payload !== "object") return;
       if (payload.type !== "response") return;
-      get().appendStreamContent(payload.delta);
+      responseBuffer += payload.delta ?? "";
+      scheduleFlush();
     },
     onThinking: (payload: MessageDeltaPayload) => {
+      if (get().streamingMessageId !== assistantId) return;
       if (!payload || typeof payload !== "object") return;
       if (payload.type !== "think") return;
-      get().appendThinkingContent(payload.delta);
+      thinkingBuffer += payload.delta ?? "";
+      scheduleFlush();
     },
     onReject: (payload: MessageDeltaPayload) => {
+      if (get().streamingMessageId !== assistantId) return;
       if (!payload || typeof payload !== "object") return;
+      // reject 通常立刻终结：先 flush 已缓冲内容，再追加 reject 内容
+      forceFlush();
       get().appendStreamContent(payload.delta);
+    },
+    onStatus: (payload: StreamStatusPayload) => {
+      if (get().streamingMessageId !== assistantId) return;
+      if (!payload || typeof payload !== "object" || !payload.phase) return;
+      set((state) => ({
+        messages: state.messages.map((message) =>
+          message.id === state.streamingMessageId
+            ? { ...message, streamStatus: payload }
+            : message
+        )
+      }));
     },
     onFinish: (payload: CompletionPayload) => {
       if (get().streamingMessageId !== assistantId) return;
+      forceFlush();
       if (!payload) return;
       if (payload.title && get().currentSessionId) {
         get().updateSessionTitle(get().currentSessionId as string, payload.title);
@@ -164,6 +231,7 @@ export function createStreamHandlers(
                   id: String(payload.messageId),
                   status: "done",
                   isThinking: false,
+                  streamStatus: undefined,
                   thinkingDuration:
                     message.thinkingDuration ?? computeThinkingDuration(state.thinkingStartAt)
                 }
@@ -178,6 +246,7 @@ export function createStreamHandlers(
                   ...message,
                   status: "done",
                   isThinking: false,
+                  streamStatus: undefined,
                   thinkingDuration:
                     message.thinkingDuration ?? computeThinkingDuration(state.thinkingStartAt)
                 }
@@ -209,6 +278,7 @@ export function createStreamHandlers(
     },
     onCancel: (payload: CompletionPayload) => {
       if (get().streamingMessageId !== assistantId) return;
+      forceFlush();
       if (payload?.title && get().currentSessionId) {
         get().updateSessionTitle(get().currentSessionId as string, payload.title);
       }
@@ -225,6 +295,7 @@ export function createStreamHandlers(
             content: message.content + suffix,
             status: "cancelled",
             isThinking: false,
+            streamStatus: undefined,
             thinkingDuration:
               message.thinkingDuration ?? computeThinkingDuration(state.thinkingStartAt)
           };
@@ -239,14 +310,20 @@ export function createStreamHandlers(
     },
     onDone: () => {
       if (get().streamingMessageId !== assistantId) return;
-      set({
+      forceFlush();
+      set((state) => ({
         isStreaming: false,
         thinkingStartAt: null,
         streamTaskId: null,
         streamAbort: null,
         streamingMessageId: null,
-        cancelRequested: false
-      });
+        cancelRequested: false,
+        messages: state.messages.map((message) =>
+          message.id === assistantId || message.streamStatus
+            ? { ...message, streamStatus: undefined }
+            : message
+        )
+      }));
     },
     onTitle: (payload: { title: string }) => {
       if (get().streamingMessageId !== assistantId) return;
@@ -256,6 +333,7 @@ export function createStreamHandlers(
     },
     onError: (error: Error) => {
       if (get().streamingMessageId !== assistantId) return;
+      forceFlush();
       set((state) => ({
         isStreaming: false,
         thinkingStartAt: null,
@@ -268,6 +346,7 @@ export function createStreamHandlers(
                 ...message,
                 status: "error",
                 isThinking: false,
+                streamStatus: undefined,
                 thinkingDuration:
                   message.thinkingDuration ?? computeThinkingDuration(state.thinkingStartAt)
               }
@@ -573,6 +652,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
       }
     }
+  },
+  regenerateLastAssistantMessage: async () => {
+    const { messages, isStreaming } = get();
+    if (isStreaming) return;
+    // 从末尾找最后一条 assistant 及其前面的 user
+    let assistantIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") {
+        assistantIdx = i;
+        break;
+      }
+    }
+    if (assistantIdx < 0) return;
+    let userIdx = -1;
+    for (let i = assistantIdx - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        userIdx = i;
+        break;
+      }
+    }
+    if (userIdx < 0) return;
+    const userContent = messages[userIdx].content;
+    // 截掉 user 及其之后的所有消息，让 sendMessage 重新 push 新一对
+    set({ messages: messages.slice(0, userIdx) });
+    await get().sendMessage(userContent);
   },
   cancelGeneration: () => {
     const { isStreaming, streamTaskId } = get();

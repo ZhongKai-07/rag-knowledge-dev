@@ -19,11 +19,23 @@ interface MarkdownRendererProps {
   content: string;
   sources?: SourceCard[];
   onCitationClick?: (n: number) => void;
+  /**
+   * 流式期为 true：代码块跳过 react-syntax-highlighter，渲染纯 <pre>。
+   * 未闭合代码块在流式期反复 tokenize 是性能瓶颈；done 后切回高亮。
+   */
+  isStreaming?: boolean;
 }
 
 // theme 订阅下沉到 CodeRenderer 内部，使 MarkdownRenderer 的 components 对象
-// 可以严格按 [hasSources, indexMap, onCitationClick] memo（N-3 / PR5）。
-function CodeRenderer({ inline, className, children, node, ...props }: any) {
+// 可以严格按 [hasSources, indexMap, onCitationClick, isStreaming] memo。
+function CodeRenderer({
+  inline,
+  className,
+  children,
+  node,
+  isStreaming,
+  ...props
+}: any) {
   const theme = useThemeStore((state) => state.theme);
   const match = /language-(\w+)/.exec(className || "");
   const language = match?.[1] || "text";
@@ -45,7 +57,10 @@ function CodeRenderer({ inline, className, children, node, ...props }: any) {
   }
 
   return (
-    <div className="my-3 overflow-hidden rounded-md border border-[#d0d7de] bg-[#f6f8fa] dark:border-[#30363d] dark:bg-[#161b22]">
+    <div
+      className="my-3 overflow-hidden rounded-md border border-[#d0d7de] bg-[#f6f8fa] dark:border-[#30363d] dark:bg-[#161b22]"
+      data-streaming={isStreaming ? "true" : undefined}
+    >
       <div className="flex items-center justify-between border-b border-[#d0d7de] bg-[#f6f8fa] px-3 py-1.5 dark:border-[#30363d] dark:bg-[#161b22]">
         <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[#57606a] dark:text-[#8b949e]">
           {language}
@@ -53,28 +68,43 @@ function CodeRenderer({ inline, className, children, node, ...props }: any) {
         <CopyButton value={value} />
       </div>
       <div className="overflow-x-auto">
-        <SyntaxHighlighter
-          language={language}
-          style={theme === "dark" ? oneDark : oneLight}
-          PreTag="div"
-          customStyle={{
-            margin: 0,
-            padding: "0.75rem 1rem",
-            background: "transparent",
-            fontSize: "13px",
-            lineHeight: "1.5"
-          }}
-          showLineNumbers={false}
-          wrapLines={true}
-        >
-          {value}
-        </SyntaxHighlighter>
+        {isStreaming ? (
+          // 流式降级：未闭合代码块反复 tokenize 是性能瓶颈，done 后切回高亮
+          <pre
+            className="m-0 px-4 py-3 text-[13px] leading-[1.5] text-[#24292f] dark:text-[#c9d1d9]"
+            style={{ background: "transparent" }}
+          >
+            <code>{value}</code>
+          </pre>
+        ) : (
+          <SyntaxHighlighter
+            language={language}
+            style={theme === "dark" ? oneDark : oneLight}
+            PreTag="div"
+            customStyle={{
+              margin: 0,
+              padding: "0.75rem 1rem",
+              background: "transparent",
+              fontSize: "13px",
+              lineHeight: "1.5"
+            }}
+            showLineNumbers={false}
+            wrapLines={true}
+          >
+            {value}
+          </SyntaxHighlighter>
+        )}
       </div>
     </div>
   );
 }
 
-export function MarkdownRenderer({ content, sources, onCitationClick }: MarkdownRendererProps) {
+function MarkdownRendererImpl({
+  content,
+  sources,
+  onCitationClick,
+  isStreaming
+}: MarkdownRendererProps) {
   const hasSources = Array.isArray(sources) && sources.length > 0;
 
   const indexMap = React.useMemo(
@@ -89,7 +119,7 @@ export function MarkdownRenderer({ content, sources, onCitationClick }: Markdown
 
   const components = React.useMemo(
     () => ({
-      code: CodeRenderer,
+      code: (props: any) => <CodeRenderer {...props} isStreaming={isStreaming} />,
       img({ src, alt, ...props }: any) {
         const [hasError, setHasError] = React.useState(false);
 
@@ -196,7 +226,7 @@ export function MarkdownRenderer({ content, sources, onCitationClick }: Markdown
           }
         : {}),
     }),
-    [hasSources, indexMap, onCitationClick]
+    [hasSources, indexMap, onCitationClick, isStreaming]
   );
 
   return (
@@ -209,6 +239,10 @@ export function MarkdownRenderer({ content, sources, onCitationClick }: Markdown
     </ReactMarkdown>
   );
 }
+
+// React.memo 浅比 props——长答案流式期 MessageItem 重渲染时跳过未变 props 的重渲染。
+// 仅 4 个 props 都浅相等才命中（onCitationClick 在 MessageItem 已 useCallback）。
+export const MarkdownRenderer = React.memo(MarkdownRendererImpl);
 
 function CopyButton({ value }: { value: string }) {
   const [copied, setCopied] = React.useState(false);
