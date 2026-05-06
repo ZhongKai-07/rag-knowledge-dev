@@ -288,18 +288,30 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
             return;
         }
 
-        chunkDO.setContent(newContent);
-        chunkDO.setContentHash(SecureUtil.sha256(newContent));
-        chunkDO.setCharCount(newContent.length());
         KnowledgeBaseDO kbDO = knowledgeBaseMapper.selectById(documentDO.getKbId());
         String embeddingModel = kbDO.getEmbeddingModel();
         String collectionName = kbDO.getCollectionName();
-        chunkDO.setTokenCount(resolveTokenCount(newContent));
-        chunkDO.setUpdatedBy(UserContext.getUsername());
 
-        chunkMapper.updateById(chunkDO);
+        // PR 6 / v4 review P1 #2: 用 LambdaUpdateWrapper.set 显式发送 NULL，绕过 FieldStrategy.NOT_NULL
+        chunkMapper.update(null, Wrappers.lambdaUpdate(KnowledgeChunkDO.class)
+                .eq(KnowledgeChunkDO::getId, chunkId)
+                .set(KnowledgeChunkDO::getContent, newContent)
+                .set(KnowledgeChunkDO::getContentHash, SecureUtil.sha256(newContent))
+                .set(KnowledgeChunkDO::getCharCount, newContent.length())
+                .set(KnowledgeChunkDO::getTokenCount, resolveTokenCount(newContent))
+                .set(KnowledgeChunkDO::getUpdatedBy, UserContext.getUsername())
+                // PR 6: 清 4 个 extraction-specific 字段（5 个 location 字段不出现在 set 列表 = 不动）
+                .set(KnowledgeChunkDO::getSourceBlockIds, null)
+                .set(KnowledgeChunkDO::getBboxRefs, null)
+                .set(KnowledgeChunkDO::getTextLayerType, null)
+                .set(KnowledgeChunkDO::getLayoutConfidence, null));
 
         log.info("更新 Chunk 成功, kbId={}, docId={}, chunkId={}", documentDO.getKbId(), docId, chunkId);
+
+        // 重读最新 DO 用于 OS rebuild（含保留的 location 字段 + 已清空的 extraction 字段）
+        KnowledgeChunkDO refreshed = chunkMapper.selectById(chunkId);
+        VectorChunk vc = buildVectorChunkFromDO(refreshed);
+        vc.setEmbedding(toArray(embedContent(newContent, embeddingModel)));
 
         // 同步向量数据库
         vectorStoreService.updateChunk(
@@ -307,12 +319,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
                 docId,
                 documentDO.getKbId(),
                 documentDO.getSecurityLevel() != null ? documentDO.getSecurityLevel() : 0,
-                VectorChunk.builder()
-                        .chunkId(chunkId)
-                        .content(newContent)
-                        .index(chunkDO.getChunkIndex())
-                        .embedding(toArray(embedContent(newContent, embeddingModel)))
-                        .build()
+                vc
         );
     }
 
