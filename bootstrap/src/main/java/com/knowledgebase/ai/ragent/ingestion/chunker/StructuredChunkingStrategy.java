@@ -17,6 +17,7 @@
 
 package com.knowledgebase.ai.ragent.ingestion.chunker;
 
+import cn.hutool.core.util.IdUtil;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingMode;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingOptions;
 import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
@@ -173,7 +174,7 @@ public class StructuredChunkingStrategy implements IngestionChunkingStrategy {
 
     private VectorChunk newChunk(String content, int index) {
         return VectorChunk.builder()
-                .chunkId(java.util.UUID.randomUUID().toString())
+                .chunkId(IdUtil.getSnowflakeNextIdStr())
                 .index(index)
                 .content(content)
                 .metadata(new HashMap<>())
