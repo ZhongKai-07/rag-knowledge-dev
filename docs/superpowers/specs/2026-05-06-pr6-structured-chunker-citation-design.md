@@ -25,7 +25,7 @@
 PR 6 **明确不做**以下五件事，避免范围漂移：
 
 1. **不激活 `t_knowledge_document_page` 页级表**。PR 3 留的 entity + mapper 维持 0 调用状态；激活由未来"evidence preview UI" PR 承担（Backlog 条目 `PARSER-PAGE-PERSIST`）。理由：PR 6 用户价值只需 chunk 级元信息支撑 SourceChunk；激活页表会过早冻结 `blocks_json` schema 并引入 `(doc_id, page_no)` 幂等管理面
-2. **不修改 CHUNK 处理路径**（[`KnowledgeDocumentServiceImpl.runChunkProcess`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImpl.java)）。BASIC 上传仍硬编码走 Tika，与 PR 6 范围"PIPELINE 路径下的 layout-aware chunking"无关
+2. **不修改 CHUNK 处理路径**（[`KnowledgeDocumentServiceImpl.runChunkProcess`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImpl.java)）。BASIC 上传仍硬编码走 Tika，与 PR 6 范围"PIPELINE 路径下的 layout-aware chunking"无关
 3. **不解决 EnhancerNode-before-StructuredChunkingStrategy 的二阶语义对齐问题**。`enhancedText` 与原始 `parseResult.layout` 之间的对齐策略（如何把 Q&A enhanced text 与 Docling 块边界对齐）不在 PR 6 范围内，留给未来需要这个组合的特定 PR
 4. **不实现 Collateral 单问单答字段查询业务链路**。PR 6 只交付 chunk evidence 底座（SourceChunk 6 个新字段为可见契约）；Slot 抽取、字段值提取、答案分档由后续 Collateral PR 实现
 5. **不在 SourceChunk 渲染 bbox 高亮**。`bbox_refs` 进 OS metadata 和 DB 列保留为未来扩展，但**不进 SourceChunk DTO**，前端 UI 也不消费。bbox 高亮属于"future work"
@@ -53,15 +53,21 @@ PR 6 是即将到来的 Collateral 单问单答字段查询 PR 的**必要前置
 | `blockType` | `String`（来自 `BlockType.name()`）| `string \| undefined` | OS metadata `block_type` | `"PARAGRAPH"` / `"TABLE"` / `"TITLE"` 等 8 种枚举值的 name；BASIC null |
 | `sourceBlockIds` | `List<String>` | `string[] \| undefined` | OS metadata `source_block_ids` | chunk 由哪些 LayoutBlock 拼成；BASIC null；ENHANCED 但 chunker 未填充时空数组 |
 
-### 2.1.1 JSON 序列化策略
+### 2.1.1 JSON 序列化策略（双侧防御）
 
-SourceChunk 6 个新字段全部 `null`/`undefined` 友好。Java 端使用 Jackson 默认（包含 null 字段，序列化为 `"pageNumber":null`），无需 `@JsonInclude(Include.NON_NULL)` 注解 —— 前端 TypeScript interface 用 optional `?:` 容忍 `null` 与 `undefined`。这条与 `Sources.tsx` 的 `chunk.pageNumber !== undefined` 守卫一致，BASIC chunk 的 null 值不会渲染 evidence 行。
+SourceChunk 6 个新字段全部 nullable，必须在前后端两侧都防住 null。**纯靠前端 `!== undefined` 判断会漏 null**（runtime `null !== undefined` 为 true，BASIC chunk 序列化 `"pageNumber":null` 会让 evidence 行假阳性渲染）。三条契约同时生效：
+
+1. **后端**：[`SourceChunk.java`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/dto/SourceChunk.java) 类级加 `@JsonInclude(JsonInclude.Include.NON_NULL)`，让 Jackson 在序列化时直接**省略** null 字段（BASIC chunk 输出不包含 `pageNumber/pageStart/...` key）
+2. **前端 TypeScript 类型**：在 `frontend/src/types/index.ts` 中定义为 `pageNumber?: number | null`（同时容忍 undefined 和 null —— 即使 Jackson 配置漂移漏了 NON_NULL，类型仍诚实）
+3. **前端守卫**：`Sources.tsx` 中**统一用 `!= null`**（不是 `!== undefined`），覆盖 null 与 undefined 两种 falsy。例：`chunk.pageNumber != null && (<span>...</span>)`
+
+belt-and-suspenders 设计：后端 `@JsonInclude` 是首道闸门，前端 `!= null` 是二道闸门。任一道单独就能防住假阳性，两道叠加防御漂移。
 
 ### 2.2 value-in-paragraph guard 契约
 
-Collateral PR 的 tier-A 降级判定是"抽取的字段值必须在 chunk text 中能匹配上"。**这个匹配必须用 [`RetrievedChunk.text()`](../../framework/src/main/java/com/knowledgebase/ai/ragent/framework/convention/RetrievedChunk.java) 的全文做，不能用 `SourceChunk.preview` 截断版**。原因：
+Collateral PR 的 tier-A 降级判定是"抽取的字段值必须在 chunk text 中能匹配上"。**这个匹配必须用 [`RetrievedChunk.text()`](../../../framework/src/main/java/com/knowledgebase/ai/ragent/framework/convention/RetrievedChunk.java) 的全文做，不能用 `SourceChunk.preview` 截断版**。原因：
 
-- `SourceChunk.preview` 是 UI 展示截断（[`SourceCardBuilder.previewMaxChars`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/source/SourceCardBuilder.java) 控制）
+- `SourceChunk.preview` 是 UI 展示截断（[`SourceCardBuilder.previewMaxChars`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/source/SourceCardBuilder.java) 控制）
 - 如果 value 在 chunk 末尾、preview 已截断，guard 会假阴性，正确答案被错误降级
 - guard 在服务端 composer 里完成，时机早于 SourceCard/SourceChunk 构造，天然有 RetrievedChunk.text() 可用
 
@@ -73,14 +79,14 @@ Brainstorm 阶段对 main HEAD `a03a4acf` 的 4 路并行代码调查发现 **12
 
 | # | Delta | Plan 假设 | 现实 | Spec 处理 |
 |---|---|---|---|---|
-| 1 | ParseResult.pages/tables 在 ParserNode 被丢弃 | "PR 5 已写 ParseResult 到 context" | [`ParserNode.java:88-96`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/ingestion/node/ParserNode.java) 只取 `text()` + `metadata()`，pages/tables 立即丢失；IngestionContext 无 `parseResult` 字段 | §5.9 ParserNode 改写 + IngestionContext 加 `parseResult` 字段 + 5 条 SoT 约定（§4.2） |
-| 2 | OS index `dynamic:false` 拒收新字段 | "OS 能直接存 layout metadata" | [`OpenSearchVectorStoreAdmin.java:260-299`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/vector/OpenSearchVectorStoreAdmin.java) 的 metadata mapping `dynamic:false`；9 个 layout 字段全缺；未声明字段虽然进 `_source` 但**不可被 term/range filter 命中**，也不索引；`ensureVectorSpace` 仅 create-if-missing | §5.11 OS mapping forward-only 升级 + §11 运维契约（已存在 KB 切 ENHANCED 走 DELETE+re-ingest，半升级状态明确禁止） |
+| 1 | ParseResult.pages/tables 在 ParserNode 被丢弃 | "PR 5 已写 ParseResult 到 context" | [`ParserNode.java:88-96`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/ingestion/node/ParserNode.java) 只取 `text()` + `metadata()`，pages/tables 立即丢失；IngestionContext 无 `parseResult` 字段 | §5.9 ParserNode 改写 + IngestionContext 加 `parseResult` 字段 + 5 条 SoT 约定（§4.2） |
+| 2 | OS index `dynamic:false` 拒收新字段 | "OS 能直接存 layout metadata" | [`OpenSearchVectorStoreAdmin.java:260-299`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/vector/OpenSearchVectorStoreAdmin.java) 的 metadata mapping `dynamic:false`；9 个 layout 字段全缺；未声明字段虽然进 `_source` 但**不可被 term/range filter 命中**，也不索引；`ensureVectorSpace` 仅 create-if-missing | §5.11 OS mapping forward-only 升级 + §11 运维契约（已存在 KB 切 ENHANCED 走 DELETE+re-ingest，半升级状态明确禁止） |
 | 3 | 老 `ChunkingStrategy` 接口签名异构 | "StructuredChunkingStrategy 实现同接口" | 现接口 `chunk(String text, ChunkingOptions config)` 只吃 String；StructuredChunkingStrategy 需要的 `(pages, tables, options)` 异构 | §5.1-5.5 引入新顶层接口 `IngestionChunkingStrategy` + `IngestionChunkingInput` 输入模型 + LegacyAdapter 包装老 strategy |
-| 4 | v0.5.1 不暴露 textLayerType/confidence | Plan 设计了 `textLayerTypeForRange` / `averageConfidence` aggregation | [`DoclingResponseAdapter.java:207-216`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/core/parser/DoclingResponseAdapter.java) 这两个字段永远 null；plan aggregation 自然返回 null | §6.4 接受 null 不伪造；DB / OS 列保持空；§12 标记为 known limitation |
+| 4 | v0.5.1 不暴露 textLayerType/confidence | Plan 设计了 `textLayerTypeForRange` / `averageConfidence` aggregation | [`DoclingResponseAdapter.java:207-216`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/core/parser/DoclingResponseAdapter.java) 这两个字段永远 null；plan aggregation 自然返回 null | §6.4 接受 null 不伪造；DB / OS 列保持空；§12 标记为 known limitation |
 | 5 | parseMode 没传到 ChunkerNode | Plan 假设可用 | ParserNode 读 parseMode 但不存 context | §5.9 IngestionContext 已有 `parseMode: String` 字段（PR 4 加的）；§5.2 IngestionChunkingInput 通过 `IngestionContext.parseMode` 读 |
-| 6 | KnowledgeChunkDO 9 字段无 typeHandler | Plan 用 LambdaUpdateWrapper.set | gotcha §2 警告：typeHandler 不会触发，会写字面字符串 | §5.10 持久化必须走 entity-based saveBatch；headingPath/sourceBlockIds JSON 序列化由 service 层用 ObjectMapper 完成（不是 typeHandler 也不是 helper） |
-| 7 | RetrievedChunk 不读 layout | Plan 直接 chunk.pageNumber 用 | [`OpenSearchRetrieverService.toRetrievedChunk`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/retrieve/OpenSearchRetrieverService.java) 只抽 4 字段 | §5.12 扩 RetrievedChunk + 扩 toRetrievedChunk 字段映射；用 ChunkLayoutMetadata helper 反序列化 |
-| 8 | Page table mapper 0 调用 | Plan 写到 `persistChunksAndVectorsAtomically` | [`KnowledgeDocumentPageMapper`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/dao/mapper/KnowledgeDocumentPageMapper.java) 全仓 0 调用 | §1.2 Non-Goal 1：PR 6 不激活，签名不接受 `pages` 参数 |
+| 6 | KnowledgeChunkDO 9 字段无 typeHandler | Plan 用 LambdaUpdateWrapper.set | gotcha §2 警告：typeHandler 不会触发，会写字面字符串 | §5.10 持久化全程走 entity-based `chunkMapper.insert(List)`（仓库实际 API，非 `saveBatch`）；headingPath/sourceBlockIds 的 List → JSON 序列化由 `ChunkLayoutMetadata.copyToCreateRequest`（唯一入口）完成，不散落在 service 层多处 |
+| 7 | RetrievedChunk 不读 layout | Plan 直接 chunk.pageNumber 用 | [`OpenSearchRetrieverService.toRetrievedChunk`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/retrieve/OpenSearchRetrieverService.java) 只抽 4 字段 | §5.12 扩 RetrievedChunk + 扩 toRetrievedChunk 字段映射；用 ChunkLayoutMetadata helper 反序列化 |
+| 8 | Page table mapper 0 调用 | Plan 写到 `persistChunksAndVectorsAtomically` | [`KnowledgeDocumentPageMapper`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/dao/mapper/KnowledgeDocumentPageMapper.java) 全仓 0 调用 | §1.2 Non-Goal 1：PR 6 不激活，签名不接受 `pages` 参数 |
 | 9 | OcrFallbackParser / TextLayerQualityDetector 0 调用 | Plan 未提 | 接口 + Noop 实现都在但全仓 0 调用 | §6 不依赖；textLayerType 走 Q7 null 路径 |
 | 10 | CHUNK 模式硬编码 Tika | Plan 未提 | runChunkProcess 写死 `parserSelector.select(TIKA)` | §1.2 Non-Goal 2：PR 6 不动 CHUNK |
 | 11 | ChunkerNode 已耦合 embedding | Plan 假设可分 | ChunkerNode 内部 `chunkEmbeddingService.embed(chunks, null)` | §5.8 ChunkerNode 重写后保留此调用，无变化（A' 接口让 strategy 直接输出 List\<VectorChunk\>，embedding 调用零改动 —— Q6 bonus） |
@@ -100,22 +106,27 @@ Brainstorm 阶段对 main HEAD `a03a4acf` 的 4 路并行代码调查发现 **12
 | `LegacyTextChunkingStrategyAdapter.java` | `bootstrap/.../ingestion/chunker` | priority=10；包装老 `FixedSizeTextChunker` / `StructureAwareTextChunker` |
 | `IngestionChunkingDispatcher.java` | `bootstrap/.../ingestion/chunker` | 优先级 dispatch + 同优先级 fail-fast |
 | `StructuredChunkingOptionsResolver.java` | `bootstrap/.../ingestion/chunker`（package-private）| 把异构 ChunkingOptions 收口为 `StructuredChunkingDimensions` |
-| `ChunkLayoutMetadata.java` | `bootstrap/.../rag/core/vector` | layout 字段在 VectorChunk.metadata 上的类型化访问层（双向 reader/writer，三态读取兼容） |
+| `ChunkLayoutMetadata.java` | `bootstrap/.../rag/core/vector` | layout 字段在 VectorChunk.metadata 上的类型化访问层：**4 类 API**——(a) reader 静态方法（含三态兼容：List / String[] / JSON String 兜底解析）、(b) Builder writer、(c) `copyFromDO(KnowledgeChunkDO, VectorChunk)` 把 DO 9 字段反向填入 metadata Map（用于所有 re-index 路径）、(d) `copyToCreateRequest(VectorChunk, KnowledgeChunkCreateRequest)` 把 chunk metadata 抽到 CreateRequest（用于 persist 路径）|
 
-**修改（10 个）**：
+**修改（13 个 Java/TS + 3 个文档）**：
 
 | 文件 | 改动 |
 |---|---|
 | `IngestionContext.java` | 加 `parseResult: ParseResult` 字段 |
 | `ParserNode.java` | parse 后写 `setParseResult(result)`（同步保留 setRawText） |
 | `ChunkerNode.java` | rewire 走 `IngestionChunkingDispatcher`（替换原 `chunkingStrategyFactory.requireStrategy(...)`） |
-| `KnowledgeDocumentServiceImpl.java` | `persistChunksAndVectorsAtomically` 签名加 `structuredChunks` 参数；从 metadata 抽 layout 写 DB 9 列 |
+| `KnowledgeDocumentServiceImpl.java` | **签名不变**（`persistChunksAndVectorsAtomically` 仍然 `(coll, docId, kbId, sec, chunks)`）；line 323-331 的 VectorChunk → CreateRequest 转换体内**新增** layout 字段拷贝；DB 9 列填值由扩展后的 `KnowledgeChunkCreateRequest` 承载 |
+| `KnowledgeChunkCreateRequest.java` | **加 9 个 nullable layout 字段**（pageNumber/pageStart/pageEnd/headingPath/blockType/sourceBlockIds/bboxRefs/textLayerType/layoutConfidence；headingPath / sourceBlockIds 字段类型为 `String` 已序列化 JSON，由 service 层提前 ObjectMapper 处理）|
+| `KnowledgeChunkServiceImpl.java` | (a) `batchCreate` line 220-232 的 `KnowledgeChunkDO.builder()` 块加 9 字段拷贝；(b) **5 处 VectorChunk.builder() 调用点**（line 244 / 303 / 434 / 534 + KnowledgeDocumentServiceImpl line 786）必须用 `ChunkLayoutMetadata.copyFromDO(do, vc)` 把 DO 9 字段重新填入 `vc.getMetadata()`，否则 enable/disable/单 chunk 编辑等再索引路径会丢 layout（这是 review P1 #1 锁定的契约） |
 | `OpenSearchVectorStoreAdmin.java` | metadata mapping 加 9 个 layout 字段类型声明 |
 | `RetrievedChunk.java` | 加 6 个 nullable 字段 |
 | `OpenSearchRetrieverService.java` | `toRetrievedChunk` 用 `ChunkLayoutMetadata` 抽 layout |
-| `SourceChunk.java` | 加 6 个 nullable 字段 |
+| `SourceChunk.java` | 加 6 个 nullable 字段；类级 `@JsonInclude(JsonInclude.Include.NON_NULL)` |
 | `SourceCardBuilder.java` | RetrievedChunk → SourceChunk 时映射 6 个字段 |
-| `frontend/src/types/index.ts` + `frontend/src/components/chat/Sources.tsx` | TS interface 6 字段 + 卡片头部渲染 page/heading |
+| `frontend/src/types/index.ts` + `frontend/src/components/chat/Sources.tsx` | TS interface 6 字段（`number \| null` / `string[] \| null` 而非 `?: number`）+ 卡片头部用 `!= null` 守卫渲染 page/heading |
+| `docs/dev/setup/docling-service.md` | 加"已存在 KB 切 ENHANCED 的迁移步骤"章节（§11.2）|
+| `docs/dev/followup/backlog.md` | 加 5 条 backlog 条目（PARSER-PAGE-PERSIST / PARSER-OCR-PIPELINE / PARSER-TEXT-LAYER-V0.6+ / PARSER-ENHANCER-LAYOUT-ALIGN，加上已有 SL-1 的关联说明）|
+| `docs/dev/gotchas.md` §8 | 加新条："PR 6 起 layout 字段双路径写入"——chunker 阶段写 metadata Map（被 OS catch-all 透传写入索引）+ persist 阶段抽到 KnowledgeChunkDO 9 列；DB 与 OS 必须保持双侧一致；任何 re-index 路径必须用 `ChunkLayoutMetadata.copyFromDO` 从 DO 反向回填 metadata Map |
 
 ### 4.2 SoT 约定（5 条，spec 锁定）
 
@@ -236,7 +247,7 @@ public class StructuredChunkingStrategy implements IngestionChunkingStrategy {
 }
 ```
 
-完整 chunking 算法见 plan Task 6.1 Step 2 [`line 2783-2925`](../../docs/superpowers/plans/2026-05-05-parser-enhancement-docling.md#L2783)，本 spec 偏离仅限于 `StructuredChunk` record → `VectorChunk + ChunkLayoutMetadata.writer` 形态切换。
+完整 chunking 算法见 plan Task 6.1 Step 2 [`line 2783-2925`](../plans/2026-05-05-parser-enhancement-docling.md#L2783)，本 spec 偏离仅限于 `StructuredChunk` record → `VectorChunk + ChunkLayoutMetadata.writer` 形态切换。
 
 ### 5.4 `LegacyTextChunkingStrategyAdapter`（新组件）
 
@@ -424,11 +435,73 @@ public final class ChunkLayoutMetadata {
 }
 ```
 
-**边界**：
+**边界（精确措辞）**：
 
-- helper 只做 Map 内的 type access；**不做 IO，不做 JSON serialize/deserialize 给外部存储**
-- DB 落库时 `headingPath` / `sourceBlockIds` 的 `List<String> → String` JSON 序列化由 `KnowledgeDocumentServiceImpl` / 持久化层用现有 `ObjectMapper` 完成（§5.10 详细说明）
+- helper 只做 Map 内的 type access；**不做外部存储的序列化写入，仅在读取时兼容 JSON String** —— 即 reader 路径会兜底反序列化 DB-derived 数据（如 `headingPath` 的 JSON 字符串），但 writer 路径不负责把 `List<String>` 序列化为 JSON String 写出去（这是 persist 层的职责）
+- **DB 落库时 `headingPath` / `sourceBlockIds` 的 `List<String> → JSON String` 序列化由 `ChunkLayoutMetadata.copyToCreateRequest`（**唯一入口**，本文件下方代码块定义）完成；service 层 `KnowledgeChunkServiceImpl.batchCreate` 拿到的 `KnowledgeChunkCreateRequest` 已是最终 JSON 字符串形态，**不再做二次序列化**，避免散落在 service 多处的脆弱 try-catch**
 - **writer 对 BlockType 解耦**：调用方传 `BlockType.name()` String，避免 `rag.core.vector` 反向 import `core.parser.layout.BlockType`
+
+**两个 copy 方法**（写入 helper 同一个类，但是独立的桥接方法）：
+
+```java
+/**
+ * 把 KnowledgeChunkDO 的 9 个 layout 列反向填入 VectorChunk.metadata，用于 re-index 路径。
+ * 适用：KnowledgeChunkServiceImpl 中所有从 DB 读 chunkDO 后构造 VectorChunk 重写 OS 的位置。
+ * headingPath / sourceBlockIds 在 DO 里是 JSON String，通过 reader 三态兼容自动解析。
+ */
+public static void copyFromDO(KnowledgeChunkDO chunkDO, VectorChunk target) {
+    if (chunkDO == null || target == null) return;
+    Builder w = writer(target);
+    w.pageNumber(chunkDO.getPageNumber());
+    w.pageRange(chunkDO.getPageStart(), chunkDO.getPageEnd());
+    // headingPath / sourceBlockIds: DO 是 JSON String，通过共享 ObjectMapper 解出 List
+    if (chunkDO.getHeadingPath() != null && !chunkDO.getHeadingPath().isBlank()) {
+        try {
+            w.headingPath(SHARED_MAPPER.readValue(chunkDO.getHeadingPath(),
+                    new TypeReference<List<String>>() {}));
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to deserialize headingPath for chunk {}: {}", chunkDO.getId(), chunkDO.getHeadingPath());
+        }
+    }
+    if (chunkDO.getSourceBlockIds() != null && !chunkDO.getSourceBlockIds().isBlank()) {
+        try {
+            w.sourceBlockIds(SHARED_MAPPER.readValue(chunkDO.getSourceBlockIds(),
+                    new TypeReference<List<String>>() {}));
+        } catch (JsonProcessingException ignored) { /* same fallback */ }
+    }
+    w.blockType(chunkDO.getBlockType());
+    w.bboxRefs(chunkDO.getBboxRefs());
+    w.textLayerType(chunkDO.getTextLayerType());
+    w.layoutConfidence(chunkDO.getLayoutConfidence());
+}
+
+/**
+ * 把 VectorChunk.metadata 的 9 个 layout key 抽到 KnowledgeChunkCreateRequest 的 9 个新字段，
+ * 用于 persist 路径。List → JSON String 序列化在此处发生（**helper 在 persist 写入方向上确实做 serialize**，
+ * 这是 helper 边界唯一的"逆向"职责，由这一个明确入口承担，不散落在调用方）。
+ */
+public static void copyToCreateRequest(VectorChunk source, KnowledgeChunkCreateRequest target) {
+    if (source == null || target == null || source.getMetadata() == null) return;
+    target.setPageNumber(pageNumber(source));
+    target.setPageStart(pageStart(source));
+    target.setPageEnd(pageEnd(source));
+    List<String> hp = headingPath(source);
+    target.setHeadingPath(hp.isEmpty() ? null : toJsonOrNull(hp));
+    target.setBlockType(blockType(source));
+    List<String> sb = sourceBlockIds(source);
+    target.setSourceBlockIds(sb.isEmpty() ? null : toJsonOrNull(sb));
+    target.setBboxRefs(bboxRefs(source));
+    target.setTextLayerType(textLayerType(source));
+    target.setLayoutConfidence(layoutConfidence(source));
+}
+
+private static String toJsonOrNull(List<String> list) {
+    try { return SHARED_MAPPER.writeValueAsString(list); }
+    catch (JsonProcessingException e) { return null; }
+}
+```
+
+**收口理由**：persist 方向的 List → JSON 序列化在调用方做意味着每个 re-index / persist 调用点都得复制 try-catch + 类型决策；集中到 helper 的 `copyToCreateRequest` 一个入口反而符合 "vector metadata 契约的类型化访问层" 这个 helper 定位（写入合约也是契约的一部分）。**reader 兜底解 JSON 仍然只在 reader 路径**，与 writer 路径职责不混。
 
 ### 5.7 `StructuredChunkingOptionsResolver`（package-private helper）
 
@@ -499,69 +572,134 @@ context.setDocument(StructuredDocument.builder()    // 保留：legacy 输出
         .build());
 ```
 
-### 5.10 `persistChunksAndVectorsAtomically` 签名 + layout 落 DB
+### 5.10 持久化路径：复用 `batchCreate`，扩展 `KnowledgeChunkCreateRequest`
+
+**关键事实修正**（spec v1 笔误，v2 修正）：现有 [`KnowledgeDocumentServiceImpl.persistChunksAndVectorsAtomically:312-346`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImpl.java) 是已经在 main 上的真实路径：
 
 ```java
+// main 上的现状（PR 6 不改签名、不改事务结构）
 private int persistChunksAndVectorsAtomically(
-        String collectionName,
-        String docId,
-        String kbId,
-        Integer securityLevel,
-        List<VectorChunk> chunks) {        // ← 注意：plan 加 pages/structuredChunks 两个参；本 spec 不加 pages（page 表 Non-Goal），不加 structuredChunks（layout 在 chunks.metadata 里）
-
-    // 1. KB-OS 索引保险
+        String collectionName, String docId, String kbId, Integer securityLevel,
+        List<VectorChunk> chunkResults) {
     vectorStoreAdmin.ensureVectorSpace(...);
 
-    // 2. KnowledgeChunkDO 构造 + DB 9 列填充
-    List<KnowledgeChunkDO> chunkDOs = new ArrayList<>(chunks.size());
-    for (VectorChunk vc : chunks) {
-        KnowledgeChunkDO chunkDO = KnowledgeChunkDO.builder()
-                .docId(docId)
-                .kbId(kbId)
-                .chunkIndex(vc.getIndex())
-                .chunkContent(vc.getContent())
-                // ... 现有非 layout 字段 ...
-                // PR 6 新增：从 metadata 抽 layout
-                .pageNumber(ChunkLayoutMetadata.pageNumber(vc))
-                .pageStart(ChunkLayoutMetadata.pageStart(vc))
-                .pageEnd(ChunkLayoutMetadata.pageEnd(vc))
-                .headingPath(serializeJsonOrNull(ChunkLayoutMetadata.headingPath(vc)))
-                .blockType(ChunkLayoutMetadata.blockType(vc))
-                .sourceBlockIds(serializeJsonOrNull(ChunkLayoutMetadata.sourceBlockIds(vc)))
-                .bboxRefs(ChunkLayoutMetadata.bboxRefs(vc))
-                .textLayerType(ChunkLayoutMetadata.textLayerType(vc))     // v0.5.1 永远 null
-                .layoutConfidence(ChunkLayoutMetadata.layoutConfidence(vc))// v0.5.1 永远 null
-                .build();
-        chunkDOs.add(chunkDO);
-    }
+    // ↓ line 323-331：VectorChunk → CreateRequest 转换体
+    List<KnowledgeChunkCreateRequest> chunks = chunkResults.stream()
+            .map(vc -> {
+                KnowledgeChunkCreateRequest req = new KnowledgeChunkCreateRequest();
+                req.setChunkId(vc.getChunkId());
+                req.setIndex(vc.getIndex());
+                req.setContent(vc.getContent());
+                return req;
+            })  // ← 这里 layout 字段被丢
+            .toList();
 
-    // 3. saveBatch（entity-based，避免 gotcha §2 typeHandler 陷阱）
-    chunkMapper.saveBatch(chunkDOs);
-
-    // 4. OS 写入：chunks.metadata 已在 chunker 阶段写入 layout，OpenSearchVectorStoreService 透传
-    vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, chunks);
-
+    transactionOperations.executeWithoutResult(status -> {
+        knowledgeChunkService.deleteByDocId(docId);
+        knowledgeChunkService.batchCreate(docId, chunks);                                       // ← DB 写：CreateRequest → DO
+        vectorStoreService.deleteDocumentVectors(collectionName, docId);
+        vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, chunkResults);  // ← OS 写：用原始 VectorChunk
+        documentMapper.updateById(...);
+    });
     return chunks.size();
-}
-
-/**
- * Helper：List<String> → JSON String，空集 → null（避免写无意义的 "[]" 字符串到 DB）。
- * 由 service 层承担序列化，不进 ChunkLayoutMetadata helper（保持后者只做 Map 内 type access）。
- */
-private String serializeJsonOrNull(List<String> list) {
-    if (list == null || list.isEmpty()) return null;
-    try {
-        return objectMapper.writeValueAsString(list);
-    } catch (JsonProcessingException e) {
-        log.warn("Failed to serialize List<String> to JSON, falling back to null: {}", list, e);
-        return null;
-    }
 }
 ```
 
+**关键不对称要先理清**：
+
+- OS 写路径用 `chunkResults`（原始 VectorChunk 全部 metadata 健在），所以 OS 索引能拿到 9 字段 layout（catch-all 透传成立）
+- DB 写路径走 [`KnowledgeChunkCreateRequest`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/controller/request/KnowledgeChunkCreateRequest.java)（当前只有 `content / index / chunkId` 3 字段）作为中转 DTO —— **layout 在 stream map 处被丢**，DB 9 列写入永远 NULL
+
+PR 6 修正策略：**扩展 CreateRequest + 在 stream map 处用 `ChunkLayoutMetadata.copyToCreateRequest` 拷贝 + `batchCreate` 内的 DO 构造也加 9 字段拷贝**。`persistChunksAndVectorsAtomically` 签名 / 事务结构 / OS 写入逻辑全部不动 —— 这是与原 plan（plan 想加 `pages` 参数）的关键偏离。
+
+#### 5.10.1 扩展 `KnowledgeChunkCreateRequest`
+
+```java
+@Data
+public class KnowledgeChunkCreateRequest {
+    /** 现有字段不动 */
+    private String content;
+    private Integer index;
+    private String chunkId;
+
+    /** PR 6 新增：layout 字段，全 nullable。
+     *  manual chunk creation API（KnowledgeChunkController）不会填（手工 chunk 没 layout），
+     *  ingestion persist 路径由 ChunkLayoutMetadata.copyToCreateRequest 自动填。
+     *  headingPath / sourceBlockIds 与 KnowledgeChunkDO 同形态（已序列化为 JSON String）。 */
+    private Integer pageNumber;
+    private Integer pageStart;
+    private Integer pageEnd;
+    private String headingPath;        // JSON 数组字符串
+    private String blockType;
+    private String sourceBlockIds;     // JSON 数组字符串
+    private String bboxRefs;
+    private String textLayerType;
+    private Double layoutConfidence;
+}
+```
+
+#### 5.10.2 修改 `persistChunksAndVectorsAtomically` 的 stream map 块（仅一行新增）
+
+```java
+List<KnowledgeChunkCreateRequest> chunks = chunkResults.stream()
+        .map(vc -> {
+            KnowledgeChunkCreateRequest req = new KnowledgeChunkCreateRequest();
+            req.setChunkId(vc.getChunkId());
+            req.setIndex(vc.getIndex());
+            req.setContent(vc.getContent());
+            ChunkLayoutMetadata.copyToCreateRequest(vc, req);   // ← PR 6 新增唯一一行，9 layout 字段一次性拷过去
+            return req;
+        })
+        .toList();
+```
+
+#### 5.10.3 修改 `KnowledgeChunkServiceImpl.batchCreate` 的 DO 构造块（line 220-232）
+
+注意 DO 字段名是 **`content`**（不是 spec v1 笔误的 `chunkContent`），仓库实际使用 **`chunkMapper.insert(chunkDOList)`**（不是 `saveBatch`）：
+
+```java
+KnowledgeChunkDO chunkDO = KnowledgeChunkDO.builder()
+        .id(chunkId)
+        .kbId(kbId)
+        .docId(docId)
+        .chunkIndex(chunkIndex)
+        .content(content)                          // ← 字段名是 content
+        .contentHash(SecureUtil.sha256(content))
+        .charCount(content.length())
+        .tokenCount(resolveTokenCount(content))
+        // PR 6 新增 9 字段：直接从扩展后的 CreateRequest 字段拷贝（CreateRequest 已携带 JSON String 形态）
+        .pageNumber(request.getPageNumber())
+        .pageStart(request.getPageStart())
+        .pageEnd(request.getPageEnd())
+        .headingPath(request.getHeadingPath())
+        .blockType(request.getBlockType())
+        .sourceBlockIds(request.getSourceBlockIds())
+        .bboxRefs(request.getBboxRefs())
+        .textLayerType(request.getTextLayerType())
+        .layoutConfidence(request.getLayoutConfidence())
+        .enabled(1)
+        .createdBy(username)
+        .updatedBy(username)
+        .build();
+chunkDOList.add(chunkDO);
+// ... line 237 现有 chunkMapper.insert(chunkDOList) 不变
+```
+
+#### 5.10.4 持久化路径责任分工
+
+| 步骤 | 负责方 | 数据形态 |
+|---|---|---|
+| chunker 输出 | `StructuredChunkingStrategy` | `VectorChunk.metadata: Map<String, Object>` 含 `List<String>` 等原生类型 |
+| VectorChunk → CreateRequest | `ChunkLayoutMetadata.copyToCreateRequest` | `List<String>` → `JSON String`（**唯一**做 List→JSON serialize 的入口）|
+| CreateRequest → DO | `KnowledgeChunkServiceImpl.batchCreate` | 字段直接拷贝（CreateRequest 已是最终形态）|
+| DO → DB 列 | `chunkMapper.insert(List)` | 各字段已是 SQL 兼容类型（INTEGER / VARCHAR / TEXT / DOUBLE）|
+| OS 写入 | `vectorStoreService.indexDocumentChunks(..., chunkResults)` | 原始 `List<VectorChunk>` 含 metadata Map，`OpenSearchVectorStoreService.buildDocument` catch-all 透传 |
+
+**`gotcha §2` typeHandler 陷阱不会触发**：因为持久化全程走 entity-based `chunkMapper.insert(List)`，没有任何 `LambdaUpdateWrapper.set` 路径碰 jsonb / 集合字段。
+
 ### 5.11 OS mapping forward-only 升级
 
-[`OpenSearchVectorStoreAdmin.java`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/vector/OpenSearchVectorStoreAdmin.java) `metadata.properties` 加 9 个字段（与 [`VectorMetadataFields`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/vector/VectorMetadataFields.java) 常量对齐）：
+[`OpenSearchVectorStoreAdmin.java`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/vector/OpenSearchVectorStoreAdmin.java) `metadata.properties` 加 9 个字段（与 [`VectorMetadataFields`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/vector/VectorMetadataFields.java) 常量对齐）：
 
 ```json
 "metadata": {
@@ -597,7 +735,7 @@ private String serializeJsonOrNull(List<String> list) {
 
 ### 5.12 RetrievedChunk + OpenSearchRetrieverService 扩展
 
-[`RetrievedChunk.java`](../../framework/src/main/java/com/knowledgebase/ai/ragent/framework/convention/RetrievedChunk.java) 加 6 字段：
+[`RetrievedChunk.java`](../../../framework/src/main/java/com/knowledgebase/ai/ragent/framework/convention/RetrievedChunk.java) 加 6 字段：
 
 ```java
 private Integer pageNumber;
@@ -610,7 +748,7 @@ private List<String> sourceBlockIds;
 
 注意：`bboxRefs / textLayerType / layoutConfidence` **不进** RetrievedChunk —— 不是 SourceChunk 契约的一部分（§2.1）。它们只在 OS metadata + DB 列存在。如果未来 evidence preview / bbox highlighting 等业务需要，再单独扩。
 
-[`OpenSearchRetrieverService.toRetrievedChunk`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/retrieve/OpenSearchRetrieverService.java) 在现有 `kb_id / security_level / doc_id / chunk_index` 抽取后追加：
+[`OpenSearchRetrieverService.toRetrievedChunk`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/retrieve/OpenSearchRetrieverService.java) 在现有 `kb_id / security_level / doc_id / chunk_index` 抽取后追加：
 
 ```java
 // 用 ChunkLayoutMetadata 反序列化（构造一个临时 VectorChunk 包装 metadata Map）
@@ -625,9 +763,9 @@ chunk.setSourceBlockIds(ChunkLayoutMetadata.sourceBlockIds(meta));
 
 ### 5.13 SourceCardBuilder + SourceChunk 扩展
 
-[`SourceChunk.java`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/dto/SourceChunk.java) 加同样 6 字段（§2.1）。
+[`SourceChunk.java`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/dto/SourceChunk.java) 加同样 6 字段（§2.1）。
 
-[`SourceCardBuilder`](../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/source/SourceCardBuilder.java) `chunksInDoc.stream().map(rc -> ...)` 内加：
+[`SourceCardBuilder`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/source/SourceCardBuilder.java) `chunksInDoc.stream().map(rc -> ...)` 内加：
 
 ```java
 SourceChunk.builder()
@@ -705,8 +843,11 @@ upload (parseMode=ENHANCED)
         → chunk(input, options) → List<VectorChunk> with layout in metadata
      → embedding → IndexerNode (skipIndexerWrite=true, no-op)
   → KnowledgeDocumentServiceImpl.persistChunksAndVectorsAtomically(chunks)
-     → KnowledgeChunkDO 9 layout 列填值 → saveBatch
-     → OpenSearchVectorStoreService.indexDocumentChunks(chunks) → metadata 透传 → OS 9 字段索引
+     → stream map: VectorChunk → KnowledgeChunkCreateRequest（含 ChunkLayoutMetadata.copyToCreateRequest 把 layout 拷过去）
+     → knowledgeChunkService.batchCreate(docId, requests)
+         → KnowledgeChunkDO.builder() 含 9 layout 字段（CreateRequest → DO 直接拷贝）
+         → chunkMapper.insert(List)  // entity-based，不走 LambdaUpdate
+     → vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, sec, chunkResults)  // 用原始 VectorChunk，metadata 透传
   → 用户检索 → OpenSearchRetrieverService.toRetrievedChunk → RetrievedChunk 6 layout 字段
   → SourceCardBuilder → SourceChunk 6 字段
   → 前端渲染 "第 X 页 / 章节路径 / 段落|表格"
@@ -766,15 +907,50 @@ upload (parseMode=BASIC, pipelineId=xxx)
   → 用户视觉与 BASIC + CHUNK 一致（前端无差别）
 ```
 
+### 6.5 Re-index 路径（disable → enable / 单 chunk 编辑 / re-embed）—— review P1 #1 锁定
+
+ENHANCED 文档完成 ingestion 之后，多种业务操作会**重新构建 OS 索引**：
+
+- 用户在管理界面禁用整文档 → 启用回来：`KnowledgeChunkServiceImpl.batchEnableChunks` line 432-455
+- 用户禁用部分 chunk → 启用回来：同方法
+- 用户编辑 chunk content：`KnowledgeChunkServiceImpl.update` line 285-310
+- 文档 enable 全量重建：`KnowledgeChunkServiceImpl` line 530-540
+
+**这些路径的现状（PR 6 之前）共同问题**：从 `KnowledgeChunkDO` 读出 chunks 后，`VectorChunk.builder()` 调用**只填 chunkId / content / index**，layout 9 字段全部丢失。所以 PR 6 ENHANCED 上传刚完成时 OS 有 layout，但用户做一次"禁用全部 + 启用全部"后 OS layout 就被清掉。
+
+PR 6 修正：**5 处 VectorChunk.builder 调用点必须紧跟 `ChunkLayoutMetadata.copyFromDO(chunkDO, vc)`**：
+
+```
+disable 全文档 / 部分 chunk
+  → chunkMapper.update(...).set(enabled, 0)
+  → vectorStoreService.deleteChunksByIds(collectionName, ids)   // OS chunks 物理删
+
+enable 回来
+  → needUpdateChunks = chunkMapper.selectList(...)               // 从 DB 读，含 9 layout 列
+  → vectorChunks = needUpdateChunks.stream().map(c -> {
+        VectorChunk vc = VectorChunk.builder()
+            .chunkId(c.getId()).content(c.getContent()).index(c.getChunkIndex())
+            .build();
+        ChunkLayoutMetadata.copyFromDO(c, vc);                    // ← PR 6 关键新增
+        return vc;
+    }).toList();
+  → attachEmbeddings(vectorChunks, embeddingModel)                // 重新计算 embedding
+  → vectorStoreService.indexDocumentChunks(coll, docId, kbId, sec, vectorChunks)  // OS 重写，layout 透传回去
+```
+
+**测试锁**：`EnableDisableLayoutRoundTripIntegrationTest`（§10.2）端到端断言 OS layout 字段在 disable→enable 周期前后字节级一致。
+
+**单 chunk 编辑路径同理**：`update` 方法重写 chunk 时也走同一构造模式，PR 6 实施时必须 sweep 所有 `VectorChunk.builder()` 调用点（已在 §4.1 列出 5 处）。
+
 ## 7. Persistence Contract
 
 | 层 | 存储介质 | 格式 | 写入责任方 | 读取责任方 |
 |---|---|---|---|---|
-| **chunker 输出** | `VectorChunk.metadata: Map<String, Object>` | 内存对象，layout key 字符串值 | `StructuredChunkingStrategy`（仅）；调用 `ChunkLayoutMetadata.writer(...).build()` | `IndexerNode` 透传给 OS、`persistChunksAndVectorsAtomically` 抽到 DO |
-| **OpenSearch metadata** | `_source.metadata` JSON object | 9 keyword/integer/float/text 字段 | `OpenSearchVectorStoreService.buildDocument` catch-all 透传 chunk.metadata | `OpenSearchRetrieverService.toRetrievedChunk` 用 `ChunkLayoutMetadata` 反序列化到 RetrievedChunk |
-| **DB t_knowledge_chunk** | 9 个 SQL 列 | INTEGER / TEXT / VARCHAR / DOUBLE | `persistChunksAndVectorsAtomically` 抽 metadata + ObjectMapper 序列化 List/JSON | 暂无业务读路径（PR 6 范围内） |
-| **RetrievedChunk** | POJO | 6 字段（无 bbox/textLayer/confidence） | `OpenSearchRetrieverService.toRetrievedChunk` | `SourceCardBuilder` |
-| **SourceChunk** | POJO + JSON 序列化给前端 | 6 字段 | `SourceCardBuilder.buildCard` | 前端 Sources.tsx |
+| **chunker 输出** | `VectorChunk.metadata: Map<String, Object>` | 内存对象，layout key 字符串值 | `StructuredChunkingStrategy`（写入侧唯一入口）；调用 `ChunkLayoutMetadata.writer(...)` | OS 写：`OpenSearchVectorStoreService.buildDocument` 透传；DB 写：`ChunkLayoutMetadata.copyToCreateRequest` 抽到 CreateRequest；re-index 写回：`ChunkLayoutMetadata.copyFromDO` 从 DO 反向回填 |
+| **OpenSearch metadata** | `_source.metadata` JSON object | 9 keyword/integer/float/text 字段 | `OpenSearchVectorStoreService.buildDocument` catch-all 透传 chunk.metadata | `OpenSearchRetrieverService.toRetrievedChunk` 用 `ChunkLayoutMetadata` reader 反序列化到 RetrievedChunk |
+| **DB t_knowledge_chunk** | 9 个 SQL 列 | INTEGER / TEXT / VARCHAR / DOUBLE | 持久化路径：`persistChunksAndVectorsAtomically` → `ChunkLayoutMetadata.copyToCreateRequest`（含 List → JSON 序列化）→ `KnowledgeChunkServiceImpl.batchCreate` → `chunkMapper.insert(List)`（entity-based，避免 typeHandler 陷阱）| Re-index 读路径：`KnowledgeChunkServiceImpl` 读 DO 后用 `ChunkLayoutMetadata.copyFromDO` 反向回填到 `VectorChunk.metadata` |
+| **RetrievedChunk** | POJO | 6 字段（无 bbox/textLayer/confidence）| `OpenSearchRetrieverService.toRetrievedChunk` | `SourceCardBuilder` |
+| **SourceChunk** | POJO + JSON 序列化给前端 | 6 字段 + `@JsonInclude(NON_NULL)` 省略 null | `SourceCardBuilder.buildCard` | 前端 Sources.tsx 用 `!= null` 守卫渲染 |
 
 **SoT 链路**：
 ```
@@ -818,20 +994,23 @@ helper 是双向唯一入口，避免 key 拼写漂移。
 | `LegacyAdapterNoLayoutWriteTest` | `LegacyTextChunkingStrategyAdapter.chunk()` | **关键回归**：调 chunk(input, options) 后断言所有 9 个 layout key **不在** chunk.metadata 里。锁定 "legacy 不写 layout" 契约 |
 | `ChunkLayoutMetadataReadbackTest` | `ChunkLayoutMetadata` 三态读取 | List<String> 直读 / List 实例（OS 反序列化产物）/ JSON String 兜底 |
 | `ChunkLayoutMetadataWriteSkipNullTest` | `ChunkLayoutMetadata.Builder` | null/empty 输入跳过写入；不写 `[]` 等无意义值 |
+| `ChunkLayoutMetadataCopyFromDOTest` | `ChunkLayoutMetadata.copyFromDO`（re-index helper） | (a) DO 9 字段全填 → VectorChunk.metadata 9 key 全在；(b) DO 字段全 null → VectorChunk.metadata 完全不写（保持 BASIC byte-equivalent）；(c) DO `headingPath` 是非法 JSON → log warn 但不抛异常，对应 metadata key 不写 |
+| `ChunkLayoutMetadataCopyToCreateRequestTest` | `ChunkLayoutMetadata.copyToCreateRequest`（persist helper） | (a) VectorChunk metadata 完整 layout → CreateRequest 9 字段全填且 `headingPath/sourceBlockIds` 是 JSON String 形态；(b) metadata 空 → CreateRequest 9 字段保持 null（BASIC 等价）；(c) metadata.HEADING_PATH 是 List<String> → 序列化成 JSON String（验证 list → JSON 唯一入口契约） |
 | `StructuredChunkingOptionsResolverTest` | `StructuredChunkingOptionsResolver` | TextBoundaryOptions / FixedSizeOptions（验证 30% 弹性 + 40% 下限）/ null → 默认值（1400, 1800, 600） |
 | `StructuredChunkingStrategyChunkAlgorithmTest` | `StructuredChunkingStrategy.chunk()` | (a) title 边界正确切分；(b) 表格原子不切；(c) 跨页 chunk 的 pageStart/pageEnd 正确；(d) headingPath 在每个 chunk 上对齐；(e) v0.5.1 边界（textLayerType / confidence 全 null 透传） |
 
 ### 10.2 Integration-ish
 
-测试命名遵循仓库 convention `*IntegrationTest`（参考 [`EnhancedRoutingIntegrationTest`](../../bootstrap/src/test/java/com/knowledgebase/ai/ragent/knowledge/service/impl/EnhancedRoutingIntegrationTest.java)）。
+测试命名遵循仓库 convention `*IntegrationTest`（参考 [`EnhancedRoutingIntegrationTest`](../../../bootstrap/src/test/java/com/knowledgebase/ai/ragent/knowledge/service/impl/EnhancedRoutingIntegrationTest.java)）。
 
 | 测试 | 范围 | 覆盖 |
 |---|---|---|
 | `BasicChunkPathByteEquivalentIntegrationTest` | 全栈 BASIC + CHUNK | 上传 PDF（parseMode=basic）；断言 chunk 数 / content / chunkIndex 与 PR 5 末态一致；DB 9 layout 列 SELECT 全 NULL；OS `_source.metadata` 无 9 个 layout key |
 | `BasicPipelineNoPhantomBlockTypeIntegrationTest` | BASIC + 显式 pipelineId | 上传 PDF（parseMode=basic + 用户传 pipelineId 强走 PIPELINE）；LegacyAdapter 接管；同 BasicChunk 断言；**特别断言** `block_type` 字段在 OS 与 DB 都不存在或为 NULL（修正 plan 隐性偏离） |
 | `EnhancedDoclingFailureFallbackIntegrationTest` | ENHANCED + Docling 模拟失败 | mock DoclingClient 抛 IOException；FallbackParserDecorator 捕获；ParseResult.metadata 含 `parse_engine_actual=Tika, parse_fallback_reason=primary_failed`；StructuredChunkingStrategy.supports()=false；LegacyAdapter(structure_aware) 接管；chunks 无 layout；ingestion 完成 status=success |
-| `EnhancedHappyPathLayoutEndToEndIntegrationTest` | ENHANCED 成功 | 上传 PDF（parseMode=enhanced）；Docling 成功；DB 9 列至少有 pageNumber/pageStart/pageEnd/headingPath/blockType/sourceBlockIds 非 NULL；OS 检索能命中 `term: { block_type: "PARAGRAPH" }`；SourceChunk 序列化包含 6 字段 |
+| `EnhancedHappyPathLayoutEndToEndIntegrationTest` | ENHANCED 成功 | 上传 PDF（parseMode=enhanced）；Docling 成功；**最小集断言**：DB 列 `pageNumber / pageStart / pageEnd / blockType` 4 列非 NULL；**条件性断言**：`headingPath` 与 `sourceBlockIds` 仅在 chunker 实际产出时（即 LayoutBlock 列表中存在 heading / blockId）才断言非空数组，没有则允许 NULL（应对"PDF 没有明确章节标题"或"Docling 块未填充 blockId"的真实场景）；OS 检索断言用 `term: { "metadata.block_type": "PARAGRAPH" }`（**注意是 `metadata.block_type` 嵌套路径**，不是根级 `block_type`）；SourceChunk 序列化包含 6 字段（null 字段经 `@JsonInclude(NON_NULL)` 已被省略，断言"key 存在性"而非"value 非 null"）|
 | `RetrieverLayoutFieldRoundTripIntegrationTest` | 检索读路径 | 写入 chunk + layout metadata → OS → 检索 → 断言 RetrievedChunk 6 字段值与写入完全一致（特别 List<String> 不被错误序列化为 String） |
+| `EnableDisableLayoutRoundTripIntegrationTest` | **re-index 路径契约（review P1 #1）** | ENHANCED 上传 → 验证 OS chunk 含 layout → `KnowledgeChunkController` 触发**禁用全部 chunks**（OS chunks 被 `deleteChunksByIds` 清掉）→ 触发**启用**（KnowledgeChunkServiceImpl 从 DB 读 KnowledgeChunkDO + `ChunkLayoutMetadata.copyFromDO` 重建 VectorChunk + `indexDocumentChunks` 写回 OS）→ 断言 OS chunk 的 `metadata.page_number / metadata.heading_path / metadata.block_type` 等 9 字段与启用前**完全一致**。如果 `copyFromDO` 漏了任一字段，此测试失败 |
 
 ### 10.3 Manual ops smoke
 
@@ -875,7 +1054,7 @@ PR 6 layout 字段只在 OpenSearch retriever 路径回流到 RetrievedChunk。M
 | 2 | `legacyTextChunkerAdapter` 是 ChunkerNode 内部 helper | `LegacyTextChunkingStrategyAdapter` 是 A' 抽象的一等公民、Spring bean | Q1 抽象层级清理 |
 | 3 | ChunkerNode 内 `if (pages 非空)` 分支 | `IngestionChunkingDispatcher` priority + `supports()` capability dispatch | Q5 |
 | 4 | LegacyAdapter 给 chunk 写 `blockType=PARAGRAPH` | LegacyAdapter 不写任何 layout 字段 | Q9 锁定 BASIC byte-equivalent；plan 此处是隐性偏离 |
-| 5 | `persistChunksAndVectorsAtomically(... pages, structuredChunks)` | `persistChunksAndVectorsAtomically(... chunks)`（不加 pages 参数；不加 structuredChunks 参数） | Q4 page 表 Non-Goal + Q6 layout 在 chunks.metadata |
+| 5 | `persistChunksAndVectorsAtomically(... pages, structuredChunks)` | `persistChunksAndVectorsAtomically(... chunks)`（**签名完全不变**；layout 通过扩展 `KnowledgeChunkCreateRequest` + `ChunkLayoutMetadata.copyToCreateRequest` 流转）| Q4 page 表 Non-Goal + Q6 layout 在 chunks.metadata + review P2 #4 锁定路径 |
 | 6 | 持久化 page 行到 `t_knowledge_document_page` | 不持久化 | Q4 Non-Goal 1 |
 | 7 | SourceCard 加 `pageNumber / headingPath` | **SourceChunk** 加 6 字段（chunk 级 evidence） | Δ7 修正：page/heading 是 chunk 级，不是 doc 级 |
 | 8 | OS mapping 升级未明示 | §5.11 forward-only 9 字段升级 | Δ2 |
