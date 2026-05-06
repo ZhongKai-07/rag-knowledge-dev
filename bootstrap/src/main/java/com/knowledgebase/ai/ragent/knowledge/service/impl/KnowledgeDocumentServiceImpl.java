@@ -121,6 +121,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final VectorStoreService vectorStoreService;
     private final VectorStoreAdmin vectorStoreAdmin;
     private final KnowledgeChunkService knowledgeChunkService;
+    private final com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper layoutMapper;
     private final ObjectMapper objectMapper;
     private final KnowledgeDocumentScheduleService scheduleService;
     private final IngestionPipelineService ingestionPipelineService;
@@ -326,6 +327,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                     req.setChunkId(vc.getChunkId());
                     req.setIndex(vc.getIndex());
                     req.setContent(vc.getContent());
+                    layoutMapper.copyToCreateRequest(vc, req);   // PR 6 / Q6 v3：9 layout 字段一次性拷贝
                     return req;
                 })
                 .toList();
