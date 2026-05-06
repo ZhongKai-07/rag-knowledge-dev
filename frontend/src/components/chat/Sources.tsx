@@ -93,14 +93,24 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
                   {firstChunk.preview}
                 </p>
               ) : null}
-              {isExpanded && restChunks.length > 0 ? (
-                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                  {restChunks.map(chunk => (
-                    <li key={chunk.chunkId} className="border-l-2 border-border pl-2">
-                      {chunk.preview}
-                    </li>
-                  ))}
-                </ul>
+              {restChunks.length > 0 ? (
+                <div
+                  aria-hidden={!isExpanded}
+                  className={cn(
+                    "grid transition-[grid-template-rows] duration-200 ease-out",
+                    isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      {restChunks.map(chunk => (
+                        <li key={chunk.chunkId} className="border-l-2 border-border pl-2">
+                          {chunk.preview}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               ) : null}
             </div>
           );

@@ -40,39 +40,40 @@ describe("<Sources />", () => {
 
   it("always shows first chunk preview by default (collapsed state)", () => {
     render(<Sources cards={[card(1)]} highlightedIndex={null} />);
-    // 默认露出首片段，剩余 1 片段被折叠
-    expect(screen.getAllByText("preview")).toHaveLength(1);
+    // 折叠：rest 容器 aria-hidden，ByRole 默认过滤；firstChunk <p> 可见
+    // 注：grid-rows trick 下 restChunks DOM 节点仍存在但被 ByRole 跳过
+    expect(screen.queryByRole("list")).toBeNull();
   });
 
   it("auto-expands the card matching highlightedIndex on mount", () => {
     render(<Sources cards={[card(1), card(2)]} highlightedIndex={2} />);
-    // card 1: 1（首片段）；card 2 高亮展开: 1（首） + 1（rest） = 2 → 合计 3
-    expect(screen.getAllByText("preview")).toHaveLength(3);
+    // card 1 折叠 → 0 list；card 2 高亮展开 → 1 list
+    expect(screen.getAllByRole("list")).toHaveLength(1);
   });
 
   it("auto-expands a different card when highlightedIndex changes on re-render", () => {
-    // 初始 card 1 高亮：card 1 展开(1+1=2) + card 2 折叠(1) = 3
+    // 初始 card 1 高亮：card 1 展开 → 1 list；card 2 折叠 → 0
     const { rerender } = render(
       <Sources cards={[card(1), card(2)]} highlightedIndex={1} />
     );
-    expect(screen.getAllByText("preview")).toHaveLength(3);
+    expect(screen.getAllByRole("list")).toHaveLength(1);
 
-    // 切到 card 2：Set add 不移除 1，两张都展开 → 1+1+1+1 = 4
+    // 切到 card 2：Set add 不移除 1，两张都展开 → 2 list
     rerender(<Sources cards={[card(1), card(2)]} highlightedIndex={2} />);
-    expect(screen.getAllByText("preview")).toHaveLength(4);
+    expect(screen.getAllByRole("list")).toHaveLength(2);
   });
 
   it("toggles card expansion on click (rest chunks revealed/hidden)", async () => {
     render(<Sources cards={[card(1)]} highlightedIndex={null} />);
-    const headerBtn = screen.getByRole("button");
-    // 初始折叠：仅首片段显示
-    expect(screen.getAllByText("preview")).toHaveLength(1);
+    const headerBtn = screen.getByRole("button", { name: /展开\/折叠来源\s*1/ });
+    // 初始折叠：rest 列表被 aria-hidden 过滤
+    expect(screen.queryByRole("list")).toBeNull();
     await userEvent.click(headerBtn);
-    // 展开：首 + rest = 2
-    expect(screen.getAllByText("preview")).toHaveLength(2);
+    // 展开：1 个 list 出现
+    expect(screen.getByRole("list")).toBeDefined();
     await userEvent.click(headerBtn);
-    // 再点收起：回到首片段
-    expect(screen.getAllByText("preview")).toHaveLength(1);
+    // 再点收起：回到 null
+    expect(screen.queryByRole("list")).toBeNull();
   });
 
   it("applies ring highlight class to the card matching highlightedIndex", () => {
