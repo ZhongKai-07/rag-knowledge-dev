@@ -20,11 +20,12 @@ package com.knowledgebase.ai.ragent.ingestion.node;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkEmbeddingService;
+import com.knowledgebase.ai.ragent.core.chunk.ChunkingMode;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingOptions;
-import com.knowledgebase.ai.ragent.core.chunk.ChunkingStrategyFactory;
 import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
-import com.knowledgebase.ai.ragent.core.chunk.ChunkingStrategy;
 import com.knowledgebase.ai.ragent.framework.exception.ClientException;
+import com.knowledgebase.ai.ragent.ingestion.chunker.IngestionChunkingDispatcher;
+import com.knowledgebase.ai.ragent.ingestion.chunker.IngestionChunkingInput;
 import com.knowledgebase.ai.ragent.ingestion.domain.context.IngestionContext;
 import com.knowledgebase.ai.ragent.ingestion.domain.enums.IngestionNodeType;
 import com.knowledgebase.ai.ragent.ingestion.domain.pipeline.NodeConfig;
@@ -32,10 +33,8 @@ import com.knowledgebase.ai.ragent.ingestion.domain.result.NodeResult;
 import com.knowledgebase.ai.ragent.ingestion.domain.settings.ChunkerSettings;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 文本分块节点
@@ -46,7 +45,7 @@ import java.util.stream.Collectors;
 public class ChunkerNode implements IngestionNode {
 
     private final ObjectMapper objectMapper;
-    private final ChunkingStrategyFactory chunkingStrategyFactory;
+    private final IngestionChunkingDispatcher dispatcher;
     private final ChunkEmbeddingService chunkEmbeddingService;
 
     @Override
@@ -56,23 +55,16 @@ public class ChunkerNode implements IngestionNode {
 
     @Override
     public NodeResult execute(IngestionContext context, NodeConfig config) {
-        String text = StringUtils.hasText(context.getEnhancedText()) ? context.getEnhancedText() : context.getRawText();
-        if (!StringUtils.hasText(text)) {
-            return NodeResult.fail(new ClientException("可分块文本为空"));
-        }
         ChunkerSettings settings = parseSettings(config.getSettings());
-        ChunkingStrategy chunker = chunkingStrategyFactory.requireStrategy(settings.getStrategy());
-        if (chunker == null) {
-            return NodeResult.fail(new ClientException("未找到分块策略: " + settings.getStrategy()));
+        ChunkingMode mode = settings.getStrategy();
+        if (mode == null) {
+            return NodeResult.fail(new ClientException("ChunkerNode 缺少 settings.strategy"));
         }
+        IngestionChunkingInput input = IngestionChunkingInput.from(context);
+        ChunkingOptions options = convertToChunkConfig(settings);
 
-        ChunkingOptions chunkConfig = convertToChunkConfig(settings);
-        List<VectorChunk> results = chunker.chunk(text, chunkConfig);
-        List<VectorChunk> chunks = convertToVectorChunks(results);
-
-        // 嵌入：为切分后的文本块生成向量
+        List<VectorChunk> chunks = dispatcher.chunk(mode, input, options);
         chunkEmbeddingService.embed(chunks, null);
-
         context.setChunks(chunks);
         return NodeResult.ok("已分块 " + chunks.size() + " 段");
     }
@@ -80,18 +72,6 @@ public class ChunkerNode implements IngestionNode {
     private ChunkingOptions convertToChunkConfig(ChunkerSettings settings) {
         return settings.getStrategy().createDefaultOptions(
                 settings.getChunkSize(), settings.getOverlapSize());
-    }
-
-    private List<VectorChunk> convertToVectorChunks(List<VectorChunk> results) {
-        return results.stream()
-                .map(result -> VectorChunk.builder()
-                        .chunkId(result.getChunkId())
-                        .index(result.getIndex())
-                        .content(result.getContent())
-                        .metadata(result.getMetadata())
-                        .embedding(result.getEmbedding())
-                        .build())
-                .collect(Collectors.toList());
     }
 
     private ChunkerSettings parseSettings(JsonNode node) {
