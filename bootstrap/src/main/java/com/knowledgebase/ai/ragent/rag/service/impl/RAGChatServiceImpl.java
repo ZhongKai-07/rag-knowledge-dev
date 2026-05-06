@@ -52,6 +52,7 @@ import com.knowledgebase.ai.ragent.rag.dto.IntentGroup;
 import com.knowledgebase.ai.ragent.rag.dto.RetrievalContext;
 import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 import com.knowledgebase.ai.ragent.rag.dto.SourcesPayload;
+import com.knowledgebase.ai.ragent.rag.dto.StatusPayload;
 import com.knowledgebase.ai.ragent.rag.dto.SubQuestionIntent;
 import com.knowledgebase.ai.ragent.rag.service.RAGChatService;
 import com.knowledgebase.ai.ragent.rag.service.handler.StreamCallbackFactory;
@@ -135,6 +136,9 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         List<ChatMessage> history = memoryService.loadAndAppend(actualConversationId, userId, ChatMessage.user(question), knowledgeBaseId);
 
+        // 阶段事件 1：改写前
+        safeEmitStatus(callback, "rewriting", "正在理解问题…", null);
+
         RewriteResult rewriteResult = queryRewriteService.rewriteWithSplit(question, history);
         List<SubQuestionIntent> subIntents = intentResolver.resolve(rewriteResult);
 
@@ -169,6 +173,9 @@ public class RAGChatServiceImpl implements RAGChatService {
             taskManager.bindHandle(taskId, handle);
             return;
         }
+
+        // 阶段事件 2：检索前
+        safeEmitStatus(callback, "retrieving", "正在检索相关资料…", null);
 
         RetrievalContext ctx = retrievalEngine.retrieve(subIntents, scope);
         if (ctx.isEmpty()) {
@@ -233,6 +240,9 @@ public class RAGChatServiceImpl implements RAGChatService {
                         .messageId(null)
                         .cards(cards)
                         .build());
+                // 阶段事件 3：sources gate 后（仅 sources 真实推送时发）
+                safeEmitStatus(callback, "sources_ready", "已找到 " + cards.size() + " 个来源",
+                        cards.size());
             }
         }
 
@@ -246,6 +256,9 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         // 聚合所有意图用于 prompt 规划
         IntentGroup mergedGroup = intentResolver.mergeIntentGroup(subIntents);
+
+        // 阶段事件 4：LLM 流开始前
+        safeEmitStatus(callback, "generating", "正在生成回答…", null);
 
         StreamCancellationHandle handle = streamLLMResponse(
                 rewriteResult,
@@ -315,6 +328,25 @@ public class RAGChatServiceImpl implements RAGChatService {
                 .build();
 
         return llmService.streamChat(chatRequest, callback);
+    }
+
+    /**
+     * 旁路 status 事件发射器：失败仅 warn 日志，绝不阻塞主流程。
+     * <p>
+     * 旧客户端不识别 {@code status} 事件时直接忽略；payload 是纯展示，
+     * 不参与 sources / suggestions / finish / done 等核心状态机。
+     */
+    private void safeEmitStatus(StreamChatEventHandler callback, String phase,
+                                String text, Integer sourceCount) {
+        try {
+            callback.emitStatus(StatusPayload.builder()
+                    .phase(phase)
+                    .text(text)
+                    .sourceCount(sourceCount)
+                    .build());
+        } catch (Exception e) {
+            log.warn("发送 status 事件失败 phase={}", phase, e);
+        }
     }
 
     private boolean hasRelevantKbEvidence(List<RetrievedChunk> distinctChunks) {

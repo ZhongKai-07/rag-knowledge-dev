@@ -305,6 +305,112 @@ describe("chatStore.onMeta", () => {
   });
 });
 
+describe("chatStore stale-stream guards (PR-stream-ux)", () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it("onMessage drops delta when streamingMessageId does not match assistantId", async () => {
+    seedStreamingState("msgA");
+    // staleHandlers 绑定 msgB；当前 streaming 是 msgA
+    const stale = buildHandlers("msgB");
+    stale.onMessage?.({ type: "response", delta: "stale" });
+    // 等下一帧让任何 rAF flush 跑完
+    await new Promise((r) => setTimeout(r, 32));
+    expect(useChatStore.getState().messages[0].content).toBe("");
+  });
+
+  it("onThinking drops delta when streamingMessageId does not match assistantId", async () => {
+    seedStreamingState("msgA");
+    const stale = buildHandlers("msgB");
+    stale.onThinking?.({ type: "think", delta: "stale think" });
+    await new Promise((r) => setTimeout(r, 32));
+    expect(useChatStore.getState().messages[0].thinking).toBeUndefined();
+  });
+
+  it("onReject drops delta when streamingMessageId does not match assistantId", () => {
+    seedStreamingState("msgA");
+    const stale = buildHandlers("msgB");
+    stale.onReject?.({ type: "response", delta: "stale reject" });
+    expect(useChatStore.getState().messages[0].content).toBe("");
+  });
+});
+
+describe("chatStore.onStatus", () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it("writes streamStatus to streaming message when ids match", () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+    handlers.onStatus?.({ phase: "retrieving", text: "正在检索…" });
+    expect(useChatStore.getState().messages[0].streamStatus).toEqual({
+      phase: "retrieving",
+      text: "正在检索…"
+    });
+  });
+
+  it("ignores stale onStatus", () => {
+    seedStreamingState("msgA");
+    const stale = buildHandlers("msgB");
+    stale.onStatus?.({ phase: "rewriting", text: "stale" });
+    expect(useChatStore.getState().messages[0].streamStatus).toBeUndefined();
+  });
+
+  it("clears streamStatus when onFinish runs", () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+    handlers.onStatus?.({ phase: "generating", text: "生成中…" });
+    expect(useChatStore.getState().messages[0].streamStatus).toBeDefined();
+    handlers.onFinish?.({ messageId: "db_x", title: null });
+    expect(useChatStore.getState().messages[0].streamStatus).toBeUndefined();
+  });
+});
+
+describe("chatStore rAF batching (PR-stream-ux)", () => {
+  beforeEach(() => {
+    resetStore();
+  });
+
+  it("multiple onMessage deltas concatenate in order after flush", async () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+    handlers.onMessage?.({ type: "response", delta: "Hello" });
+    handlers.onMessage?.({ type: "response", delta: " " });
+    handlers.onMessage?.({ type: "response", delta: "world" });
+    // 等待 rAF（jsdom 默认是 setTimeout 模拟，给出足够时间）
+    await new Promise((r) => setTimeout(r, 32));
+    expect(useChatStore.getState().messages[0].content).toBe("Hello world");
+  });
+
+  it("onFinish flushes pending response buffer (no tail-loss)", () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+    handlers.onMessage?.({ type: "response", delta: "tail" });
+    // 不等 rAF，立刻触发 finish
+    handlers.onFinish?.({ messageId: "db_x", title: null });
+    expect(useChatStore.getState().messages[0].content).toBe("tail");
+  });
+
+  it("onCancel flushes pending response buffer before adding cancel suffix", () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+    handlers.onMessage?.({ type: "response", delta: "partial" });
+    handlers.onCancel?.({ messageId: null, title: null });
+    expect(useChatStore.getState().messages[0].content).toContain("partial");
+    expect(useChatStore.getState().messages[0].content).toContain("（已停止生成）");
+  });
+
+  it("onDone flushes pending thinking buffer", () => {
+    seedStreamingState("msgA");
+    const handlers = buildHandlers("msgA");
+    handlers.onThinking?.({ type: "think", delta: "thought-tail" });
+    handlers.onDone?.();
+    expect(useChatStore.getState().messages[0].thinking).toBe("thought-tail");
+  });
+});
+
 describe("resetForNewSpace", () => {
   beforeEach(() => {
     resetStore();

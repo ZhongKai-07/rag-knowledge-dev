@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createStreamResponse, type StreamHandlers } from "./useStreamResponse";
-import type { SourcesPayload } from "@/types";
+import type { SourcesPayload, StreamStatusPayload } from "@/types";
 
 /**
  * 给定一串 SSE 帧构造的 Response body，断言 useStreamResponse 内部的
@@ -45,5 +45,27 @@ describe("useStreamResponse SSE routing", () => {
 
     expect(onSources).toHaveBeenCalledTimes(1);
     expect(onSources).toHaveBeenCalledWith(payload);
+  });
+
+  it("routes event: status to handlers.onStatus with parsed payload", async () => {
+    const payload: StreamStatusPayload = {
+      phase: "retrieving",
+      text: "正在检索相关资料…"
+    };
+    const frame = `event: status\ndata: ${JSON.stringify(payload)}\n\n`;
+    const onStatus = vi.fn();
+    const handlers: StreamHandlers = { onStatus };
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue(buildSseResponse(frame));
+    try {
+      const r = createStreamResponse({ url: "/x" }, handlers);
+      await r.start();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    expect(onStatus).toHaveBeenCalledTimes(1);
+    expect(onStatus).toHaveBeenCalledWith(payload);
   });
 });

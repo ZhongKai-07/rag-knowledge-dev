@@ -37,6 +37,7 @@ import com.knowledgebase.ai.ragent.rag.core.suggest.SuggestionContext;
 import com.knowledgebase.ai.ragent.rag.dto.EvaluationCollector;
 import com.knowledgebase.ai.ragent.rag.dto.SourceCard;
 import com.knowledgebase.ai.ragent.rag.dto.SourcesPayload;
+import com.knowledgebase.ai.ragent.rag.dto.StatusPayload;
 import com.knowledgebase.ai.ragent.rag.dto.SuggestionsPayload;
 import com.knowledgebase.ai.ragent.rag.service.ConversationGroupService;
 import com.knowledgebase.ai.ragent.rag.service.ConversationMessageService;
@@ -416,6 +417,15 @@ public class StreamChatEventHandler implements StreamCallback {
      */
     public void emitSources(SourcesPayload payload) {
         sender.sendEvent(SSEEventType.SOURCES.value(), payload);
+    }
+
+    /**
+     * 机械发射 SSE {@code status} 事件（旁路阶段提示）。
+     * orchestrator 决定何时调用、payload 内容；handler 仅负责 sender.sendEvent。
+     * 旁路事件不应阻塞主流程，调用方应自行包 try-catch。
+     */
+    public void emitStatus(StatusPayload payload) {
+        sender.sendEvent(SSEEventType.STATUS.value(), payload);
     }
 
     /**

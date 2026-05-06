@@ -23,10 +23,16 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
 
     return (
       <div ref={ref} className="mt-3 space-y-1.5">
-        <div className="text-xs font-medium text-muted-foreground">来源</div>
+        <div className="text-xs font-medium text-muted-foreground">
+          参考来源（{cards.length}）
+        </div>
         {cards.map(card => {
           const isExpanded = expanded.has(card.index);
           const isHighlighted = highlightedIndex === card.index;
+          const firstChunk = card.chunks[0];
+          const restChunks = card.chunks.slice(1);
+          // topScore 不直接展示给用户，保留在 title tooltip 给开发/排障用
+          const tooltip = `相关度 ${card.topScore.toFixed(2)}`;
           return (
             <div
               key={card.index}
@@ -34,6 +40,7 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
                 "rounded-md border border-border bg-background p-2.5 transition-all",
                 isHighlighted && "ring-2 ring-[#3B82F6] ring-offset-1",
               )}
+              title={tooltip}
             >
               <button
                 type="button"
@@ -44,22 +51,33 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
                   return next;
                 })}
                 className="flex w-full items-center gap-2 text-left text-sm"
+                aria-expanded={isExpanded}
               >
-                <span className="font-mono text-xs text-[#2563EB]">[^{card.index}]</span>
-                <span className="flex-1 truncate font-medium">{card.docName}</span>
-                <span className="text-xs text-muted-foreground">
-                  {card.topScore.toFixed(2)}
+                <span className="font-mono text-xs text-[#2563EB] shrink-0">
+                  来源 {card.index}
                 </span>
+                <span className="text-muted-foreground shrink-0">|</span>
+                <span className="flex-1 truncate font-medium">{card.docName}</span>
+                {restChunks.length > 0 ? (
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    +{restChunks.length}
+                  </span>
+                ) : null}
               </button>
-              {isExpanded && (
+              {firstChunk ? (
+                <p className="mt-1.5 line-clamp-2 border-l-2 border-border pl-2 text-xs leading-relaxed text-muted-foreground">
+                  {firstChunk.preview}
+                </p>
+              ) : null}
+              {isExpanded && restChunks.length > 0 ? (
                 <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                  {card.chunks.map(chunk => (
+                  {restChunks.map(chunk => (
                     <li key={chunk.chunkId} className="border-l-2 border-border pl-2">
                       {chunk.preview}
                     </li>
                   ))}
                 </ul>
-              )}
+              ) : null}
             </div>
           );
         })}

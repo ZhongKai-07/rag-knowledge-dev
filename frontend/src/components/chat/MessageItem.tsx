@@ -114,7 +114,12 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
         ) : null}
         <div className="space-y-2">
           {isWaiting ? (
-            <div className="ai-wait" aria-label="思考中">
+            <div className="ai-wait" aria-label={message.streamStatus?.text || "思考中"}>
+              {message.streamStatus?.text ? (
+                <span className="text-sm text-muted-foreground">
+                  {message.streamStatus.text}
+                </span>
+              ) : null}
               <span className="ai-wait-dots" aria-hidden="true">
                 <span className="ai-wait-dot" />
                 <span className="ai-wait-dot" />

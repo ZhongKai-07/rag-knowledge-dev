@@ -78,12 +78,14 @@ describe("<MessageItem /> citation interaction", () => {
 
   it("renders Sources when message.sources has entries", () => {
     render(<MessageItem message={makeMessage()} isLast={true} />);
-    expect(screen.getByText("来源")).toBeDefined();
+    // 新设计：列表头 "参考来源（1）"
+    expect(screen.getByText(/参考来源/)).toBeDefined();
+    expect(screen.getByText("来源 1")).toBeDefined();
   });
 
   it("does not render Sources when message.sources is undefined", () => {
     render(<MessageItem message={makeMessage({ sources: undefined })} isLast={true} />);
-    expect(screen.queryByText("来源")).toBeNull();
+    expect(screen.queryByText(/参考来源/)).toBeNull();
   });
 
   it("clears the pending highlight timer when component unmounts mid-timeout", () => {

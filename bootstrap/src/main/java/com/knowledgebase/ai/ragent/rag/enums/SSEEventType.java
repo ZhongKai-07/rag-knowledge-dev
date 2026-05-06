@@ -59,6 +59,11 @@ public enum SSEEventType {
     SOURCES("sources"),
 
     /**
+     * 阶段状态旁路事件（rewriting/retrieving/sources_ready/generating）
+     */
+    STATUS("status"),
+
+    /**
      * 推荐问题事件
      */
     SUGGESTIONS("suggestions");
