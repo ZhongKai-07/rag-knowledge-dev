@@ -51,3 +51,20 @@ docling:
 | `curl /health` 超时 | `docker logs docling` 看是否模型未下载完 |
 | 上传后 `parse_fallback_reason=primary_failed` | `docker logs docling` 看具体错误（PDF 损坏 / 格式不支持 / 内存不足） |
 | 配置 `enabled=true` 但日志仍显示 degraded | 确认 `DoclingDocumentParser` bean 被注册（`grep DoclingDocumentParser` 启动日志） |
+
+## 已存在 KB 切换到 ENHANCED 的迁移步骤（PR 6 起）
+
+PR 6 引入 9 个 layout metadata 字段写入 OpenSearch + DB。`OpenSearchVectorStoreAdmin`
+的 mapping 定义已扩，但 `ensureVectorSpace` 仅 create-if-missing，**不会自动 patch 已有索引**。
+
+要让一个 PR 6 之前创建的 KB 真正使用 layout 索引（而非 `_source` 仅存不索引的半升级状态），按以下步骤：
+
+1. 后端服务可继续运行；目标 KB 须无正在进行的 ingestion
+2. `curl -X DELETE http://localhost:9201/<kb-collection-name>`（NO_PROXY 见 gotcha §7）
+3. KB 管理页面把所有文档状态改为"待重新 ingest"，或后端管理工具批量触发
+4. 等 RocketMQ chunker 队列消费完毕
+5. OS `_mapping` 校验：新索引应含 9 个 layout 字段
+6. 抽样检索一份带 page 的 chunk，断言 SourceChunk 6 字段非空
+
+**禁止半升级状态**：不要靠 `_source` 的"看起来字段还在"绕过此流程；未声明 mapping 的字段不可被
+term/range filter 命中。

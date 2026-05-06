@@ -100,8 +100,8 @@
 
 ## 7. 开发环境 / 运维
 
-- **`mvn spring-boot:run` does NOT recompile stale classes after branch switch**: After `git checkout`, old `.class` files in `target/` remain. Run `mvn clean -pl bootstrap spring-boot:run` on first run in a new branch or new machine to force full recompilation with `-parameters`.
-- **Cross-module source changes require `mvn install`**: Editing `framework` or `infra-ai` source then running `mvn -pl bootstrap spring-boot:run` fails — bootstrap resolves these modules from the local Maven repo, not from source. Run `mvn clean install -DskipTests` from root first. This is distinct from the branch-switch stale-class issue.
+- **`mvn spring-boot:run` does NOT recompile stale classes after branch switch**: After `git checkout`, old `.class` files in `target/` remain. Run `mvn -pl bootstrap -am clean spring-boot:run` on first run in a new branch or new machine to force full recompilation with `-parameters`.
+- **Cross-module source changes require reactor build (`-am`) or install**: Editing `framework` or `infra-ai` source then running `mvn -pl bootstrap spring-boot:run` can compile bootstrap against a stale local Maven repo jar. Use `mvn -pl bootstrap -am spring-boot:run` for dev startup, or run `mvn clean install -DskipTests` from root first. This is distinct from the branch-switch stale-class issue.
 - **`curl` to OpenSearch (localhost:9201) requires `NO_PROXY`**: bash `NO_PROXY=localhost,127.0.0.1 curl ...`, or PowerShell `$env:NO_PROXY='localhost,127.0.0.1'`. Without it, curl routes through local HTTP proxy and returns 503. Same rule applies to any localhost infra calls (RustFS, PG via non-docker, Redis web UIs).
 - **Restart Spring Boot on port 9090 (Windows)**: `powershell "Get-NetTCPConnection -LocalPort 9090 -State Listen | % { Stop-Process -Id \$_.OwningProcess -Force }"` then relaunch. Needed after every Java change.
 
@@ -118,6 +118,18 @@
 - **layout 数据结构是 engine-neutral**：`BlockType` / `LayoutBlock` / `DocumentPageText` / `LayoutTable` 不依赖任何具体引擎字段；换引擎（marker / unstructured）走适配器层 mapping（PR 5 的 `DoclingResponseAdapter`），这四个 record 不动。
 - **`FallbackParserDecorator` 不可注册成 Spring bean**（PR 2 起）：`DocumentParserSelector` 构造期 `instanceof FallbackParserDecorator` 后 `IllegalArgumentException` fail-fast。Decorator 由 selector 内部 `buildEnhancedParser()` 一次性建好缓存为 `enhancedParser` final 字段；走 Spring 注入会让 `decorator.getParserType() == "Docling"` 在 `strategyMap` 里和真正的 Docling parser 互相遮蔽（key 冲突 + 顺序不确定）。PR 5 加 `@Component DoclingDocumentParser` 时不能误把 decorator 也声明成 bean。
 - **metadata 键的单一真相源在 decorator 类上**（PR 2 起）：`FallbackParserDecorator.META_ENGINE_REQUESTED` / `META_ENGINE_ACTUAL` / `META_FALLBACK_REASON` / `REASON_PRIMARY_FAILED`（健康模式失败用）/ `REASON_PRIMARY_UNAVAILABLE`（degraded factory 用）—— 5 个 public static final。**不要拼字面量**。如果 PR 5+ 多个消费方（多个 parser / adapter / 前端 mapper）开始引用，按 `VectorMetadataFields` 模式抽到 `ParserMetadataFields`。
+- **Docling DTO ↔ sidecar 版本强耦合（PR 5 起）**：`DoclingClient` 是项目自己手写的 OkHttp 客户端（不是 docling-java SDK，infra-ai pom 里没有任何 Docling SDK 依赖），multipart 字段名（`files` 复数 / `to_formats=json` + `to_formats=text`）和响应体结构（`DoclingConvertResponse` DTO + `DoclingResponseAdapter`）都是对着 **Docling Python sidecar v0.5.1 实测响应**摸出来的（见 `quay.io/ds4sd/docling-serve:v0.5.1`，`docling.compose.yaml` 钉死版本）。**症状（如果不感知此耦合）**：升 sidecar 镜像后字段重命名 / 字段消失 / response shape 漂移会让 `DoclingResponseAdapter` 静默吐 null `pages` / null `tables`，下游 ENHANCED 路径的 page-level metadata 全为空但 ingestion 不 fail（因为 `FallbackParserDecorator` 不会把"成功响应但语义残缺"识别成失败）。**规则**：(1) 任何升级 `docling-serve` 镜像的 PR 必须附带跑一遍 `bootstrap/src/test/resources/docling/sample-convert-response.json` 重抓 + `DoclingResponseAdapterTest` 全过的证据；(2) 不要随手把 compose 里 `v0.5.1` 改成 `latest`，quay.io 也不维护 latest tag；(3) 如果未来引官方 docling-java SDK，要同时干掉 `DoclingClient` / `AbstractRemoteParser` / `DoclingConvertResponse` / `DoclingResponseAdapter` 这一整条手写链。参考 commit `54f82136 fix(docling): align DTO/adapter/client with actual v0.5.1 /convert response`。
+- **PR 6 起 layout 字段双路径写入**（chunk 阶段写 `VectorChunk.metadata` Map → OS catch-all 透传写入索引；
+  persist 阶段经 `KnowledgeChunkLayoutMapper.copyToCreateRequest` 抽到 `KnowledgeChunkCreateRequest`
+  的 9 字段 → DO → DB）。**DB 与 OS 必须保持双侧一致**。任何从 DB 读 `KnowledgeChunkDO` 重建
+  `VectorChunk` 写回 OS 的 re-index 路径（enable/disable/单 chunk 编辑等）必须紧跟
+  `KnowledgeChunkLayoutMapper.copyFromDO(do, vc)` 把 9 字段反向回填到 metadata Map，
+  否则 OS 端 layout 会丢。Sweep `VectorChunk.builder()` 在 `KnowledgeChunkServiceImpl` /
+  `KnowledgeDocumentServiceImpl` 的 5 处调用点（PR 6 已加；新增类似路径必须延续此模式）。
+- **手工编辑 chunk content 后 layout 字段处理（PR 6）**：`KnowledgeChunkServiceImpl.update`
+  保留 5 个 location 字段（`pageNumber / pageStart / pageEnd / headingPath / blockType` —
+  chunk 仍属该页该章节），清空 4 个 extraction 字段（`sourceBlockIds / bboxRefs /
+  textLayerType / layoutConfidence` — 已不忠于改写后的文本）。新增手工编辑入口须延续此切分。
 
 ---
 
