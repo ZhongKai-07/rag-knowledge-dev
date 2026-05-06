@@ -5,10 +5,15 @@ import { MessageItem } from "./MessageItem";
 import { CITATION_HIGHLIGHT_MS } from "@/utils/citationAst";
 import type { Message, SourceCard } from "@/types";
 
-// Mock useChatStore.sendMessage (MessageItem 依赖)
+// Mock useChatStore.sendMessage / regenerateLastAssistantMessage / isStreaming (MessageItem 依赖)
+const regenMock = vi.fn();
 vi.mock("@/stores/chatStore", () => ({
   useChatStore: (selector: any) =>
-    selector({ sendMessage: vi.fn() }),
+    selector({
+      sendMessage: vi.fn(),
+      regenerateLastAssistantMessage: regenMock,
+      isStreaming: false,
+    }),
 }));
 
 // Mock useThemeStore (MarkdownRenderer 依赖)
@@ -45,6 +50,7 @@ describe("<MessageItem /> citation interaction", () => {
 
   afterEach(() => {
     cleanup();
+    regenMock.mockClear();
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
@@ -93,6 +99,20 @@ describe("<MessageItem /> citation interaction", () => {
     render(<MessageItem message={makeMessage()} isLast={true} />);
     // 角色条品牌名（D）：让 user 与 assistant 视觉区分加强
     expect(screen.getByText("HT KnowledgeBase")).toBeDefined();
+  });
+
+  it("renders regenerate button only when isLast and not streaming, calling store on click", async () => {
+    const user = userEvent.setup();
+    regenMock.mockResolvedValue(undefined);
+    const { unmount } = render(<MessageItem message={makeMessage()} isLast={true} />);
+    const btn = screen.getByRole("button", { name: "重新生成" });
+    await user.click(btn);
+    expect(regenMock).toHaveBeenCalledTimes(1);
+    unmount();
+
+    // isLast=false 时不渲染
+    render(<MessageItem message={makeMessage()} isLast={false} />);
+    expect(screen.queryByRole("button", { name: "重新生成" })).toBeNull();
   });
 
   it("clicking Sources jump button scrolls to matching [^n] in content (E bidirectional)", async () => {

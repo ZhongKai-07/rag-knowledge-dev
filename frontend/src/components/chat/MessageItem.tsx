@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Brain, ChevronDown, Sparkles } from "lucide-react";
+import { Brain, ChevronDown, RotateCcw, Sparkles } from "lucide-react";
 
 import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
@@ -25,6 +25,10 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
   const isThinking = Boolean(message.isThinking);
   const [thinkingExpanded, setThinkingExpanded] = React.useState(false);
   const sendMessage = useChatStore((s) => s.sendMessage);
+  const regenerateLastAssistantMessage = useChatStore(
+    (s) => s.regenerateLastAssistantMessage
+  );
+  const isStreaming = useChatStore((s) => s.isStreaming);
   const hasThinking = Boolean(message.thinking && message.thinking.trim().length > 0);
   const hasContent = message.content.trim().length > 0;
   const isWaiting = message.status === "streaming" && !isThinking && !hasContent;
@@ -176,12 +180,27 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
             <p className="text-xs text-rose-500">生成已中断。</p>
           ) : null}
           {showFeedback ? (
-            <FeedbackButtons
-              messageId={message.id}
-              feedback={message.feedback ?? null}
-              content={message.content}
-              alwaysVisible={Boolean(isLast)}
-            />
+            <div className="flex items-center gap-1">
+              <FeedbackButtons
+                messageId={message.id}
+                feedback={message.feedback ?? null}
+                content={message.content}
+                alwaysVisible={Boolean(isLast)}
+              />
+              {isLast && !isStreaming ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    regenerateLastAssistantMessage().catch(() => null);
+                  }}
+                  aria-label="重新生成"
+                  title="重新生成"
+                  className="flex h-8 w-8 items-center justify-center rounded text-[#999999] transition-colors hover:bg-[#F5F5F5] hover:text-[#666666]"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
           ) : null}
           {message.role === "assistant" &&
             message.suggestedQuestions &&

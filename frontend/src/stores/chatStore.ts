@@ -52,6 +52,7 @@ interface ChatState {
   setDeepThinkingEnabled: (enabled: boolean) => void;
   setSelectedKnowledgeBase: (kbId: string | null) => void;
   sendMessage: (content: string) => Promise<void>;
+  regenerateLastAssistantMessage: () => Promise<void>;
   cancelGeneration: () => void;
   appendStreamContent: (delta: string) => void;
   appendThinkingContent: (delta: string) => void;
@@ -651,6 +652,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
         });
       }
     }
+  },
+  regenerateLastAssistantMessage: async () => {
+    const { messages, isStreaming } = get();
+    if (isStreaming) return;
+    // 从末尾找最后一条 assistant 及其前面的 user
+    let assistantIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") {
+        assistantIdx = i;
+        break;
+      }
+    }
+    if (assistantIdx < 0) return;
+    let userIdx = -1;
+    for (let i = assistantIdx - 1; i >= 0; i--) {
+      if (messages[i].role === "user") {
+        userIdx = i;
+        break;
+      }
+    }
+    if (userIdx < 0) return;
+    const userContent = messages[userIdx].content;
+    // 截掉 user 及其之后的所有消息，让 sendMessage 重新 push 新一对
+    set({ messages: messages.slice(0, userIdx) });
+    await get().sendMessage(userContent);
   },
   cancelGeneration: () => {
     const { isStreaming, streamTaskId } = get();

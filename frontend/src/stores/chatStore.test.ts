@@ -437,4 +437,68 @@ describe("resetForNewSpace", () => {
       sessions: []
     });
   });
+
+  describe("regenerateLastAssistantMessage", () => {
+    it("truncates from last user message and re-invokes sendMessage with same content", async () => {
+      resetStore();
+      // seed history: user → assistant(done) → user → assistant(done)
+      useChatStore.setState((s) => ({
+        ...s,
+        messages: [
+          { id: "u1", role: "user", content: "first?", status: "done" },
+          { id: "a1", role: "assistant", content: "first answer", status: "done" },
+          { id: "u2", role: "user", content: "second?", status: "done" },
+          { id: "a2", role: "assistant", content: "second answer", status: "done" }
+        ]
+      }));
+      // 拦截 sendMessage：仅捕获参数，不真触发 SSE
+      const sendSpy = vi
+        .spyOn(useChatStore.getState(), "sendMessage")
+        .mockImplementation(async () => {
+          /* no-op */
+        });
+      // 因为 spyOn 装在 getState() 返回的对象上，set 状态后失效——改为直接 setState 替换
+      useChatStore.setState((s) => ({ ...s, sendMessage: sendSpy as any }));
+
+      await useChatStore.getState().regenerateLastAssistantMessage();
+
+      // 截掉了 u2 + a2，只保留 u1 + a1
+      const msgs = useChatStore.getState().messages;
+      expect(msgs).toHaveLength(2);
+      expect(msgs[1].id).toBe("a1");
+      // 重新发送上一条 user 文本
+      expect(sendSpy).toHaveBeenCalledWith("second?");
+    });
+
+    it("is a no-op while streaming", async () => {
+      resetStore();
+      useChatStore.setState((s) => ({
+        ...s,
+        isStreaming: true,
+        messages: [
+          { id: "u1", role: "user", content: "q", status: "done" },
+          { id: "a1", role: "assistant", content: "", status: "streaming" }
+        ]
+      }));
+      const sendSpy = vi.fn();
+      useChatStore.setState((s) => ({ ...s, sendMessage: sendSpy as any }));
+
+      await useChatStore.getState().regenerateLastAssistantMessage();
+      expect(sendSpy).not.toHaveBeenCalled();
+      expect(useChatStore.getState().messages).toHaveLength(2);
+    });
+
+    it("is a no-op when there is no assistant message", async () => {
+      resetStore();
+      useChatStore.setState((s) => ({
+        ...s,
+        messages: [{ id: "u1", role: "user", content: "q", status: "done" }]
+      }));
+      const sendSpy = vi.fn();
+      useChatStore.setState((s) => ({ ...s, sendMessage: sendSpy as any }));
+
+      await useChatStore.getState().regenerateLastAssistantMessage();
+      expect(sendSpy).not.toHaveBeenCalled();
+    });
+  });
 });
