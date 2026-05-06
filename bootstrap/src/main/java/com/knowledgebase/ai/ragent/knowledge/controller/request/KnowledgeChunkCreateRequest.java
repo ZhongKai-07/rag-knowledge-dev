@@ -20,23 +20,29 @@ package com.knowledgebase.ai.ragent.knowledge.controller.request;
 import lombok.Data;
 
 /**
- * 知识库 Chunk 创建请求
+ * 知识库 Chunk 创建请求。PR 6 起加 9 个 nullable layout 字段：
+ * <ul>
+ *   <li>manual chunk creation API（KnowledgeChunkController）调用时不会填（手工 chunk 没 layout）</li>
+ *   <li>ingestion persist 路径由 KnowledgeChunkLayoutMapper.copyToCreateRequest 自动填</li>
+ *   <li>headingPath / sourceBlockIds 与 KnowledgeChunkDO 同形态：JSON String</li>
+ * </ul>
  */
 @Data
 public class KnowledgeChunkCreateRequest {
 
-    /**
-     * 分块正文内容
-     */
+    /** 现有字段不动 */
     private String content;
-
-    /**
-     * 下标
-     */
     private Integer index;
-
-    /**
-     * 分块 ID
-     */
     private String chunkId;
+
+    /** PR 6 layout 字段 */
+    private Integer pageNumber;
+    private Integer pageStart;
+    private Integer pageEnd;
+    private String headingPath;        // JSON 数组字符串
+    private String blockType;
+    private String sourceBlockIds;     // JSON 数组字符串
+    private String bboxRefs;
+    private String textLayerType;
+    private Double layoutConfidence;
 }
