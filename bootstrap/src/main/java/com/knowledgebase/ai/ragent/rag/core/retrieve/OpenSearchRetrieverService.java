@@ -17,9 +17,11 @@
 
 package com.knowledgebase.ai.ragent.rag.core.retrieve;
 
+import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
 import com.knowledgebase.ai.ragent.framework.convention.RetrievedChunk;
 import com.knowledgebase.ai.ragent.infra.embedding.EmbeddingService;
 import com.knowledgebase.ai.ragent.rag.config.RAGDefaultProperties;
+import com.knowledgebase.ai.ragent.rag.core.vector.ChunkLayoutMetadata;
 import com.knowledgebase.ai.ragent.rag.core.vector.VectorMetadataFields;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -293,9 +295,13 @@ public class OpenSearchRetrieverService implements RetrieverService {
         Integer securityLevel = null;
         String docId = null;
         Integer chunkIndex = null;
+        Map<String, Object> metaMap = null;
         if (source != null) {
             Object meta = source.get("metadata");
-            if (meta instanceof Map<?, ?> metaMap) {
+            if (meta instanceof Map<?, ?> rawMeta) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> castMeta = (Map<String, Object>) rawMeta;
+                metaMap = castMeta;
                 Object kb = metaMap.get(VectorMetadataFields.KB_ID);
                 if (kb != null && !kb.toString().isBlank()) {
                     kbId = kb.toString();
@@ -315,6 +321,10 @@ public class OpenSearchRetrieverService implements RetrieverService {
             }
         }
 
+        // PR 6: 抽 6 个 chunk-level layout 字段（用 ChunkLayoutMetadata reader 复用三态兼容）
+        VectorChunk metaWrapper = new VectorChunk();
+        metaWrapper.setMetadata(metaMap != null ? metaMap : Map.of());
+
         return RetrievedChunk.builder()
                 .id(id)
                 .text(content)
@@ -323,7 +333,40 @@ public class OpenSearchRetrieverService implements RetrieverService {
                 .securityLevel(securityLevel)
                 .docId(docId)
                 .chunkIndex(chunkIndex)
+                .pageNumber(ChunkLayoutMetadata.pageNumber(metaWrapper))
+                .pageStart(ChunkLayoutMetadata.pageStart(metaWrapper))
+                .pageEnd(ChunkLayoutMetadata.pageEnd(metaWrapper))
+                .headingPath(ChunkLayoutMetadata.headingPath(metaWrapper))
+                .blockType(ChunkLayoutMetadata.blockType(metaWrapper))
+                .sourceBlockIds(ChunkLayoutMetadata.sourceBlockIds(metaWrapper))
                 .build();
+    }
+
+    /** Test seam — exposes metadata-extraction logic without OS / Spring (PR 6 Task 17). */
+    static RetrievedChunk toRetrievedChunkForTest(Map<String, Object> metaMap, String id, String text, Float score) {
+        RetrievedChunk chunk = new RetrievedChunk();
+        chunk.setId(id);
+        chunk.setText(text);
+        chunk.setScore(score);
+
+        Object kbId = metaMap.get("kb_id");
+        if (kbId != null) chunk.setKbId(kbId.toString());
+        Object docId = metaMap.get("doc_id");
+        if (docId != null) chunk.setDocId(docId.toString());
+        Object chunkIndex = metaMap.get("chunk_index");
+        if (chunkIndex instanceof Number n) chunk.setChunkIndex(n.intValue());
+        Object securityLevel = metaMap.get("security_level");
+        if (securityLevel instanceof Number n) chunk.setSecurityLevel(n.intValue());
+
+        VectorChunk metaWrapper = new VectorChunk();
+        metaWrapper.setMetadata(metaMap);
+        chunk.setPageNumber(ChunkLayoutMetadata.pageNumber(metaWrapper));
+        chunk.setPageStart(ChunkLayoutMetadata.pageStart(metaWrapper));
+        chunk.setPageEnd(ChunkLayoutMetadata.pageEnd(metaWrapper));
+        chunk.setHeadingPath(ChunkLayoutMetadata.headingPath(metaWrapper));
+        chunk.setBlockType(ChunkLayoutMetadata.blockType(metaWrapper));
+        chunk.setSourceBlockIds(ChunkLayoutMetadata.sourceBlockIds(metaWrapper));
+        return chunk;
     }
 
     private String floatArrayToJson(float[] vector) {

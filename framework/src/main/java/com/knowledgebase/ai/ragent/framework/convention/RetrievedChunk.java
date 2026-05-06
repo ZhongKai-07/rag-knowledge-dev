@@ -80,4 +80,12 @@ public class RetrievedChunk {
      * OpenSearch 后端回填；其他后端当前不回填，空值兼容旧数据。
      */
     private Integer chunkIndex;
+
+    // PR 6 layout 字段（chunk-level evidence，仅 OpenSearch backend 回填；非 OS backend null）
+    private Integer pageNumber;
+    private Integer pageStart;
+    private Integer pageEnd;
+    private java.util.List<String> headingPath;
+    private String blockType;
+    private java.util.List<String> sourceBlockIds;
 }
