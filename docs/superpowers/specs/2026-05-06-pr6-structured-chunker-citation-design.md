@@ -53,15 +53,16 @@ PR 6 是即将到来的 Collateral 单问单答字段查询 PR 的**必要前置
 | `blockType` | `String`（来自 `BlockType.name()`）| `string \| null` | OS metadata `block_type` | `"PARAGRAPH"` / `"TABLE"` / `"TITLE"` 等 8 种枚举值的 name；BASIC null |
 | `sourceBlockIds` | `List<String>` | `string[] \| null` | OS metadata `source_block_ids` | chunk 由哪些 LayoutBlock 拼成；BASIC null；ENHANCED 但 chunker 未填充时空数组 |
 
-### 2.1.1 JSON 序列化策略（双侧防御）
+### 2.1.1 JSON 序列化策略（三层防御）
 
-SourceChunk 6 个新字段全部 nullable，必须在前后端两侧都防住 null。**纯靠前端 `!== undefined` 判断会漏 null**（runtime `null !== undefined` 为 true，BASIC chunk 序列化 `"pageNumber":null` 会让 evidence 行假阳性渲染）。三条契约同时生效：
+SourceChunk 6 个新字段全部 nullable，必须在三层都防住"假阳性渲染"：(a) null 假阳性、(b) `undefined !== null` 类型错觉、(c) **空数组 `[]` 通过 `@JsonInclude(NON_NULL)` 漏出**（v4 review P2 #5 修正）。三条契约同时生效：
 
-1. **后端**：[`SourceChunk.java`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/dto/SourceChunk.java) 类级加 `@JsonInclude(JsonInclude.Include.NON_NULL)`，让 Jackson 在序列化时直接**省略** null 字段（BASIC chunk 输出不包含 `pageNumber/pageStart/...` key）
-2. **前端 TypeScript 类型**：在 `frontend/src/types/index.ts` 中定义为 `pageNumber?: number | null`（同时容忍 undefined 和 null —— 即使 Jackson 配置漂移漏了 NON_NULL，类型仍诚实）
-3. **前端守卫**：`Sources.tsx` 中**统一用 `!= null`**（不是 `!== undefined`），覆盖 null 与 undefined 两种 falsy。例：`chunk.pageNumber != null && (<span>...</span>)`
+1. **后端 Java 字段**：[`SourceChunk.java`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/dto/SourceChunk.java) 类级加 `@JsonInclude(JsonInclude.Include.NON_EMPTY)`（**不是 NON_NULL**）。`NON_EMPTY` 既跳 null，又跳空 `List` / 空 `String` / `Optional.empty()`。BASIC chunk 即使因为某种原因得到了空 `List`（如 `headingPath = List.of()`），序列化结果也不会出现 `"headingPath":[]`
+2. **前端 TypeScript 类型**：在 `frontend/src/types/index.ts` 中定义为 `pageNumber?: number | null`（同时容忍 undefined 和 null —— 即使 Jackson 配置漂移漏了 NON_EMPTY，类型仍诚实）
+3. **前端守卫**：`Sources.tsx` 中**统一用 `!= null`**（不是 `!== undefined`），覆盖 null 与 undefined 两种 falsy。**集合字段额外用 `chunk.headingPath?.length`**（不是 `chunk.headingPath != null`）—— 这条同时拒 null / undefined / 空数组，与 `NON_EMPTY` 后端契约对称
+4. **后端 reader 返回 null**：[`ChunkLayoutMetadata.headingPath / sourceBlockIds`](../../../bootstrap/src/main/java/com/knowledgebase/ai/ragent/rag/core/vector/ChunkLayoutMetadata.java) 在 metadata Map 缺 key 时返回 `null`（不是 `Collections.emptyList()`），让"无信息"在 Java 侧就具体地是 null 而非空集合（v4 review P2 #5）
 
-belt-and-suspenders 设计：后端 `@JsonInclude` 是首道闸门，前端 `!= null` 是二道闸门。任一道单独就能防住假阳性，两道叠加防御漂移。
+四层防御：后端 `@JsonInclude(NON_EMPTY)` + 后端 reader 返 null + 前端类型双容忍 + 前端守卫 `!= null` / `?.length`。任意三层失效仍能拦下假阳性。
 
 ### 2.2 value-in-paragraph guard 契约
 
@@ -122,7 +123,7 @@ Brainstorm 阶段对 main HEAD `a03a4acf` 的 4 路并行代码调查发现 **12
 | `OpenSearchVectorStoreAdmin.java` | metadata mapping 加 9 个 layout 字段类型声明 |
 | `RetrievedChunk.java` | 加 6 个 nullable 字段 |
 | `OpenSearchRetrieverService.java` | `toRetrievedChunk` 用 `ChunkLayoutMetadata` 抽 layout |
-| `SourceChunk.java` | 加 6 个 nullable 字段；类级 `@JsonInclude(JsonInclude.Include.NON_NULL)` |
+| `SourceChunk.java` | 加 6 个 nullable 字段；类级 `@JsonInclude(JsonInclude.Include.NON_EMPTY)`（v4 P2 #5：跳 null + 空 List） |
 | `SourceCardBuilder.java` | RetrievedChunk → SourceChunk 时映射 6 个字段 |
 | `frontend/src/types/index.ts` + `frontend/src/components/chat/Sources.tsx` | TS interface 6 字段（`number \| null` / `string[] \| null` 而非 `?: number`）+ 卡片头部用 `!= null` 守卫渲染 page/heading |
 | `docs/dev/setup/docling-service.md` | 加"已存在 KB 切 ENHANCED 的迁移步骤"章节（§11.2）|
@@ -436,12 +437,13 @@ public final class ChunkLayoutMetadata {
 }
 ```
 
-**边界（v3 严格措辞）**：
+**边界（v4 严格措辞）**：
 
 - helper 只做 `VectorChunk.metadata: Map<String, Object>` 的类型化 access；**不依赖任何 knowledge 域 / parser 域类型**
 - **不做外部存储的序列化写入，仅在读取时兼容 JSON String** —— reader 路径兜底反序列化 DB-derived 数据（如 `headingPath` 的 JSON 字符串），writer 路径不负责把 `List<String>` 序列化为 JSON String（这是 persist 层的职责）
 - **writer 对 `BlockType` 解耦**：调用方传 `BlockType.name()` String，`rag.core.vector` 不 import `core.parser.layout.BlockType`
-- **DO ↔ VectorChunk 与 CreateRequest ↔ VectorChunk 的桥接由 `knowledge.service.support.KnowledgeChunkLayoutMapper` 承担**（见 §5.7），**不在本 helper 内**。这条是 v3 review 锁定的层级边界：`rag.core.vector` 不可反向 import `knowledge.dao.entity.KnowledgeChunkDO` 或 `knowledge.controller.request.KnowledgeChunkCreateRequest`
+- **DO ↔ VectorChunk 与 CreateRequest ↔ VectorChunk 的桥接由 `knowledge.service.support.KnowledgeChunkLayoutMapper` 承担**（见 §5.10），**不在本 helper 内**。这条是 v3 review 锁定的层级边界：`rag.core.vector` 不可反向 import `knowledge.dao.entity.KnowledgeChunkDO` 或 `knowledge.controller.request.KnowledgeChunkCreateRequest`
+- **reader 返回 `null`（不是空 List）来表达 "key 缺失"**（v4 review P2 #5 fix）。这条配合 `@JsonInclude(NON_EMPTY)`（§5.14）共同保证 BASIC chunk 的 `headingPath / sourceBlockIds` **不会以 `[]` 形式出现在 SourceChunk 序列化结果**。具体语义：`null` = "无信息"；`List.of()` = "信息存在但项数为零"（理论极端，writer 已跳过空 list 写入，所以这种状态在实践中不会出现）；`非空 List` = "实际数据"
 
 **收口理由（更新）**：v2 spec 把跨域桥接塞进 `ChunkLayoutMetadata` 是为"写入唯一入口"图省事，但代价是把 vector core 拖进 knowledge DTO 的依赖网。v3 修正：vector core 守住 Map 操作，桥接职责下放给 knowledge 域自己的适配层 —— 那里本来就 import 这些 DTO。两层各自只做职责内的事：
 
@@ -974,16 +976,22 @@ upload (parseMode=BASIC, pipelineId=xxx)
 
 ### 6.5 Re-index 路径（disable → enable / 单 chunk 编辑 / re-embed）—— review P1 #1 锁定
 
-ENHANCED 文档完成 ingestion 之后，多种业务操作会**重新构建 OS 索引**：
+ENHANCED 文档完成 ingestion 之后，多种业务操作会**重新构建 OS 索引**。**v4 review P1 #1 修正：明确两条不同的代码形态**：
 
-- 用户在管理界面禁用整文档 → 启用回来：`KnowledgeChunkServiceImpl.batchEnableChunks` line 432-455
-- 用户禁用部分 chunk → 启用回来：同方法
-- 用户编辑 chunk content：`KnowledgeChunkServiceImpl.update` line 285-310
-- 文档 enable 全量重建：`KnowledgeChunkServiceImpl` line 530-540
+| 路径 | 数据源 | 修正方式 |
+|---|---|---|
+| `KnowledgeChunkServiceImpl.batchEnableChunks` line 432-455 | `chunkMapper.selectList(...)` 直接读 **DO** | builder 后紧跟 `layoutMapper.copyFromDO(do, vc)` |
+| `KnowledgeChunkServiceImpl.update` line 285+ | `chunkMapper.selectById` 读 **DO** | 见 §6.6（manual edit 契约） |
+| `KnowledgeChunkServiceImpl` 单 chunk add line 152 / 303 / 534 | 已有 DO 直接构造 | builder 后紧跟 `layoutMapper.copyFromDO(do, vc)` |
+| **`KnowledgeDocumentServiceImpl` 文档级 enable line 784** | `knowledgeChunkService.listByDocId(docId)` → **VO**（`KnowledgeChunkVO` 没 9 layout 字段）| **改路径**：line 784 改为 `chunkMapper.selectList(new LambdaQueryWrapper<KnowledgeChunkDO>().eq(::getDocId, docId))` 直接拿 DO，再走同 `copyFromDO` 模式 |
 
-**这些路径的现状（PR 6 之前）共同问题**：从 `KnowledgeChunkDO` 读出 chunks 后，`VectorChunk.builder()` 调用**只填 chunkId / content / index**，layout 9 字段全部丢失。所以 PR 6 ENHANCED 上传刚完成时 OS 有 layout，但用户做一次"禁用全部 + 启用全部"后 OS layout 就被清掉。
+**关键决策（v4）**：文档级 enable 路径**不**通过 VO（也就**不**扩 `KnowledgeChunkVO` + 加 `copyFromVO`）。理由：
 
-PR 6 修正：**`KnowledgeChunkServiceImpl` 注入 `KnowledgeChunkLayoutMapper layoutMapper` 字段；5 处 VectorChunk.builder 调用点必须紧跟 `layoutMapper.copyFromDO(chunkDO, vc)`**：
+1. `KnowledgeChunkVO` 是 controller→frontend 的展示形态，加 9 个 layout 字段是为内部实现需要污染 API 出参 schema
+2. 直接走 mapper 查 DO 是更短的路径；VO 在这里本身就只用于"读 chunkId / content / chunkIndex" 3 个字段，去 service-VO 间接性反而绕远
+3. ArchUnit 等机制里 `KnowledgeDocumentServiceImpl` 注入 `KnowledgeChunkMapper` 已是合规依赖（service 域可以直接调 mapper）
+
+PR 6 修正：**所有 5 处 VectorChunk.builder 调用点路径全部改为"读 `KnowledgeChunkDO` → builder 后紧跟 `layoutMapper.copyFromDO(do, vc)`"**：
 
 ```
 disable 全文档 / 部分 chunk
@@ -1003,7 +1011,7 @@ enable 回来
   → vectorStoreService.indexDocumentChunks(coll, docId, kbId, sec, vectorChunks)  // OS 重写，layout 透传回去
 ```
 
-**测试锁**：`EnableDisableLayoutRoundTripIntegrationTest`（§10.2）端到端断言 OS layout 字段在 disable→enable 周期前后字节级一致。
+**测试锁**：`ChunkServiceReindexCallSitesMockTest`（§10.2，v4 review P1 #4）通过统一 helper `buildVectorChunkFromDO` 间接锁定 5 处 call site 都不会丢 layout —— 任何 call site 绕开 helper 自己 builder 都会被 review 灯红。
 
 ### 6.6 手工编辑 chunk content 的 layout 契约（v3 review P2 #3 锁定）
 
@@ -1024,27 +1032,38 @@ enable 回来
 - 保留：**5 个 "document location" 字段**（`pageNumber` / `pageStart` / `pageEnd` / `headingPath` / `blockType`）。理由：chunk 在文档中**所处的位置**没变。
 - 清除：**4 个 "extraction-specific" 字段**（`sourceBlockIds` / `bboxRefs` / `textLayerType` / `layoutConfidence`）。理由：这些反映的是**机器解析的具体产物**，与人工改写后的文本失去对应关系。
 
-**实现位置**：`KnowledgeChunkServiceImpl.update` 在更新 `chunkDO.setContent(newContent)` 同时显式写：
+**实现位置 + 关键 gotcha**：`KnowledgeChunkServiceImpl.update` 必须**走 `LambdaUpdateWrapper.set` 显式 null clear**，不能用 `chunkMapper.updateById(chunkDO)` 配 setter null 赋值 —— 后者在 MyBatis Plus 默认 `FieldStrategy.NOT_NULL` 下**会跳过 null 字段**，DB 里 4 个 extraction 列**不会被清空**（gotcha §2 警告过的同型陷阱）。
 
 ```java
-chunkDO.setContent(newContent);
-chunkDO.setContentHash(SecureUtil.sha256(newContent));
-chunkDO.setCharCount(newContent.length());
-chunkDO.setTokenCount(resolveTokenCount(newContent));
-// PR 6 v3 新增：清除 4 个 extraction-specific layout 字段（保留 5 个 location 字段）
-chunkDO.setSourceBlockIds(null);
-chunkDO.setBboxRefs(null);
-chunkDO.setTextLayerType(null);
-chunkDO.setLayoutConfidence(null);
-chunkMapper.updateById(chunkDO);
-// 重新写 OS：调 layoutMapper.copyFromDO(chunkDO, vc) 时已清除的 4 字段自然不进 metadata
-VectorChunk vc = VectorChunk.builder().chunkId(chunkId).content(newContent).index(chunkDO.getChunkIndex()).build();
-layoutMapper.copyFromDO(chunkDO, vc);
+// PR 6 / v4 review P1 #2 fix：用 LambdaUpdateWrapper.set 显式发送 NULL 给 SQL，
+// 绕过 MyBatis Plus FieldStrategy.NOT_NULL 默认对 null 字段的跳过。
+// 9 layout 列均无 typeHandler 注解（gotcha §2 验证过），LambdaUpdateWrapper.set 安全。
+chunkMapper.update(null, Wrappers.lambdaUpdate(KnowledgeChunkDO.class)
+        .eq(KnowledgeChunkDO::getId, chunkId)
+        .set(KnowledgeChunkDO::getContent, newContent)
+        .set(KnowledgeChunkDO::getContentHash, SecureUtil.sha256(newContent))
+        .set(KnowledgeChunkDO::getCharCount, newContent.length())
+        .set(KnowledgeChunkDO::getTokenCount, resolveTokenCount(newContent))
+        .set(KnowledgeChunkDO::getUpdatedBy, UserContext.getUsername())
+        // PR 6：清 4 个 extraction-specific 字段（保留 5 个 location 字段，不出现在 set 列表里 = 不动）
+        .set(KnowledgeChunkDO::getSourceBlockIds, null)
+        .set(KnowledgeChunkDO::getBboxRefs, null)
+        .set(KnowledgeChunkDO::getTextLayerType, null)
+        .set(KnowledgeChunkDO::getLayoutConfidence, null));
+
+// 重读最新 DO（含保留的 location 字段 + 已清空的 extraction 字段）然后 copyFromDO 写 OS
+KnowledgeChunkDO refreshed = chunkMapper.selectById(chunkId);
+VectorChunk vc = VectorChunk.builder()
+        .chunkId(refreshed.getId())
+        .content(refreshed.getContent())
+        .index(refreshed.getChunkIndex())
+        .build();
+layoutMapper.copyFromDO(refreshed, vc);   // location 字段进 metadata；extraction 字段已 null，被 writer 跳过
 attachEmbeddings(List.of(vc), embeddingModel);
 vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, List.of(vc));
 ```
 
-**测试锁**：`ManualChunkEditPreservesLocationClearsBlockEvidenceIntegrationTest`（§10.2 加）—— 编辑 chunk content 后断言：DB 5 个 location 列保持原值；4 个 extraction 列变 NULL；OS metadata 同样 5 在 4 不在。
+**测试锁**：`ManualChunkEditPreservesLocationClearsBlockEvidenceIntegrationTest`（§10.2 加）—— 编辑 chunk content 后断言：DB 5 个 location 列保持原值；4 个 extraction 列**确实**变 NULL（用 `chunkMapper.selectById` 查实际行而非依赖 entity setter，验证 SQL 真发出去了）；OS metadata 同样 5 在 4 不在。
 
 ## 7. Persistence Contract
 
@@ -1115,6 +1134,7 @@ helper 是双向唯一入口，避免 key 拼写漂移。
 | `EnhancedHappyPathLayoutEndToEndIntegrationTest` | ENHANCED 成功 | 上传 PDF（parseMode=enhanced）；Docling 成功；**最小集断言**：DB 列 `pageNumber / pageStart / pageEnd / blockType` 4 列非 NULL；**条件性断言**：`headingPath` 与 `sourceBlockIds` 仅在 chunker 实际产出时（即 LayoutBlock 列表中存在 heading / blockId）才断言非空数组，没有则允许 NULL（应对"PDF 没有明确章节标题"或"Docling 块未填充 blockId"的真实场景）；OS 检索断言用 `term: { "metadata.block_type": "PARAGRAPH" }`（**注意是 `metadata.block_type` 嵌套路径**，不是根级 `block_type`）；SourceChunk 序列化包含 6 字段（null 字段经 `@JsonInclude(NON_NULL)` 已被省略，断言"key 存在性"而非"value 非 null"）|
 | `RetrieverLayoutFieldRoundTripIntegrationTest` | 检索读路径 | 写入 chunk + layout metadata → OS → 检索 → 断言 RetrievedChunk 6 字段值与写入完全一致（特别 List<String> 不被错误序列化为 String） |
 | `EnableDisableLayoutRoundTripIntegrationTest` | **re-index 路径契约（review P1 #1）** | ENHANCED 上传 → 验证 OS chunk 含 layout → `KnowledgeChunkController` 触发**禁用全部 chunks**（OS chunks 被 `deleteChunksByIds` 清掉）→ 触发**启用**（KnowledgeChunkServiceImpl 从 DB 读 KnowledgeChunkDO + `KnowledgeChunkLayoutMapper.copyFromDO` 重建 VectorChunk + `indexDocumentChunks` 写回 OS）→ 断言 OS chunk 的 `metadata.page_number / metadata.heading_path / metadata.block_type` 等 9 字段与启用前**完全一致**。如果 `copyFromDO` 漏了任一字段，此测试失败 |
+| `ChunkServiceReindexCallSitesMockTest` | **5 处 VectorChunk.builder 实际调用契约（review P1 #4）** | 用 Mockito mock `VectorStoreService` + `ChunkEmbeddingService`；分别触发 (a) `batchEnableChunks` 启用分支、(b) `update` 编辑 content、(c) `addChunk` / 单 chunk 启用、(d) `KnowledgeDocumentServiceImpl` 文档级 enable；每条路径都用 `ArgumentCaptor<List<VectorChunk>>` 捕获传给 `vectorStoreService.indexDocumentChunks` 的 chunks 参数；断言每个 chunk 的 `metadata` 包含**预期的 layout key**（来自 mock DO 的 9 列）。**这是 review P1 #4 核心契约**：仅靠 helper 单测不够，必须证明"5 处 call site 真的调了 copyFromDO"。建议从 `KnowledgeChunkServiceImpl` 抽 `private VectorChunk buildVectorChunkFromDO(KnowledgeChunkDO)` helper 给 5 处共用，使本测试能覆盖该 helper 即覆盖 5 处 |
 | `ManualChunkEditPreservesLocationClearsBlockEvidenceIntegrationTest` | **manual edit 契约（review P2 #3）** | ENHANCED 上传 → 验证 chunk DB 9 layout 列含值 → 触发 `KnowledgeChunkServiceImpl.update` 改写 chunk content → 断言：(a) DB **5 个 location 列**（pageNumber/pageStart/pageEnd/headingPath/blockType）值**未变**；(b) DB **4 个 extraction 列**（sourceBlockIds/bboxRefs/textLayerType/layoutConfidence）变 NULL；(c) OS metadata 5 在 4 不在；(d) chunk content + contentHash + embedding 已更新 |
 
 ### 10.3 Manual ops smoke

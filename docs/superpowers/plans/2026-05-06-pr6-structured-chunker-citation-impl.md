@@ -43,7 +43,7 @@
 | `OpenSearchVectorStoreAdmin.java` | metadata mapping 加 9 layout 字段类型声明 |
 | `RetrievedChunk.java` | 加 6 个 nullable 字段 |
 | `OpenSearchRetrieverService.java` | `toRetrievedChunk` 抽 6 layout 字段 |
-| `SourceChunk.java` | 加 6 个 nullable 字段 + 类级 `@JsonInclude(JsonInclude.Include.NON_NULL)` |
+| `SourceChunk.java` | 加 6 个 nullable 字段 + 类级 `@JsonInclude(JsonInclude.Include.NON_EMPTY)`（v4 P2 #5） |
 | `SourceCardBuilder.java` | RetrievedChunk → SourceChunk 时映射 6 字段 |
 | `frontend/src/types/index.ts` | SourceChunk interface 加 6 个 `?: T \| null` 字段 |
 | `frontend/src/components/chat/Sources.tsx` | 卡片渲染 evidence 行（`!= null` 守卫）|
@@ -94,6 +94,14 @@ class ChunkLayoutMetadataTest {
         assertThat(ChunkLayoutMetadata.headingPath(a)).containsExactly("第三章", "3.2 信用风险");
         assertThat(ChunkLayoutMetadata.headingPath(b)).containsExactly("第三章", "3.2 信用风险");
         assertThat(ChunkLayoutMetadata.headingPath(c)).containsExactly("第三章", "3.2 信用风险");
+    }
+
+    @Test
+    void readback_missingKeyReturnsNull_notEmpty() {
+        // v4 review P2 #5：缺 key 返 null（不是空 List），保 SourceChunk 序列化对称
+        VectorChunk vc = new VectorChunk(); vc.setMetadata(new HashMap<>());
+        assertThat(ChunkLayoutMetadata.headingPath(vc)).isNull();
+        assertThat(ChunkLayoutMetadata.sourceBlockIds(vc)).isNull();
     }
 
     @Test
@@ -201,21 +209,31 @@ public final class ChunkLayoutMetadata {
         return v == null ? null : v.toString();
     }
 
-    /** 三态兼容：List / String[] / JSON String 兜底。 */
+    /**
+     * 三态兼容：List / String[] / JSON String 兜底。
+     * <p><b>v4 review P2 #5</b>：返回 {@code null}（不是空 List）来表达 "key 缺失"，
+     * 让 BASIC chunk 的 SourceChunk 序列化与 {@code @JsonInclude(NON_EMPTY)} 对齐。
+     */
     private static List<String> readStringList(VectorChunk c, String key) {
         Object v = read(c, key);
-        if (v == null) return Collections.emptyList();
+        if (v == null) return null;
         if (v instanceof List<?> list) {
-            return list.stream().filter(Objects::nonNull).map(Object::toString).toList();
+            List<String> result = list.stream().filter(Objects::nonNull).map(Object::toString).toList();
+            return result.isEmpty() ? null : result;
         }
         if (v instanceof String[] arr) {
-            return Arrays.stream(arr).filter(Objects::nonNull).toList();
+            List<String> result = Arrays.stream(arr).filter(Objects::nonNull).toList();
+            return result.isEmpty() ? null : result;
         }
         if (v instanceof String s && !s.isBlank()) {
-            try { return SHARED_MAPPER.readValue(s, STRING_LIST); }
-            catch (Exception ignored) { return List.of(s); }
+            try {
+                List<String> parsed = SHARED_MAPPER.readValue(s, STRING_LIST);
+                return parsed == null || parsed.isEmpty() ? null : parsed;
+            } catch (Exception ignored) {
+                return List.of(s);   // 单值 String 兜底（视为非空）
+            }
         }
-        return Collections.emptyList();
+        return null;
     }
 
     private static Object read(VectorChunk c, String key) {
@@ -303,15 +321,17 @@ git commit -m "feat(rag-vector): ChunkLayoutMetadata typed accessor (PR 6 / Q6)"
 
 - [ ] **Step 1: Write failing test**
 
+注意真实 API：`ParserNode(ObjectMapper, DocumentParserSelector)` 双参 ctor；`NodeConfig.settings` 是 `JsonNode`（不是 `Map<String, Object>`）；`NodeResult` 在 `ingestion.domain.result.NodeResult`。
+
 ```java
 package com.knowledgebase.ai.ragent.ingestion.node;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.knowledgebase.ai.ragent.core.parser.DocumentParser;
 import com.knowledgebase.ai.ragent.core.parser.DocumentParserSelector;
 import com.knowledgebase.ai.ragent.core.parser.ParseMode;
 import com.knowledgebase.ai.ragent.core.parser.ParseResult;
 import com.knowledgebase.ai.ragent.core.parser.layout.DocumentPageText;
-import com.knowledgebase.ai.ragent.core.parser.layout.LayoutTable;
 import com.knowledgebase.ai.ragent.ingestion.domain.context.IngestionContext;
 import com.knowledgebase.ai.ragent.ingestion.domain.pipeline.NodeConfig;
 import org.junit.jupiter.api.Test;
@@ -320,6 +340,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -337,14 +358,20 @@ class ParserNodeParseResultPropagationTest {
         DocumentParserSelector selector = mock(DocumentParserSelector.class);
         when(selector.selectByParseMode(ParseMode.BASIC)).thenReturn(parser);
 
-        ParserNode node = new ParserNode(selector);
+        ObjectMapper objectMapper = new ObjectMapper();
+        ParserNode node = new ParserNode(objectMapper, selector);   // ← 双参 ctor
+
         IngestionContext ctx = IngestionContext.builder()
                 .rawBytes("hello".getBytes())
                 .mimeType("text/plain")
                 .parseMode(ParseMode.BASIC.getValue())
                 .build();
+        // NodeConfig.settings 是 JsonNode；用 objectMapper 构造一个空对象节点
+        NodeConfig config = NodeConfig.builder()
+                .settings(objectMapper.createObjectNode())
+                .build();
 
-        node.execute(ctx, NodeConfig.builder().settings(Map.of()).build());
+        node.execute(ctx, config);
 
         assertThat(ctx.getParseResult()).isSameAs(full);
         assertThat(ctx.getRawText()).isEqualTo("page1 text");
@@ -555,11 +582,13 @@ git commit -m "feat(ingestion-chunker): IngestionChunkingInput record (PR 6 / A'
 
 - [ ] **Step 1: Write failing test**
 
+注意真实 API：`FixedSizeOptions` 在 `com.knowledgebase.ai.ragent.core.chunk`（**不是 .option 子包**），是 **record**（非 Lombok @Builder）；用 `new FixedSizeOptions(int chunkSize, int overlapSize)` 构造；accessor 是 `chunkSize()` 等 record-style（非 `getChunkSize()`）。`TextBoundaryOptions` 同包，4 个 int 字段构造：`new TextBoundaryOptions(int targetChars, int overlapChars, int maxChars, int minChars)`。
+
 ```java
 package com.knowledgebase.ai.ragent.ingestion.chunker;
 
-import com.knowledgebase.ai.ragent.core.chunk.option.FixedSizeOptions;
-import com.knowledgebase.ai.ragent.core.chunk.option.TextBoundaryOptions;
+import com.knowledgebase.ai.ragent.core.chunk.FixedSizeOptions;
+import com.knowledgebase.ai.ragent.core.chunk.TextBoundaryOptions;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -568,8 +597,7 @@ class StructuredChunkingOptionsResolverTest {
 
     @Test
     void textBoundaryOptions_passesThroughTargetMaxMin() {
-        TextBoundaryOptions opt = TextBoundaryOptions.builder()
-                .targetChars(1000).maxChars(1500).minChars(400).build();
+        TextBoundaryOptions opt = new TextBoundaryOptions(1000, 100, 1500, 400);
         StructuredChunkingDimensions d = StructuredChunkingOptionsResolver.resolve(opt);
         assertThat(d.target()).isEqualTo(1000);
         assertThat(d.max()).isEqualTo(1500);
@@ -578,7 +606,7 @@ class StructuredChunkingOptionsResolverTest {
 
     @Test
     void fixedSizeOptions_derivesMaxAndMin() {
-        FixedSizeOptions opt = FixedSizeOptions.builder().chunkSize(1000).overlapSize(0).build();
+        FixedSizeOptions opt = new FixedSizeOptions(1000, 0);
         StructuredChunkingDimensions d = StructuredChunkingOptionsResolver.resolve(opt);
         assertThat(d.target()).isEqualTo(1000);
         assertThat(d.max()).isEqualTo(1300);   // 30% 弹性
@@ -619,12 +647,15 @@ record StructuredChunkingDimensions(int target, int max, int min) {}
 package com.knowledgebase.ai.ragent.ingestion.chunker;
 
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingOptions;
-import com.knowledgebase.ai.ragent.core.chunk.option.FixedSizeOptions;
-import com.knowledgebase.ai.ragent.core.chunk.option.TextBoundaryOptions;
+import com.knowledgebase.ai.ragent.core.chunk.FixedSizeOptions;
+import com.knowledgebase.ai.ragent.core.chunk.TextBoundaryOptions;
 
 /**
  * 把异构 ChunkingOptions 收口为 {@link StructuredChunkingDimensions}，让
  * {@link StructuredChunkingStrategy} 不直接耦合 TextBoundaryOptions / FixedSizeOptions。
+ *
+ * <p><b>真实 API 注意</b>：FixedSizeOptions / TextBoundaryOptions 都是 records，accessor
+ * 是 record-style（{@code tb.targetChars()} 而非 {@code tb.getTargetChars()}）。
  */
 final class StructuredChunkingOptionsResolver {
 
@@ -632,10 +663,10 @@ final class StructuredChunkingOptionsResolver {
 
     static StructuredChunkingDimensions resolve(ChunkingOptions options) {
         if (options instanceof TextBoundaryOptions tb) {
-            return new StructuredChunkingDimensions(tb.getTargetChars(), tb.getMaxChars(), tb.getMinChars());
+            return new StructuredChunkingDimensions(tb.targetChars(), tb.maxChars(), tb.minChars());
         }
         if (options instanceof FixedSizeOptions fs) {
-            int target = fs.getChunkSize();
+            int target = fs.chunkSize();
             int max = (int) Math.ceil(target * 1.3);
             int min = Math.max(1, (int) (target * 0.4));
             return new StructuredChunkingDimensions(target, max, min);
@@ -644,8 +675,6 @@ final class StructuredChunkingOptionsResolver {
     }
 }
 ```
-
-If `TextBoundaryOptions` / `FixedSizeOptions` getter names differ from `getTargetChars / getMaxChars / getMinChars / getChunkSize`，先 grep 现有类确认实际方法名再调整。
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1373,42 +1402,49 @@ git commit -m "feat(ingestion-chunker): IngestionChunkingDispatcher with same-pr
 
 - [ ] **Step 1: Write failing test**
 
+注意真实 API：`ChunkerNode` 现状 ctor 是 `(ObjectMapper, ChunkingStrategyFactory, ChunkEmbeddingService)` 三参；PR 6 改造目标是把 `ChunkingStrategyFactory` 替换为 `IngestionChunkingDispatcher`（仍然 3 参）；`NodeConfig.settings` 是 `JsonNode`（用 ObjectMapper 构造）。
+
 ```java
 package com.knowledgebase.ai.ragent.ingestion.node;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.knowledgebase.ai.ragent.core.chunk.ChunkEmbeddingService;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingMode;
 import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
 import com.knowledgebase.ai.ragent.ingestion.chunker.IngestionChunkingDispatcher;
 import com.knowledgebase.ai.ragent.ingestion.chunker.IngestionChunkingInput;
 import com.knowledgebase.ai.ragent.ingestion.domain.context.IngestionContext;
 import com.knowledgebase.ai.ragent.ingestion.domain.pipeline.NodeConfig;
-import com.knowledgebase.ai.ragent.ingestion.embedding.ChunkEmbeddingService;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ChunkerNodeDispatchTest {
 
     @Test
     void execute_routesThroughDispatcherAndEmbeds() {
+        ObjectMapper objectMapper = new ObjectMapper();
         IngestionChunkingDispatcher dispatcher = mock(IngestionChunkingDispatcher.class);
         ChunkEmbeddingService embedSvc = mock(ChunkEmbeddingService.class);
         VectorChunk chunk = VectorChunk.builder().chunkId("c1").index(0).content("x").build();
         when(dispatcher.chunk(any(), any(IngestionChunkingInput.class), any())).thenReturn(List.of(chunk));
 
-        ChunkerNode node = new ChunkerNode(dispatcher, embedSvc);
+        ChunkerNode node = new ChunkerNode(objectMapper, dispatcher, embedSvc);   // ← 3 参 ctor
         IngestionContext ctx = IngestionContext.builder()
                 .rawText("x").parseMode("basic").build();
-        NodeConfig config = NodeConfig.builder()
-                .settings(Map.of("strategy", ChunkingMode.STRUCTURE_AWARE.getValue()))
-                .build();
+        // NodeConfig.settings 是 JsonNode；用 ObjectMapper 构造 strategy = "structure_aware"
+        ObjectNode settings = objectMapper.createObjectNode();
+        settings.put("strategy", ChunkingMode.STRUCTURE_AWARE.getValue());
+        settings.put("chunkSize", 1000);
+        settings.put("overlapSize", 100);
+        NodeConfig config = NodeConfig.builder().settings(settings).build();
 
         node.execute(ctx, config);
 
@@ -1425,13 +1461,23 @@ mvn -pl bootstrap test -Dtest=ChunkerNodeDispatchTest
 ```
 Expected: FAIL — `ChunkerNode` 构造器签名仍是老的 `(ChunkingStrategyFactory, ChunkEmbeddingService)`，测试期望 `(IngestionChunkingDispatcher, ChunkEmbeddingService)`。
 
-- [ ] **Step 3: Rewrite `ChunkerNode.execute(...)`**
+- [ ] **Step 3: Rewrite `ChunkerNode` body (preserve existing helper shape)**
 
-Replace the entire `ChunkerNode` body with:
+main 上现有 `ChunkerNode` 的真实形态：
+
+- ctor 字段：`ObjectMapper / ChunkingStrategyFactory / ChunkEmbeddingService` 三参
+- `parseSettings(JsonNode)` 用 `objectMapper.convertValue(node, ChunkerSettings.class)`，**默认 chunkSize=512 / overlapSize=128**
+- `convertToChunkConfig(ChunkerSettings)` 调 `settings.getStrategy().createDefaultOptions(chunkSize, overlapSize)` —— **`ChunkerSettings` 没有 `toChunkingOptions()` 方法**，必须走 `ChunkingMode.createDefaultOptions(int, int)` 真实 API
+- 现有 `convertToVectorChunks` 是 builder trivial copy，PR 6 后**不再需要**（dispatcher 直接产出 List\<VectorChunk\>）
+
+PR 6 改动：把 `ChunkingStrategyFactory` 替换为 `IngestionChunkingDispatcher`；`requireStrategy + chunker.chunk(text, options)` 替换为 `dispatcher.chunk(mode, input, options)`；删 `convertToVectorChunks` trivial copy；私有 `parseSettings / convertToChunkConfig` 全部保留。
 
 ```java
 package com.knowledgebase.ai.ragent.ingestion.node;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.knowledgebase.ai.ragent.core.chunk.ChunkEmbeddingService;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingMode;
 import com.knowledgebase.ai.ragent.core.chunk.ChunkingOptions;
 import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
@@ -1439,37 +1485,36 @@ import com.knowledgebase.ai.ragent.framework.exception.ClientException;
 import com.knowledgebase.ai.ragent.ingestion.chunker.IngestionChunkingDispatcher;
 import com.knowledgebase.ai.ragent.ingestion.chunker.IngestionChunkingInput;
 import com.knowledgebase.ai.ragent.ingestion.domain.context.IngestionContext;
+import com.knowledgebase.ai.ragent.ingestion.domain.enums.IngestionNodeType;
 import com.knowledgebase.ai.ragent.ingestion.domain.pipeline.NodeConfig;
-import com.knowledgebase.ai.ragent.ingestion.domain.pipeline.NodeResult;
+import com.knowledgebase.ai.ragent.ingestion.domain.result.NodeResult;
 import com.knowledgebase.ai.ragent.ingestion.domain.settings.ChunkerSettings;
-import com.knowledgebase.ai.ragent.ingestion.embedding.ChunkEmbeddingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * 分块节点：从 NodeConfig.settings 读 mode → 走 {@link IngestionChunkingDispatcher} 选 strategy →
- * 调 embedding service → 写回 IngestionContext.chunks。
- *
- * <p>PR 6 起 layout 字段（如有）由 strategy 通过 ChunkLayoutMetadata.writer 写入 chunk.metadata，
- * 下游 IndexerNode / persistChunksAndVectorsAtomically 自动透传。
- */
 @Component
 @RequiredArgsConstructor
 public class ChunkerNode implements IngestionNode {
 
+    private final ObjectMapper objectMapper;
     private final IngestionChunkingDispatcher dispatcher;
     private final ChunkEmbeddingService chunkEmbeddingService;
 
     @Override
+    public String getNodeType() {
+        return IngestionNodeType.CHUNKER.getValue();
+    }
+
+    @Override
     public NodeResult execute(IngestionContext context, NodeConfig config) {
-        IngestionChunkingInput input = IngestionChunkingInput.from(context);
         ChunkerSettings settings = parseSettings(config.getSettings());
         ChunkingMode mode = settings.getStrategy();
         if (mode == null) {
             return NodeResult.fail(new ClientException("ChunkerNode 缺少 settings.strategy"));
         }
+        IngestionChunkingInput input = IngestionChunkingInput.from(context);
         ChunkingOptions options = convertToChunkConfig(settings);
 
         List<VectorChunk> chunks = dispatcher.chunk(mode, input, options);
@@ -1478,20 +1523,23 @@ public class ChunkerNode implements IngestionNode {
         return NodeResult.ok("已分块 " + chunks.size() + " 段");
     }
 
-    private ChunkerSettings parseSettings(java.util.Map<String, Object> raw) {
-        // 复用现有 ChunkerSettings 反序列化逻辑（保持与 PR 6 之前一致）
-        return new com.fasterxml.jackson.databind.ObjectMapper()
-                .convertValue(raw, ChunkerSettings.class);
+    private ChunkingOptions convertToChunkConfig(ChunkerSettings settings) {
+        return settings.getStrategy().createDefaultOptions(
+                settings.getChunkSize(), settings.getOverlapSize());
     }
 
-    private ChunkingOptions convertToChunkConfig(ChunkerSettings settings) {
-        // 复用 PR 6 之前的转换逻辑（沿用现有 ChunkerSettings → ChunkingOptions 的映射代码块）
-        return settings.toChunkingOptions();
+    private ChunkerSettings parseSettings(JsonNode node) {
+        ChunkerSettings settings = objectMapper.convertValue(node, ChunkerSettings.class);
+        if (settings.getChunkSize() == null || settings.getChunkSize() <= 0) {
+            settings.setChunkSize(512);
+        }
+        if (settings.getOverlapSize() == null || settings.getOverlapSize() < 0) {
+            settings.setOverlapSize(128);
+        }
+        return settings;
     }
 }
 ```
-
-如果 `ChunkerSettings` 无 `toChunkingOptions()` 方法 / `parseSettings` 现有实现复杂，先保留现有 `parseSettings` 与 `convertToChunkConfig` 私有方法的逻辑（仅替换 chunker.requireStrategy 那段为 dispatcher 调用）。具体合并方式参考 main 上 `ChunkerNode.java` 的现状。
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1758,7 +1806,8 @@ public class KnowledgeChunkLayoutMapper {
         w.sourceBlockIds(parseStringList(chunkDO.getSourceBlockIds(), "sourceBlockIds", chunkDO.getId()));
     }
 
-    /** Persist 序列化：VectorChunk.metadata → CreateRequest 9 字段。 */
+    /** Persist 序列化：VectorChunk.metadata → CreateRequest 9 字段。
+     *  v4 review P2 #5：reader 现在缺 key 返 null（不是空 List），所以 hp / sb 必须 null-safe。 */
     public void copyToCreateRequest(VectorChunk source, KnowledgeChunkCreateRequest target) {
         if (source == null || target == null || source.getMetadata() == null) return;
         target.setPageNumber(ChunkLayoutMetadata.pageNumber(source));
@@ -1769,10 +1818,10 @@ public class KnowledgeChunkLayoutMapper {
         target.setTextLayerType(ChunkLayoutMetadata.textLayerType(source));
         target.setLayoutConfidence(ChunkLayoutMetadata.layoutConfidence(source));
 
-        List<String> hp = ChunkLayoutMetadata.headingPath(source);
-        target.setHeadingPath(hp.isEmpty() ? null : toJson(hp));
+        List<String> hp = ChunkLayoutMetadata.headingPath(source);    // 可能 null
+        target.setHeadingPath(hp == null || hp.isEmpty() ? null : toJson(hp));
         List<String> sb = ChunkLayoutMetadata.sourceBlockIds(source);
-        target.setSourceBlockIds(sb.isEmpty() ? null : toJson(sb));
+        target.setSourceBlockIds(sb == null || sb.isEmpty() ? null : toJson(sb));
     }
 
     private List<String> parseStringList(String json, String fieldName, String chunkId) {
@@ -1921,136 +1970,164 @@ git commit -m "feat(knowledge): batchCreate copies 9 layout fields from CreateRe
 
 ---
 
-### Task 14: `KnowledgeChunkServiceImpl` 5 处 `VectorChunk.builder` 调用点紧跟 `copyFromDO`
+### Task 14: 5 处 re-index 路径走统一 helper `buildVectorChunkFromDO`（v4 review P1 #1 + P1 #4）
 
 **Files:**
 - Modify: `bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeChunkServiceImpl.java`
+- Modify: `bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImpl.java`
+- Test: `bootstrap/src/test/java/com/knowledgebase/ai/ragent/knowledge/service/impl/ChunkServiceReindexCallSitesMockTest.java`
 
-- [ ] **Step 1: Inject `KnowledgeChunkLayoutMapper layoutMapper` field**
+- [ ] **Step 1: Inject `KnowledgeChunkLayoutMapper layoutMapper` field in BOTH services**
 
-If not yet injected (Task 12 only injected in `KnowledgeDocumentServiceImpl`)，加：
+Add to `KnowledgeChunkServiceImpl`'s `@RequiredArgsConstructor` field block:
 
 ```java
     private final com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper layoutMapper;
 ```
 
-- [ ] **Step 2: Patch each VectorChunk.builder() construction site**
+(Task 12 already injected in `KnowledgeDocumentServiceImpl` —— 不重复加。)
 
-5 sites identified (line numbers from main HEAD a03a4acf, may shift after Task 13 patch):
+- [ ] **Step 2: Add private helper `buildVectorChunkFromDO` to `KnowledgeChunkServiceImpl`**
 
-| 位置 | 上下文 | 修改 |
+```java
+    /**
+     * Re-index 路径统一构造 helper：DB 读 KnowledgeChunkDO → VectorChunk + 9 layout 字段反向回填到 metadata。
+     * 5 处 VectorChunk.builder() 原始调用点统一委托此方法（v4 review P1 #4：让单测覆盖一处即覆盖五处）。
+     *
+     * <p>包级别可见（package-private）以便 {@code ChunkServiceReindexCallSitesMockTest} 直接断言。
+     */
+    VectorChunk buildVectorChunkFromDO(KnowledgeChunkDO chunkDO) {
+        VectorChunk vc = VectorChunk.builder()
+                .chunkId(chunkDO.getId())
+                .content(chunkDO.getContent())
+                .index(chunkDO.getChunkIndex())
+                .build();
+        layoutMapper.copyFromDO(chunkDO, vc);
+        return vc;
+    }
+```
+
+- [ ] **Step 3: Replace 5 `VectorChunk.builder()` call sites with `buildVectorChunkFromDO`**
+
+| 位置 | 替换前 | 替换后 |
 |---|---|---|
-| `KnowledgeChunkServiceImpl:244-250` | `batchCreate` writeVector branch | builder 后加 `layoutMapper.copyFromDO(each, vc);` |
-| `KnowledgeChunkServiceImpl:303` | `addChunkToVector`（单 chunk 加） | builder 后加 `layoutMapper.copyFromDO(chunkDO, chunk);` |
-| `KnowledgeChunkServiceImpl:434-438` | `batchEnableChunks` enable branch | builder 后加 `layoutMapper.copyFromDO(c, vc);` |
-| `KnowledgeChunkServiceImpl:534-540` | `enableSingleChunkVector` | builder 后加 `layoutMapper.copyFromDO(chunkDO, chunk);` |
-| `KnowledgeDocumentServiceImpl:786` | doc-level enable rebuild | builder 后加 `layoutMapper.copyFromDO(<对应 DO>, <对应 vc>);` |
+| `KnowledgeChunkServiceImpl:244-250` (`batchCreate` writeVector 分支) | `.map(each -> VectorChunk.builder().chunkId(...).content(...).index(...).build())` | `.map(this::buildVectorChunkFromDO)` |
+| `KnowledgeChunkServiceImpl:303`（单 chunk add 入向量）| `VectorChunk chunk = VectorChunk.builder()...build();` | `VectorChunk chunk = buildVectorChunkFromDO(chunkDO);` |
+| `KnowledgeChunkServiceImpl:434-438` (`batchEnableChunks` enable 分支) | `.map(c -> VectorChunk.builder()....build())` | `.map(this::buildVectorChunkFromDO)` |
+| `KnowledgeChunkServiceImpl:534-540`（单 chunk enable）| `VectorChunk chunk = VectorChunk.builder()...build();` | `VectorChunk chunk = buildVectorChunkFromDO(chunkDO);` |
+| **`KnowledgeDocumentServiceImpl:784-791`（doc-level enable，v4 review P1 #1）**| `chunks = knowledgeChunkService.listByDocId(docId);` 然后 `.map(each -> VectorChunk.builder()....build())` | **改 line 784** 为 `chunks = chunkMapper.selectList(new LambdaQueryWrapper<KnowledgeChunkDO>().eq(KnowledgeChunkDO::getDocId, docId).orderByAsc(KnowledgeChunkDO::getChunkIndex));`（直接查 DO，绕过 VO），然后 `.map(knowledgeChunkServiceImpl::buildVectorChunkFromDO)` —— 即跨 service 调用 package-private helper（同包），或者把 helper 改 `public` 让 cross-service 能调 |
 
-具体改动模式（以 line 433-438 为例）：
-
-替换：
+`KnowledgeDocumentServiceImpl:784` 的具体改写：
 
 ```java
-            List<VectorChunk> vectorChunks = needUpdateChunks.stream()
-                    .map(c -> VectorChunk.builder()
-                            .chunkId(c.getId())
-                            .content(c.getContent())
-                            .index(c.getChunkIndex())
-                            .build())
-                    .collect(Collectors.toList());
+        // 启用时：embed 耗时较长，在事务外提前执行
+        List<VectorChunk> vectorChunks = null;
+        if (enabled) {
+            // v4 review P1 #1: doc-level enable 改用 DO 路径（KnowledgeChunkVO 没 9 layout 字段，无法 copyFromDO）
+            List<KnowledgeChunkDO> chunkDOs = chunkMapper.selectList(
+                    new LambdaQueryWrapper<KnowledgeChunkDO>()
+                            .eq(KnowledgeChunkDO::getDocId, docId)
+                            .orderByAsc(KnowledgeChunkDO::getChunkIndex));
+            vectorChunks = chunkDOs.stream()
+                    .map(knowledgeChunkServiceImpl::buildVectorChunkFromDO)   // 跨 service package-private 调用（同包）
+                    .toList();
+            if (CollUtil.isEmpty(vectorChunks)) {
+                log.warn("启用文档时未找到任何 Chunk，跳过向量重建，docId={}", docId);
+                return;
+            }
+            chunkEmbeddingService.embed(vectorChunks, kbDO.getEmbeddingModel());
+        }
 ```
 
-为：
+如果 `KnowledgeDocumentServiceImpl` 已经 `@RequiredArgsConstructor` 且没注入 `chunkMapper`，先加 `private final KnowledgeChunkMapper chunkMapper;` field（同 service 域，依赖合规）。
 
-```java
-            List<VectorChunk> vectorChunks = needUpdateChunks.stream()
-                    .map(c -> {
-                        VectorChunk vc = VectorChunk.builder()
-                                .chunkId(c.getId())
-                                .content(c.getContent())
-                                .index(c.getChunkIndex())
-                                .build();
-                        layoutMapper.copyFromDO(c, vc);   // PR 6 re-index 契约
-                        return vc;
-                    })
-                    .collect(Collectors.toList());
-```
+注：`knowledgeChunkServiceImpl` 是 service 字段名（`KnowledgeChunkServiceImpl knowledgeChunkServiceImpl`），如果现有注入字段名是 `knowledgeChunkService`（接口型），需要把 `buildVectorChunkFromDO` 提到 `KnowledgeChunkService` 接口，或者把 helper 改 `public` 直接通过 impl 实例调。简洁方案：把 helper 改 `public`，`KnowledgeDocumentServiceImpl` 注入 `KnowledgeChunkService` 接口扩展方法即可。
 
-其余 4 处类似（builder().build() → 改成 lambda + 暂存 vc + copyFromDO + return）。
+- [ ] **Step 4: Write `ChunkServiceReindexCallSitesMockTest` (v4 review P1 #4 锁契约)**
 
-- [ ] **Step 3: Write integration test for re-index round-trip**
-
-`bootstrap/src/test/java/com/knowledgebase/ai/ragent/knowledge/service/impl/EnableDisableLayoutRoundTripIntegrationTest.java`:
+`bootstrap/src/test/java/com/knowledgebase/ai/ragent/knowledge/service/impl/ChunkServiceReindexCallSitesMockTest.java`:
 
 ```java
 package com.knowledgebase.ai.ragent.knowledge.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
 import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeChunkDO;
 import com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper;
+import com.knowledgebase.ai.ragent.rag.core.vector.ChunkLayoutMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 验证 disable→enable 周期不丢 layout：mapper 双向桥接的端到端单元覆盖。
- * 仅断言 mapper 的 round-trip 等价；完整数据库 + OS 端到端在 manual ops smoke 验收（spec §10.3）。
+ * v4 review P1 #4：仅靠 mapper 单测无法证明"5 处 VectorChunk.builder 调用点真的调了 copyFromDO"。
+ * 本测试通过验证 {@code buildVectorChunkFromDO} helper（5 处 call site 共用入口）的输出契约，
+ * 间接锁定 5 处都不会丢 layout —— 任何 call site 绕开 helper 自己 builder 都会被 review 灯红。
+ *
+ * <p>完整 service 行为（数据库 + OS）走 manual ops smoke（spec §10.3）。
  */
-class EnableDisableLayoutRoundTripIntegrationTest {
-
-    private final KnowledgeChunkLayoutMapper mapper = new KnowledgeChunkLayoutMapper(
-            new com.fasterxml.jackson.databind.ObjectMapper());
+class ChunkServiceReindexCallSitesMockTest {
 
     @Test
-    void roundTrip_DOToVectorChunkAndBack_preservesAll9Fields() {
-        KnowledgeChunkDO original = KnowledgeChunkDO.builder()
-                .id("c1").kbId("kb1").docId("d1").chunkIndex(0).content("hello")
-                .pageNumber(7).pageStart(7).pageEnd(8)
+    void buildVectorChunkFromDO_propagatesAll9LayoutFieldsToMetadata() {
+        // 直接构造一个 KnowledgeChunkServiceImpl 的部分实例（用 layoutMapper 真实实例，service 其它依赖可 null —— helper 不依赖它们）
+        KnowledgeChunkLayoutMapper mapper = new KnowledgeChunkLayoutMapper(new ObjectMapper());
+        KnowledgeChunkServiceImpl service = new KnowledgeChunkServiceImpl(
+                /* mapper */ null, /* documentMapper */ null, /* knowledgeBaseMapper */ null,
+                /* embeddingService */ null, /* vectorStoreService */ null,
+                /* tokenCounter */ null, /* objectMapper */ new ObjectMapper(),
+                /* layoutMapper */ mapper, /* kbManageAccess */ null
+        );  // 字段顺序按 KnowledgeChunkServiceImpl 实际 @RequiredArgsConstructor 调整
+
+        KnowledgeChunkDO chunkDO = KnowledgeChunkDO.builder()
+                .id("c1").content("hello").chunkIndex(7)
+                .pageNumber(12).pageStart(12).pageEnd(13)
                 .headingPath("[\"第三章\",\"3.2\"]")
                 .blockType("PARAGRAPH")
-                .sourceBlockIds("[\"b1\",\"b2\"]")
-                .bboxRefs("[{\"x\":1,\"y\":2}]")
+                .sourceBlockIds("[\"b1\"]")
+                .bboxRefs("[{\"x\":1}]")
                 .textLayerType("NATIVE_TEXT")
                 .layoutConfidence(0.95)
                 .build();
 
-        // DO → VectorChunk.metadata
-        VectorChunk vc = VectorChunk.builder().chunkId("c1").content("hello").metadata(new HashMap<>()).build();
-        mapper.copyFromDO(original, vc);
+        VectorChunk vc = service.buildVectorChunkFromDO(chunkDO);
 
-        // VectorChunk.metadata → CreateRequest（持久化路径）
-        var req = new com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest();
-        mapper.copyToCreateRequest(vc, req);
-
-        assertThat(req.getPageNumber()).isEqualTo(7);
-        assertThat(req.getPageStart()).isEqualTo(7);
-        assertThat(req.getPageEnd()).isEqualTo(8);
-        assertThat(req.getHeadingPath()).isEqualTo("[\"第三章\",\"3.2\"]");
-        assertThat(req.getBlockType()).isEqualTo("PARAGRAPH");
-        assertThat(req.getSourceBlockIds()).isEqualTo("[\"b1\",\"b2\"]");
-        assertThat(req.getBboxRefs()).isEqualTo("[{\"x\":1,\"y\":2}]");
-        assertThat(req.getTextLayerType()).isEqualTo("NATIVE_TEXT");
-        assertThat(req.getLayoutConfidence()).isEqualTo(0.95);
+        assertThat(vc.getChunkId()).isEqualTo("c1");
+        assertThat(vc.getContent()).isEqualTo("hello");
+        assertThat(vc.getIndex()).isEqualTo(7);
+        // 9 layout 字段全部到位
+        assertThat(ChunkLayoutMetadata.pageNumber(vc)).isEqualTo(12);
+        assertThat(ChunkLayoutMetadata.pageStart(vc)).isEqualTo(12);
+        assertThat(ChunkLayoutMetadata.pageEnd(vc)).isEqualTo(13);
+        assertThat(ChunkLayoutMetadata.headingPath(vc)).containsExactly("第三章", "3.2");
+        assertThat(ChunkLayoutMetadata.blockType(vc)).isEqualTo("PARAGRAPH");
+        assertThat(ChunkLayoutMetadata.sourceBlockIds(vc)).containsExactly("b1");
+        assertThat(ChunkLayoutMetadata.bboxRefs(vc)).isEqualTo("[{\"x\":1}]");
+        assertThat(ChunkLayoutMetadata.textLayerType(vc)).isEqualTo("NATIVE_TEXT");
+        assertThat(ChunkLayoutMetadata.layoutConfidence(vc)).isEqualTo(0.95);
     }
 }
 ```
 
-- [ ] **Step 4: Run test**
+如果 `KnowledgeChunkServiceImpl` 真实 ctor 字段数 / 顺序与上面注释不符，按真实定义调整 mock 注入。**关键不变**：用真实 `layoutMapper` 实例 + helper 直调。
+
+- [ ] **Step 5: Run test**
 
 ```bash
-mvn -pl bootstrap test -Dtest=EnableDisableLayoutRoundTripIntegrationTest
+mvn -pl bootstrap test -Dtest=ChunkServiceReindexCallSitesMockTest
 ```
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeChunkServiceImpl.java \
         bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeDocumentServiceImpl.java \
-        bootstrap/src/test/java/com/knowledgebase/ai/ragent/knowledge/service/impl/EnableDisableLayoutRoundTripIntegrationTest.java
-git commit -m "feat(knowledge): re-index paths preserve layout via copyFromDO (PR 6 / review P1 #1)"
+        bootstrap/src/test/java/com/knowledgebase/ai/ragent/knowledge/service/impl/ChunkServiceReindexCallSitesMockTest.java
+git commit -m "feat(knowledge): 5 re-index sites unified via buildVectorChunkFromDO helper (PR 6 / v4 P1 #1 #4)"
 ```
 
 ---
@@ -2060,26 +2137,38 @@ git commit -m "feat(knowledge): re-index paths preserve layout via copyFromDO (P
 **Files:**
 - Modify: `bootstrap/src/main/java/com/knowledgebase/ai/ragent/knowledge/service/impl/KnowledgeChunkServiceImpl.java` `update()` method (line 263+ in main)
 
-- [ ] **Step 1: Patch `update` to clear 4 extraction-specific fields**
+- [ ] **Step 1: Replace `update`'s persist block with `LambdaUpdateWrapper.set` (v4 review P1 #2)**
 
-Find the existing `update` method. After the `chunkDO.setContent(newContent)` block, add:
+**关键 gotcha**：MyBatis Plus 默认 `FieldStrategy.NOT_NULL` 让 `chunkMapper.updateById(chunkDO)` 跳过 null 字段。`chunkDO.setSourceBlockIds(null)` 后调 updateById **不会**清 DB 列。必须用 `LambdaUpdateWrapper.set(field, null)` 显式发送 NULL 给 SQL。9 layout 列均无 typeHandler 注解（验证过），LambdaUpdateWrapper.set 安全（不触发 gotcha §2 typeHandler 陷阱）。
+
+替换原来的 `chunkDO.setContent(newContent); ... chunkMapper.updateById(chunkDO);` 块为：
 
 ```java
-        chunkDO.setContent(newContent);
-        chunkDO.setContentHash(SecureUtil.sha256(newContent));
-        chunkDO.setCharCount(newContent.length());
-        chunkDO.setTokenCount(resolveTokenCount(newContent));
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+// ...
 
-        // PR 6 / Q6 v3 review P2 #3：手工编辑 chunk content 后，5 个 location 字段保留（chunk 仍属该页该章节），
-        // 4 个 extraction-specific 字段清空（已不忠于改写后的文本）。
-        chunkDO.setSourceBlockIds(null);
-        chunkDO.setBboxRefs(null);
-        chunkDO.setTextLayerType(null);
-        chunkDO.setLayoutConfidence(null);
-        // pageNumber / pageStart / pageEnd / headingPath / blockType 维持原值（不动）
+        // PR 6 / v4 review P1 #2: 用 LambdaUpdateWrapper.set 显式发送 NULL，绕过 FieldStrategy.NOT_NULL
+        chunkMapper.update(null, Wrappers.lambdaUpdate(KnowledgeChunkDO.class)
+                .eq(KnowledgeChunkDO::getId, chunkId)
+                .set(KnowledgeChunkDO::getContent, newContent)
+                .set(KnowledgeChunkDO::getContentHash, SecureUtil.sha256(newContent))
+                .set(KnowledgeChunkDO::getCharCount, newContent.length())
+                .set(KnowledgeChunkDO::getTokenCount, resolveTokenCount(newContent))
+                .set(KnowledgeChunkDO::getUpdatedBy, UserContext.getUsername())
+                // PR 6: 清 4 个 extraction-specific 字段（5 个 location 字段不出现在 set 列表里 = 不动）
+                .set(KnowledgeChunkDO::getSourceBlockIds, null)
+                .set(KnowledgeChunkDO::getBboxRefs, null)
+                .set(KnowledgeChunkDO::getTextLayerType, null)
+                .set(KnowledgeChunkDO::getLayoutConfidence, null));
 
-        chunkMapper.updateById(chunkDO);
+        // 重读最新 DO 用于 OS rebuild（含保留的 location 字段 + 已清空的 extraction 字段）
+        KnowledgeChunkDO refreshed = chunkMapper.selectById(chunkId);
+        VectorChunk vc = buildVectorChunkFromDO(refreshed);   // Task 14 加的 helper，含 layoutMapper.copyFromDO
+        chunkEmbeddingService.embed(List.of(vc), kbDO.getEmbeddingModel());
+        vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, List.of(vc));
 ```
+
+如果原 `update` 方法还有别的 setter（如 `enabled` 状态等），**保留**那些不与 layout 冲突的 set 调用，仅仅替换"涉及 content 与 layout 清除的部分"为上述 LambdaUpdateWrapper。
 
 - [ ] **Step 2: Write regression test**
 
@@ -2304,12 +2393,12 @@ In the existing `toRetrievedChunk(...)` method (line 281-327)，在现有 `kb_id
         chunk.setPageNumber(ChunkLayoutMetadata.pageNumber(metaWrapper));
         chunk.setPageStart(ChunkLayoutMetadata.pageStart(metaWrapper));
         chunk.setPageEnd(ChunkLayoutMetadata.pageEnd(metaWrapper));
-        chunk.setHeadingPath(ChunkLayoutMetadata.headingPath(metaWrapper));
+        chunk.setHeadingPath(ChunkLayoutMetadata.headingPath(metaWrapper));   // v4 起返 null 而非空 List
         chunk.setBlockType(ChunkLayoutMetadata.blockType(metaWrapper));
-        chunk.setSourceBlockIds(ChunkLayoutMetadata.sourceBlockIds(metaWrapper));
+        chunk.setSourceBlockIds(ChunkLayoutMetadata.sourceBlockIds(metaWrapper));   // v4 起返 null
 ```
 
-注意：`headingPath / sourceBlockIds` 在 `RetrievedChunk` 上是 `List<String>` 类型；`ChunkLayoutMetadata.headingPath(...)` 返回 `List<String>` 直接赋值。空 List 表达"无 heading"，与 null 在前端契约里都用 `!= null` 守卫拒绝渲染（spec §5.15）。
+**v4 review P2 #5 注意**：`ChunkLayoutMetadata.headingPath / sourceBlockIds` 在 v4 起 metadata Map 缺 key 时返回 `null`（不是 `List.of()`）。所以 `chunk.setHeadingPath(null)` 会发生 —— `RetrievedChunk.headingPath` 字段类型是 nullable `List<String>`，下游 `SourceCardBuilder.copy` 透传 null 进 SourceChunk，`@JsonInclude(NON_EMPTY)` 自动跳过 → 前端不出现 `headingPath: []` 假阳性。整条链路对称。
 
 并加一个 package-private test helper（如尚未存在）：
 
@@ -2363,12 +2452,17 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/** 文档级源卡片内的单个 chunk 片段。PR 6 起加 6 个 nullable layout 字段。 */
+/**
+ * 文档级源卡片内的单个 chunk 片段。PR 6 起加 6 个 nullable layout 字段。
+ *
+ * <p><b>v4 review P2 #5</b>：使用 {@code NON_EMPTY}（不是 NON_NULL）—— 既跳 null，又跳空 List/String，
+ * 防止 BASIC chunk 因为 `headingPath = []` 这种边缘 wire 出 `"headingPath":[]` 假阳性。
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class SourceChunk {
     private String chunkId;
     private int chunkIndex;
@@ -2509,6 +2603,11 @@ export interface SourceChunk {
 ```
 
 - [ ] **Step 2: Modify `Sources.tsx` to render evidence row**
+
+注意守卫策略（v4 review P1 #2 + P2 #5）：
+
+- 标量字段（`pageNumber / pageStart / pageEnd / blockType`）用 `!= null`（同时拒 null 与 undefined）
+- 集合字段（`headingPath / sourceBlockIds`）用 `?.length`（同时拒 null / undefined / 空数组），与后端 `@JsonInclude(NON_EMPTY)` 对称
 
 Find the chunk preview render block. Above the preview text, add evidence row:
 
@@ -2656,7 +2755,7 @@ git commit -m "docs: PR 6 migration steps + 4 backlog + 2 gotcha rules"
 - [ ] **Step 1: Run all PR 6 unit + integration tests**
 
 ```bash
-mvn -pl bootstrap test -Dtest='ChunkLayoutMetadataTest,IngestionChunkingInputTest,StructuredChunkingOptionsResolverTest,LegacyTextChunkingStrategyAdapterTest,StructuredChunkingStrategyTest,IngestionChunkingDispatcherTest,ChunkerNodeDispatchTest,ParserNodeParseResultPropagationTest,KnowledgeChunkLayoutMapperTest,EnableDisableLayoutRoundTripIntegrationTest,ManualChunkEditPreservesLocationClearsBlockEvidenceIntegrationTest,RetrieverLayoutFieldRoundTripIntegrationTest,SourceChunkSerializationTest'
+mvn -pl bootstrap test -Dtest='ChunkLayoutMetadataTest,IngestionChunkingInputTest,StructuredChunkingOptionsResolverTest,LegacyTextChunkingStrategyAdapterTest,StructuredChunkingStrategyTest,IngestionChunkingDispatcherTest,ChunkerNodeDispatchTest,ParserNodeParseResultPropagationTest,KnowledgeChunkLayoutMapperTest,ChunkServiceReindexCallSitesMockTest,ManualChunkEditPreservesLocationClearsBlockEvidenceIntegrationTest,RetrieverLayoutFieldRoundTripIntegrationTest,SourceChunkSerializationTest'
 ```
 Expected: ALL PASS.
 
