@@ -18,11 +18,13 @@
 package com.knowledgebase.ai.ragent.knowledge.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.knowledgebase.ai.ragent.core.chunk.VectorChunk;
 import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkBatchRequest;
 import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
 import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkPageRequest;
 import com.knowledgebase.ai.ragent.knowledge.controller.request.KnowledgeChunkUpdateRequest;
 import com.knowledgebase.ai.ragent.knowledge.controller.vo.KnowledgeChunkVO;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeChunkDO;
 
 import java.util.List;
 
@@ -144,4 +146,10 @@ public interface KnowledgeChunkService {
      * @param docId 文档 ID
      */
     void deleteByDocId(String docId);
+
+    /**
+     * Re-index 路径统一构造 helper：DB 读 KnowledgeChunkDO → VectorChunk + 9 layout 字段反向回填到 metadata。
+     * 5 处调用点统一委托此方法（PR 6 / v4 review P1 #1 + P1 #4）。
+     */
+    VectorChunk buildVectorChunkFromDO(KnowledgeChunkDO chunkDO);
 }

@@ -62,7 +62,9 @@ import com.knowledgebase.ai.ragent.knowledge.controller.vo.KnowledgeDocumentVO;
 import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
 import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeDocumentChunkLogDO;
 import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
+import com.knowledgebase.ai.ragent.knowledge.dao.entity.KnowledgeChunkDO;
 import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeChunkMapper;
 import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentChunkLogMapper;
 import com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.knowledgebase.ai.ragent.knowledge.enums.DocumentStatus;
@@ -121,6 +123,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final VectorStoreService vectorStoreService;
     private final VectorStoreAdmin vectorStoreAdmin;
     private final KnowledgeChunkService knowledgeChunkService;
+    private final KnowledgeChunkMapper chunkMapper;
     private final com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper layoutMapper;
     private final ObjectMapper objectMapper;
     private final KnowledgeDocumentScheduleService scheduleService;
@@ -783,14 +786,14 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         // 启用时：embed 耗时较长，在事务外提前执行，避免长事务占用连接
         List<VectorChunk> vectorChunks = null;
         if (enabled) {
-            List<KnowledgeChunkVO> chunks = knowledgeChunkService.listByDocId(docId);
-            vectorChunks = chunks.stream().map(each ->
-                    VectorChunk.builder()
-                            .chunkId(each.getId())
-                            .content(each.getContent())
-                            .index(each.getChunkIndex())
-                            .build()
-            ).toList();
+            // v4 review P1 #1: doc-level enable 改用 DO 路径（KnowledgeChunkVO 没 9 layout 字段，无法 copyFromDO）
+            List<KnowledgeChunkDO> chunkDOs = chunkMapper.selectList(
+                    new LambdaQueryWrapper<KnowledgeChunkDO>()
+                            .eq(KnowledgeChunkDO::getDocId, docId)
+                            .orderByAsc(KnowledgeChunkDO::getChunkIndex));
+            vectorChunks = chunkDOs.stream()
+                    .map(knowledgeChunkService::buildVectorChunkFromDO)
+                    .toList();
             if (CollUtil.isEmpty(vectorChunks)) {
                 log.warn("启用文档时未找到任何 Chunk，跳过向量重建，docId={}", docId);
                 return;

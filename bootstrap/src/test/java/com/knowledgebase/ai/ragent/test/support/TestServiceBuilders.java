@@ -111,7 +111,9 @@ public final class TestServiceBuilders {
                 mock(TransactionOperations.class),
                 kbReadAccess,
                 kbManageAccess,
-                kbMetadataReader);
+                kbMetadataReader,
+                new com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper(
+                        new com.fasterxml.jackson.databind.ObjectMapper()));
     }
 
     public static KnowledgeDocumentServiceImpl knowledgeDocumentService(
@@ -129,6 +131,9 @@ public final class TestServiceBuilders {
                 mock(VectorStoreService.class),
                 mock(VectorStoreAdmin.class),
                 mock(KnowledgeChunkService.class),
+                mock(com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeChunkMapper.class),
+                new com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper(
+                        new com.fasterxml.jackson.databind.ObjectMapper()),
                 mock(ObjectMapper.class),
                 mock(KnowledgeDocumentScheduleService.class),
                 mock(IngestionPipelineService.class),

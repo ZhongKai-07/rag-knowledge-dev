@@ -103,6 +103,9 @@ class KnowledgeDocumentServiceImplFindMetaTest {
                 vectorStoreService,
                 vectorStoreAdmin,
                 knowledgeChunkService,
+                mock(com.knowledgebase.ai.ragent.knowledge.dao.mapper.KnowledgeChunkMapper.class),
+                new com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper(
+                        new com.fasterxml.jackson.databind.ObjectMapper()),
                 objectMapper,
                 scheduleService,
                 ingestionPipelineService,

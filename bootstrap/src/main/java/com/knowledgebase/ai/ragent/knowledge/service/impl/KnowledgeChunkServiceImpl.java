@@ -79,6 +79,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
     private final KbReadAccessPort kbReadAccess;
     private final KbManageAccessPort kbManageAccess;
     private final KbMetadataReader kbMetadataReader;
+    private final com.knowledgebase.ai.ragent.knowledge.service.support.KnowledgeChunkLayoutMapper layoutMapper;
 
     @Override
     public IPage<KnowledgeChunkVO> pageQuery(String docId, KnowledgeChunkPageRequest requestParam) {
@@ -252,11 +253,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
 
         if (writeVector) {
             List<VectorChunk> vectorChunks = chunkDOList.stream()
-                    .map(each -> VectorChunk.builder()
-                            .chunkId(String.valueOf(each.getId()))
-                            .content(each.getContent())
-                            .index(each.getChunkIndex())
-                            .build())
+                    .map(this::buildVectorChunkFromDO)
                     .toList();
             if (CollUtil.isNotEmpty(vectorChunks)) {
                 attachEmbeddings(vectorChunks, embeddingModel);
@@ -441,11 +438,7 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
 
         if (enabled) {
             List<VectorChunk> vectorChunks = needUpdateChunks.stream()
-                    .map(c -> VectorChunk.builder()
-                            .chunkId(c.getId())
-                            .content(c.getContent())
-                            .index(c.getChunkIndex())
-                            .build())
+                    .map(this::buildVectorChunkFromDO)
                     .collect(Collectors.toList());
             attachEmbeddings(vectorChunks, kbDO.getEmbeddingModel());
 
@@ -517,6 +510,17 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         chunkMapper.delete(new LambdaQueryWrapper<KnowledgeChunkDO>().eq(KnowledgeChunkDO::getDocId, docId));
     }
 
+    @Override
+    public VectorChunk buildVectorChunkFromDO(KnowledgeChunkDO chunkDO) {
+        VectorChunk vc = VectorChunk.builder()
+                .chunkId(chunkDO.getId())
+                .content(chunkDO.getContent())
+                .index(chunkDO.getChunkIndex())
+                .build();
+        layoutMapper.copyFromDO(chunkDO, vc);
+        return vc;
+    }
+
     // ==================== 私有方法 ====================
 
     /**
@@ -541,12 +545,8 @@ public class KnowledgeChunkServiceImpl implements KnowledgeChunkService {
         List<Float> embedding = embedContent(chunkDO.getContent(), embeddingModel);
         float[] vector = toArray(embedding);
 
-        VectorChunk chunk = VectorChunk.builder()
-                .index(chunkDO.getChunkIndex())
-                .content(chunkDO.getContent())
-                .chunkId(String.valueOf(chunkDO.getId()))
-                .embedding(vector)
-                .build();
+        VectorChunk chunk = buildVectorChunkFromDO(chunkDO);
+        chunk.setEmbedding(vector);
         vectorStoreService.indexDocumentChunks(collectionName, docId, kbId, securityLevel, List.of(chunk));
 
         log.debug("同步 Chunk 到向量库成功, collectionName={}, docId={}, chunkId={}", collectionName, docId, chunkDO.getId());
