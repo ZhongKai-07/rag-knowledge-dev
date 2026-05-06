@@ -160,11 +160,15 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
             </div>
           ) : null}
           {hasContent ? (
-            <div ref={contentRef}>
+            <div
+              ref={contentRef}
+              className={cn(message.status === "streaming" && "ai-streaming")}
+            >
               <MarkdownRenderer
                 content={message.content}
                 sources={message.sources}
                 onCitationClick={handleCitationClick}
+                isStreaming={message.status === "streaming"}
               />
             </div>
           ) : null}

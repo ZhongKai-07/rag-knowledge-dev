@@ -2260,6 +2260,25 @@ textarea {
   white-space: pre-wrap;
 }
 
+/* ===== Streaming cursor (PR-2 C) =====
+   流式期 markdown 末尾块级元素后跟一个闪烁竖线，传达 "还在生成"。
+   选择器覆盖最常见的最后一段（p/li/h*/blockquote）；最后是代码块时
+   不显示，避免在代码块下面挂一个不自然的光标。 */
+@keyframes ai-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.ai-streaming :is(p, li, h1, h2, h3, h4, h5, h6, blockquote):last-child::after {
+  content: "▎";
+  display: inline-block;
+  margin-left: 2px;
+  color: #3B82F6;
+  animation: ai-cursor-blink 1s step-end infinite;
+  vertical-align: -2px;
+  font-weight: normal;
+}
+
 /* ===== prefers-reduced-motion ===== */
 @media (prefers-reduced-motion: reduce) {
   *,
