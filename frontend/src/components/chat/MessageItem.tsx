@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Brain, ChevronDown } from "lucide-react";
+import { Brain, ChevronDown, Sparkles } from "lucide-react";
 
 import { FeedbackButtons } from "@/components/chat/FeedbackButtons";
 import { MarkdownRenderer } from "@/components/chat/MarkdownRenderer";
@@ -31,21 +31,39 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
 
   // --- citation interaction (hooks must precede early return) ---
   const sourcesRef = React.useRef<HTMLDivElement>(null);
+  const contentRef = React.useRef<HTMLDivElement>(null);
   const [highlightedIndex, setHighlightedIndex] = React.useState<number | null>(null);
   const timerRef = React.useRef<number | null>(null);
+
+  const scheduleClearHighlight = React.useCallback((n: number) => {
+    setHighlightedIndex(n);
+    if (timerRef.current != null) window.clearTimeout(timerRef.current);
+    timerRef.current = window.setTimeout(() => {
+      setHighlightedIndex(null);
+      timerRef.current = null;
+    }, CITATION_HIGHLIGHT_MS);
+  }, []);
 
   const handleCitationClick = React.useCallback(
     (n: number) => {
       if (!message.sources?.some((c) => c.index === n)) return;
       sourcesRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      setHighlightedIndex(n);
-      if (timerRef.current != null) window.clearTimeout(timerRef.current);
-      timerRef.current = window.setTimeout(() => {
-        setHighlightedIndex(null);
-        timerRef.current = null;
-      }, CITATION_HIGHLIGHT_MS);
+      scheduleClearHighlight(n);
     },
-    [message.sources]
+    [message.sources, scheduleClearHighlight]
+  );
+
+  const handleJumpToCite = React.useCallback(
+    (n: number) => {
+      if (!message.sources?.some((c) => c.index === n)) return;
+      // 限定在当前 assistant 消息的正文容器内查找（避免跨消息匹配）
+      const target = contentRef.current?.querySelector<HTMLElement>(
+        `[data-cite-n="${n}"]`
+      );
+      target?.scrollIntoView({ behavior: "smooth", block: "center" });
+      scheduleClearHighlight(n);
+    },
+    [message.sources, scheduleClearHighlight]
   );
 
   React.useEffect(
@@ -113,6 +131,16 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
           </div>
         ) : null}
         <div className="space-y-2">
+          {!isThinking ? (
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#F0F7FF] dark:bg-[#1E3A8A]">
+                <Sparkles className="h-3.5 w-3.5 text-[#3B82F6] dark:text-[#60A5FA]" />
+              </div>
+              <span className="text-xs font-medium text-muted-foreground">
+                HT KnowledgeBase
+              </span>
+            </div>
+          ) : null}
           {isWaiting ? (
             <div className="ai-wait" aria-label={message.streamStatus?.text || "思考中"}>
               {message.streamStatus?.text ? (
@@ -128,17 +156,20 @@ export const MessageItem = React.memo(function MessageItem({ message, isLast }: 
             </div>
           ) : null}
           {hasContent ? (
-            <MarkdownRenderer
-              content={message.content}
-              sources={message.sources}
-              onCitationClick={handleCitationClick}
-            />
+            <div ref={contentRef}>
+              <MarkdownRenderer
+                content={message.content}
+                sources={message.sources}
+                onCitationClick={handleCitationClick}
+              />
+            </div>
           ) : null}
           {hasSources && (
             <Sources
               ref={sourcesRef}
               cards={message.sources!}
               highlightedIndex={highlightedIndex}
+              onJumpToCite={handleJumpToCite}
             />
           )}
           {message.status === "error" ? (

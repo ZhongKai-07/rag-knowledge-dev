@@ -20,6 +20,7 @@ export function CitationBadge({ n, indexMap, onClick }: Props) {
         onClick={() => onClick(n)}
         title={card.docName}
         aria-label={`引用 ${n}：${card.docName}`}
+        data-cite-n={n}
         className={cn(
           "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-md",
           "bg-[#DBEAFE] px-1 text-[11px] font-semibold text-[#2563EB]",

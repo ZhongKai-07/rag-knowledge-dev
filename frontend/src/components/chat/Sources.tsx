@@ -1,14 +1,17 @@
 import * as React from "react";
+import { ArrowUp } from "lucide-react";
 import type { SourceCard } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface Props {
   cards: SourceCard[];
   highlightedIndex: number | null;
+  /** 点击卡片"跳到正文"按钮（E 双向引用）；不传则不渲染该按钮。 */
+  onJumpToCite?: (n: number) => void;
 }
 
 export const Sources = React.forwardRef<HTMLDivElement, Props>(
-  function Sources({ cards, highlightedIndex }, ref) {
+  function Sources({ cards, highlightedIndex, onJumpToCite }, ref) {
     const [expanded, setExpanded] = React.useState<Set<number>>(new Set());
 
     // 高亮的卡片随 highlightedIndex 变化自动展开
@@ -22,7 +25,7 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
     if (cards.length === 0) return null;
 
     return (
-      <div ref={ref} className="mt-3 space-y-1.5">
+      <div ref={ref} className="mt-3 space-y-1.5 animate-fade-up">
         <div className="text-xs font-medium text-muted-foreground">
           参考来源（{cards.length}）
         </div>
@@ -42,28 +45,49 @@ export const Sources = React.forwardRef<HTMLDivElement, Props>(
               )}
               title={tooltip}
             >
-              <button
-                type="button"
-                onClick={() => setExpanded(prev => {
-                  const next = new Set(prev);
-                  if (next.has(card.index)) next.delete(card.index);
-                  else next.add(card.index);
-                  return next;
-                })}
-                className="flex w-full items-center gap-2 text-left text-sm"
-                aria-expanded={isExpanded}
-              >
-                <span className="font-mono text-xs text-[#2563EB] shrink-0">
-                  来源 {card.index}
-                </span>
-                <span className="text-muted-foreground shrink-0">|</span>
-                <span className="flex-1 truncate font-medium">{card.docName}</span>
-                {restChunks.length > 0 ? (
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    +{restChunks.length}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setExpanded(prev => {
+                    const next = new Set(prev);
+                    if (next.has(card.index)) next.delete(card.index);
+                    else next.add(card.index);
+                    return next;
+                  })}
+                  className="flex flex-1 items-center gap-2 text-left text-sm min-w-0"
+                  aria-expanded={isExpanded}
+                  aria-label={`展开/折叠来源 ${card.index}`}
+                >
+                  <span className="font-mono text-xs text-[#2563EB] shrink-0">
+                    来源 {card.index}
                   </span>
+                  <span className="text-muted-foreground shrink-0">|</span>
+                  <span className="flex-1 truncate font-medium">{card.docName}</span>
+                  {restChunks.length > 0 ? (
+                    <span
+                      className="text-xs text-muted-foreground shrink-0"
+                      title={`剩余 ${restChunks.length} 个片段：\n${restChunks
+                        .map((c) => `· ${c.preview.slice(0, 60)}${c.preview.length > 60 ? "…" : ""}`)
+                        .join("\n")}`}
+                    >
+                      +{restChunks.length}
+                    </span>
+                  ) : null}
+                </button>
+                {onJumpToCite ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onJumpToCite(card.index);
+                    }}
+                    aria-label={`跳到正文中的引用 ${card.index}`}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
                 ) : null}
-              </button>
+              </div>
               {firstChunk ? (
                 <p className="mt-1.5 line-clamp-2 border-l-2 border-border pl-2 text-xs leading-relaxed text-muted-foreground">
                   {firstChunk.preview}
