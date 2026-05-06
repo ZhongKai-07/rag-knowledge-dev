@@ -95,6 +95,7 @@
   - ② 定位完成后 `setSearchParams(next, { replace: true })` 从 URL 删掉 `roleId` 参数。
   规则：任何承担 deep link 参数定位的 tab，参数消费完立刻 clear，否则和常驻的 state effect 会互相拉扯。新增 deep-link tab 必须 review 这两条。
 - **Tab filter 跨刷新 / 跨 session 持久化：URL 是 SSOT，localStorage 是 fallback (2026-04-26 PR E3 EvalRunsTab/EvalTrendsTab)**：用户从侧栏直进 `?tab=runs`（无 datasetId）或刷新 trends 页时本地 `useState` 即丢。**模式**：`useSearchParams` 持有 datasetId（URL = SSOT，可 share link / 浏览器历史）+ `localStorage` 仅在首次访问 / 直进 tab 没 URL 参数时灌回；任何 set 同时写两边。`utils.ts` 的 `readStoredDatasetId/writeStoredDatasetId` swallow 掉隐身 / 配额异常（不影响 URL 路径）。**反模式**：把 localStorage 作 SSOT，URL 只是同步器——会破坏 share link 语义。
+- **CSS 注释里的连续 `/` 字符会触发 Tailwind 旧版 `postcss-selector-parser` 报 "Unexpected '/'"（2026-05-06 chat UX PR-2）**：症状是 `vite` / `vite build` 直接 fail 在某条 CSS rule 上，但报错的行号 / 列号常常指向**注释行**（按 CSS 规范注释本应被 PostCSS 剥离，所以特别迷惑）。**根因**：`tailwindcss` 的 `expandApplyAtRules` 内部对每条 rule 走 selector tokenize，旧版 `postcss-selector-parser` 在某些路径下会扫到注释字面量；注释里连续出现 `p/li/h*/blockquote` 这种 "selector 关键字 + `/`" 组合会被误读成 selector，触发 `combinator` 解析失败。**修复**：注释里的 `/` 改用 `, ` 或其他分隔（如 `p, li, h1-h6, blockquote`），rule body 一并避开 `:is(...)` 这种新语法（同一 parser 在某版本下也会拒），稳妥写法是把 selector group 展开成逗号分隔的多条 selector。**触发文件示例**：`globals.css` 末尾流式光标章节首次出现，初版用 `（p/li/h*/blockquote）` 注释 + `:is(...)` selector 双重踩雷，去除后 `vite build` 8.9s 通过。
 
 ---
 
